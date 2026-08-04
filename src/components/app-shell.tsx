@@ -40,7 +40,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               </div>
 
               <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-                <Select defaultValue={properties[0]}>
+                <Select defaultValue="All properties">
                   <SelectTrigger className="hidden h-9 w-[170px] lg:flex">
                     <SelectValue />
                   </SelectTrigger>
