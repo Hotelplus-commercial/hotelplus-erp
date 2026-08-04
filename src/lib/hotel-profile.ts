@@ -50,16 +50,16 @@ export type Upsell = {
   id: string;
   item: string;
   mode: "one-time" | "contract";
-  start?: Date;
-  end?: Date;
+  start?: Date | undefined;
+  end?: Date | undefined;
 };
 
 export type ServiceBlock = {
   id: string;
   category: ServiceCategory | "";
   serviceType: string;
-  periodStart?: Date;
-  periodEnd?: Date;
+  periodStart?: Date | undefined;
+  periodEnd?: Date | undefined;
   /* ORM */
   monthlyFee: string;
   commission: string;
@@ -99,7 +99,7 @@ export const statusMeta: Record<HotelStatus, { label: string; className: string 
 };
 
 export function detectStatus(input: {
-  contractEnd?: Date;
+  contractEnd?: Date | undefined;
   terminated: boolean;
   overdueMonths: number;
 }): HotelStatus {
@@ -115,5 +115,5 @@ export function paymentScore(overdueMonths: number, latePayments: number) {
   return { score, grade };
 }
 
-export const formatDate = (d?: Date) =>
+export const formatDate = (d?: Date | undefined) =>
   d ? d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "";

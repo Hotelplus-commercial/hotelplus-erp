@@ -73,9 +73,9 @@ function Field({
   className,
 }: {
   label: string;
-  hint?: string;
+  hint?: string | undefined;
   children: React.ReactNode;
-  className?: string;
+  className?: string | undefined;
 }) {
   return (
     <div className={cn("min-w-0 space-y-1.5", className)}>
@@ -94,10 +94,10 @@ function DateField({
   hint,
 }: {
   label: string;
-  value?: Date;
-  onChange: (d?: Date) => void;
-  disabled?: (date: Date) => boolean;
-  hint?: string;
+  value?: Date | undefined;
+  onChange: (d?: Date | undefined) => void;
+  disabled?: ((date: Date) => boolean) | undefined;
+  hint?: string | undefined;
 }) {
   return (
     <Field label={label} hint={hint}>
@@ -151,12 +151,21 @@ function HotelProfilePage() {
     setServices((prev) => prev.map((s) => (s.id === id ? { ...s, ...next } : s)));
 
   const submit = () => {
-    if (!hotelName.trim()) return toast.error("กรุณาระบุชื่อโรงแรม");
-    if (!contractStart || !contractEnd) return toast.error("กรุณาระบุ Contract Start / End");
+    if (!hotelName.trim()) {
+      toast.error("กรุณาระบุชื่อโรงแรม");
+      return;
+    }
+    if (!contractStart || !contractEnd) {
+      toast.error("กรุณาระบุ Contract Start / End");
+      return;
+    }
     const invalid = services.find(
       (s) => s.periodEnd && contractEnd && s.periodEnd.getTime() > contractEnd.getTime(),
     );
-    if (invalid) return toast.error("Period End ต้องไม่เกิน Contract End");
+    if (invalid) {
+      toast.error("Period End ต้องไม่เกิน Contract End");
+      return;
+    }
     toast.success(`บันทึกโปรไฟล์ ${hotelName} เรียบร้อย`, {
       description: `${services.length} รูปแบบการให้บริการ · สถานะ ${sm.label}`,
     });
