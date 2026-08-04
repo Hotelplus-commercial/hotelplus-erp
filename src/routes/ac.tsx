@@ -1,9 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { ModuleView } from "@/components/erp-ui";
+import { ModuleLayout } from "@/components/hotel/module-layout";
 import { getModule } from "@/lib/erp-data";
 
 const mod = getModule("ac");
+
+export const acTabs = [
+  { label: "Overview", to: "/ac" },
+  { label: "Hotel Profile", to: "/ac/hotel-profile" },
+  { label: "ต้นทุนค่าระบบ", to: "/ac/system-cost" },
+];
 
 export const Route = createFileRoute("/ac")({
   head: () => ({
@@ -14,5 +20,5 @@ export const Route = createFileRoute("/ac")({
       { property: "og:description", content: mod.description },
     ],
   }),
-  component: () => <ModuleView module={mod} />,
+  component: () => <ModuleLayout tabs={acTabs} />,
 });
