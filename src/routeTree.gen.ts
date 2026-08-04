@@ -10,33 +10,141 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AcRouteImport } from './routes/ac'
+import { Route as AutomationRouteImport } from './routes/automation'
+import { Route as BdRouteImport } from './routes/bd'
+import { Route as HrRouteImport } from './routes/hr'
+import { Route as MarcomRouteImport } from './routes/marcom'
+import { Route as OrmRouteImport } from './routes/orm'
+import { Route as PsRouteImport } from './routes/ps'
+import { Route as SettingsRouteImport } from './routes/settings'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AcRoute = AcRouteImport.update({
+  id: '/ac',
+  path: '/ac',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AutomationRoute = AutomationRouteImport.update({
+  id: '/automation',
+  path: '/automation',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BdRoute = BdRouteImport.update({
+  id: '/bd',
+  path: '/bd',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HrRoute = HrRouteImport.update({
+  id: '/hr',
+  path: '/hr',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MarcomRoute = MarcomRouteImport.update({
+  id: '/marcom',
+  path: '/marcom',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrmRoute = OrmRouteImport.update({
+  id: '/orm',
+  path: '/orm',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PsRoute = PsRouteImport.update({
+  id: '/ps',
+  path: '/ps',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/ac': typeof AcRoute
+  '/automation': typeof AutomationRoute
+  '/bd': typeof BdRoute
+  '/hr': typeof HrRoute
+  '/marcom': typeof MarcomRoute
+  '/orm': typeof OrmRoute
+  '/ps': typeof PsRoute
+  '/settings': typeof SettingsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/ac': typeof AcRoute
+  '/automation': typeof AutomationRoute
+  '/bd': typeof BdRoute
+  '/hr': typeof HrRoute
+  '/marcom': typeof MarcomRoute
+  '/orm': typeof OrmRoute
+  '/ps': typeof PsRoute
+  '/settings': typeof SettingsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/ac': typeof AcRoute
+  '/automation': typeof AutomationRoute
+  '/bd': typeof BdRoute
+  '/hr': typeof HrRoute
+  '/marcom': typeof MarcomRoute
+  '/orm': typeof OrmRoute
+  '/ps': typeof PsRoute
+  '/settings': typeof SettingsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/ac'
+    | '/automation'
+    | '/bd'
+    | '/hr'
+    | '/marcom'
+    | '/orm'
+    | '/ps'
+    | '/settings'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/ac'
+    | '/automation'
+    | '/bd'
+    | '/hr'
+    | '/marcom'
+    | '/orm'
+    | '/ps'
+    | '/settings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ac'
+    | '/automation'
+    | '/bd'
+    | '/hr'
+    | '/marcom'
+    | '/orm'
+    | '/ps'
+    | '/settings'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AcRoute: typeof AcRoute
+  AutomationRoute: typeof AutomationRoute
+  BdRoute: typeof BdRoute
+  HrRoute: typeof HrRoute
+  MarcomRoute: typeof MarcomRoute
+  OrmRoute: typeof OrmRoute
+  PsRoute: typeof PsRoute
+  SettingsRoute: typeof SettingsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,22 +156,76 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ac': {
+      id: '/ac'
+      path: '/ac'
+      fullPath: '/ac'
+      preLoaderRoute: typeof AcRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/automation': {
+      id: '/automation'
+      path: '/automation'
+      fullPath: '/automation'
+      preLoaderRoute: typeof AutomationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bd': {
+      id: '/bd'
+      path: '/bd'
+      fullPath: '/bd'
+      preLoaderRoute: typeof BdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/hr': {
+      id: '/hr'
+      path: '/hr'
+      fullPath: '/hr'
+      preLoaderRoute: typeof HrRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/marcom': {
+      id: '/marcom'
+      path: '/marcom'
+      fullPath: '/marcom'
+      preLoaderRoute: typeof MarcomRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/orm': {
+      id: '/orm'
+      path: '/orm'
+      fullPath: '/orm'
+      preLoaderRoute: typeof OrmRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ps': {
+      id: '/ps'
+      path: '/ps'
+      fullPath: '/ps'
+      preLoaderRoute: typeof PsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AcRoute: AcRoute,
+  AutomationRoute: AutomationRoute,
+  BdRoute: BdRoute,
+  HrRoute: HrRoute,
+  MarcomRoute: MarcomRoute,
+  OrmRoute: OrmRoute,
+  PsRoute: PsRoute,
+  SettingsRoute: SettingsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
