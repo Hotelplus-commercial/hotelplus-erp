@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Hotel, LifeBuoy, Settings, LayoutDashboard } from "lucide-react";
+import { Hotel, LifeBuoy, Settings, LayoutDashboard, BuildingIcon } from "lucide-react";
 
 import {
   Sidebar,
@@ -15,6 +15,10 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { modules } from "@/lib/erp-data";
+
+const masterItems = [
+  { title: "Hotel Profile", url: "/hotel-profile", icon: BuildingIcon },
+];
 
 const systemItems = [
   { title: "Configuration", url: "/settings", icon: Settings },
@@ -75,6 +79,24 @@ export function AppSidebar() {
                     <Link to={m.to} className="flex items-center gap-2">
                       <m.icon className="size-4 shrink-0" />
                       <span className="truncate">{m.code} App</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Master data</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {masterItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild isActive={pathname === item.url} tooltip={item.title}>
+                    <Link to={item.url} className="flex items-center gap-2">
+                      <item.icon className="size-4 shrink-0" />
+                      <span className="truncate">{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

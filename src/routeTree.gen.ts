@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AcRouteImport } from './routes/ac'
 import { Route as AutomationRouteImport } from './routes/automation'
 import { Route as BdRouteImport } from './routes/bd'
+import { Route as HotelProfileRouteImport } from './routes/hotel-profile'
 import { Route as HrRouteImport } from './routes/hr'
 import { Route as MarcomRouteImport } from './routes/marcom'
 import { Route as OrmRouteImport } from './routes/orm'
@@ -37,6 +38,11 @@ const AutomationRoute = AutomationRouteImport.update({
 const BdRoute = BdRouteImport.update({
   id: '/bd',
   path: '/bd',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HotelProfileRoute = HotelProfileRouteImport.update({
+  id: '/hotel-profile',
+  path: '/hotel-profile',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HrRoute = HrRouteImport.update({
@@ -70,6 +76,7 @@ export interface FileRoutesByFullPath {
   '/ac': typeof AcRoute
   '/automation': typeof AutomationRoute
   '/bd': typeof BdRoute
+  '/hotel-profile': typeof HotelProfileRoute
   '/hr': typeof HrRoute
   '/marcom': typeof MarcomRoute
   '/orm': typeof OrmRoute
@@ -81,6 +88,7 @@ export interface FileRoutesByTo {
   '/ac': typeof AcRoute
   '/automation': typeof AutomationRoute
   '/bd': typeof BdRoute
+  '/hotel-profile': typeof HotelProfileRoute
   '/hr': typeof HrRoute
   '/marcom': typeof MarcomRoute
   '/orm': typeof OrmRoute
@@ -93,6 +101,7 @@ export interface FileRoutesById {
   '/ac': typeof AcRoute
   '/automation': typeof AutomationRoute
   '/bd': typeof BdRoute
+  '/hotel-profile': typeof HotelProfileRoute
   '/hr': typeof HrRoute
   '/marcom': typeof MarcomRoute
   '/orm': typeof OrmRoute
@@ -106,6 +115,7 @@ export interface FileRouteTypes {
     | '/ac'
     | '/automation'
     | '/bd'
+    | '/hotel-profile'
     | '/hr'
     | '/marcom'
     | '/orm'
@@ -117,6 +127,7 @@ export interface FileRouteTypes {
     | '/ac'
     | '/automation'
     | '/bd'
+    | '/hotel-profile'
     | '/hr'
     | '/marcom'
     | '/orm'
@@ -128,6 +139,7 @@ export interface FileRouteTypes {
     | '/ac'
     | '/automation'
     | '/bd'
+    | '/hotel-profile'
     | '/hr'
     | '/marcom'
     | '/orm'
@@ -140,6 +152,7 @@ export interface RootRouteChildren {
   AcRoute: typeof AcRoute
   AutomationRoute: typeof AutomationRoute
   BdRoute: typeof BdRoute
+  HotelProfileRoute: typeof HotelProfileRoute
   HrRoute: typeof HrRoute
   MarcomRoute: typeof MarcomRoute
   OrmRoute: typeof OrmRoute
@@ -175,6 +188,13 @@ declare module '@tanstack/react-router' {
       path: '/bd'
       fullPath: '/bd'
       preLoaderRoute: typeof BdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/hotel-profile': {
+      id: '/hotel-profile'
+      path: '/hotel-profile'
+      fullPath: '/hotel-profile'
+      preLoaderRoute: typeof HotelProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/hr': {
@@ -220,6 +240,7 @@ const rootRouteChildren: RootRouteChildren = {
   AcRoute: AcRoute,
   AutomationRoute: AutomationRoute,
   BdRoute: BdRoute,
+  HotelProfileRoute: HotelProfileRoute,
   HrRoute: HrRoute,
   MarcomRoute: MarcomRoute,
   OrmRoute: OrmRoute,
