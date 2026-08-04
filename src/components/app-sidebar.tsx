@@ -1,5 +1,13 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Hotel, LifeBuoy, Settings, LayoutDashboard, BuildingIcon } from "lucide-react";
+import {
+  Hotel,
+  LifeBuoy,
+  Settings,
+  LayoutDashboard,
+  BuildingIcon,
+  FileSignature,
+  Server,
+} from "lucide-react";
 
 import {
   Sidebar,
@@ -17,8 +25,11 @@ import {
 import { modules } from "@/lib/erp-data";
 
 const masterItems = [
-  { title: "Hotel Profile", url: "/hotel-profile", icon: BuildingIcon },
+  { title: "Hotel Profile (AC)", url: "/ac/hotel-profile", icon: BuildingIcon },
+  { title: "สัญญา & บริการ (PS)", url: "/ps/contracts", icon: FileSignature },
+  { title: "ต้นทุนค่าระบบ", url: "/system-cost", icon: Server },
 ];
+
 
 const systemItems = [
   { title: "Configuration", url: "/settings", icon: Settings },
