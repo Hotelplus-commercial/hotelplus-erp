@@ -19,6 +19,9 @@ import { Route as MarcomRouteImport } from './routes/marcom'
 import { Route as OrmRouteImport } from './routes/orm'
 import { Route as PsRouteImport } from './routes/ps'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as AcIndexRouteImport } from './routes/ac.index'
+import { Route as AcHotelProfileRouteImport } from './routes/ac.hotel-profile'
+import { Route as AcSystemCostRouteImport } from './routes/ac.system-cost'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -70,10 +73,25 @@ const SettingsRoute = SettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AcIndexRoute = AcIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AcRoute,
+} as any)
+const AcHotelProfileRoute = AcHotelProfileRouteImport.update({
+  id: '/hotel-profile',
+  path: '/hotel-profile',
+  getParentRoute: () => AcRoute,
+} as any)
+const AcSystemCostRoute = AcSystemCostRouteImport.update({
+  id: '/system-cost',
+  path: '/system-cost',
+  getParentRoute: () => AcRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/ac': typeof AcRoute
+  '/ac': typeof AcRouteWithChildren
   '/automation': typeof AutomationRoute
   '/bd': typeof BdRoute
   '/hotel-profile': typeof HotelProfileRoute
@@ -82,10 +100,12 @@ export interface FileRoutesByFullPath {
   '/orm': typeof OrmRoute
   '/ps': typeof PsRoute
   '/settings': typeof SettingsRoute
+  '/ac/hotel-profile': typeof AcHotelProfileRoute
+  '/ac/system-cost': typeof AcSystemCostRoute
+  '/ac/': typeof AcIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/ac': typeof AcRoute
   '/automation': typeof AutomationRoute
   '/bd': typeof BdRoute
   '/hotel-profile': typeof HotelProfileRoute
@@ -94,11 +114,14 @@ export interface FileRoutesByTo {
   '/orm': typeof OrmRoute
   '/ps': typeof PsRoute
   '/settings': typeof SettingsRoute
+  '/ac/hotel-profile': typeof AcHotelProfileRoute
+  '/ac/system-cost': typeof AcSystemCostRoute
+  '/ac': typeof AcIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/ac': typeof AcRoute
+  '/ac': typeof AcRouteWithChildren
   '/automation': typeof AutomationRoute
   '/bd': typeof BdRoute
   '/hotel-profile': typeof HotelProfileRoute
@@ -107,6 +130,9 @@ export interface FileRoutesById {
   '/orm': typeof OrmRoute
   '/ps': typeof PsRoute
   '/settings': typeof SettingsRoute
+  '/ac/hotel-profile': typeof AcHotelProfileRoute
+  '/ac/system-cost': typeof AcSystemCostRoute
+  '/ac/': typeof AcIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -121,10 +147,12 @@ export interface FileRouteTypes {
     | '/orm'
     | '/ps'
     | '/settings'
+    | '/ac/hotel-profile'
+    | '/ac/system-cost'
+    | '/ac/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/ac'
     | '/automation'
     | '/bd'
     | '/hotel-profile'
@@ -133,6 +161,9 @@ export interface FileRouteTypes {
     | '/orm'
     | '/ps'
     | '/settings'
+    | '/ac/hotel-profile'
+    | '/ac/system-cost'
+    | '/ac'
   id:
     | '__root__'
     | '/'
@@ -145,11 +176,14 @@ export interface FileRouteTypes {
     | '/orm'
     | '/ps'
     | '/settings'
+    | '/ac/hotel-profile'
+    | '/ac/system-cost'
+    | '/ac/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AcRoute: typeof AcRoute
+  AcRoute: typeof AcRouteWithChildren
   AutomationRoute: typeof AutomationRoute
   BdRoute: typeof BdRoute
   HotelProfileRoute: typeof HotelProfileRoute
@@ -232,12 +266,47 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ac/': {
+      id: '/ac/'
+      path: '/'
+      fullPath: '/ac/'
+      preLoaderRoute: typeof AcIndexRouteImport
+      parentRoute: typeof AcRoute
+    }
+    '/ac/hotel-profile': {
+      id: '/ac/hotel-profile'
+      path: '/hotel-profile'
+      fullPath: '/ac/hotel-profile'
+      preLoaderRoute: typeof AcHotelProfileRouteImport
+      parentRoute: typeof AcRoute
+    }
+    '/ac/system-cost': {
+      id: '/ac/system-cost'
+      path: '/system-cost'
+      fullPath: '/ac/system-cost'
+      preLoaderRoute: typeof AcSystemCostRouteImport
+      parentRoute: typeof AcRoute
+    }
   }
 }
 
+interface AcRouteChildren {
+  AcHotelProfileRoute: typeof AcHotelProfileRoute
+  AcSystemCostRoute: typeof AcSystemCostRoute
+  AcIndexRoute: typeof AcIndexRoute
+}
+
+const AcRouteChildren: AcRouteChildren = {
+  AcHotelProfileRoute: AcHotelProfileRoute,
+  AcSystemCostRoute: AcSystemCostRoute,
+  AcIndexRoute: AcIndexRoute,
+}
+
+const AcRouteWithChildren = AcRoute._addFileChildren(AcRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AcRoute: AcRoute,
+  AcRoute: AcRouteWithChildren,
   AutomationRoute: AutomationRoute,
   BdRoute: BdRoute,
   HotelProfileRoute: HotelProfileRoute,
