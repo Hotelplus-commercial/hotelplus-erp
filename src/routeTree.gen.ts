@@ -17,6 +17,7 @@ import { Route as HrRouteImport } from './routes/hr'
 import { Route as MarcomRouteImport } from './routes/marcom'
 import { Route as OrmRouteImport } from './routes/orm'
 import { Route as PsRouteImport } from './routes/ps'
+import { Route as SettingsRouteImport } from './routes/settings'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -58,6 +59,11 @@ const PsRoute = PsRouteImport.update({
   path: '/ps',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -68,6 +74,7 @@ export interface FileRoutesByFullPath {
   '/marcom': typeof MarcomRoute
   '/orm': typeof OrmRoute
   '/ps': typeof PsRoute
+  '/settings': typeof SettingsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -78,6 +85,7 @@ export interface FileRoutesByTo {
   '/marcom': typeof MarcomRoute
   '/orm': typeof OrmRoute
   '/ps': typeof PsRoute
+  '/settings': typeof SettingsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -89,13 +97,31 @@ export interface FileRoutesById {
   '/marcom': typeof MarcomRoute
   '/orm': typeof OrmRoute
   '/ps': typeof PsRoute
+  '/settings': typeof SettingsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/ac' | '/automation' | '/bd' | '/hr' | '/marcom' | '/orm' | '/ps'
+    | '/'
+    | '/ac'
+    | '/automation'
+    | '/bd'
+    | '/hr'
+    | '/marcom'
+    | '/orm'
+    | '/ps'
+    | '/settings'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/ac' | '/automation' | '/bd' | '/hr' | '/marcom' | '/orm' | '/ps'
+  to:
+    | '/'
+    | '/ac'
+    | '/automation'
+    | '/bd'
+    | '/hr'
+    | '/marcom'
+    | '/orm'
+    | '/ps'
+    | '/settings'
   id:
     | '__root__'
     | '/'
@@ -106,6 +132,7 @@ export interface FileRouteTypes {
     | '/marcom'
     | '/orm'
     | '/ps'
+    | '/settings'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -117,6 +144,7 @@ export interface RootRouteChildren {
   MarcomRoute: typeof MarcomRoute
   OrmRoute: typeof OrmRoute
   PsRoute: typeof PsRoute
+  SettingsRoute: typeof SettingsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -177,6 +205,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -189,6 +224,7 @@ const rootRouteChildren: RootRouteChildren = {
   MarcomRoute: MarcomRoute,
   OrmRoute: OrmRoute,
   PsRoute: PsRoute,
+  SettingsRoute: SettingsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
