@@ -19,9 +19,13 @@ import { Route as MarcomRouteImport } from './routes/marcom'
 import { Route as OrmRouteImport } from './routes/orm'
 import { Route as PsRouteImport } from './routes/ps'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as SystemCostRouteImport } from './routes/system-cost'
 import { Route as AcIndexRouteImport } from './routes/ac.index'
 import { Route as AcHotelProfileRouteImport } from './routes/ac.hotel-profile'
 import { Route as AcSystemCostRouteImport } from './routes/ac.system-cost'
+import { Route as PsIndexRouteImport } from './routes/ps.index'
+import { Route as PsContractsRouteImport } from './routes/ps.contracts'
+import { Route as PsSystemCostRouteImport } from './routes/ps.system-cost'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -73,6 +77,11 @@ const SettingsRoute = SettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SystemCostRoute = SystemCostRouteImport.update({
+  id: '/system-cost',
+  path: '/system-cost',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AcIndexRoute = AcIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -88,6 +97,21 @@ const AcSystemCostRoute = AcSystemCostRouteImport.update({
   path: '/system-cost',
   getParentRoute: () => AcRoute,
 } as any)
+const PsIndexRoute = PsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PsRoute,
+} as any)
+const PsContractsRoute = PsContractsRouteImport.update({
+  id: '/contracts',
+  path: '/contracts',
+  getParentRoute: () => PsRoute,
+} as any)
+const PsSystemCostRoute = PsSystemCostRouteImport.update({
+  id: '/system-cost',
+  path: '/system-cost',
+  getParentRoute: () => PsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -98,11 +122,15 @@ export interface FileRoutesByFullPath {
   '/hr': typeof HrRoute
   '/marcom': typeof MarcomRoute
   '/orm': typeof OrmRoute
-  '/ps': typeof PsRoute
+  '/ps': typeof PsRouteWithChildren
   '/settings': typeof SettingsRoute
+  '/system-cost': typeof SystemCostRoute
   '/ac/hotel-profile': typeof AcHotelProfileRoute
   '/ac/system-cost': typeof AcSystemCostRoute
+  '/ps/contracts': typeof PsContractsRoute
+  '/ps/system-cost': typeof PsSystemCostRoute
   '/ac/': typeof AcIndexRoute
+  '/ps/': typeof PsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -112,11 +140,14 @@ export interface FileRoutesByTo {
   '/hr': typeof HrRoute
   '/marcom': typeof MarcomRoute
   '/orm': typeof OrmRoute
-  '/ps': typeof PsRoute
   '/settings': typeof SettingsRoute
+  '/system-cost': typeof SystemCostRoute
   '/ac/hotel-profile': typeof AcHotelProfileRoute
   '/ac/system-cost': typeof AcSystemCostRoute
+  '/ps/contracts': typeof PsContractsRoute
+  '/ps/system-cost': typeof PsSystemCostRoute
   '/ac': typeof AcIndexRoute
+  '/ps': typeof PsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -128,11 +159,15 @@ export interface FileRoutesById {
   '/hr': typeof HrRoute
   '/marcom': typeof MarcomRoute
   '/orm': typeof OrmRoute
-  '/ps': typeof PsRoute
+  '/ps': typeof PsRouteWithChildren
   '/settings': typeof SettingsRoute
+  '/system-cost': typeof SystemCostRoute
   '/ac/hotel-profile': typeof AcHotelProfileRoute
   '/ac/system-cost': typeof AcSystemCostRoute
+  '/ps/contracts': typeof PsContractsRoute
+  '/ps/system-cost': typeof PsSystemCostRoute
   '/ac/': typeof AcIndexRoute
+  '/ps/': typeof PsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -147,9 +182,13 @@ export interface FileRouteTypes {
     | '/orm'
     | '/ps'
     | '/settings'
+    | '/system-cost'
     | '/ac/hotel-profile'
     | '/ac/system-cost'
+    | '/ps/contracts'
+    | '/ps/system-cost'
     | '/ac/'
+    | '/ps/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -159,11 +198,14 @@ export interface FileRouteTypes {
     | '/hr'
     | '/marcom'
     | '/orm'
-    | '/ps'
     | '/settings'
+    | '/system-cost'
     | '/ac/hotel-profile'
     | '/ac/system-cost'
+    | '/ps/contracts'
+    | '/ps/system-cost'
     | '/ac'
+    | '/ps'
   id:
     | '__root__'
     | '/'
@@ -176,9 +218,13 @@ export interface FileRouteTypes {
     | '/orm'
     | '/ps'
     | '/settings'
+    | '/system-cost'
     | '/ac/hotel-profile'
     | '/ac/system-cost'
+    | '/ps/contracts'
+    | '/ps/system-cost'
     | '/ac/'
+    | '/ps/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -190,8 +236,9 @@ export interface RootRouteChildren {
   HrRoute: typeof HrRoute
   MarcomRoute: typeof MarcomRoute
   OrmRoute: typeof OrmRoute
-  PsRoute: typeof PsRoute
+  PsRoute: typeof PsRouteWithChildren
   SettingsRoute: typeof SettingsRoute
+  SystemCostRoute: typeof SystemCostRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -266,6 +313,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/system-cost': {
+      id: '/system-cost'
+      path: '/system-cost'
+      fullPath: '/system-cost'
+      preLoaderRoute: typeof SystemCostRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/ac/': {
       id: '/ac/'
       path: '/'
@@ -287,6 +341,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AcSystemCostRouteImport
       parentRoute: typeof AcRoute
     }
+    '/ps/': {
+      id: '/ps/'
+      path: '/'
+      fullPath: '/ps/'
+      preLoaderRoute: typeof PsIndexRouteImport
+      parentRoute: typeof PsRoute
+    }
+    '/ps/contracts': {
+      id: '/ps/contracts'
+      path: '/contracts'
+      fullPath: '/ps/contracts'
+      preLoaderRoute: typeof PsContractsRouteImport
+      parentRoute: typeof PsRoute
+    }
+    '/ps/system-cost': {
+      id: '/ps/system-cost'
+      path: '/system-cost'
+      fullPath: '/ps/system-cost'
+      preLoaderRoute: typeof PsSystemCostRouteImport
+      parentRoute: typeof PsRoute
+    }
   }
 }
 
@@ -304,6 +379,20 @@ const AcRouteChildren: AcRouteChildren = {
 
 const AcRouteWithChildren = AcRoute._addFileChildren(AcRouteChildren)
 
+interface PsRouteChildren {
+  PsContractsRoute: typeof PsContractsRoute
+  PsSystemCostRoute: typeof PsSystemCostRoute
+  PsIndexRoute: typeof PsIndexRoute
+}
+
+const PsRouteChildren: PsRouteChildren = {
+  PsContractsRoute: PsContractsRoute,
+  PsSystemCostRoute: PsSystemCostRoute,
+  PsIndexRoute: PsIndexRoute,
+}
+
+const PsRouteWithChildren = PsRoute._addFileChildren(PsRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AcRoute: AcRouteWithChildren,
@@ -313,8 +402,9 @@ const rootRouteChildren: RootRouteChildren = {
   HrRoute: HrRoute,
   MarcomRoute: MarcomRoute,
   OrmRoute: OrmRoute,
-  PsRoute: PsRoute,
+  PsRoute: PsRouteWithChildren,
   SettingsRoute: SettingsRoute,
+  SystemCostRoute: SystemCostRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
