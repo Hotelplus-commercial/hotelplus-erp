@@ -46,6 +46,7 @@ import { Route as BdQuotationsQuoteIdRouteImport } from './routes/bd.quotations.
 import { Route as BdQuotesIndexRouteImport } from './routes/bd.quotes.index'
 import { Route as BdQuotesQuoteIdRouteImport } from './routes/bd.quotes.$quoteId'
 import { Route as BdQuotesLifecycleRouteImport } from './routes/bd.quotes.lifecycle'
+import { Route as PsTemplatesIndexRouteImport } from './routes/ps.templates.index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -232,6 +233,11 @@ const BdQuotesLifecycleRoute = BdQuotesLifecycleRouteImport.update({
   path: '/lifecycle',
   getParentRoute: () => BdQuotesRoute,
 } as any)
+const PsTemplatesIndexRoute = PsTemplatesIndexRouteImport.update({
+  id: '/templates/',
+  path: '/templates/',
+  getParentRoute: () => PsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -271,6 +277,7 @@ export interface FileRoutesByFullPath {
   '/bd/quotes/lifecycle': typeof BdQuotesLifecycleRoute
   '/bd/quotations/': typeof BdQuotationsIndexRoute
   '/bd/quotes/': typeof BdQuotesIndexRoute
+  '/ps/templates/': typeof PsTemplatesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -305,6 +312,7 @@ export interface FileRoutesByTo {
   '/bd/quotes/lifecycle': typeof BdQuotesLifecycleRoute
   '/bd/quotations': typeof BdQuotationsIndexRoute
   '/bd/quotes': typeof BdQuotesIndexRoute
+  '/ps/templates': typeof PsTemplatesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -345,6 +353,7 @@ export interface FileRoutesById {
   '/bd/quotes/lifecycle': typeof BdQuotesLifecycleRoute
   '/bd/quotations/': typeof BdQuotationsIndexRoute
   '/bd/quotes/': typeof BdQuotesIndexRoute
+  '/ps/templates/': typeof PsTemplatesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -386,6 +395,7 @@ export interface FileRouteTypes {
     | '/bd/quotes/lifecycle'
     | '/bd/quotations/'
     | '/bd/quotes/'
+    | '/ps/templates/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -420,6 +430,7 @@ export interface FileRouteTypes {
     | '/bd/quotes/lifecycle'
     | '/bd/quotations'
     | '/bd/quotes'
+    | '/ps/templates'
   id:
     | '__root__'
     | '/'
@@ -459,6 +470,7 @@ export interface FileRouteTypes {
     | '/bd/quotes/lifecycle'
     | '/bd/quotations/'
     | '/bd/quotes/'
+    | '/ps/templates/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -737,6 +749,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BdQuotesLifecycleRouteImport
       parentRoute: typeof BdQuotesRoute
     }
+    '/ps/templates/': {
+      id: '/ps/templates/'
+      path: '/templates'
+      fullPath: '/ps/templates/'
+      preLoaderRoute: typeof PsTemplatesIndexRouteImport
+      parentRoute: typeof PsRoute
+    }
   }
 }
 
@@ -831,6 +850,7 @@ interface PsRouteChildren {
   PsProductionRoute: typeof PsProductionRoute
   PsSystemCostRoute: typeof PsSystemCostRoute
   PsIndexRoute: typeof PsIndexRoute
+  PsTemplatesIndexRoute: typeof PsTemplatesIndexRoute
 }
 
 const PsRouteChildren: PsRouteChildren = {
@@ -840,6 +860,7 @@ const PsRouteChildren: PsRouteChildren = {
   PsProductionRoute: PsProductionRoute,
   PsSystemCostRoute: PsSystemCostRoute,
   PsIndexRoute: PsIndexRoute,
+  PsTemplatesIndexRoute: PsTemplatesIndexRoute,
 }
 
 const PsRouteWithChildren = PsRoute._addFileChildren(PsRouteChildren)
