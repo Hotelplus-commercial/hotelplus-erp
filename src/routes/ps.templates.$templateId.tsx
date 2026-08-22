@@ -84,7 +84,7 @@ function TemplateEditor() {
           <div className="flex flex-wrap items-center gap-2">
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px]">{tpl.template_id}</code>
             <Chip tone="success">{active?.version_label} active</Chip>
-            {draft && <Chip tone="warning">{draft.version_label} draft</Chip>}
+            {draft && <Chip tone="warn">{draft.version_label} draft</Chip>}
           </div>
           <h1 className="mt-1 font-display text-2xl font-bold tracking-tight">{tpl.name}</h1>
         </div>
@@ -157,7 +157,7 @@ function TemplateEditor() {
             <ul className="space-y-2">
               {tpl.versions.map((v) => (
                 <li key={v.version_id} className="flex flex-wrap items-center gap-2 border-b pb-2 text-xs last:border-0">
-                  <Chip tone={v.status === "active" ? "success" : v.status === "draft" ? "warning" : "muted"}>
+                  <Chip tone={v.status === "active" ? "success" : v.status === "draft" ? "warn" : "muted"}>
                     {v.version_label} · {v.status}
                   </Chip>
                   <span className="text-muted-foreground">{v.changelog ?? "—"}</span>

@@ -19,7 +19,7 @@ export const Route = createFileRoute("/ps/templates/")({
   component: TemplatesDashboard,
 });
 
-const statusTone = (s: string) => (s === "active" ? "success" : s === "draft" ? "warning" : "muted") as const;
+const statusTone = (s: string): "success" | "warn" | "muted" => (s === "active" ? "success" : s === "draft" ? "warn" : "muted");
 
 function TemplateCard({ t }: { t: Template }) {
   const { activeVersion, draftVersion } = usePsTemplates();
@@ -33,7 +33,7 @@ function TemplateCard({ t }: { t: Template }) {
           <div className="flex flex-wrap items-center gap-2">
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px]">{t.template_id}</code>
             <Chip tone={statusTone(active?.status ?? "muted")}>{active?.version_label ?? "—"} active</Chip>
-            {draft && <Chip tone="warning">{draft.version_label} draft</Chip>}
+            {draft && <Chip tone="warn">{draft.version_label} draft</Chip>}
           </div>
           <p className="mt-1 font-display text-sm font-semibold">{t.name}</p>
           <p className="text-xs text-muted-foreground">
@@ -104,7 +104,7 @@ function TemplatesDashboard() {
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Kpi label="Quote templates" value={templates.filter((t) => t.template_type === "quote").length} />
         <Kpi label="Contract templates" value={templates.filter((t) => t.template_type === "contract").length} />
-        <Kpi label="Draft รอ activate" value={drafts} tone="warning" />
+        <Kpi label="Draft รอ activate" value={drafts} />
         <Kpi label="เอกสารที่ออกแล้ว" value={docs} />
       </div>
 
