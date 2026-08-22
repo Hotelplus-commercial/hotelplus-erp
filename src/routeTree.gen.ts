@@ -27,6 +27,7 @@ import { Route as BdIndexRouteImport } from './routes/bd.index'
 import { Route as BdDealsRouteImport } from './routes/bd.deals'
 import { Route as BdQuotationsRouteImport } from './routes/bd.quotations'
 import { Route as PsIndexRouteImport } from './routes/ps.index'
+import { Route as PsContractWizardRouteImport } from './routes/ps.contract-wizard'
 import { Route as PsContractsRouteImport } from './routes/ps.contracts'
 import { Route as PsSystemCostRouteImport } from './routes/ps.system-cost'
 import { Route as BdQuotationsIndexRouteImport } from './routes/bd.quotations.index'
@@ -122,6 +123,11 @@ const PsIndexRoute = PsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => PsRoute,
 } as any)
+const PsContractWizardRoute = PsContractWizardRouteImport.update({
+  id: '/contract-wizard',
+  path: '/contract-wizard',
+  getParentRoute: () => PsRoute,
+} as any)
 const PsContractsRoute = PsContractsRouteImport.update({
   id: '/contracts',
   path: '/contracts',
@@ -159,6 +165,7 @@ export interface FileRoutesByFullPath {
   '/ac/system-cost': typeof AcSystemCostRoute
   '/bd/deals': typeof BdDealsRoute
   '/bd/quotations': typeof BdQuotationsRouteWithChildren
+  '/ps/contract-wizard': typeof PsContractWizardRoute
   '/ps/contracts': typeof PsContractsRoute
   '/ps/system-cost': typeof PsSystemCostRoute
   '/ac/': typeof AcIndexRoute
@@ -179,6 +186,7 @@ export interface FileRoutesByTo {
   '/ac/hotel-profile': typeof AcHotelProfileRoute
   '/ac/system-cost': typeof AcSystemCostRoute
   '/bd/deals': typeof BdDealsRoute
+  '/ps/contract-wizard': typeof PsContractWizardRoute
   '/ps/contracts': typeof PsContractsRoute
   '/ps/system-cost': typeof PsSystemCostRoute
   '/ac': typeof AcIndexRoute
@@ -204,6 +212,7 @@ export interface FileRoutesById {
   '/ac/system-cost': typeof AcSystemCostRoute
   '/bd/deals': typeof BdDealsRoute
   '/bd/quotations': typeof BdQuotationsRouteWithChildren
+  '/ps/contract-wizard': typeof PsContractWizardRoute
   '/ps/contracts': typeof PsContractsRoute
   '/ps/system-cost': typeof PsSystemCostRoute
   '/ac/': typeof AcIndexRoute
@@ -230,6 +239,7 @@ export interface FileRouteTypes {
     | '/ac/system-cost'
     | '/bd/deals'
     | '/bd/quotations'
+    | '/ps/contract-wizard'
     | '/ps/contracts'
     | '/ps/system-cost'
     | '/ac/'
@@ -250,6 +260,7 @@ export interface FileRouteTypes {
     | '/ac/hotel-profile'
     | '/ac/system-cost'
     | '/bd/deals'
+    | '/ps/contract-wizard'
     | '/ps/contracts'
     | '/ps/system-cost'
     | '/ac'
@@ -274,6 +285,7 @@ export interface FileRouteTypes {
     | '/ac/system-cost'
     | '/bd/deals'
     | '/bd/quotations'
+    | '/ps/contract-wizard'
     | '/ps/contracts'
     | '/ps/system-cost'
     | '/ac/'
@@ -425,6 +437,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PsIndexRouteImport
       parentRoute: typeof PsRoute
     }
+    '/ps/contract-wizard': {
+      id: '/ps/contract-wizard'
+      path: '/contract-wizard'
+      fullPath: '/ps/contract-wizard'
+      preLoaderRoute: typeof PsContractWizardRouteImport
+      parentRoute: typeof PsRoute
+    }
     '/ps/contracts': {
       id: '/ps/contracts'
       path: '/contracts'
@@ -499,12 +518,14 @@ const BdRouteChildren: BdRouteChildren = {
 const BdRouteWithChildren = BdRoute._addFileChildren(BdRouteChildren)
 
 interface PsRouteChildren {
+  PsContractWizardRoute: typeof PsContractWizardRoute
   PsContractsRoute: typeof PsContractsRoute
   PsSystemCostRoute: typeof PsSystemCostRoute
   PsIndexRoute: typeof PsIndexRoute
 }
 
 const PsRouteChildren: PsRouteChildren = {
+  PsContractWizardRoute: PsContractWizardRoute,
   PsContractsRoute: PsContractsRoute,
   PsSystemCostRoute: PsSystemCostRoute,
   PsIndexRoute: PsIndexRoute,
