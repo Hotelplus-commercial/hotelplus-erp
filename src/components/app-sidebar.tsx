@@ -28,13 +28,23 @@ import {
 import { modules } from "@/lib/erp-data";
 
 const moduleChildren: Record<string, { title: string; url: string; icon: typeof BuildingIcon }[]> = {
+  bd: [
+    { title: "Deals (Pipedrive)", url: "/bd/deals", icon: Handshake },
+    { title: "ใบเสนอราคา", url: "/bd/quotations", icon: FileText },
+  ],
   ac: [
     { title: "Hotel Profile", url: "/ac/hotel-profile", icon: BuildingIcon },
     { title: "ต้นทุนค่าระบบ", url: "/ac/system-cost", icon: Server },
+    { title: "Product Catalog", url: "/ac/products", icon: Package },
+    { title: "Customer Master", url: "/ac/customers", icon: Users },
+    { title: "Invoice & ใบเสร็จ", url: "/ac/billing", icon: Receipt },
   ],
   ps: [
     { title: "PS Dashboard", url: "/ps", icon: LayoutDashboard },
     { title: "สัญญา & บริการ", url: "/ps/contracts", icon: FileSignature },
+    { title: "สร้างสัญญา (Wizard)", url: "/ps/contract-wizard", icon: FileSignature },
+    { title: "Contract Dashboard", url: "/ps/contract-dashboard", icon: LayoutDashboard },
+    { title: "Production Report", url: "/ps/production", icon: BarChart3 },
   ],
 };
 
