@@ -16,6 +16,7 @@ import { AppShell } from "@/components/app-shell";
 import { HotelStoreProvider } from "@/lib/hotel-store";
 import { CrmStoreProvider } from "@/lib/crm-store";
 import { BdStoreProvider } from "@/lib/bd-store";
+import { PsTemplateProvider } from "@/lib/ps-templates";
 
 
 function NotFoundComponent() {
@@ -137,11 +138,13 @@ function RootComponent() {
       <HotelStoreProvider>
         <CrmStoreProvider>
           <BdStoreProvider>
+          <PsTemplateProvider>
           <Toaster />
           <AppShell>
             {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
             <Outlet />
           </AppShell>
+          </PsTemplateProvider>
         </BdStoreProvider>
           </CrmStoreProvider>
       </HotelStoreProvider>
