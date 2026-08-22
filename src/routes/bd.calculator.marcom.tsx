@@ -144,6 +144,7 @@ function MarcomCalculator() {
         onetime_total: totals.onetime,
         first_month_total: totals.first,
       },
+      skus: marcomSkus(picked),
     });
     toast.success(`สร้างใบเสนอราคา ${id} (status: Not sent)`);
     navigate({ to: "/bd/quotes" });

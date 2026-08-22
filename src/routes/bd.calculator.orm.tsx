@@ -92,6 +92,7 @@ function OrmCalculator() {
         ota_percentage: Number(otaPct) || 0,
       },
       calculator_output: output,
+      skus: ormSkus(output.packages, selected),
     });
     toast.success(`สร้างใบเสนอราคา ${id} (status: Not sent)`);
     navigate({ to: "/bd/quotes" });
