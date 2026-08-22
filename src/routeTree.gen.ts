@@ -21,11 +21,23 @@ import { Route as PsRouteImport } from './routes/ps'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SystemCostRouteImport } from './routes/system-cost'
 import { Route as AcIndexRouteImport } from './routes/ac.index'
+import { Route as AcBillingRouteImport } from './routes/ac.billing'
+import { Route as AcCustomersRouteImport } from './routes/ac.customers'
 import { Route as AcHotelProfileRouteImport } from './routes/ac.hotel-profile'
+import { Route as AcProductsRouteImport } from './routes/ac.products'
 import { Route as AcSystemCostRouteImport } from './routes/ac.system-cost'
+import { Route as BdIndexRouteImport } from './routes/bd.index'
+import { Route as BdDealsRouteImport } from './routes/bd.deals'
+import { Route as BdQuotationsRouteImport } from './routes/bd.quotations'
+import { Route as LTokenRouteImport } from './routes/l.$token'
 import { Route as PsIndexRouteImport } from './routes/ps.index'
+import { Route as PsContractDashboardRouteImport } from './routes/ps.contract-dashboard'
+import { Route as PsContractWizardRouteImport } from './routes/ps.contract-wizard'
 import { Route as PsContractsRouteImport } from './routes/ps.contracts'
+import { Route as PsProductionRouteImport } from './routes/ps.production'
 import { Route as PsSystemCostRouteImport } from './routes/ps.system-cost'
+import { Route as BdQuotationsIndexRouteImport } from './routes/bd.quotations.index'
+import { Route as BdQuotationsQuoteIdRouteImport } from './routes/bd.quotations.$quoteId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -87,9 +99,24 @@ const AcIndexRoute = AcIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AcRoute,
 } as any)
+const AcBillingRoute = AcBillingRouteImport.update({
+  id: '/billing',
+  path: '/billing',
+  getParentRoute: () => AcRoute,
+} as any)
+const AcCustomersRoute = AcCustomersRouteImport.update({
+  id: '/customers',
+  path: '/customers',
+  getParentRoute: () => AcRoute,
+} as any)
 const AcHotelProfileRoute = AcHotelProfileRouteImport.update({
   id: '/hotel-profile',
   path: '/hotel-profile',
+  getParentRoute: () => AcRoute,
+} as any)
+const AcProductsRoute = AcProductsRouteImport.update({
+  id: '/products',
+  path: '/products',
   getParentRoute: () => AcRoute,
 } as any)
 const AcSystemCostRoute = AcSystemCostRouteImport.update({
@@ -97,9 +124,39 @@ const AcSystemCostRoute = AcSystemCostRouteImport.update({
   path: '/system-cost',
   getParentRoute: () => AcRoute,
 } as any)
+const BdIndexRoute = BdIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => BdRoute,
+} as any)
+const BdDealsRoute = BdDealsRouteImport.update({
+  id: '/deals',
+  path: '/deals',
+  getParentRoute: () => BdRoute,
+} as any)
+const BdQuotationsRoute = BdQuotationsRouteImport.update({
+  id: '/quotations',
+  path: '/quotations',
+  getParentRoute: () => BdRoute,
+} as any)
+const LTokenRoute = LTokenRouteImport.update({
+  id: '/l/$token',
+  path: '/l/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PsIndexRoute = PsIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => PsRoute,
+} as any)
+const PsContractDashboardRoute = PsContractDashboardRouteImport.update({
+  id: '/contract-dashboard',
+  path: '/contract-dashboard',
+  getParentRoute: () => PsRoute,
+} as any)
+const PsContractWizardRoute = PsContractWizardRouteImport.update({
+  id: '/contract-wizard',
+  path: '/contract-wizard',
   getParentRoute: () => PsRoute,
 } as any)
 const PsContractsRoute = PsContractsRouteImport.update({
@@ -107,17 +164,32 @@ const PsContractsRoute = PsContractsRouteImport.update({
   path: '/contracts',
   getParentRoute: () => PsRoute,
 } as any)
+const PsProductionRoute = PsProductionRouteImport.update({
+  id: '/production',
+  path: '/production',
+  getParentRoute: () => PsRoute,
+} as any)
 const PsSystemCostRoute = PsSystemCostRouteImport.update({
   id: '/system-cost',
   path: '/system-cost',
   getParentRoute: () => PsRoute,
+} as any)
+const BdQuotationsIndexRoute = BdQuotationsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => BdQuotationsRoute,
+} as any)
+const BdQuotationsQuoteIdRoute = BdQuotationsQuoteIdRouteImport.update({
+  id: '/$quoteId',
+  path: '/$quoteId',
+  getParentRoute: () => BdQuotationsRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/ac': typeof AcRouteWithChildren
   '/automation': typeof AutomationRoute
-  '/bd': typeof BdRoute
+  '/bd': typeof BdRouteWithChildren
   '/hotel-profile': typeof HotelProfileRoute
   '/hr': typeof HrRoute
   '/marcom': typeof MarcomRoute
@@ -125,36 +197,58 @@ export interface FileRoutesByFullPath {
   '/ps': typeof PsRouteWithChildren
   '/settings': typeof SettingsRoute
   '/system-cost': typeof SystemCostRoute
+  '/ac/billing': typeof AcBillingRoute
+  '/ac/customers': typeof AcCustomersRoute
   '/ac/hotel-profile': typeof AcHotelProfileRoute
+  '/ac/products': typeof AcProductsRoute
   '/ac/system-cost': typeof AcSystemCostRoute
+  '/bd/deals': typeof BdDealsRoute
+  '/bd/quotations': typeof BdQuotationsRouteWithChildren
+  '/l/$token': typeof LTokenRoute
+  '/ps/contract-dashboard': typeof PsContractDashboardRoute
+  '/ps/contract-wizard': typeof PsContractWizardRoute
   '/ps/contracts': typeof PsContractsRoute
+  '/ps/production': typeof PsProductionRoute
   '/ps/system-cost': typeof PsSystemCostRoute
   '/ac/': typeof AcIndexRoute
+  '/bd/': typeof BdIndexRoute
   '/ps/': typeof PsIndexRoute
+  '/bd/quotations/$quoteId': typeof BdQuotationsQuoteIdRoute
+  '/bd/quotations/': typeof BdQuotationsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/automation': typeof AutomationRoute
-  '/bd': typeof BdRoute
   '/hotel-profile': typeof HotelProfileRoute
   '/hr': typeof HrRoute
   '/marcom': typeof MarcomRoute
   '/orm': typeof OrmRoute
   '/settings': typeof SettingsRoute
   '/system-cost': typeof SystemCostRoute
+  '/ac/billing': typeof AcBillingRoute
+  '/ac/customers': typeof AcCustomersRoute
   '/ac/hotel-profile': typeof AcHotelProfileRoute
+  '/ac/products': typeof AcProductsRoute
   '/ac/system-cost': typeof AcSystemCostRoute
+  '/bd/deals': typeof BdDealsRoute
+  '/l/$token': typeof LTokenRoute
+  '/ps/contract-dashboard': typeof PsContractDashboardRoute
+  '/ps/contract-wizard': typeof PsContractWizardRoute
   '/ps/contracts': typeof PsContractsRoute
+  '/ps/production': typeof PsProductionRoute
   '/ps/system-cost': typeof PsSystemCostRoute
   '/ac': typeof AcIndexRoute
+  '/bd': typeof BdIndexRoute
   '/ps': typeof PsIndexRoute
+  '/bd/quotations/$quoteId': typeof BdQuotationsQuoteIdRoute
+  '/bd/quotations': typeof BdQuotationsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/ac': typeof AcRouteWithChildren
   '/automation': typeof AutomationRoute
-  '/bd': typeof BdRoute
+  '/bd': typeof BdRouteWithChildren
   '/hotel-profile': typeof HotelProfileRoute
   '/hr': typeof HrRoute
   '/marcom': typeof MarcomRoute
@@ -162,12 +256,24 @@ export interface FileRoutesById {
   '/ps': typeof PsRouteWithChildren
   '/settings': typeof SettingsRoute
   '/system-cost': typeof SystemCostRoute
+  '/ac/billing': typeof AcBillingRoute
+  '/ac/customers': typeof AcCustomersRoute
   '/ac/hotel-profile': typeof AcHotelProfileRoute
+  '/ac/products': typeof AcProductsRoute
   '/ac/system-cost': typeof AcSystemCostRoute
+  '/bd/deals': typeof BdDealsRoute
+  '/bd/quotations': typeof BdQuotationsRouteWithChildren
+  '/l/$token': typeof LTokenRoute
+  '/ps/contract-dashboard': typeof PsContractDashboardRoute
+  '/ps/contract-wizard': typeof PsContractWizardRoute
   '/ps/contracts': typeof PsContractsRoute
+  '/ps/production': typeof PsProductionRoute
   '/ps/system-cost': typeof PsSystemCostRoute
   '/ac/': typeof AcIndexRoute
+  '/bd/': typeof BdIndexRoute
   '/ps/': typeof PsIndexRoute
+  '/bd/quotations/$quoteId': typeof BdQuotationsQuoteIdRoute
+  '/bd/quotations/': typeof BdQuotationsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -183,29 +289,51 @@ export interface FileRouteTypes {
     | '/ps'
     | '/settings'
     | '/system-cost'
+    | '/ac/billing'
+    | '/ac/customers'
     | '/ac/hotel-profile'
+    | '/ac/products'
     | '/ac/system-cost'
+    | '/bd/deals'
+    | '/bd/quotations'
+    | '/l/$token'
+    | '/ps/contract-dashboard'
+    | '/ps/contract-wizard'
     | '/ps/contracts'
+    | '/ps/production'
     | '/ps/system-cost'
     | '/ac/'
+    | '/bd/'
     | '/ps/'
+    | '/bd/quotations/$quoteId'
+    | '/bd/quotations/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/automation'
-    | '/bd'
     | '/hotel-profile'
     | '/hr'
     | '/marcom'
     | '/orm'
     | '/settings'
     | '/system-cost'
+    | '/ac/billing'
+    | '/ac/customers'
     | '/ac/hotel-profile'
+    | '/ac/products'
     | '/ac/system-cost'
+    | '/bd/deals'
+    | '/l/$token'
+    | '/ps/contract-dashboard'
+    | '/ps/contract-wizard'
     | '/ps/contracts'
+    | '/ps/production'
     | '/ps/system-cost'
     | '/ac'
+    | '/bd'
     | '/ps'
+    | '/bd/quotations/$quoteId'
+    | '/bd/quotations'
   id:
     | '__root__'
     | '/'
@@ -219,19 +347,31 @@ export interface FileRouteTypes {
     | '/ps'
     | '/settings'
     | '/system-cost'
+    | '/ac/billing'
+    | '/ac/customers'
     | '/ac/hotel-profile'
+    | '/ac/products'
     | '/ac/system-cost'
+    | '/bd/deals'
+    | '/bd/quotations'
+    | '/l/$token'
+    | '/ps/contract-dashboard'
+    | '/ps/contract-wizard'
     | '/ps/contracts'
+    | '/ps/production'
     | '/ps/system-cost'
     | '/ac/'
+    | '/bd/'
     | '/ps/'
+    | '/bd/quotations/$quoteId'
+    | '/bd/quotations/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AcRoute: typeof AcRouteWithChildren
   AutomationRoute: typeof AutomationRoute
-  BdRoute: typeof BdRoute
+  BdRoute: typeof BdRouteWithChildren
   HotelProfileRoute: typeof HotelProfileRoute
   HrRoute: typeof HrRoute
   MarcomRoute: typeof MarcomRoute
@@ -239,6 +379,7 @@ export interface RootRouteChildren {
   PsRoute: typeof PsRouteWithChildren
   SettingsRoute: typeof SettingsRoute
   SystemCostRoute: typeof SystemCostRoute
+  LTokenRoute: typeof LTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -327,11 +468,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AcIndexRouteImport
       parentRoute: typeof AcRoute
     }
+    '/ac/billing': {
+      id: '/ac/billing'
+      path: '/billing'
+      fullPath: '/ac/billing'
+      preLoaderRoute: typeof AcBillingRouteImport
+      parentRoute: typeof AcRoute
+    }
+    '/ac/customers': {
+      id: '/ac/customers'
+      path: '/customers'
+      fullPath: '/ac/customers'
+      preLoaderRoute: typeof AcCustomersRouteImport
+      parentRoute: typeof AcRoute
+    }
     '/ac/hotel-profile': {
       id: '/ac/hotel-profile'
       path: '/hotel-profile'
       fullPath: '/ac/hotel-profile'
       preLoaderRoute: typeof AcHotelProfileRouteImport
+      parentRoute: typeof AcRoute
+    }
+    '/ac/products': {
+      id: '/ac/products'
+      path: '/products'
+      fullPath: '/ac/products'
+      preLoaderRoute: typeof AcProductsRouteImport
       parentRoute: typeof AcRoute
     }
     '/ac/system-cost': {
@@ -341,11 +503,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AcSystemCostRouteImport
       parentRoute: typeof AcRoute
     }
+    '/bd/': {
+      id: '/bd/'
+      path: '/'
+      fullPath: '/bd/'
+      preLoaderRoute: typeof BdIndexRouteImport
+      parentRoute: typeof BdRoute
+    }
+    '/bd/deals': {
+      id: '/bd/deals'
+      path: '/deals'
+      fullPath: '/bd/deals'
+      preLoaderRoute: typeof BdDealsRouteImport
+      parentRoute: typeof BdRoute
+    }
+    '/bd/quotations': {
+      id: '/bd/quotations'
+      path: '/quotations'
+      fullPath: '/bd/quotations'
+      preLoaderRoute: typeof BdQuotationsRouteImport
+      parentRoute: typeof BdRoute
+    }
+    '/l/$token': {
+      id: '/l/$token'
+      path: '/l/$token'
+      fullPath: '/l/$token'
+      preLoaderRoute: typeof LTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/ps/': {
       id: '/ps/'
       path: '/'
       fullPath: '/ps/'
       preLoaderRoute: typeof PsIndexRouteImport
+      parentRoute: typeof PsRoute
+    }
+    '/ps/contract-dashboard': {
+      id: '/ps/contract-dashboard'
+      path: '/contract-dashboard'
+      fullPath: '/ps/contract-dashboard'
+      preLoaderRoute: typeof PsContractDashboardRouteImport
+      parentRoute: typeof PsRoute
+    }
+    '/ps/contract-wizard': {
+      id: '/ps/contract-wizard'
+      path: '/contract-wizard'
+      fullPath: '/ps/contract-wizard'
+      preLoaderRoute: typeof PsContractWizardRouteImport
       parentRoute: typeof PsRoute
     }
     '/ps/contracts': {
@@ -355,6 +559,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PsContractsRouteImport
       parentRoute: typeof PsRoute
     }
+    '/ps/production': {
+      id: '/ps/production'
+      path: '/production'
+      fullPath: '/ps/production'
+      preLoaderRoute: typeof PsProductionRouteImport
+      parentRoute: typeof PsRoute
+    }
     '/ps/system-cost': {
       id: '/ps/system-cost'
       path: '/system-cost'
@@ -362,31 +573,85 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PsSystemCostRouteImport
       parentRoute: typeof PsRoute
     }
+    '/bd/quotations/': {
+      id: '/bd/quotations/'
+      path: '/'
+      fullPath: '/bd/quotations/'
+      preLoaderRoute: typeof BdQuotationsIndexRouteImport
+      parentRoute: typeof BdQuotationsRoute
+    }
+    '/bd/quotations/$quoteId': {
+      id: '/bd/quotations/$quoteId'
+      path: '/$quoteId'
+      fullPath: '/bd/quotations/$quoteId'
+      preLoaderRoute: typeof BdQuotationsQuoteIdRouteImport
+      parentRoute: typeof BdQuotationsRoute
+    }
   }
 }
 
 interface AcRouteChildren {
+  AcBillingRoute: typeof AcBillingRoute
+  AcCustomersRoute: typeof AcCustomersRoute
   AcHotelProfileRoute: typeof AcHotelProfileRoute
+  AcProductsRoute: typeof AcProductsRoute
   AcSystemCostRoute: typeof AcSystemCostRoute
   AcIndexRoute: typeof AcIndexRoute
 }
 
 const AcRouteChildren: AcRouteChildren = {
+  AcBillingRoute: AcBillingRoute,
+  AcCustomersRoute: AcCustomersRoute,
   AcHotelProfileRoute: AcHotelProfileRoute,
+  AcProductsRoute: AcProductsRoute,
   AcSystemCostRoute: AcSystemCostRoute,
   AcIndexRoute: AcIndexRoute,
 }
 
 const AcRouteWithChildren = AcRoute._addFileChildren(AcRouteChildren)
 
+interface BdQuotationsRouteChildren {
+  BdQuotationsQuoteIdRoute: typeof BdQuotationsQuoteIdRoute
+  BdQuotationsIndexRoute: typeof BdQuotationsIndexRoute
+}
+
+const BdQuotationsRouteChildren: BdQuotationsRouteChildren = {
+  BdQuotationsQuoteIdRoute: BdQuotationsQuoteIdRoute,
+  BdQuotationsIndexRoute: BdQuotationsIndexRoute,
+}
+
+const BdQuotationsRouteWithChildren = BdQuotationsRoute._addFileChildren(
+  BdQuotationsRouteChildren,
+)
+
+interface BdRouteChildren {
+  BdDealsRoute: typeof BdDealsRoute
+  BdQuotationsRoute: typeof BdQuotationsRouteWithChildren
+  BdIndexRoute: typeof BdIndexRoute
+}
+
+const BdRouteChildren: BdRouteChildren = {
+  BdDealsRoute: BdDealsRoute,
+  BdQuotationsRoute: BdQuotationsRouteWithChildren,
+  BdIndexRoute: BdIndexRoute,
+}
+
+const BdRouteWithChildren = BdRoute._addFileChildren(BdRouteChildren)
+
 interface PsRouteChildren {
+  PsContractDashboardRoute: typeof PsContractDashboardRoute
+  PsContractWizardRoute: typeof PsContractWizardRoute
   PsContractsRoute: typeof PsContractsRoute
+  PsProductionRoute: typeof PsProductionRoute
   PsSystemCostRoute: typeof PsSystemCostRoute
   PsIndexRoute: typeof PsIndexRoute
 }
 
 const PsRouteChildren: PsRouteChildren = {
+  PsContractDashboardRoute: PsContractDashboardRoute,
+  PsContractWizardRoute: PsContractWizardRoute,
   PsContractsRoute: PsContractsRoute,
+  PsProductionRoute: PsProductionRoute,
   PsSystemCostRoute: PsSystemCostRoute,
   PsIndexRoute: PsIndexRoute,
 }
@@ -397,7 +662,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AcRoute: AcRouteWithChildren,
   AutomationRoute: AutomationRoute,
-  BdRoute: BdRoute,
+  BdRoute: BdRouteWithChildren,
   HotelProfileRoute: HotelProfileRoute,
   HrRoute: HrRoute,
   MarcomRoute: MarcomRoute,
@@ -405,6 +670,7 @@ const rootRouteChildren: RootRouteChildren = {
   PsRoute: PsRouteWithChildren,
   SettingsRoute: SettingsRoute,
   SystemCostRoute: SystemCostRoute,
+  LTokenRoute: LTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
