@@ -61,6 +61,7 @@ export type BdQuote = {
     onetime_total?: number;
     first_month_total?: number;
   };
+  skus: SKUEntry[];
   pdf_url: string;
   status: BdStatus;
   expired_at: string | null;
