@@ -21,6 +21,7 @@ import { Route as PsRouteImport } from './routes/ps'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SystemCostRouteImport } from './routes/system-cost'
 import { Route as AcIndexRouteImport } from './routes/ac.index'
+import { Route as AcCustomersRouteImport } from './routes/ac.customers'
 import { Route as AcHotelProfileRouteImport } from './routes/ac.hotel-profile'
 import { Route as AcProductsRouteImport } from './routes/ac.products'
 import { Route as AcSystemCostRouteImport } from './routes/ac.system-cost'
@@ -94,6 +95,11 @@ const SystemCostRoute = SystemCostRouteImport.update({
 const AcIndexRoute = AcIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AcRoute,
+} as any)
+const AcCustomersRoute = AcCustomersRouteImport.update({
+  id: '/customers',
+  path: '/customers',
   getParentRoute: () => AcRoute,
 } as any)
 const AcHotelProfileRoute = AcHotelProfileRouteImport.update({
@@ -179,6 +185,7 @@ export interface FileRoutesByFullPath {
   '/ps': typeof PsRouteWithChildren
   '/settings': typeof SettingsRoute
   '/system-cost': typeof SystemCostRoute
+  '/ac/customers': typeof AcCustomersRoute
   '/ac/hotel-profile': typeof AcHotelProfileRoute
   '/ac/products': typeof AcProductsRoute
   '/ac/system-cost': typeof AcSystemCostRoute
@@ -204,6 +211,7 @@ export interface FileRoutesByTo {
   '/orm': typeof OrmRoute
   '/settings': typeof SettingsRoute
   '/system-cost': typeof SystemCostRoute
+  '/ac/customers': typeof AcCustomersRoute
   '/ac/hotel-profile': typeof AcHotelProfileRoute
   '/ac/products': typeof AcProductsRoute
   '/ac/system-cost': typeof AcSystemCostRoute
@@ -232,6 +240,7 @@ export interface FileRoutesById {
   '/ps': typeof PsRouteWithChildren
   '/settings': typeof SettingsRoute
   '/system-cost': typeof SystemCostRoute
+  '/ac/customers': typeof AcCustomersRoute
   '/ac/hotel-profile': typeof AcHotelProfileRoute
   '/ac/products': typeof AcProductsRoute
   '/ac/system-cost': typeof AcSystemCostRoute
@@ -262,6 +271,7 @@ export interface FileRouteTypes {
     | '/ps'
     | '/settings'
     | '/system-cost'
+    | '/ac/customers'
     | '/ac/hotel-profile'
     | '/ac/products'
     | '/ac/system-cost'
@@ -287,6 +297,7 @@ export interface FileRouteTypes {
     | '/orm'
     | '/settings'
     | '/system-cost'
+    | '/ac/customers'
     | '/ac/hotel-profile'
     | '/ac/products'
     | '/ac/system-cost'
@@ -314,6 +325,7 @@ export interface FileRouteTypes {
     | '/ps'
     | '/settings'
     | '/system-cost'
+    | '/ac/customers'
     | '/ac/hotel-profile'
     | '/ac/products'
     | '/ac/system-cost'
@@ -431,6 +443,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AcIndexRouteImport
       parentRoute: typeof AcRoute
     }
+    '/ac/customers': {
+      id: '/ac/customers'
+      path: '/customers'
+      fullPath: '/ac/customers'
+      preLoaderRoute: typeof AcCustomersRouteImport
+      parentRoute: typeof AcRoute
+    }
     '/ac/hotel-profile': {
       id: '/ac/hotel-profile'
       path: '/hotel-profile'
@@ -533,6 +552,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AcRouteChildren {
+  AcCustomersRoute: typeof AcCustomersRoute
   AcHotelProfileRoute: typeof AcHotelProfileRoute
   AcProductsRoute: typeof AcProductsRoute
   AcSystemCostRoute: typeof AcSystemCostRoute
@@ -540,6 +560,7 @@ interface AcRouteChildren {
 }
 
 const AcRouteChildren: AcRouteChildren = {
+  AcCustomersRoute: AcCustomersRoute,
   AcHotelProfileRoute: AcHotelProfileRoute,
   AcProductsRoute: AcProductsRoute,
   AcSystemCostRoute: AcSystemCostRoute,
