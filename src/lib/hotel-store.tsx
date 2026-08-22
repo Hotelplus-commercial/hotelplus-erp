@@ -10,6 +10,7 @@ import {
   type ContractTerm,
   type HotelStatus,
   type MonthlyPayStatus,
+  type ServiceBlock,
   type Termination,
 } from "@/lib/hotel-profile";
 
@@ -125,7 +126,7 @@ export function serviceStart(h: HotelProfile) {
 /** services of the active (or latest) term grouped by category */
 export function servicesByCategory(h: HotelProfile) {
   const { term } = activeTermOf(h);
-  const out: Record<"orm" | "marcom" | "production", (typeof term)["services"]> = {
+  const out: Record<"orm" | "marcom" | "production", ServiceBlock[]> = {
     orm: [],
     marcom: [],
     production: [],
