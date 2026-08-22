@@ -165,6 +165,7 @@ const base = (
   sent_at: null,
   calculator_input: {},
   calculator_output: {},
+  skus: [],
   pdf_url: `/pdfs/${q.quote_id}.pdf`,
   status: "not_sent",
   expired_at: null,
