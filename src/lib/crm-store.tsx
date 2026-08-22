@@ -50,7 +50,7 @@ export type CrmUser = { email: string; name: string; app: "BD" | "PS" | "AC" };
 export const crmUsers: CrmUser[] = [
   { email: "somchai.n@hotelplus.asia", name: "สมชาย (BD)", app: "BD" },
   { email: "ps.team@hotelplus.asia", name: "ปาริชาต (PS)", app: "PS" },
-  { email: "ac.team@hotelplus.asia", name: "อรvija (AC)", app: "AC" },
+  { email: "ac.team@hotelplus.asia", name: "อรวรรณ (AC)", app: "AC" },
 ];
 
 type CrmData = {
@@ -371,9 +371,9 @@ export function CrmStoreProvider({ children }: { children: React.ReactNode }) {
             ),
           ],
           audit: log(d, "production.upload", `${list.length} รายการ`),
-        }));
+        })),
 
-      ,createInvoice: (caseNumber, lines, period) => {
+      createInvoice: (caseNumber, lines, period) => {
         const id = nextInvoiceId(data.invoices.map((i) => i.invoice_id));
         upd((d) => {
           const req = d.invRequests.find((r) => r.case_number === caseNumber);
