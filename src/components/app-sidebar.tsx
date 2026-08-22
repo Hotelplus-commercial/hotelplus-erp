@@ -1,12 +1,18 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
-  Hotel,
-  LifeBuoy,
-  Settings,
-  LayoutDashboard,
+  BarChart3,
   BuildingIcon,
   FileSignature,
+  FileText,
+  Handshake,
+  Hotel,
+  LayoutDashboard,
+  LifeBuoy,
+  Package,
+  Receipt,
   Server,
+  Settings,
+  Users,
 } from "lucide-react";
 
 import {
