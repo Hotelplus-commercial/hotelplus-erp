@@ -30,6 +30,7 @@ import { Route as PsIndexRouteImport } from './routes/ps.index'
 import { Route as PsContractDashboardRouteImport } from './routes/ps.contract-dashboard'
 import { Route as PsContractWizardRouteImport } from './routes/ps.contract-wizard'
 import { Route as PsContractsRouteImport } from './routes/ps.contracts'
+import { Route as PsProductionRouteImport } from './routes/ps.production'
 import { Route as PsSystemCostRouteImport } from './routes/ps.system-cost'
 import { Route as BdQuotationsIndexRouteImport } from './routes/bd.quotations.index'
 import { Route as BdQuotationsQuoteIdRouteImport } from './routes/bd.quotations.$quoteId'
@@ -139,6 +140,11 @@ const PsContractsRoute = PsContractsRouteImport.update({
   path: '/contracts',
   getParentRoute: () => PsRoute,
 } as any)
+const PsProductionRoute = PsProductionRouteImport.update({
+  id: '/production',
+  path: '/production',
+  getParentRoute: () => PsRoute,
+} as any)
 const PsSystemCostRoute = PsSystemCostRouteImport.update({
   id: '/system-cost',
   path: '/system-cost',
@@ -174,6 +180,7 @@ export interface FileRoutesByFullPath {
   '/ps/contract-dashboard': typeof PsContractDashboardRoute
   '/ps/contract-wizard': typeof PsContractWizardRoute
   '/ps/contracts': typeof PsContractsRoute
+  '/ps/production': typeof PsProductionRoute
   '/ps/system-cost': typeof PsSystemCostRoute
   '/ac/': typeof AcIndexRoute
   '/bd/': typeof BdIndexRoute
@@ -196,6 +203,7 @@ export interface FileRoutesByTo {
   '/ps/contract-dashboard': typeof PsContractDashboardRoute
   '/ps/contract-wizard': typeof PsContractWizardRoute
   '/ps/contracts': typeof PsContractsRoute
+  '/ps/production': typeof PsProductionRoute
   '/ps/system-cost': typeof PsSystemCostRoute
   '/ac': typeof AcIndexRoute
   '/bd': typeof BdIndexRoute
@@ -223,6 +231,7 @@ export interface FileRoutesById {
   '/ps/contract-dashboard': typeof PsContractDashboardRoute
   '/ps/contract-wizard': typeof PsContractWizardRoute
   '/ps/contracts': typeof PsContractsRoute
+  '/ps/production': typeof PsProductionRoute
   '/ps/system-cost': typeof PsSystemCostRoute
   '/ac/': typeof AcIndexRoute
   '/bd/': typeof BdIndexRoute
@@ -251,6 +260,7 @@ export interface FileRouteTypes {
     | '/ps/contract-dashboard'
     | '/ps/contract-wizard'
     | '/ps/contracts'
+    | '/ps/production'
     | '/ps/system-cost'
     | '/ac/'
     | '/bd/'
@@ -273,6 +283,7 @@ export interface FileRouteTypes {
     | '/ps/contract-dashboard'
     | '/ps/contract-wizard'
     | '/ps/contracts'
+    | '/ps/production'
     | '/ps/system-cost'
     | '/ac'
     | '/bd'
@@ -299,6 +310,7 @@ export interface FileRouteTypes {
     | '/ps/contract-dashboard'
     | '/ps/contract-wizard'
     | '/ps/contracts'
+    | '/ps/production'
     | '/ps/system-cost'
     | '/ac/'
     | '/bd/'
@@ -470,6 +482,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PsContractsRouteImport
       parentRoute: typeof PsRoute
     }
+    '/ps/production': {
+      id: '/ps/production'
+      path: '/production'
+      fullPath: '/ps/production'
+      preLoaderRoute: typeof PsProductionRouteImport
+      parentRoute: typeof PsRoute
+    }
     '/ps/system-cost': {
       id: '/ps/system-cost'
       path: '/system-cost'
@@ -540,6 +559,7 @@ interface PsRouteChildren {
   PsContractDashboardRoute: typeof PsContractDashboardRoute
   PsContractWizardRoute: typeof PsContractWizardRoute
   PsContractsRoute: typeof PsContractsRoute
+  PsProductionRoute: typeof PsProductionRoute
   PsSystemCostRoute: typeof PsSystemCostRoute
   PsIndexRoute: typeof PsIndexRoute
 }
@@ -548,6 +568,7 @@ const PsRouteChildren: PsRouteChildren = {
   PsContractDashboardRoute: PsContractDashboardRoute,
   PsContractWizardRoute: PsContractWizardRoute,
   PsContractsRoute: PsContractsRoute,
+  PsProductionRoute: PsProductionRoute,
   PsSystemCostRoute: PsSystemCostRoute,
   PsIndexRoute: PsIndexRoute,
 }
