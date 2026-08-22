@@ -1,4 +1,4 @@
-/* BD App v2.1 — Calculator-first quote store (prototype, localStorage) */
+/* BD App v2.3 — Calculator-first quote store (prototype, localStorage) */
 import {
   createContext,
   useCallback,
@@ -12,7 +12,8 @@ import {
 export type BdQuoteType = "ORM" | "MARCOM";
 
 export type BdStatus =
-  | "not_sent"
+  | "draft"
+  | "ready_to_send"
   | "active"
   | "follow_up"
   | "aging_15_29"
@@ -34,8 +35,27 @@ export type LineItem = {
 
 export type OrmPackage = { base_price: number | null; commission: number | null; includes: string[] };
 
-/* v2.2 — SKU entries shown on Register Deal + Quote Dashboard */
-export type SKUEntry = { sku_code: string; product_name: string; billing_summary: string };
+/* v2.3 — SKU entries carry pricing + approve-modal grouping */
+export type SKUEntry = {
+  sku_code: string;
+  product_name: string;
+  billing_summary: string;
+  billing_type: "monthly" | "one_time" | "commission_only";
+  monthly_price: number | null;
+  onetime_price: number | null;
+  commission_rate: number | null;
+  pricing_option_group: string | null;
+  is_pricing_option: boolean;
+};
+
+export type ApprovedSnapshot = {
+  approved_skus: SKUEntry[];
+  rejected_skus: SKUEntry[];
+  approved_monthly_total: number;
+  approved_onetime_total: number;
+  approved_first_month_total: number;
+  approved_commission_rate: number | null;
+};
 
 export type BdQuote = {
   quote_id: string;
@@ -68,6 +88,7 @@ export type BdQuote = {
   expired_reason: string | null;
   approved_at: string | null;
   approved_by: string | null;
+  approved_snapshot: ApprovedSnapshot | null;
   deal_id: string | null;
   pipedrive_deal_id: string | null;
   parent_quote_id: string | null;
@@ -104,15 +125,16 @@ export function agingStatus(days: number): BdStatus {
 }
 
 export const statusLabel: Record<BdStatus, string> = {
-  not_sent: "Not sent",
-  active: "Active 1-6d",
-  follow_up: "Follow-up 7-14d",
-  aging_15_29: "Aging 15-29d",
-  aging_30_45: "Aging 30-45d",
-  aging_46_60: "Aging 46-60d",
-  aging_61_90: "Aging 61-90d",
-  expired: "Expired",
-  approved: "Approved",
+  draft: "📝 Draft",
+  ready_to_send: "🔗 Ready to send",
+  active: "🟢 Active 1-6d",
+  follow_up: "🟡 Follow-up 7-14d",
+  aging_15_29: "🟠 Aging 15-29d",
+  aging_30_45: "🟠 Aging 30-45d",
+  aging_46_60: "🟠 Aging 46-60d",
+  aging_61_90: "🔴 Aging 61-90d",
+  expired: "⚫ Expired",
+  approved: "✅ Approved",
 };
 
 export const statusTone = (s: BdStatus): "muted" | "info" | "success" | "warn" | "danger" =>
@@ -120,16 +142,25 @@ export const statusTone = (s: BdStatus): "muted" | "info" | "success" | "warn" |
     ? "success"
     : s === "expired"
       ? "danger"
-      : s === "not_sent"
+      : s === "draft"
         ? "muted"
-        : s === "active"
+        : s === "ready_to_send" || s === "active"
           ? "info"
-          : "warn";
+          : s === "aging_61_90"
+            ? "danger"
+            : "warn";
 
 export const normalizeHotel = (n: string) => n.trim().replace(/\s+/g, " ").toLowerCase();
 
+/* not sent yet → draft / ready_to_send depends on deal link */
+const preSendStatus = (q: BdQuote): BdStatus => (q.deal_id ? "ready_to_send" : "draft");
+
 const applyAging = (q: BdQuote): BdQuote => {
-  if (q.status === "approved" || q.status === "expired" || !q.sent_at) return q;
+  if (q.status === "approved" || q.status === "expired") return q;
+  if (!q.sent_at) {
+    const next = preSendStatus(q);
+    return next === q.status ? q : { ...q, status: next };
+  }
   const d = daysSince(q.sent_at) ?? 0;
   const next = agingStatus(d);
   if (next === q.status) return q;
@@ -167,11 +198,12 @@ const base = (
   calculator_output: {},
   skus: [],
   pdf_url: `/pdfs/${q.quote_id}.pdf`,
-  status: "not_sent",
+  status: "draft",
   expired_at: null,
   expired_reason: null,
   approved_at: null,
   approved_by: null,
+  approved_snapshot: null,
   deal_id: null,
   pipedrive_deal_id: null,
   parent_quote_id: null,
@@ -196,13 +228,13 @@ export const mockOrmOutput = (roomKey: number) => ({
   recommended_level: roomKey <= 20 ? "L2" : roomKey <= 80 ? "L3" : "L4",
 });
 
-/* ---------------- SKU mapping (v2.2, mocked alongside pricing) ---------------- */
+/* ---------------- SKU mapping (mocked alongside pricing) ---------------- */
 
 const money = (n: number) => `฿${n.toLocaleString("en-US")}`;
 
 const SETUP_SKU: Record<string, { code: string; price: number }> = {
   "Revplus+": { code: "ORM-SETUP-REVPLUS", price: 3500 },
-  "Register OTAs": { code: "ORM-SETUP-REGOTA", price: 2500 },
+  "Register OTAs": { code: "ORM-SETUP-OTA", price: 5000 },
 };
 
 export function ormSkus(
@@ -222,6 +254,12 @@ export function ormSkus(
       sku_code: `ORM-MTH-FULL-${key.toUpperCase()}`,
       product_name: `${key.charAt(0).toUpperCase()}${key.slice(1)} Package`,
       billing_summary: parts.join(" + ") || "TBD",
+      billing_type: pkg.base_price ? "monthly" : "commission_only",
+      monthly_price: pkg.base_price,
+      onetime_price: null,
+      commission_rate: pkg.commission,
+      pricing_option_group: "orm_package",
+      is_pricing_option: true,
     });
     pkg.includes.forEach((i) => setups.add(i));
   });
@@ -231,6 +269,12 @@ export function ormSkus(
       sku_code: meta?.code ?? `ORM-SETUP-${name.replace(/\W+/g, "").toUpperCase()}`,
       product_name: name,
       billing_summary: meta ? `${money(meta.price)} one-time` : "one-time",
+      billing_type: "one_time",
+      monthly_price: null,
+      onetime_price: meta?.price ?? 0,
+      commission_rate: null,
+      pricing_option_group: null,
+      is_pricing_option: false,
     });
   });
   return out;
@@ -244,30 +288,73 @@ export function marcomSkus(items: LineItem[]): SKUEntry[] {
       .slice(0, 10)}`,
     product_name: i.package_name,
     billing_summary: i.billing === "monthly" ? `${money(i.amount)}/mo` : `${money(i.amount)} one-time`,
+    billing_type: i.billing === "monthly" ? ("monthly" as const) : ("one_time" as const),
+    monthly_price: i.billing === "monthly" ? i.amount : null,
+    onetime_price: i.billing === "one_time" ? i.amount : null,
+    commission_rate: null,
+    pricing_option_group: null,
+    is_pricing_option: false,
   }));
 }
 
-export const withSkus = (q: BdQuote): BdQuote =>
-  q.skus?.length
-    ? q
-    : {
-        ...q,
-        skus:
-          q.type === "ORM"
-            ? ormSkus(
-                q.calculator_output.packages,
-                q.calculator_output.recommended_package ? [q.calculator_output.recommended_package] : [],
-              )
-            : marcomSkus(q.calculator_output.selected_items ?? []),
-      };
+/* legacy/partial rows loaded from storage may miss the new SKU fields */
+const normalizeSku = (s: Partial<SKUEntry> & { sku_code: string; product_name: string }): SKUEntry => ({
+  billing_summary: "",
+  billing_type: "one_time",
+  monthly_price: null,
+  onetime_price: null,
+  commission_rate: null,
+  pricing_option_group: null,
+  is_pricing_option: false,
+  ...s,
+});
+
+export const withSkus = (q: BdQuote): BdQuote => {
+  const skus = q.skus?.length
+    ? q.skus.map(normalizeSku)
+    : q.type === "ORM"
+      ? ormSkus(
+          q.calculator_output.packages,
+          q.calculator_output.packages ? Object.keys(q.calculator_output.packages) : [],
+        )
+      : marcomSkus(q.calculator_output.selected_items ?? []);
+  return { ...q, skus, approved_snapshot: q.approved_snapshot ?? null };
+};
+
+export function snapshotOf(skus: SKUEntry[], approvedCodes: string[]): ApprovedSnapshot {
+  const approved = skus.filter((s) => approvedCodes.includes(s.sku_code));
+  const rejected = skus.filter((s) => !approvedCodes.includes(s.sku_code));
+  const monthly = approved.reduce((sum, s) => sum + (s.monthly_price ?? 0), 0);
+  const onetime = approved.reduce((sum, s) => sum + (s.onetime_price ?? 0), 0);
+  const commission = approved.find((s) => s.commission_rate)?.commission_rate ?? null;
+  return {
+    approved_skus: approved,
+    rejected_skus: rejected,
+    approved_monthly_total: monthly,
+    approved_onetime_total: onetime,
+    approved_first_month_total: monthly + onetime,
+    approved_commission_rate: commission,
+  };
+}
 
 function seedQuotes(): BdQuote[] {
   return [
+    base({
+      quote_id: "Q-ORM-0301",
+      type: "ORM",
+      hotel_name: "Sumator Resort",
+      created_at: daysAgo(1),
+      status: "draft",
+      calculator_input: { room_key: 9, occupancy: 40 },
+      calculator_output: { packages: ormPackages, recommended_package: "fixed", recommended_level: "L4" },
+      skus: ormSkus(ormPackages, ["fixed"]),
+    }),
     base({
       quote_id: "Q-ORM-0287",
       type: "ORM",
       hotel_name: "Sumator Resort",
       created_at: daysAgo(7),
+      status: "ready_to_send",
       calculator_input: {
         room_key: 9,
         occupancy: 40,
@@ -280,28 +367,31 @@ function seedQuotes(): BdQuote[] {
         ota_percentage: 50,
       },
       calculator_output: { packages: ormPackages, recommended_package: "lite", recommended_level: "L2" },
+      skus: ormSkus(ormPackages, ["lite", "smart", "fixed", "performance"]),
       deal_id: "D-47312",
       pipedrive_deal_id: "47312",
+      activity_log: [log("created", daysAgo(7)), log("linked_to_deal", daysAgo(6), "D-47312")],
     }),
     base({
       quote_id: "Q-MARCOM-0341",
       type: "MARCOM",
       hotel_name: "Sumator Resort",
       created_at: daysAgo(7),
+      status: "ready_to_send",
       calculator_input: { selected_services: { meta: ["Social Plus", "Full Meta"], tiktok: ["KOL Basic 1"] } },
       calculator_output: {
         selected_items: [
           { category: "meta", package_name: "Social Plus", billing: "one_time", amount: 3500, is_addon: false },
           {
             category: "meta",
-            package_name: "Meta 10 Content + KOL Basic 1 + Ads Budget",
+            package_name: "Meta Full (10 Content + KOL + Ads)",
             billing: "monthly",
             amount: 15000,
             is_addon: false,
           },
           {
             category: "tiktok",
-            package_name: "KOL Basic 1 (1 Slideshow + 1 VDO)",
+            package_name: "TikTok Lite Basic",
             billing: "monthly",
             amount: 4000,
             is_addon: false,
@@ -313,6 +403,7 @@ function seedQuotes(): BdQuote[] {
       },
       deal_id: "D-47312",
       pipedrive_deal_id: "47312",
+      activity_log: [log("created", daysAgo(7)), log("linked_to_deal", daysAgo(6), "D-47312")],
     }),
     base({
       quote_id: "Q-ORM-0245",
@@ -321,7 +412,10 @@ function seedQuotes(): BdQuote[] {
       created_at: daysAgo(6),
       sent_at: daysAgo(4),
       status: "active",
+      deal_id: "D-47298",
+      pipedrive_deal_id: "47298",
       calculator_output: { packages: ormPackages, recommended_package: "lite" },
+      skus: ormSkus(ormPackages, ["lite", "smart"]),
       activity_log: [log("created", daysAgo(6)), log("sent", daysAgo(4))],
     }),
     base({
@@ -331,7 +425,16 @@ function seedQuotes(): BdQuote[] {
       created_at: daysAgo(12),
       sent_at: daysAgo(11),
       status: "follow_up",
-      calculator_output: { monthly_total: 12000, onetime_total: 0, first_month_total: 12000 },
+      deal_id: "D-47298",
+      pipedrive_deal_id: "47298",
+      calculator_output: {
+        selected_items: [
+          { category: "google", package_name: "Google Ads Managed", billing: "monthly", amount: 12000, is_addon: false },
+        ],
+        monthly_total: 12000,
+        onetime_total: 0,
+        first_month_total: 12000,
+      },
       activity_log: [log("created", daysAgo(12)), log("sent", daysAgo(11))],
     }),
     base({
@@ -341,7 +444,10 @@ function seedQuotes(): BdQuote[] {
       created_at: daysAgo(70),
       sent_at: daysAgo(68),
       status: "aging_61_90",
+      deal_id: "D-46812",
+      pipedrive_deal_id: "46812",
       calculator_output: { packages: ormPackages, recommended_package: "smart" },
+      skus: ormSkus(ormPackages, ["smart"]),
       activity_log: [log("created", daysAgo(70)), log("sent", daysAgo(68))],
     }),
     base({
@@ -356,13 +462,17 @@ function seedQuotes(): BdQuote[] {
       activity_log: [log("created", daysAgo(120)), log("sent", daysAgo(118))],
     }),
     base({
-      quote_id: "Q-ORM-0301",
+      quote_id: "Q-ORM-0302",
       type: "ORM",
       hotel_name: "Baan Talay Boutique",
       created_at: daysAgo(20),
       sent_at: daysAgo(18),
       status: "aging_15_29",
+      deal_id: "D-47120",
+      pipedrive_deal_id: "47120",
+      calculator_input: { room_key: 42 },
       calculator_output: { packages: ormPackages, recommended_package: "smart", recommended_level: "L3" },
+      skus: ormSkus(ormPackages, ["smart", "fixed"]),
       activity_log: [log("created", daysAgo(20)), log("sent", daysAgo(18))],
     }),
     base({
@@ -372,7 +482,15 @@ function seedQuotes(): BdQuote[] {
       created_at: daysAgo(40),
       sent_at: daysAgo(38),
       status: "aging_30_45",
-      calculator_output: { monthly_total: 25000, onetime_total: 8000, first_month_total: 33000 },
+      calculator_output: {
+        selected_items: [
+          { category: "meta", package_name: "Meta Growth", billing: "monthly", amount: 25000, is_addon: false },
+          { category: "production", package_name: "Photoshoot Full Day", billing: "one_time", amount: 8000, is_addon: false },
+        ],
+        monthly_total: 25000,
+        onetime_total: 8000,
+        first_month_total: 33000,
+      },
       activity_log: [log("created", daysAgo(40)), log("sent", daysAgo(38))],
     }),
   ];
@@ -393,7 +511,7 @@ const seedDeals = (): BdDeal[] => [
 
 /* ---------------- store ---------------- */
 
-const KEY = "meridia.bd.v21";
+const KEY = "meridia.bd.v23";
 
 type Ctx = {
   hydrated: boolean;
@@ -408,7 +526,7 @@ type Ctx = {
     parent_quote_id?: string | null;
   }) => string;
   markSent: (quoteId: string) => void;
-  approveQuote: (quoteId: string) => string[];
+  approveQuote: (quoteId: string, approvedSkuCodes: string[]) => string[];
   siblingsOf: (quote: BdQuote) => BdQuote[];
   createRevision: (quoteId: string) => string;
   registerDeal: (input: {
@@ -417,6 +535,7 @@ type Ctx = {
     pipedrive_deal_id: string;
     contact_person: { name: string; email: string };
     linked_quote_ids: string[];
+    send?: boolean;
   }) => string;
   resetDemo: () => void;
 };
@@ -486,6 +605,7 @@ export function BdStoreProvider({ children }: { children: ReactNode }) {
           type: input.type,
           hotel_name: input.hotel_name,
           created_at: now,
+          status: "draft",
           calculator_input: input.calculator_input,
           calculator_output: input.calculator_output,
           skus: input.skus ?? [],
@@ -531,21 +651,31 @@ export function BdStoreProvider({ children }: { children: ReactNode }) {
     [quotes],
   );
 
-  const approveQuote = useCallback((quoteId: string) => {
+  const approveQuote = useCallback((quoteId: string, approvedSkuCodes: string[]) => {
     const now = new Date().toISOString();
     const superseded: string[] = [];
     setQuotes((prev) => {
       const target = prev.find((q) => q.quote_id === quoteId);
       if (!target) return prev;
       return prev.map((q) => {
-        if (q.quote_id === quoteId)
+        if (q.quote_id === quoteId) {
+          const snap = snapshotOf(q.skus, approvedSkuCodes);
           return {
             ...q,
             status: "approved" as BdStatus,
             approved_at: now,
             approved_by: CURRENT_USER,
-            activity_log: [...q.activity_log, log("approved", now)],
+            approved_snapshot: snap,
+            activity_log: [
+              ...q.activity_log,
+              log(
+                "approved",
+                now,
+                `approved ${snap.approved_skus.length} SKU · rejected ${snap.rejected_skus.length} · handed off to PS App`,
+              ),
+            ],
           };
+        }
         const sib =
           q.type === target.type &&
           normalizeHotel(q.hotel_name) === normalizeHotel(target.hotel_name) &&
@@ -598,16 +728,29 @@ export function BdStoreProvider({ children }: { children: ReactNode }) {
       ...prev.filter((d) => d.deal_id !== dealId),
     ]);
     setQuotes((prev) =>
-      prev.map((q) =>
-        input.linked_quote_ids.includes(q.quote_id)
-          ? {
-              ...q,
-              deal_id: dealId,
-              pipedrive_deal_id: input.pipedrive_deal_id,
-              activity_log: [...q.activity_log, log("linked_to_deal", now, dealId)],
-            }
-          : q,
-      ),
+      prev.map((q) => {
+        if (!input.linked_quote_ids.includes(q.quote_id)) return q;
+        const linkedLog = [...q.activity_log, log("linked_to_deal", now, dealId)];
+        if (!input.send)
+          return {
+            ...q,
+            deal_id: dealId,
+            pipedrive_deal_id: input.pipedrive_deal_id,
+            status: q.sent_at ? q.status : ("ready_to_send" as BdStatus),
+            activity_log: linkedLog,
+          };
+        return {
+          ...q,
+          deal_id: dealId,
+          pipedrive_deal_id: input.pipedrive_deal_id,
+          sent_at: q.sent_at ?? now,
+          status: q.sent_at ? q.status : ("active" as BdStatus),
+          activity_log: [
+            ...linkedLog,
+            log("sent", now, `sent via Register Deal → ${input.contact_person.email}`),
+          ],
+        };
+      }),
     );
     return dealId;
   }, []);
@@ -643,6 +786,7 @@ export function useBd() {
 }
 
 export const quoteValue = (q: BdQuote) => {
+  if (q.approved_snapshot) return q.approved_snapshot.approved_first_month_total;
   if (q.type === "MARCOM") return q.calculator_output.first_month_total ?? q.calculator_output.monthly_total ?? 0;
   const rec = q.calculator_output.recommended_package;
   const pkg = rec ? q.calculator_output.packages?.[rec] : undefined;
