@@ -27,6 +27,7 @@ import { Route as BdIndexRouteImport } from './routes/bd.index'
 import { Route as BdDealsRouteImport } from './routes/bd.deals'
 import { Route as BdQuotationsRouteImport } from './routes/bd.quotations'
 import { Route as PsIndexRouteImport } from './routes/ps.index'
+import { Route as PsContractDashboardRouteImport } from './routes/ps.contract-dashboard'
 import { Route as PsContractWizardRouteImport } from './routes/ps.contract-wizard'
 import { Route as PsContractsRouteImport } from './routes/ps.contracts'
 import { Route as PsSystemCostRouteImport } from './routes/ps.system-cost'
@@ -123,6 +124,11 @@ const PsIndexRoute = PsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => PsRoute,
 } as any)
+const PsContractDashboardRoute = PsContractDashboardRouteImport.update({
+  id: '/contract-dashboard',
+  path: '/contract-dashboard',
+  getParentRoute: () => PsRoute,
+} as any)
 const PsContractWizardRoute = PsContractWizardRouteImport.update({
   id: '/contract-wizard',
   path: '/contract-wizard',
@@ -165,6 +171,7 @@ export interface FileRoutesByFullPath {
   '/ac/system-cost': typeof AcSystemCostRoute
   '/bd/deals': typeof BdDealsRoute
   '/bd/quotations': typeof BdQuotationsRouteWithChildren
+  '/ps/contract-dashboard': typeof PsContractDashboardRoute
   '/ps/contract-wizard': typeof PsContractWizardRoute
   '/ps/contracts': typeof PsContractsRoute
   '/ps/system-cost': typeof PsSystemCostRoute
@@ -186,6 +193,7 @@ export interface FileRoutesByTo {
   '/ac/hotel-profile': typeof AcHotelProfileRoute
   '/ac/system-cost': typeof AcSystemCostRoute
   '/bd/deals': typeof BdDealsRoute
+  '/ps/contract-dashboard': typeof PsContractDashboardRoute
   '/ps/contract-wizard': typeof PsContractWizardRoute
   '/ps/contracts': typeof PsContractsRoute
   '/ps/system-cost': typeof PsSystemCostRoute
@@ -212,6 +220,7 @@ export interface FileRoutesById {
   '/ac/system-cost': typeof AcSystemCostRoute
   '/bd/deals': typeof BdDealsRoute
   '/bd/quotations': typeof BdQuotationsRouteWithChildren
+  '/ps/contract-dashboard': typeof PsContractDashboardRoute
   '/ps/contract-wizard': typeof PsContractWizardRoute
   '/ps/contracts': typeof PsContractsRoute
   '/ps/system-cost': typeof PsSystemCostRoute
@@ -239,6 +248,7 @@ export interface FileRouteTypes {
     | '/ac/system-cost'
     | '/bd/deals'
     | '/bd/quotations'
+    | '/ps/contract-dashboard'
     | '/ps/contract-wizard'
     | '/ps/contracts'
     | '/ps/system-cost'
@@ -260,6 +270,7 @@ export interface FileRouteTypes {
     | '/ac/hotel-profile'
     | '/ac/system-cost'
     | '/bd/deals'
+    | '/ps/contract-dashboard'
     | '/ps/contract-wizard'
     | '/ps/contracts'
     | '/ps/system-cost'
@@ -285,6 +296,7 @@ export interface FileRouteTypes {
     | '/ac/system-cost'
     | '/bd/deals'
     | '/bd/quotations'
+    | '/ps/contract-dashboard'
     | '/ps/contract-wizard'
     | '/ps/contracts'
     | '/ps/system-cost'
@@ -437,6 +449,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PsIndexRouteImport
       parentRoute: typeof PsRoute
     }
+    '/ps/contract-dashboard': {
+      id: '/ps/contract-dashboard'
+      path: '/contract-dashboard'
+      fullPath: '/ps/contract-dashboard'
+      preLoaderRoute: typeof PsContractDashboardRouteImport
+      parentRoute: typeof PsRoute
+    }
     '/ps/contract-wizard': {
       id: '/ps/contract-wizard'
       path: '/contract-wizard'
@@ -518,6 +537,7 @@ const BdRouteChildren: BdRouteChildren = {
 const BdRouteWithChildren = BdRoute._addFileChildren(BdRouteChildren)
 
 interface PsRouteChildren {
+  PsContractDashboardRoute: typeof PsContractDashboardRoute
   PsContractWizardRoute: typeof PsContractWizardRoute
   PsContractsRoute: typeof PsContractsRoute
   PsSystemCostRoute: typeof PsSystemCostRoute
@@ -525,6 +545,7 @@ interface PsRouteChildren {
 }
 
 const PsRouteChildren: PsRouteChildren = {
+  PsContractDashboardRoute: PsContractDashboardRoute,
   PsContractWizardRoute: PsContractWizardRoute,
   PsContractsRoute: PsContractsRoute,
   PsSystemCostRoute: PsSystemCostRoute,
