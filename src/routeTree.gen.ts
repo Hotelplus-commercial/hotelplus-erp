@@ -47,6 +47,7 @@ import { Route as BdQuotesIndexRouteImport } from './routes/bd.quotes.index'
 import { Route as BdQuotesQuoteIdRouteImport } from './routes/bd.quotes.$quoteId'
 import { Route as BdQuotesLifecycleRouteImport } from './routes/bd.quotes.lifecycle'
 import { Route as PsTemplatesIndexRouteImport } from './routes/ps.templates.index'
+import { Route as PsTemplatesAutoFieldsRouteImport } from './routes/ps.templates.auto-fields'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -238,6 +239,11 @@ const PsTemplatesIndexRoute = PsTemplatesIndexRouteImport.update({
   path: '/templates/',
   getParentRoute: () => PsRoute,
 } as any)
+const PsTemplatesAutoFieldsRoute = PsTemplatesAutoFieldsRouteImport.update({
+  id: '/templates/auto-fields',
+  path: '/templates/auto-fields',
+  getParentRoute: () => PsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -275,6 +281,7 @@ export interface FileRoutesByFullPath {
   '/bd/quotations/$quoteId': typeof BdQuotationsQuoteIdRoute
   '/bd/quotes/$quoteId': typeof BdQuotesQuoteIdRoute
   '/bd/quotes/lifecycle': typeof BdQuotesLifecycleRoute
+  '/ps/templates/auto-fields': typeof PsTemplatesAutoFieldsRoute
   '/bd/quotations/': typeof BdQuotationsIndexRoute
   '/bd/quotes/': typeof BdQuotesIndexRoute
   '/ps/templates/': typeof PsTemplatesIndexRoute
@@ -310,6 +317,7 @@ export interface FileRoutesByTo {
   '/bd/quotations/$quoteId': typeof BdQuotationsQuoteIdRoute
   '/bd/quotes/$quoteId': typeof BdQuotesQuoteIdRoute
   '/bd/quotes/lifecycle': typeof BdQuotesLifecycleRoute
+  '/ps/templates/auto-fields': typeof PsTemplatesAutoFieldsRoute
   '/bd/quotations': typeof BdQuotationsIndexRoute
   '/bd/quotes': typeof BdQuotesIndexRoute
   '/ps/templates': typeof PsTemplatesIndexRoute
@@ -351,6 +359,7 @@ export interface FileRoutesById {
   '/bd/quotations/$quoteId': typeof BdQuotationsQuoteIdRoute
   '/bd/quotes/$quoteId': typeof BdQuotesQuoteIdRoute
   '/bd/quotes/lifecycle': typeof BdQuotesLifecycleRoute
+  '/ps/templates/auto-fields': typeof PsTemplatesAutoFieldsRoute
   '/bd/quotations/': typeof BdQuotationsIndexRoute
   '/bd/quotes/': typeof BdQuotesIndexRoute
   '/ps/templates/': typeof PsTemplatesIndexRoute
@@ -393,6 +402,7 @@ export interface FileRouteTypes {
     | '/bd/quotations/$quoteId'
     | '/bd/quotes/$quoteId'
     | '/bd/quotes/lifecycle'
+    | '/ps/templates/auto-fields'
     | '/bd/quotations/'
     | '/bd/quotes/'
     | '/ps/templates/'
@@ -428,6 +438,7 @@ export interface FileRouteTypes {
     | '/bd/quotations/$quoteId'
     | '/bd/quotes/$quoteId'
     | '/bd/quotes/lifecycle'
+    | '/ps/templates/auto-fields'
     | '/bd/quotations'
     | '/bd/quotes'
     | '/ps/templates'
@@ -468,6 +479,7 @@ export interface FileRouteTypes {
     | '/bd/quotations/$quoteId'
     | '/bd/quotes/$quoteId'
     | '/bd/quotes/lifecycle'
+    | '/ps/templates/auto-fields'
     | '/bd/quotations/'
     | '/bd/quotes/'
     | '/ps/templates/'
@@ -756,6 +768,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PsTemplatesIndexRouteImport
       parentRoute: typeof PsRoute
     }
+    '/ps/templates/auto-fields': {
+      id: '/ps/templates/auto-fields'
+      path: '/templates/auto-fields'
+      fullPath: '/ps/templates/auto-fields'
+      preLoaderRoute: typeof PsTemplatesAutoFieldsRouteImport
+      parentRoute: typeof PsRoute
+    }
   }
 }
 
@@ -850,6 +869,7 @@ interface PsRouteChildren {
   PsProductionRoute: typeof PsProductionRoute
   PsSystemCostRoute: typeof PsSystemCostRoute
   PsIndexRoute: typeof PsIndexRoute
+  PsTemplatesAutoFieldsRoute: typeof PsTemplatesAutoFieldsRoute
   PsTemplatesIndexRoute: typeof PsTemplatesIndexRoute
 }
 
@@ -860,6 +880,7 @@ const PsRouteChildren: PsRouteChildren = {
   PsProductionRoute: PsProductionRoute,
   PsSystemCostRoute: PsSystemCostRoute,
   PsIndexRoute: PsIndexRoute,
+  PsTemplatesAutoFieldsRoute: PsTemplatesAutoFieldsRoute,
   PsTemplatesIndexRoute: PsTemplatesIndexRoute,
 }
 
