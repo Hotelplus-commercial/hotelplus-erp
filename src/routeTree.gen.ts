@@ -30,6 +30,7 @@ import { Route as BdIndexRouteImport } from './routes/bd.index'
 import { Route as BdCalculatorRouteImport } from './routes/bd.calculator'
 import { Route as BdDealsRouteImport } from './routes/bd.deals'
 import { Route as BdQuotationsRouteImport } from './routes/bd.quotations'
+import { Route as BdRegisterDealRouteImport } from './routes/bd.register-deal'
 import { Route as LTokenRouteImport } from './routes/l.$token'
 import { Route as PsIndexRouteImport } from './routes/ps.index'
 import { Route as PsContractDashboardRouteImport } from './routes/ps.contract-dashboard'
@@ -147,6 +148,11 @@ const BdQuotationsRoute = BdQuotationsRouteImport.update({
   path: '/quotations',
   getParentRoute: () => BdRoute,
 } as any)
+const BdRegisterDealRoute = BdRegisterDealRouteImport.update({
+  id: '/register-deal',
+  path: '/register-deal',
+  getParentRoute: () => BdRoute,
+} as any)
 const LTokenRoute = LTokenRouteImport.update({
   id: '/l/$token',
   path: '/l/$token',
@@ -223,6 +229,7 @@ export interface FileRoutesByFullPath {
   '/bd/calculator': typeof BdCalculatorRouteWithChildren
   '/bd/deals': typeof BdDealsRoute
   '/bd/quotations': typeof BdQuotationsRouteWithChildren
+  '/bd/register-deal': typeof BdRegisterDealRoute
   '/l/$token': typeof LTokenRoute
   '/ps/contract-dashboard': typeof PsContractDashboardRoute
   '/ps/contract-wizard': typeof PsContractWizardRoute
@@ -253,6 +260,7 @@ export interface FileRoutesByTo {
   '/ac/system-cost': typeof AcSystemCostRoute
   '/bd/calculator': typeof BdCalculatorRouteWithChildren
   '/bd/deals': typeof BdDealsRoute
+  '/bd/register-deal': typeof BdRegisterDealRoute
   '/l/$token': typeof LTokenRoute
   '/ps/contract-dashboard': typeof PsContractDashboardRoute
   '/ps/contract-wizard': typeof PsContractWizardRoute
@@ -288,6 +296,7 @@ export interface FileRoutesById {
   '/bd/calculator': typeof BdCalculatorRouteWithChildren
   '/bd/deals': typeof BdDealsRoute
   '/bd/quotations': typeof BdQuotationsRouteWithChildren
+  '/bd/register-deal': typeof BdRegisterDealRoute
   '/l/$token': typeof LTokenRoute
   '/ps/contract-dashboard': typeof PsContractDashboardRoute
   '/ps/contract-wizard': typeof PsContractWizardRoute
@@ -324,6 +333,7 @@ export interface FileRouteTypes {
     | '/bd/calculator'
     | '/bd/deals'
     | '/bd/quotations'
+    | '/bd/register-deal'
     | '/l/$token'
     | '/ps/contract-dashboard'
     | '/ps/contract-wizard'
@@ -354,6 +364,7 @@ export interface FileRouteTypes {
     | '/ac/system-cost'
     | '/bd/calculator'
     | '/bd/deals'
+    | '/bd/register-deal'
     | '/l/$token'
     | '/ps/contract-dashboard'
     | '/ps/contract-wizard'
@@ -388,6 +399,7 @@ export interface FileRouteTypes {
     | '/bd/calculator'
     | '/bd/deals'
     | '/bd/quotations'
+    | '/bd/register-deal'
     | '/l/$token'
     | '/ps/contract-dashboard'
     | '/ps/contract-wizard'
@@ -567,6 +579,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BdQuotationsRouteImport
       parentRoute: typeof BdRoute
     }
+    '/bd/register-deal': {
+      id: '/bd/register-deal'
+      path: '/register-deal'
+      fullPath: '/bd/register-deal'
+      preLoaderRoute: typeof BdRegisterDealRouteImport
+      parentRoute: typeof BdRoute
+    }
     '/l/$token': {
       id: '/l/$token'
       path: '/l/$token'
@@ -699,6 +718,7 @@ interface BdRouteChildren {
   BdCalculatorRoute: typeof BdCalculatorRouteWithChildren
   BdDealsRoute: typeof BdDealsRoute
   BdQuotationsRoute: typeof BdQuotationsRouteWithChildren
+  BdRegisterDealRoute: typeof BdRegisterDealRoute
   BdIndexRoute: typeof BdIndexRoute
 }
 
@@ -706,6 +726,7 @@ const BdRouteChildren: BdRouteChildren = {
   BdCalculatorRoute: BdCalculatorRouteWithChildren,
   BdDealsRoute: BdDealsRoute,
   BdQuotationsRoute: BdQuotationsRouteWithChildren,
+  BdRegisterDealRoute: BdRegisterDealRoute,
   BdIndexRoute: BdIndexRoute,
 }
 
