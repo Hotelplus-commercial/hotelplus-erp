@@ -88,6 +88,64 @@ export function PsContractForm() {
       )}
 
       <fieldset disabled={locked} className="min-w-0 space-y-5">
+        <div className="rounded-xl border bg-surface/40 p-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm font-semibold">ข้อมูลโรงแรม</p>
+            <span className="font-mono text-[11px] text-muted-foreground">{h.code}</span>
+            <span className="text-[11px] text-muted-foreground">
+              {activeIdx ? `สัญญาที่ ${activeIdx} · Active` : "ยังไม่มีสัญญา active"}
+            </span>
+          </div>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            รหัส / ชื่อโรงแรม / ประเภทผู้ทำสัญญา กรอกโดย AC App · PS App ระบุ Model, Registration และจำนวนห้อง
+          </p>
+          <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <Field label="ชื่อโรงแรม (จาก AC App)">
+              <Input value={h.name} readOnly className="bg-muted/50" />
+            </Field>
+            <Field label="ประเภทผู้ทำสัญญา (จาก AC App)">
+              <Input value={h.contractorType} readOnly className="bg-muted/50" />
+            </Field>
+            <Field label="จำนวนห้อง (Rooms)">
+              <Input
+                type="number"
+                min={0}
+                value={h.rooms}
+                onChange={(e) => set({ rooms: e.target.value })}
+                placeholder="เช่น 42"
+              />
+            </Field>
+            <Field label="Model รูปแบบค่าบริการ">
+              <Select
+                value={h.model}
+                onValueChange={(v) => set({ model: v as HotelProfile["model"] })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="เลือก Model" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="commission">Commission</SelectItem>
+                  <SelectItem value="flat">Flat Rate</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field label="Registration การจดทะเบียน">
+              <Select
+                value={h.registration}
+                onValueChange={(v) => set({ registration: v as HotelProfile["registration"] })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="เลือกการจดทะเบียน" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="corporate">Corporate</SelectItem>
+                  <SelectItem value="personal">Personal</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+          </div>
+        </div>
+
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">
             <p className="text-sm font-semibold">จำนวนสัญญา ({h.terms.length})</p>

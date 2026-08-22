@@ -10,6 +10,7 @@ import {
   type ContractTerm,
   type HotelStatus,
   type MonthlyPayStatus,
+  type ServiceBlock,
   type Termination,
 } from "@/lib/hotel-profile";
 
@@ -34,6 +35,9 @@ export type HotelProfile = {
   mainContact: Contact;
   acSaved: boolean;
   /* --- PS App --- */
+  model: "commission" | "flat" | "";
+  registration: "corporate" | "personal" | "";
+  rooms: string;
   terms: ContractTerm[];
   termination: Termination;
   otherContacts: Contact[];
@@ -55,6 +59,9 @@ export function newHotel(seq: number): HotelProfile {
     latePayments: 0,
     mainContact: emptyContact(),
     acSaved: false,
+    model: "",
+    registration: "",
+    rooms: "",
     terms: [emptyContractTerm()],
     termination: { active: false, fee: "", reason: "" },
     otherContacts: [],
@@ -109,6 +116,32 @@ export function paidThroughIndex(h: HotelProfile, year: number) {
     if (v === "paid") last = i;
   });
   return last;
+}
+
+/** first contract start date across all terms */
+export function serviceStart(h: HotelProfile) {
+  return h.terms.map((t) => t.start).filter(Boolean).sort((a, b) => a!.getTime() - b!.getTime())[0];
+}
+
+/** services of the active (or latest) term grouped by category */
+export function servicesByCategory(h: HotelProfile) {
+  const { term } = activeTermOf(h);
+  const out: Record<"orm" | "marcom" | "production", ServiceBlock[]> = {
+    orm: [],
+    marcom: [],
+    production: [],
+  };
+  (term?.services ?? []).forEach((s) => {
+    if (s.category) out[s.category].push(s);
+  });
+  return out;
+}
+
+/** days until the contract ends (null when unknown) */
+export function daysToEnd(h: HotelProfile) {
+  const end = contractRange(h).end;
+  if (!end) return null;
+  return Math.ceil((end.getTime() - Date.now()) / 86_400_000);
 }
 
 /* ---------------- persistence ---------------- */
