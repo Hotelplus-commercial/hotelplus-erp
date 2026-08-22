@@ -34,6 +34,9 @@ export type LineItem = {
 
 export type OrmPackage = { base_price: number | null; commission: number | null; includes: string[] };
 
+/* v2.2 — SKU entries shown on Register Deal + Quote Dashboard */
+export type SKUEntry = { sku_code: string; product_name: string; billing_summary: string };
+
 export type BdQuote = {
   quote_id: string;
   type: BdQuoteType;
