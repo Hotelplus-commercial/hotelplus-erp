@@ -76,7 +76,7 @@ export function Panel({
   );
 }
 
-export function TotalsBlock({ totals, whtNote }: { totals: Totals; whtNote?: string }) {
+export function TotalsBlock({ totals, whtNote }: { totals: Totals; whtNote?: string | undefined }) {
   return (
     <div className="ml-auto w-full max-w-xs space-y-1 text-sm">
       <Row label="ยอดรวมก่อนภาษี" value={thb(totals.subtotal)} />
