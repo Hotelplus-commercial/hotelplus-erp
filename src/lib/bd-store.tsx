@@ -247,6 +247,20 @@ export function marcomSkus(items: LineItem[]): SKUEntry[] {
   }));
 }
 
+export const withSkus = (q: BdQuote): BdQuote =>
+  q.skus?.length
+    ? q
+    : {
+        ...q,
+        skus:
+          q.type === "ORM"
+            ? ormSkus(
+                q.calculator_output.packages,
+                q.calculator_output.recommended_package ? [q.calculator_output.recommended_package] : [],
+              )
+            : marcomSkus(q.calculator_output.selected_items ?? []),
+      };
+
 function seedQuotes(): BdQuote[] {
   return [
     base({
@@ -418,14 +432,14 @@ export function BdStoreProvider({ children }: { children: ReactNode }) {
       const raw = localStorage.getItem(KEY);
       if (raw) {
         const parsed = JSON.parse(raw) as { quotes: BdQuote[]; deals: BdDeal[] };
-        setQuotes((parsed.quotes ?? []).map(applyAging));
+        setQuotes((parsed.quotes ?? []).map(withSkus).map(applyAging));
         setDeals(parsed.deals ?? []);
       } else {
-        setQuotes(seedQuotes().map(applyAging));
+        setQuotes(seedQuotes().map(withSkus).map(applyAging));
         setDeals(seedDeals());
       }
     } catch {
-      setQuotes(seedQuotes().map(applyAging));
+      setQuotes(seedQuotes().map(withSkus).map(applyAging));
       setDeals(seedDeals());
     }
     setHydrated(true);
@@ -596,7 +610,7 @@ export function BdStoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const resetDemo = useCallback(() => {
-    setQuotes(seedQuotes().map(applyAging));
+    setQuotes(seedQuotes().map(withSkus).map(applyAging));
     setDeals(seedDeals());
   }, []);
 
