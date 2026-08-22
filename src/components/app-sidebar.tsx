@@ -37,11 +37,12 @@ import { modules } from "@/lib/erp-data";
 
 const moduleChildren: Record<string, { title: string; url: string; icon: typeof BuildingIcon }[]> = {
   bd: [
+    { title: "Quotes", url: "/bd/quotes", icon: FileText },
     { title: "Calculator · ORM", url: "/bd/calculator/orm", icon: Calculator },
     { title: "Calculator · Marcom", url: "/bd/calculator/marcom", icon: Megaphone },
     { title: "Register Deal", url: "/bd/register-deal", icon: Handshake },
-    { title: "Quotes", url: "/bd/quotes", icon: FileText },
   ],
+
   ac: [
     { title: "Hotel Profile", url: "/ac/hotel-profile", icon: BuildingIcon },
     { title: "ต้นทุนค่าระบบ", url: "/ac/system-cost", icon: Server },

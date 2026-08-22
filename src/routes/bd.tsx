@@ -6,11 +6,12 @@ import { getModule } from "@/lib/erp-data";
 const mod = getModule("bd");
 
 export const bdTabs = [
+  { label: "Quotes", to: "/bd/quotes" },
   { label: "Calculator · ORM", to: "/bd/calculator/orm" },
   { label: "Calculator · Marcom", to: "/bd/calculator/marcom" },
-  { label: "Quotes", to: "/bd/quotes" },
   { label: "Register Deal", to: "/bd/register-deal" },
 ];
+
 
 export const Route = createFileRoute("/bd")({
   head: () => ({

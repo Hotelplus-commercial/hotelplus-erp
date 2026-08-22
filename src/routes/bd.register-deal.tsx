@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Check, ChevronsUpDown, Info, Link2, Save, X } from "lucide-react";
+import { Check, ChevronsUpDown, Info, Link2, Mail, Save, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -32,7 +32,7 @@ export const Route = createFileRoute("/bd/register-deal")({
 });
 
 function RegisterDeal() {
-  const { quotes, registerDeal } = useBd();
+  const { quotes, registerDeal, markSent } = useBd();
   const navigate = useNavigate();
   const [hotel, setHotel] = useState("");
   const [openHotel, setOpenHotel] = useState(false);
@@ -80,7 +80,7 @@ function RegisterDeal() {
   const linkedQuotes = hotelQuotes.filter((q) => linked.includes(q.quote_id));
   const availableQuotes = hotelQuotes.filter((q) => !linked.includes(q.quote_id));
 
-  const save = () => {
+  const save = (sendNow: boolean) => {
     if (!hotel.trim() || !pipedriveId.trim()) {
       toast.error("เลือกโรงแรมและกรอก Pipedrive Deal ID ก่อน");
       return;
@@ -100,7 +100,12 @@ function RegisterDeal() {
       contact_person: { name, email },
       linked_quote_ids: linked,
     });
-    toast.success(`สร้างดีล ${id} และอัปเดตใบเสนอราคา ${linked.length} ฉบับแล้ว`);
+    if (sendNow) {
+      linked.forEach((qid) => markSent(qid));
+      toast.success(`สร้างดีล ${id} · ส่งอีเมลถึง ${email} พร้อมแนบ ${linked.length} PDF — เริ่มนับ aging แล้ว`);
+    } else {
+      toast.success(`สร้างดีล ${id} · ใบเสนอราคา ${linked.length} ฉบับอยู่สถานะ Ready to send`);
+    }
     navigate({ to: "/bd/quotes" });
   };
 
@@ -110,10 +115,16 @@ function RegisterDeal() {
         <p className="text-sm text-muted-foreground">
           Quote เกิดก่อน Deal — ที่นี่คือขั้นตอนผูกดีลกับใบเสนอราคาที่มีอยู่ของโรงแรมนั้น
         </p>
-        <Button className="gap-1.5" onClick={save}>
-          <Save className="size-4" /> บันทึกดีล
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" className="gap-1.5" onClick={() => save(false)}>
+            <Save className="size-4" /> Save (ยังไม่ส่ง)
+          </Button>
+          <Button className="gap-1.5" onClick={() => save(true)}>
+            <Mail className="size-4" /> Save &amp; Send to customer
+          </Button>
+        </div>
       </div>
+
 
       <Panel title="Hotel Information" subtitle="เลือกจากรายชื่อโรงแรมที่เคยออกใบเสนอราคา — กันชื่อซ้ำแบบสะกดต่าง">
         <div className="grid gap-3 sm:grid-cols-2">
