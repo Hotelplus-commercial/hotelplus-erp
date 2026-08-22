@@ -20,15 +20,23 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   useSidebar,
 } from "@/components/ui/sidebar";
 import { modules } from "@/lib/erp-data";
 
-const masterItems = [
-  { title: "Hotel Profile (AC)", url: "/ac/hotel-profile", icon: BuildingIcon },
-  { title: "สัญญา & บริการ (PS)", url: "/ps/contracts", icon: FileSignature },
-  { title: "ต้นทุนค่าระบบ", url: "/system-cost", icon: Server },
-];
+const moduleChildren: Record<string, { title: string; url: string; icon: typeof BuildingIcon }[]> = {
+  ac: [
+    { title: "Hotel Profile", url: "/ac/hotel-profile", icon: BuildingIcon },
+    { title: "ต้นทุนค่าระบบ", url: "/ac/system-cost", icon: Server },
+  ],
+  ps: [
+    { title: "PS Dashboard", url: "/ps", icon: LayoutDashboard },
+    { title: "สัญญา & บริการ", url: "/ps/contracts", icon: FileSignature },
+  ],
+};
 
 
 const systemItems = [
@@ -80,38 +88,58 @@ export function AppSidebar() {
           <SidebarGroupLabel>Modules</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {modules.map((m) => (
-                <SidebarMenuItem key={m.slug}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname === m.to}
-                    tooltip={`${m.code} App`}
-                  >
-                    <Link to={m.to} className="flex items-center gap-2">
-                      <m.icon className="size-4 shrink-0" />
-                      <span className="truncate">{m.code} App</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {modules.map((m) => {
+                const children = moduleChildren[m.slug] ?? [];
+                const inSection = pathname === m.to || pathname.startsWith(`${m.to}/`);
+                return (
+                  <SidebarMenuItem key={m.slug}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={pathname === m.to}
+                      tooltip={`${m.code} App`}
+                    >
+                      <Link to={m.to} className="flex items-center gap-2">
+                        <m.icon className="size-4 shrink-0" />
+                        <span className="truncate">{m.code} App</span>
+                      </Link>
+                    </SidebarMenuButton>
+                    {!collapsed && children.length > 0 && inSection && (
+                      <SidebarMenuSub>
+                        {children.map((c) => (
+                          <SidebarMenuSubItem key={c.url}>
+                            <SidebarMenuSubButton asChild isActive={pathname === c.url}>
+                              <Link to={c.url} className="flex items-center gap-2">
+                                <c.icon className="size-3.5 shrink-0" />
+                                <span className="truncate">{c.title}</span>
+                              </Link>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        ))}
+                      </SidebarMenuSub>
+                    )}
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>Master data</SidebarGroupLabel>
+          <SidebarGroupLabel>Shared</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {masterItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={pathname === item.url} tooltip={item.title}>
-                    <Link to={item.url} className="flex items-center gap-2">
-                      <item.icon className="size-4 shrink-0" />
-                      <span className="truncate">{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname === "/system-cost"}
+                  tooltip="ต้นทุนค่าระบบ (ภาพรวม)"
+                >
+                  <Link to="/system-cost" className="flex items-center gap-2">
+                    <Server className="size-4 shrink-0" />
+                    <span className="truncate">ต้นทุนค่าระบบ (ภาพรวม)</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
