@@ -19,7 +19,7 @@ import { thb } from "@/lib/crm-rules";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/bd/quotes/")({
-  component: QuoteDashboard;
+  component: QuoteDashboard,
 });
 
 const FILTERS: ("all" | BdStatus)[] = [
