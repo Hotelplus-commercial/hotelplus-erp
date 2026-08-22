@@ -117,7 +117,7 @@ export function PsContractForm() {
             </Field>
             <Field label="Model รูปแบบค่าบริการ">
               <Select
-                value={h.model || undefined}
+                value={h.model}
                 onValueChange={(v) => set({ model: v as HotelProfile["model"] })}
               >
                 <SelectTrigger>
@@ -131,7 +131,7 @@ export function PsContractForm() {
             </Field>
             <Field label="Registration การจดทะเบียน">
               <Select
-                value={h.registration || undefined}
+                value={h.registration}
                 onValueChange={(v) => set({ registration: v as HotelProfile["registration"] })}
               >
                 <SelectTrigger>
