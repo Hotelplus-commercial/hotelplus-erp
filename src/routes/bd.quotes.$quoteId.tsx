@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { Chip, Panel, fmtDate } from "@/components/crm/crm-ui";
+import { NoteEditor } from "@/components/bd/note-editor";
+import { QuotePdfPanel } from "@/components/bd/quote-pdf-preview";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -33,7 +35,7 @@ export const Route = createFileRoute("/bd/quotes/$quoteId")({
 
 function QuoteDetail() {
   const { quoteId } = useParams({ from: "/bd/quotes/$quoteId" });
-  const { quotes, deals, hydrated, siblingsOf, approveQuote, createRevision, markSent } = useBd();
+  const { quotes, deals, hydrated, siblingsOf, approveQuote, createRevision, markSent, saveNote } = useBd();
   const navigate = useNavigate();
   const [approveOpen, setApproveOpen] = useState(false);
   const [confirmRevise, setConfirmRevise] = useState(false);
@@ -113,8 +115,10 @@ function QuoteDetail() {
         )
       )}
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-[3fr_2fr]">
         <div className="space-y-4">
+          <QuotePdfPanel quote={quote} />
+
           {snap ? (
             <Panel title="Approved Contract Contents">
               <div className="space-y-3">
@@ -228,13 +232,23 @@ function QuoteDetail() {
             </ol>
           </Panel>
 
-          {!snap && (
-            <Panel title="Latest customer response">
-              <div className="rounded-lg border-l-4 border-l-warning bg-surface/70 p-3 text-xs">
-                “ลูกค้าขอเอาเฉพาะแพ็กเกจหลัก ส่วน setup fee ขอตัดออกก่อนครับ” — บันทึกโดย Sales (จำลอง)
-              </div>
-            </Panel>
-          )}
+          <NoteEditor
+            value={quote.note}
+            updatedAt={quote.note_updated_at}
+            updatedBy={quote.note_updated_by}
+            onSave={(html, mentions) => {
+              saveNote(quote.quote_id, html, mentions);
+              toast.success(
+                mentions.length ? `บันทึก Note · แจ้ง ${mentions.map((m) => `@${m}`).join(", ")} แล้ว` : "บันทึก Note แล้ว",
+              );
+            }}
+          />
+
+          <Panel title="Customer verbal responses" subtitle="สิ่งที่ลูกค้าพูดในสายโทรศัพท์">
+            <div className="rounded-lg border-l-4 border-l-warning bg-surface/70 p-3 text-xs">
+              “ลูกค้าขอเอาเฉพาะแพ็กเกจหลัก ส่วน setup fee ขอตัดออกก่อนครับ” — บันทึกโดย Sales (จำลอง)
+            </div>
+          </Panel>
         </div>
       </div>
 

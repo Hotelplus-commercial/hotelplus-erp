@@ -1,9 +1,10 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Check, ChevronsUpDown, Info, Link2, Mail, Save, X } from "lucide-react";
+import { Check, ChevronDown, ChevronUp, ChevronsUpDown, FileText, Info, Link2, Mail, Save, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { Chip, Panel, fmtDate } from "@/components/crm/crm-ui";
+import { QuotePdfDocument } from "@/components/bd/quote-pdf-preview";
 import { Button } from "@/components/ui/button";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Input } from "@/components/ui/input";
@@ -280,6 +281,7 @@ function RegisterDeal() {
 
 function QuoteCard({ quote, linked, onToggle }: { quote: BdQuote; linked?: boolean; onToggle: () => void }) {
   const expired = quote.status === "expired";
+  const [preview, setPreview] = useState(false);
   return (
     <div
       className={cn(
@@ -330,6 +332,27 @@ function QuoteCard({ quote, linked, onToggle }: { quote: BdQuote; linked?: boole
           {(quote.skus?.length ?? 0) === 0 && <li className="text-xs text-muted-foreground">ไม่มีรายการ SKU</li>}
         </ul>
       </div>
+
+      <Button
+        variant="ghost"
+        size="sm"
+        className="mt-2 gap-1.5 px-2 text-xs"
+        onClick={() => setPreview((p) => !p)}
+      >
+        <FileText className="size-4" /> Preview PDF
+        {preview ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
+      </Button>
+
+      {preview && (
+        <div className="mt-2 rounded-xl border bg-muted/40 p-3">
+          <div className="max-h-[420px] overflow-y-auto">
+            <QuotePdfDocument quote={quote} compact />
+          </div>
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            📎 ไฟล์นี้จะถูกแนบไปกับอีเมลเมื่อกด Save &amp; Send ({quote.quote_id}.pdf)
+          </p>
+        </div>
+      )}
     </div>
   );
 }
