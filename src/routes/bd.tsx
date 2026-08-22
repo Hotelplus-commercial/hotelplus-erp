@@ -6,12 +6,10 @@ import { getModule } from "@/lib/erp-data";
 const mod = getModule("bd");
 
 export const bdTabs = [
-  { label: "Overview", to: "/bd" },
-  { label: "Calculator ORM", to: "/bd/calculator/orm" },
-  { label: "Calculator Marcom", to: "/bd/calculator/marcom" },
-  { label: "Register Deal", to: "/bd/register-deal" },
+  { label: "Calculator · ORM", to: "/bd/calculator/orm" },
+  { label: "Calculator · Marcom", to: "/bd/calculator/marcom" },
   { label: "Quotes", to: "/bd/quotes" },
-  { label: "CRM (เดิม)", to: "/bd/quotations" },
+  { label: "Register Deal", to: "/bd/register-deal" },
 ];
 
 export const Route = createFileRoute("/bd")({
