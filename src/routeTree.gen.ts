@@ -37,6 +37,7 @@ import { Route as PsContractWizardRouteImport } from './routes/ps.contract-wizar
 import { Route as PsContractsRouteImport } from './routes/ps.contracts'
 import { Route as PsProductionRouteImport } from './routes/ps.production'
 import { Route as PsSystemCostRouteImport } from './routes/ps.system-cost'
+import { Route as BdCalculatorMarcomRouteImport } from './routes/bd.calculator.marcom'
 import { Route as BdCalculatorOrmRouteImport } from './routes/bd.calculator.orm'
 import { Route as BdQuotationsIndexRouteImport } from './routes/bd.quotations.index'
 import { Route as BdQuotationsQuoteIdRouteImport } from './routes/bd.quotations.$quoteId'
@@ -181,6 +182,11 @@ const PsSystemCostRoute = PsSystemCostRouteImport.update({
   path: '/system-cost',
   getParentRoute: () => PsRoute,
 } as any)
+const BdCalculatorMarcomRoute = BdCalculatorMarcomRouteImport.update({
+  id: '/marcom',
+  path: '/marcom',
+  getParentRoute: () => BdCalculatorRoute,
+} as any)
 const BdCalculatorOrmRoute = BdCalculatorOrmRouteImport.update({
   id: '/orm',
   path: '/orm',
@@ -226,6 +232,7 @@ export interface FileRoutesByFullPath {
   '/ac/': typeof AcIndexRoute
   '/bd/': typeof BdIndexRoute
   '/ps/': typeof PsIndexRoute
+  '/bd/calculator/marcom': typeof BdCalculatorMarcomRoute
   '/bd/calculator/orm': typeof BdCalculatorOrmRoute
   '/bd/quotations/$quoteId': typeof BdQuotationsQuoteIdRoute
   '/bd/quotations/': typeof BdQuotationsIndexRoute
@@ -255,6 +262,7 @@ export interface FileRoutesByTo {
   '/ac': typeof AcIndexRoute
   '/bd': typeof BdIndexRoute
   '/ps': typeof PsIndexRoute
+  '/bd/calculator/marcom': typeof BdCalculatorMarcomRoute
   '/bd/calculator/orm': typeof BdCalculatorOrmRoute
   '/bd/quotations/$quoteId': typeof BdQuotationsQuoteIdRoute
   '/bd/quotations': typeof BdQuotationsIndexRoute
@@ -289,6 +297,7 @@ export interface FileRoutesById {
   '/ac/': typeof AcIndexRoute
   '/bd/': typeof BdIndexRoute
   '/ps/': typeof PsIndexRoute
+  '/bd/calculator/marcom': typeof BdCalculatorMarcomRoute
   '/bd/calculator/orm': typeof BdCalculatorOrmRoute
   '/bd/quotations/$quoteId': typeof BdQuotationsQuoteIdRoute
   '/bd/quotations/': typeof BdQuotationsIndexRoute
@@ -324,6 +333,7 @@ export interface FileRouteTypes {
     | '/ac/'
     | '/bd/'
     | '/ps/'
+    | '/bd/calculator/marcom'
     | '/bd/calculator/orm'
     | '/bd/quotations/$quoteId'
     | '/bd/quotations/'
@@ -353,6 +363,7 @@ export interface FileRouteTypes {
     | '/ac'
     | '/bd'
     | '/ps'
+    | '/bd/calculator/marcom'
     | '/bd/calculator/orm'
     | '/bd/quotations/$quoteId'
     | '/bd/quotations'
@@ -386,6 +397,7 @@ export interface FileRouteTypes {
     | '/ac/'
     | '/bd/'
     | '/ps/'
+    | '/bd/calculator/marcom'
     | '/bd/calculator/orm'
     | '/bd/quotations/$quoteId'
     | '/bd/quotations/'
@@ -604,6 +616,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PsSystemCostRouteImport
       parentRoute: typeof PsRoute
     }
+    '/bd/calculator/marcom': {
+      id: '/bd/calculator/marcom'
+      path: '/marcom'
+      fullPath: '/bd/calculator/marcom'
+      preLoaderRoute: typeof BdCalculatorMarcomRouteImport
+      parentRoute: typeof BdCalculatorRoute
+    }
     '/bd/calculator/orm': {
       id: '/bd/calculator/orm'
       path: '/orm'
@@ -649,10 +668,12 @@ const AcRouteChildren: AcRouteChildren = {
 const AcRouteWithChildren = AcRoute._addFileChildren(AcRouteChildren)
 
 interface BdCalculatorRouteChildren {
+  BdCalculatorMarcomRoute: typeof BdCalculatorMarcomRoute
   BdCalculatorOrmRoute: typeof BdCalculatorOrmRoute
 }
 
 const BdCalculatorRouteChildren: BdCalculatorRouteChildren = {
+  BdCalculatorMarcomRoute: BdCalculatorMarcomRoute,
   BdCalculatorOrmRoute: BdCalculatorOrmRoute,
 }
 
