@@ -9,6 +9,9 @@ export const acTabs = [
   { label: "Overview", to: "/ac" },
   { label: "Hotel Profile", to: "/ac/hotel-profile" },
   { label: "ต้นทุนค่าระบบ", to: "/ac/system-cost" },
+  { label: "Product Catalog", to: "/ac/products" },
+  { label: "Customer Master", to: "/ac/customers" },
+  { label: "Invoice & ใบเสร็จ", to: "/ac/billing" },
 ];
 
 export const Route = createFileRoute("/ac")({
