@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { mockOrmOutput, useBd, type OrmPackage } from "@/lib/bd-store";
+import { mockOrmOutput, ormSkus, useBd, type OrmPackage } from "@/lib/bd-store";
 import { thb } from "@/lib/crm-rules";
 import { cn } from "@/lib/utils";
 

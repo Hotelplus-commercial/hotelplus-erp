@@ -7,7 +7,7 @@ import { Chip, Panel } from "@/components/crm/crm-ui";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useBd, type LineItem } from "@/lib/bd-store";
+import { marcomSkus, useBd, type LineItem } from "@/lib/bd-store";
 import { thb } from "@/lib/crm-rules";
 import { cn } from "@/lib/utils";
 
