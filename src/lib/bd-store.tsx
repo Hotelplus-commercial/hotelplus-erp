@@ -404,6 +404,7 @@ type Ctx = {
     hotel_name: string;
     calculator_input: BdQuote["calculator_input"];
     calculator_output: BdQuote["calculator_output"];
+    skus?: SKUEntry[];
     parent_quote_id?: string | null;
   }) => string;
   markSent: (quoteId: string) => void;
@@ -487,13 +488,14 @@ export function BdStoreProvider({ children }: { children: ReactNode }) {
           created_at: now,
           calculator_input: input.calculator_input,
           calculator_output: input.calculator_output,
+          skus: input.skus ?? [],
           parent_quote_id: input.parent_quote_id ?? null,
           revision_number: parent ? parent.revision_number + 1 : 0,
           activity_log: [
             log(parent ? "revised" : "created", now, parent ? `revision of ${parent.quote_id}` : undefined),
           ],
         });
-        return [q, ...prev];
+        return [withSkus(q), ...prev];
       });
       return id || nextQuoteId(input.type);
     },
@@ -572,6 +574,7 @@ export function BdStoreProvider({ children }: { children: ReactNode }) {
         hotel_name: parent.hotel_name,
         calculator_input: parent.calculator_input,
         calculator_output: parent.calculator_output,
+        skus: parent.skus,
         parent_quote_id: parent.quote_id,
       });
     },
