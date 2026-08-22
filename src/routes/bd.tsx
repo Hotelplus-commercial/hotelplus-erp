@@ -7,8 +7,11 @@ const mod = getModule("bd");
 
 export const bdTabs = [
   { label: "Overview", to: "/bd" },
-  { label: "Deals (Pipedrive)", to: "/bd/deals" },
-  { label: "ใบเสนอราคา", to: "/bd/quotations" },
+  { label: "Calculator ORM", to: "/bd/calculator/orm" },
+  { label: "Calculator Marcom", to: "/bd/calculator/marcom" },
+  { label: "Register Deal", to: "/bd/register-deal" },
+  { label: "Quotes", to: "/bd/quotes" },
+  { label: "CRM (เดิม)", to: "/bd/quotations" },
 ];
 
 export const Route = createFileRoute("/bd")({
