@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Check, ChevronsUpDown, Info, Link2, Save, X } from "lucide-react";
+import { Check, ChevronsUpDown, Info, Link2, Mail, Save, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -32,7 +32,7 @@ export const Route = createFileRoute("/bd/register-deal")({
 });
 
 function RegisterDeal() {
-  const { quotes, registerDeal } = useBd();
+  const { quotes, registerDeal, markSent } = useBd();
   const navigate = useNavigate();
   const [hotel, setHotel] = useState("");
   const [openHotel, setOpenHotel] = useState(false);
