@@ -94,7 +94,14 @@ export type BdQuote = {
   parent_quote_id: string | null;
   revision_number: number;
   activity_log: ActivityLogEntry[];
+  /* v2.4 — note with @mentions */
+  note: string | null;
+  note_mentions: NoteMention[];
+  note_updated_at: string | null;
+  note_updated_by: string | null;
 };
+
+export type NoteMention = { target_app: "PS" | "AC"; mentioned_at: string; acknowledged: boolean };
 
 export type BdDeal = {
   deal_id: string;
@@ -209,6 +216,10 @@ const base = (
   parent_quote_id: null,
   revision_number: 0,
   activity_log: [log("created", q.created_at)],
+  note: null,
+  note_mentions: [],
+  note_updated_at: null,
+  note_updated_by: null,
   ...q,
 });
 
@@ -318,7 +329,15 @@ export const withSkus = (q: BdQuote): BdQuote => {
           q.calculator_output.packages ? Object.keys(q.calculator_output.packages) : [],
         )
       : marcomSkus(q.calculator_output.selected_items ?? []);
-  return { ...q, skus, approved_snapshot: q.approved_snapshot ?? null };
+  return {
+    ...q,
+    skus,
+    approved_snapshot: q.approved_snapshot ?? null,
+    note: q.note ?? null,
+    note_mentions: q.note_mentions ?? [],
+    note_updated_at: q.note_updated_at ?? null,
+    note_updated_by: q.note_updated_by ?? null,
+  };
 };
 
 export function snapshotOf(skus: SKUEntry[], approvedCodes: string[]): ApprovedSnapshot {
@@ -526,6 +545,7 @@ type Ctx = {
     parent_quote_id?: string | null;
   }) => string;
   markSent: (quoteId: string) => void;
+  saveNote: (quoteId: string, html: string, mentions: ("PS" | "AC")[]) => void;
   approveQuote: (quoteId: string, approvedSkuCodes: string[]) => string[];
   siblingsOf: (quote: BdQuote) => BdQuote[];
   createRevision: (quoteId: string) => string;
@@ -632,6 +652,31 @@ export function BdStoreProvider({ children }: { children: ReactNode }) {
               sent_at: now,
               status: "active",
               activity_log: [...q.activity_log, log("sent", now, "ส่งใบเสนอราคาให้ลูกค้า")],
+            }
+          : q,
+      ),
+    );
+  }, []);
+
+  const saveNote = useCallback((quoteId: string, html: string, mentions: ("PS" | "AC")[]) => {
+    const now = new Date().toISOString();
+    setQuotes((prev) =>
+      prev.map((q) =>
+        q.quote_id === quoteId
+          ? {
+              ...q,
+              note: html,
+              note_mentions: mentions.map((t) => ({ target_app: t, mentioned_at: now, acknowledged: false })),
+              note_updated_at: now,
+              note_updated_by: CURRENT_USER,
+              activity_log: [
+                ...q.activity_log,
+                log(
+                  "note_updated",
+                  now,
+                  mentions.length ? `mentioned ${mentions.map((m) => `@${m}`).join(", ")}` : "อัปเดตหมายเหตุ",
+                ),
+              ],
             }
           : q,
       ),
@@ -767,13 +812,14 @@ export function BdStoreProvider({ children }: { children: ReactNode }) {
       deals,
       createQuote,
       markSent,
+      saveNote,
       approveQuote,
       siblingsOf,
       createRevision,
       registerDeal,
       resetDemo,
     }),
-    [hydrated, quotes, deals, createQuote, markSent, approveQuote, siblingsOf, createRevision, registerDeal, resetDemo],
+    [hydrated, quotes, deals, createQuote, markSent, saveNote, approveQuote, siblingsOf, createRevision, registerDeal, resetDemo],
   );
 
   return <BdCtx.Provider value={value}>{children}</BdCtx.Provider>;
