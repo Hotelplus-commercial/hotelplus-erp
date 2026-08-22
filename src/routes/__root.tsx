@@ -15,6 +15,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { AppShell } from "@/components/app-shell";
 import { HotelStoreProvider } from "@/lib/hotel-store";
 import { CrmStoreProvider } from "@/lib/crm-store";
+import { BdStoreProvider } from "@/lib/bd-store";
 
 
 function NotFoundComponent() {
@@ -135,12 +136,14 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <HotelStoreProvider>
         <CrmStoreProvider>
+          <BdStoreProvider>
           <Toaster />
           <AppShell>
             {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
             <Outlet />
           </AppShell>
-        </CrmStoreProvider>
+        </BdStoreProvider>
+          </CrmStoreProvider>
       </HotelStoreProvider>
     </QueryClientProvider>
   );

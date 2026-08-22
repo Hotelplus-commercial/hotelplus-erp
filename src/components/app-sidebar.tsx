@@ -2,6 +2,8 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   BarChart3,
   BuildingIcon,
+  Calculator,
+  Megaphone,
   FileSignature,
   FileText,
   Handshake,
