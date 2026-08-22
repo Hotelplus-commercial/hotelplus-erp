@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useRouterState } from "@tanstack/react-router";
 import { Search, Sparkles } from "lucide-react";
 
 import { AppSidebar } from "@/components/app-sidebar";
@@ -17,6 +18,13 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { properties } from "@/lib/erp-data";
 
 export function AppShell({ children }: { children: ReactNode }) {
+  const pathname = useRouterState({ select: (r) => r.location.pathname });
+
+  // Public customer-facing LIVE Link renders without the internal ERP chrome.
+  if (pathname.startsWith("/l/")) {
+    return <div className="min-h-screen bg-background px-4 py-6">{children}</div>;
+  }
+
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-background">
