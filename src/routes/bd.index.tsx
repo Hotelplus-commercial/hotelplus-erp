@@ -1,10 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
-
-import { ModuleView } from "@/components/erp-ui";
-import { getModule } from "@/lib/erp-data";
-
-const mod = getModule("bd");
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/bd/")({
-  component: () => <ModuleView module={mod} />,
+  beforeLoad: () => {
+    throw redirect({ to: "/bd/quotes" });
+  },
+  component: () => null,
 });
