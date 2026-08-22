@@ -27,8 +27,11 @@ import { Route as AcHotelProfileRouteImport } from './routes/ac.hotel-profile'
 import { Route as AcProductsRouteImport } from './routes/ac.products'
 import { Route as AcSystemCostRouteImport } from './routes/ac.system-cost'
 import { Route as BdIndexRouteImport } from './routes/bd.index'
+import { Route as BdCalculatorRouteImport } from './routes/bd.calculator'
 import { Route as BdDealsRouteImport } from './routes/bd.deals'
 import { Route as BdQuotationsRouteImport } from './routes/bd.quotations'
+import { Route as BdQuotesRouteImport } from './routes/bd.quotes'
+import { Route as BdRegisterDealRouteImport } from './routes/bd.register-deal'
 import { Route as LTokenRouteImport } from './routes/l.$token'
 import { Route as PsIndexRouteImport } from './routes/ps.index'
 import { Route as PsContractDashboardRouteImport } from './routes/ps.contract-dashboard'
@@ -36,8 +39,13 @@ import { Route as PsContractWizardRouteImport } from './routes/ps.contract-wizar
 import { Route as PsContractsRouteImport } from './routes/ps.contracts'
 import { Route as PsProductionRouteImport } from './routes/ps.production'
 import { Route as PsSystemCostRouteImport } from './routes/ps.system-cost'
+import { Route as BdCalculatorMarcomRouteImport } from './routes/bd.calculator.marcom'
+import { Route as BdCalculatorOrmRouteImport } from './routes/bd.calculator.orm'
 import { Route as BdQuotationsIndexRouteImport } from './routes/bd.quotations.index'
 import { Route as BdQuotationsQuoteIdRouteImport } from './routes/bd.quotations.$quoteId'
+import { Route as BdQuotesIndexRouteImport } from './routes/bd.quotes.index'
+import { Route as BdQuotesQuoteIdRouteImport } from './routes/bd.quotes.$quoteId'
+import { Route as BdQuotesLifecycleRouteImport } from './routes/bd.quotes.lifecycle'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -129,6 +137,11 @@ const BdIndexRoute = BdIndexRouteImport.update({
   path: '/',
   getParentRoute: () => BdRoute,
 } as any)
+const BdCalculatorRoute = BdCalculatorRouteImport.update({
+  id: '/calculator',
+  path: '/calculator',
+  getParentRoute: () => BdRoute,
+} as any)
 const BdDealsRoute = BdDealsRouteImport.update({
   id: '/deals',
   path: '/deals',
@@ -137,6 +150,16 @@ const BdDealsRoute = BdDealsRouteImport.update({
 const BdQuotationsRoute = BdQuotationsRouteImport.update({
   id: '/quotations',
   path: '/quotations',
+  getParentRoute: () => BdRoute,
+} as any)
+const BdQuotesRoute = BdQuotesRouteImport.update({
+  id: '/quotes',
+  path: '/quotes',
+  getParentRoute: () => BdRoute,
+} as any)
+const BdRegisterDealRoute = BdRegisterDealRouteImport.update({
+  id: '/register-deal',
+  path: '/register-deal',
   getParentRoute: () => BdRoute,
 } as any)
 const LTokenRoute = LTokenRouteImport.update({
@@ -174,6 +197,16 @@ const PsSystemCostRoute = PsSystemCostRouteImport.update({
   path: '/system-cost',
   getParentRoute: () => PsRoute,
 } as any)
+const BdCalculatorMarcomRoute = BdCalculatorMarcomRouteImport.update({
+  id: '/marcom',
+  path: '/marcom',
+  getParentRoute: () => BdCalculatorRoute,
+} as any)
+const BdCalculatorOrmRoute = BdCalculatorOrmRouteImport.update({
+  id: '/orm',
+  path: '/orm',
+  getParentRoute: () => BdCalculatorRoute,
+} as any)
 const BdQuotationsIndexRoute = BdQuotationsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -183,6 +216,21 @@ const BdQuotationsQuoteIdRoute = BdQuotationsQuoteIdRouteImport.update({
   id: '/$quoteId',
   path: '/$quoteId',
   getParentRoute: () => BdQuotationsRoute,
+} as any)
+const BdQuotesIndexRoute = BdQuotesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => BdQuotesRoute,
+} as any)
+const BdQuotesQuoteIdRoute = BdQuotesQuoteIdRouteImport.update({
+  id: '/$quoteId',
+  path: '/$quoteId',
+  getParentRoute: () => BdQuotesRoute,
+} as any)
+const BdQuotesLifecycleRoute = BdQuotesLifecycleRouteImport.update({
+  id: '/lifecycle',
+  path: '/lifecycle',
+  getParentRoute: () => BdQuotesRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -202,8 +250,11 @@ export interface FileRoutesByFullPath {
   '/ac/hotel-profile': typeof AcHotelProfileRoute
   '/ac/products': typeof AcProductsRoute
   '/ac/system-cost': typeof AcSystemCostRoute
+  '/bd/calculator': typeof BdCalculatorRouteWithChildren
   '/bd/deals': typeof BdDealsRoute
   '/bd/quotations': typeof BdQuotationsRouteWithChildren
+  '/bd/quotes': typeof BdQuotesRouteWithChildren
+  '/bd/register-deal': typeof BdRegisterDealRoute
   '/l/$token': typeof LTokenRoute
   '/ps/contract-dashboard': typeof PsContractDashboardRoute
   '/ps/contract-wizard': typeof PsContractWizardRoute
@@ -213,8 +264,13 @@ export interface FileRoutesByFullPath {
   '/ac/': typeof AcIndexRoute
   '/bd/': typeof BdIndexRoute
   '/ps/': typeof PsIndexRoute
+  '/bd/calculator/marcom': typeof BdCalculatorMarcomRoute
+  '/bd/calculator/orm': typeof BdCalculatorOrmRoute
   '/bd/quotations/$quoteId': typeof BdQuotationsQuoteIdRoute
+  '/bd/quotes/$quoteId': typeof BdQuotesQuoteIdRoute
+  '/bd/quotes/lifecycle': typeof BdQuotesLifecycleRoute
   '/bd/quotations/': typeof BdQuotationsIndexRoute
+  '/bd/quotes/': typeof BdQuotesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -230,7 +286,9 @@ export interface FileRoutesByTo {
   '/ac/hotel-profile': typeof AcHotelProfileRoute
   '/ac/products': typeof AcProductsRoute
   '/ac/system-cost': typeof AcSystemCostRoute
+  '/bd/calculator': typeof BdCalculatorRouteWithChildren
   '/bd/deals': typeof BdDealsRoute
+  '/bd/register-deal': typeof BdRegisterDealRoute
   '/l/$token': typeof LTokenRoute
   '/ps/contract-dashboard': typeof PsContractDashboardRoute
   '/ps/contract-wizard': typeof PsContractWizardRoute
@@ -240,8 +298,13 @@ export interface FileRoutesByTo {
   '/ac': typeof AcIndexRoute
   '/bd': typeof BdIndexRoute
   '/ps': typeof PsIndexRoute
+  '/bd/calculator/marcom': typeof BdCalculatorMarcomRoute
+  '/bd/calculator/orm': typeof BdCalculatorOrmRoute
   '/bd/quotations/$quoteId': typeof BdQuotationsQuoteIdRoute
+  '/bd/quotes/$quoteId': typeof BdQuotesQuoteIdRoute
+  '/bd/quotes/lifecycle': typeof BdQuotesLifecycleRoute
   '/bd/quotations': typeof BdQuotationsIndexRoute
+  '/bd/quotes': typeof BdQuotesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -261,8 +324,11 @@ export interface FileRoutesById {
   '/ac/hotel-profile': typeof AcHotelProfileRoute
   '/ac/products': typeof AcProductsRoute
   '/ac/system-cost': typeof AcSystemCostRoute
+  '/bd/calculator': typeof BdCalculatorRouteWithChildren
   '/bd/deals': typeof BdDealsRoute
   '/bd/quotations': typeof BdQuotationsRouteWithChildren
+  '/bd/quotes': typeof BdQuotesRouteWithChildren
+  '/bd/register-deal': typeof BdRegisterDealRoute
   '/l/$token': typeof LTokenRoute
   '/ps/contract-dashboard': typeof PsContractDashboardRoute
   '/ps/contract-wizard': typeof PsContractWizardRoute
@@ -272,8 +338,13 @@ export interface FileRoutesById {
   '/ac/': typeof AcIndexRoute
   '/bd/': typeof BdIndexRoute
   '/ps/': typeof PsIndexRoute
+  '/bd/calculator/marcom': typeof BdCalculatorMarcomRoute
+  '/bd/calculator/orm': typeof BdCalculatorOrmRoute
   '/bd/quotations/$quoteId': typeof BdQuotationsQuoteIdRoute
+  '/bd/quotes/$quoteId': typeof BdQuotesQuoteIdRoute
+  '/bd/quotes/lifecycle': typeof BdQuotesLifecycleRoute
   '/bd/quotations/': typeof BdQuotationsIndexRoute
+  '/bd/quotes/': typeof BdQuotesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -294,8 +365,11 @@ export interface FileRouteTypes {
     | '/ac/hotel-profile'
     | '/ac/products'
     | '/ac/system-cost'
+    | '/bd/calculator'
     | '/bd/deals'
     | '/bd/quotations'
+    | '/bd/quotes'
+    | '/bd/register-deal'
     | '/l/$token'
     | '/ps/contract-dashboard'
     | '/ps/contract-wizard'
@@ -305,8 +379,13 @@ export interface FileRouteTypes {
     | '/ac/'
     | '/bd/'
     | '/ps/'
+    | '/bd/calculator/marcom'
+    | '/bd/calculator/orm'
     | '/bd/quotations/$quoteId'
+    | '/bd/quotes/$quoteId'
+    | '/bd/quotes/lifecycle'
     | '/bd/quotations/'
+    | '/bd/quotes/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -322,7 +401,9 @@ export interface FileRouteTypes {
     | '/ac/hotel-profile'
     | '/ac/products'
     | '/ac/system-cost'
+    | '/bd/calculator'
     | '/bd/deals'
+    | '/bd/register-deal'
     | '/l/$token'
     | '/ps/contract-dashboard'
     | '/ps/contract-wizard'
@@ -332,8 +413,13 @@ export interface FileRouteTypes {
     | '/ac'
     | '/bd'
     | '/ps'
+    | '/bd/calculator/marcom'
+    | '/bd/calculator/orm'
     | '/bd/quotations/$quoteId'
+    | '/bd/quotes/$quoteId'
+    | '/bd/quotes/lifecycle'
     | '/bd/quotations'
+    | '/bd/quotes'
   id:
     | '__root__'
     | '/'
@@ -352,8 +438,11 @@ export interface FileRouteTypes {
     | '/ac/hotel-profile'
     | '/ac/products'
     | '/ac/system-cost'
+    | '/bd/calculator'
     | '/bd/deals'
     | '/bd/quotations'
+    | '/bd/quotes'
+    | '/bd/register-deal'
     | '/l/$token'
     | '/ps/contract-dashboard'
     | '/ps/contract-wizard'
@@ -363,8 +452,13 @@ export interface FileRouteTypes {
     | '/ac/'
     | '/bd/'
     | '/ps/'
+    | '/bd/calculator/marcom'
+    | '/bd/calculator/orm'
     | '/bd/quotations/$quoteId'
+    | '/bd/quotes/$quoteId'
+    | '/bd/quotes/lifecycle'
     | '/bd/quotations/'
+    | '/bd/quotes/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -510,6 +604,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BdIndexRouteImport
       parentRoute: typeof BdRoute
     }
+    '/bd/calculator': {
+      id: '/bd/calculator'
+      path: '/calculator'
+      fullPath: '/bd/calculator'
+      preLoaderRoute: typeof BdCalculatorRouteImport
+      parentRoute: typeof BdRoute
+    }
     '/bd/deals': {
       id: '/bd/deals'
       path: '/deals'
@@ -522,6 +623,20 @@ declare module '@tanstack/react-router' {
       path: '/quotations'
       fullPath: '/bd/quotations'
       preLoaderRoute: typeof BdQuotationsRouteImport
+      parentRoute: typeof BdRoute
+    }
+    '/bd/quotes': {
+      id: '/bd/quotes'
+      path: '/quotes'
+      fullPath: '/bd/quotes'
+      preLoaderRoute: typeof BdQuotesRouteImport
+      parentRoute: typeof BdRoute
+    }
+    '/bd/register-deal': {
+      id: '/bd/register-deal'
+      path: '/register-deal'
+      fullPath: '/bd/register-deal'
+      preLoaderRoute: typeof BdRegisterDealRouteImport
       parentRoute: typeof BdRoute
     }
     '/l/$token': {
@@ -573,6 +688,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PsSystemCostRouteImport
       parentRoute: typeof PsRoute
     }
+    '/bd/calculator/marcom': {
+      id: '/bd/calculator/marcom'
+      path: '/marcom'
+      fullPath: '/bd/calculator/marcom'
+      preLoaderRoute: typeof BdCalculatorMarcomRouteImport
+      parentRoute: typeof BdCalculatorRoute
+    }
+    '/bd/calculator/orm': {
+      id: '/bd/calculator/orm'
+      path: '/orm'
+      fullPath: '/bd/calculator/orm'
+      preLoaderRoute: typeof BdCalculatorOrmRouteImport
+      parentRoute: typeof BdCalculatorRoute
+    }
     '/bd/quotations/': {
       id: '/bd/quotations/'
       path: '/'
@@ -586,6 +715,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/bd/quotations/$quoteId'
       preLoaderRoute: typeof BdQuotationsQuoteIdRouteImport
       parentRoute: typeof BdQuotationsRoute
+    }
+    '/bd/quotes/': {
+      id: '/bd/quotes/'
+      path: '/'
+      fullPath: '/bd/quotes/'
+      preLoaderRoute: typeof BdQuotesIndexRouteImport
+      parentRoute: typeof BdQuotesRoute
+    }
+    '/bd/quotes/$quoteId': {
+      id: '/bd/quotes/$quoteId'
+      path: '/$quoteId'
+      fullPath: '/bd/quotes/$quoteId'
+      preLoaderRoute: typeof BdQuotesQuoteIdRouteImport
+      parentRoute: typeof BdQuotesRoute
+    }
+    '/bd/quotes/lifecycle': {
+      id: '/bd/quotes/lifecycle'
+      path: '/lifecycle'
+      fullPath: '/bd/quotes/lifecycle'
+      preLoaderRoute: typeof BdQuotesLifecycleRouteImport
+      parentRoute: typeof BdQuotesRoute
     }
   }
 }
@@ -610,6 +760,20 @@ const AcRouteChildren: AcRouteChildren = {
 
 const AcRouteWithChildren = AcRoute._addFileChildren(AcRouteChildren)
 
+interface BdCalculatorRouteChildren {
+  BdCalculatorMarcomRoute: typeof BdCalculatorMarcomRoute
+  BdCalculatorOrmRoute: typeof BdCalculatorOrmRoute
+}
+
+const BdCalculatorRouteChildren: BdCalculatorRouteChildren = {
+  BdCalculatorMarcomRoute: BdCalculatorMarcomRoute,
+  BdCalculatorOrmRoute: BdCalculatorOrmRoute,
+}
+
+const BdCalculatorRouteWithChildren = BdCalculatorRoute._addFileChildren(
+  BdCalculatorRouteChildren,
+)
+
 interface BdQuotationsRouteChildren {
   BdQuotationsQuoteIdRoute: typeof BdQuotationsQuoteIdRoute
   BdQuotationsIndexRoute: typeof BdQuotationsIndexRoute
@@ -624,15 +788,37 @@ const BdQuotationsRouteWithChildren = BdQuotationsRoute._addFileChildren(
   BdQuotationsRouteChildren,
 )
 
+interface BdQuotesRouteChildren {
+  BdQuotesQuoteIdRoute: typeof BdQuotesQuoteIdRoute
+  BdQuotesLifecycleRoute: typeof BdQuotesLifecycleRoute
+  BdQuotesIndexRoute: typeof BdQuotesIndexRoute
+}
+
+const BdQuotesRouteChildren: BdQuotesRouteChildren = {
+  BdQuotesQuoteIdRoute: BdQuotesQuoteIdRoute,
+  BdQuotesLifecycleRoute: BdQuotesLifecycleRoute,
+  BdQuotesIndexRoute: BdQuotesIndexRoute,
+}
+
+const BdQuotesRouteWithChildren = BdQuotesRoute._addFileChildren(
+  BdQuotesRouteChildren,
+)
+
 interface BdRouteChildren {
+  BdCalculatorRoute: typeof BdCalculatorRouteWithChildren
   BdDealsRoute: typeof BdDealsRoute
   BdQuotationsRoute: typeof BdQuotationsRouteWithChildren
+  BdQuotesRoute: typeof BdQuotesRouteWithChildren
+  BdRegisterDealRoute: typeof BdRegisterDealRoute
   BdIndexRoute: typeof BdIndexRoute
 }
 
 const BdRouteChildren: BdRouteChildren = {
+  BdCalculatorRoute: BdCalculatorRouteWithChildren,
   BdDealsRoute: BdDealsRoute,
   BdQuotationsRoute: BdQuotationsRouteWithChildren,
+  BdQuotesRoute: BdQuotesRouteWithChildren,
+  BdRegisterDealRoute: BdRegisterDealRoute,
   BdIndexRoute: BdIndexRoute,
 }
 
