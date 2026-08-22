@@ -196,6 +196,57 @@ export const mockOrmOutput = (roomKey: number) => ({
   recommended_level: roomKey <= 20 ? "L2" : roomKey <= 80 ? "L3" : "L4",
 });
 
+/* ---------------- SKU mapping (v2.2, mocked alongside pricing) ---------------- */
+
+const money = (n: number) => `฿${n.toLocaleString("en-US")}`;
+
+const SETUP_SKU: Record<string, { code: string; price: number }> = {
+  "Revplus+": { code: "ORM-SETUP-REVPLUS", price: 3500 },
+  "Register OTAs": { code: "ORM-SETUP-REGOTA", price: 2500 },
+};
+
+export function ormSkus(
+  packages: Record<string, OrmPackage> | undefined,
+  selected: string[],
+): SKUEntry[] {
+  if (!packages) return [];
+  const out: SKUEntry[] = [];
+  const setups = new Set<string>();
+  selected.forEach((key) => {
+    const pkg = packages[key];
+    if (!pkg) return;
+    const parts: string[] = [];
+    if (pkg.base_price) parts.push(`${money(pkg.base_price)}/mo`);
+    if (pkg.commission) parts.push(`${Math.round(pkg.commission * 100)}%`);
+    out.push({
+      sku_code: `ORM-MTH-FULL-${key.toUpperCase()}`,
+      product_name: `${key.charAt(0).toUpperCase()}${key.slice(1)} Package`,
+      billing_summary: parts.join(" + ") || "TBD",
+    });
+    pkg.includes.forEach((i) => setups.add(i));
+  });
+  setups.forEach((name) => {
+    const meta = SETUP_SKU[name];
+    out.push({
+      sku_code: meta?.code ?? `ORM-SETUP-${name.replace(/\W+/g, "").toUpperCase()}`,
+      product_name: name,
+      billing_summary: meta ? `${money(meta.price)} one-time` : "one-time",
+    });
+  });
+  return out;
+}
+
+export function marcomSkus(items: LineItem[]): SKUEntry[] {
+  return items.map((i) => ({
+    sku_code: `MKT-${i.category.toUpperCase().slice(0, 4)}-${i.package_name
+      .replace(/[^A-Za-z0-9]+/g, "")
+      .toUpperCase()
+      .slice(0, 10)}`,
+    product_name: i.package_name,
+    billing_summary: i.billing === "monthly" ? `${money(i.amount)}/mo` : `${money(i.amount)} one-time`,
+  }));
+}
+
 function seedQuotes(): BdQuote[] {
   return [
     base({
