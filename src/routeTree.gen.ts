@@ -44,6 +44,7 @@ import { Route as BdCalculatorOrmRouteImport } from './routes/bd.calculator.orm'
 import { Route as BdQuotationsIndexRouteImport } from './routes/bd.quotations.index'
 import { Route as BdQuotationsQuoteIdRouteImport } from './routes/bd.quotations.$quoteId'
 import { Route as BdQuotesIndexRouteImport } from './routes/bd.quotes.index'
+import { Route as BdQuotesLifecycleRouteImport } from './routes/bd.quotes.lifecycle'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -220,6 +221,11 @@ const BdQuotesIndexRoute = BdQuotesIndexRouteImport.update({
   path: '/',
   getParentRoute: () => BdQuotesRoute,
 } as any)
+const BdQuotesLifecycleRoute = BdQuotesLifecycleRouteImport.update({
+  id: '/lifecycle',
+  path: '/lifecycle',
+  getParentRoute: () => BdQuotesRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -255,6 +261,7 @@ export interface FileRoutesByFullPath {
   '/bd/calculator/marcom': typeof BdCalculatorMarcomRoute
   '/bd/calculator/orm': typeof BdCalculatorOrmRoute
   '/bd/quotations/$quoteId': typeof BdQuotationsQuoteIdRoute
+  '/bd/quotes/lifecycle': typeof BdQuotesLifecycleRoute
   '/bd/quotations/': typeof BdQuotationsIndexRoute
   '/bd/quotes/': typeof BdQuotesIndexRoute
 }
@@ -287,6 +294,7 @@ export interface FileRoutesByTo {
   '/bd/calculator/marcom': typeof BdCalculatorMarcomRoute
   '/bd/calculator/orm': typeof BdCalculatorOrmRoute
   '/bd/quotations/$quoteId': typeof BdQuotationsQuoteIdRoute
+  '/bd/quotes/lifecycle': typeof BdQuotesLifecycleRoute
   '/bd/quotations': typeof BdQuotationsIndexRoute
   '/bd/quotes': typeof BdQuotesIndexRoute
 }
@@ -325,6 +333,7 @@ export interface FileRoutesById {
   '/bd/calculator/marcom': typeof BdCalculatorMarcomRoute
   '/bd/calculator/orm': typeof BdCalculatorOrmRoute
   '/bd/quotations/$quoteId': typeof BdQuotationsQuoteIdRoute
+  '/bd/quotes/lifecycle': typeof BdQuotesLifecycleRoute
   '/bd/quotations/': typeof BdQuotationsIndexRoute
   '/bd/quotes/': typeof BdQuotesIndexRoute
 }
@@ -364,6 +373,7 @@ export interface FileRouteTypes {
     | '/bd/calculator/marcom'
     | '/bd/calculator/orm'
     | '/bd/quotations/$quoteId'
+    | '/bd/quotes/lifecycle'
     | '/bd/quotations/'
     | '/bd/quotes/'
   fileRoutesByTo: FileRoutesByTo
@@ -396,6 +406,7 @@ export interface FileRouteTypes {
     | '/bd/calculator/marcom'
     | '/bd/calculator/orm'
     | '/bd/quotations/$quoteId'
+    | '/bd/quotes/lifecycle'
     | '/bd/quotations'
     | '/bd/quotes'
   id:
@@ -433,6 +444,7 @@ export interface FileRouteTypes {
     | '/bd/calculator/marcom'
     | '/bd/calculator/orm'
     | '/bd/quotations/$quoteId'
+    | '/bd/quotes/lifecycle'
     | '/bd/quotations/'
     | '/bd/quotes/'
   fileRoutesById: FileRoutesById
@@ -699,6 +711,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BdQuotesIndexRouteImport
       parentRoute: typeof BdQuotesRoute
     }
+    '/bd/quotes/lifecycle': {
+      id: '/bd/quotes/lifecycle'
+      path: '/lifecycle'
+      fullPath: '/bd/quotes/lifecycle'
+      preLoaderRoute: typeof BdQuotesLifecycleRouteImport
+      parentRoute: typeof BdQuotesRoute
+    }
   }
 }
 
@@ -751,10 +770,12 @@ const BdQuotationsRouteWithChildren = BdQuotationsRoute._addFileChildren(
 )
 
 interface BdQuotesRouteChildren {
+  BdQuotesLifecycleRoute: typeof BdQuotesLifecycleRoute
   BdQuotesIndexRoute: typeof BdQuotesIndexRoute
 }
 
 const BdQuotesRouteChildren: BdQuotesRouteChildren = {
+  BdQuotesLifecycleRoute: BdQuotesLifecycleRoute,
   BdQuotesIndexRoute: BdQuotesIndexRoute,
 }
 
