@@ -123,8 +123,14 @@ function MarcomCalculator() {
   }, [picked]);
 
   const exportPdf = () => {
-    if (!hotel.trim()) return toast.error("กรุณากรอกชื่อโรงแรม");
-    if (picked.length === 0) return toast.error("ยังไม่ได้เลือกบริการ");
+    if (!hotel.trim()) {
+      toast.error("กรุณากรอกชื่อโรงแรม");
+      return;
+    }
+    if (picked.length === 0) {
+      toast.error("ยังไม่ได้เลือกบริการ");
+      return;
+    }
     const id = createQuote({
       type: "MARCOM",
       hotel_name: hotel.trim(),

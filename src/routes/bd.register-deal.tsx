@@ -52,8 +52,14 @@ function RegisterDeal() {
   }, [quotes, search, linked]);
 
   const save = () => {
-    if (!hotel.trim() || !pipedriveId.trim()) return toast.error("กรอกชื่อโรงแรมและ Pipedrive Deal ID ก่อน");
-    if (linked.length === 0) return toast.error("ผูกใบเสนอราคาอย่างน้อย 1 ฉบับ");
+    if (!hotel.trim() || !pipedriveId.trim()) {
+      toast.error("กรอกชื่อโรงแรมและ Pipedrive Deal ID ก่อน");
+      return;
+    }
+    if (linked.length === 0) {
+      toast.error("ผูกใบเสนอราคาอย่างน้อย 1 ฉบับ");
+      return;
+    }
     const id = registerDeal({
       hotel_name: hotel.trim(),
       room_key: Number(roomKey) || 0,
