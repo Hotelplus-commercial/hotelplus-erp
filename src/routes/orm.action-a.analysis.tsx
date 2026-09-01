@@ -32,7 +32,7 @@ type Search = { tab?: "phase1" | "phase2" };
 
 export const Route = createFileRoute("/orm/action-a/analysis")({
   validateSearch: (s: Record<string, unknown>): Search => ({
-    tab: s.tab === "phase2" ? "phase2" : "phase1",
+    tab: s["tab"] === "phase2" ? "phase2" : "phase1",
   }),
   head: () => ({
     meta: [
