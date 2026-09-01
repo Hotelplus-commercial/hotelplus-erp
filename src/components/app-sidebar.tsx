@@ -43,6 +43,10 @@ const moduleChildren: Record<string, { title: string; url: string; icon: typeof 
     { title: "Register Deal", url: "/bd/register-deal", icon: Handshake },
   ],
 
+  orm: [
+    { title: "ORM Overview", url: "/orm", icon: LayoutDashboard },
+    { title: "Action A · Hotel Plus ORM", url: "/orm/action-a", icon: BarChart3 },
+  ],
   ac: [
     { title: "Hotel Profile", url: "/ac/hotel-profile", icon: BuildingIcon },
     { title: "ต้นทุนค่าระบบ", url: "/ac/system-cost", icon: Server },
