@@ -36,6 +36,10 @@ function OverviewScreen() {
 
   return (
     <div className="flex flex-col gap-4">
+      <div>
+        <h1 className="font-display text-xl font-semibold">ภาพรวม Hotel Plus ORM</h1>
+        <p className="text-sm text-muted-foreground">รอบการทำงานรายเดือน · KPI · Booking Pace · โรงแรมที่ดูแล</p>
+      </div>
       <OrmCard
         title="รอบเดือนนี้ (Monthly Loop)"
         subtitle={`รอบเดือน มิถุนายน 2026 — Loop ที่ ${hotel.loop} · ${hotel.name}`}
