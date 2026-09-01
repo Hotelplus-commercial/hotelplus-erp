@@ -33,6 +33,8 @@ import { Route as BdQuotationsRouteImport } from './routes/bd.quotations'
 import { Route as BdQuotesRouteImport } from './routes/bd.quotes'
 import { Route as BdRegisterDealRouteImport } from './routes/bd.register-deal'
 import { Route as LTokenRouteImport } from './routes/l.$token'
+import { Route as OrmIndexRouteImport } from './routes/orm.index'
+import { Route as OrmActionARouteImport } from './routes/orm.action-a'
 import { Route as PsIndexRouteImport } from './routes/ps.index'
 import { Route as PsContractDashboardRouteImport } from './routes/ps.contract-dashboard'
 import { Route as PsContractWizardRouteImport } from './routes/ps.contract-wizard'
@@ -46,6 +48,11 @@ import { Route as BdQuotationsQuoteIdRouteImport } from './routes/bd.quotations.
 import { Route as BdQuotesIndexRouteImport } from './routes/bd.quotes.index'
 import { Route as BdQuotesQuoteIdRouteImport } from './routes/bd.quotes.$quoteId'
 import { Route as BdQuotesLifecycleRouteImport } from './routes/bd.quotes.lifecycle'
+import { Route as OrmActionAIndexRouteImport } from './routes/orm.action-a.index'
+import { Route as OrmActionAAnalysisRouteImport } from './routes/orm.action-a.analysis'
+import { Route as OrmActionAReportRouteImport } from './routes/orm.action-a.report'
+import { Route as OrmActionAReviewRouteImport } from './routes/orm.action-a.review'
+import { Route as OrmActionASettingsRouteImport } from './routes/orm.action-a.settings'
 import { Route as PsTemplatesIndexRouteImport } from './routes/ps.templates.index'
 import { Route as PsTemplatesTemplateIdRouteImport } from './routes/ps.templates.$templateId'
 import { Route as PsTemplatesAutoFieldsRouteImport } from './routes/ps.templates.auto-fields'
@@ -170,6 +177,16 @@ const LTokenRoute = LTokenRouteImport.update({
   path: '/l/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OrmIndexRoute = OrmIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => OrmRoute,
+} as any)
+const OrmActionARoute = OrmActionARouteImport.update({
+  id: '/action-a',
+  path: '/action-a',
+  getParentRoute: () => OrmRoute,
+} as any)
 const PsIndexRoute = PsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -235,6 +252,31 @@ const BdQuotesLifecycleRoute = BdQuotesLifecycleRouteImport.update({
   path: '/lifecycle',
   getParentRoute: () => BdQuotesRoute,
 } as any)
+const OrmActionAIndexRoute = OrmActionAIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => OrmActionARoute,
+} as any)
+const OrmActionAAnalysisRoute = OrmActionAAnalysisRouteImport.update({
+  id: '/analysis',
+  path: '/analysis',
+  getParentRoute: () => OrmActionARoute,
+} as any)
+const OrmActionAReportRoute = OrmActionAReportRouteImport.update({
+  id: '/report',
+  path: '/report',
+  getParentRoute: () => OrmActionARoute,
+} as any)
+const OrmActionAReviewRoute = OrmActionAReviewRouteImport.update({
+  id: '/review',
+  path: '/review',
+  getParentRoute: () => OrmActionARoute,
+} as any)
+const OrmActionASettingsRoute = OrmActionASettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => OrmActionARoute,
+} as any)
 const PsTemplatesIndexRoute = PsTemplatesIndexRouteImport.update({
   id: '/templates/',
   path: '/templates/',
@@ -259,7 +301,7 @@ export interface FileRoutesByFullPath {
   '/hotel-profile': typeof HotelProfileRoute
   '/hr': typeof HrRoute
   '/marcom': typeof MarcomRoute
-  '/orm': typeof OrmRoute
+  '/orm': typeof OrmRouteWithChildren
   '/ps': typeof PsRouteWithChildren
   '/settings': typeof SettingsRoute
   '/system-cost': typeof SystemCostRoute
@@ -274,6 +316,7 @@ export interface FileRoutesByFullPath {
   '/bd/quotes': typeof BdQuotesRouteWithChildren
   '/bd/register-deal': typeof BdRegisterDealRoute
   '/l/$token': typeof LTokenRoute
+  '/orm/action-a': typeof OrmActionARouteWithChildren
   '/ps/contract-dashboard': typeof PsContractDashboardRoute
   '/ps/contract-wizard': typeof PsContractWizardRoute
   '/ps/contracts': typeof PsContractsRoute
@@ -281,16 +324,22 @@ export interface FileRoutesByFullPath {
   '/ps/system-cost': typeof PsSystemCostRoute
   '/ac/': typeof AcIndexRoute
   '/bd/': typeof BdIndexRoute
+  '/orm/': typeof OrmIndexRoute
   '/ps/': typeof PsIndexRoute
   '/bd/calculator/marcom': typeof BdCalculatorMarcomRoute
   '/bd/calculator/orm': typeof BdCalculatorOrmRoute
   '/bd/quotations/$quoteId': typeof BdQuotationsQuoteIdRoute
   '/bd/quotes/$quoteId': typeof BdQuotesQuoteIdRoute
   '/bd/quotes/lifecycle': typeof BdQuotesLifecycleRoute
+  '/orm/action-a/analysis': typeof OrmActionAAnalysisRoute
+  '/orm/action-a/report': typeof OrmActionAReportRoute
+  '/orm/action-a/review': typeof OrmActionAReviewRoute
+  '/orm/action-a/settings': typeof OrmActionASettingsRoute
   '/ps/templates/$templateId': typeof PsTemplatesTemplateIdRoute
   '/ps/templates/auto-fields': typeof PsTemplatesAutoFieldsRoute
   '/bd/quotations/': typeof BdQuotationsIndexRoute
   '/bd/quotes/': typeof BdQuotesIndexRoute
+  '/orm/action-a/': typeof OrmActionAIndexRoute
   '/ps/templates/': typeof PsTemplatesIndexRoute
 }
 export interface FileRoutesByTo {
@@ -299,7 +348,6 @@ export interface FileRoutesByTo {
   '/hotel-profile': typeof HotelProfileRoute
   '/hr': typeof HrRoute
   '/marcom': typeof MarcomRoute
-  '/orm': typeof OrmRoute
   '/settings': typeof SettingsRoute
   '/system-cost': typeof SystemCostRoute
   '/ac/billing': typeof AcBillingRoute
@@ -318,16 +366,22 @@ export interface FileRoutesByTo {
   '/ps/system-cost': typeof PsSystemCostRoute
   '/ac': typeof AcIndexRoute
   '/bd': typeof BdIndexRoute
+  '/orm': typeof OrmIndexRoute
   '/ps': typeof PsIndexRoute
   '/bd/calculator/marcom': typeof BdCalculatorMarcomRoute
   '/bd/calculator/orm': typeof BdCalculatorOrmRoute
   '/bd/quotations/$quoteId': typeof BdQuotationsQuoteIdRoute
   '/bd/quotes/$quoteId': typeof BdQuotesQuoteIdRoute
   '/bd/quotes/lifecycle': typeof BdQuotesLifecycleRoute
+  '/orm/action-a/analysis': typeof OrmActionAAnalysisRoute
+  '/orm/action-a/report': typeof OrmActionAReportRoute
+  '/orm/action-a/review': typeof OrmActionAReviewRoute
+  '/orm/action-a/settings': typeof OrmActionASettingsRoute
   '/ps/templates/$templateId': typeof PsTemplatesTemplateIdRoute
   '/ps/templates/auto-fields': typeof PsTemplatesAutoFieldsRoute
   '/bd/quotations': typeof BdQuotationsIndexRoute
   '/bd/quotes': typeof BdQuotesIndexRoute
+  '/orm/action-a': typeof OrmActionAIndexRoute
   '/ps/templates': typeof PsTemplatesIndexRoute
 }
 export interface FileRoutesById {
@@ -339,7 +393,7 @@ export interface FileRoutesById {
   '/hotel-profile': typeof HotelProfileRoute
   '/hr': typeof HrRoute
   '/marcom': typeof MarcomRoute
-  '/orm': typeof OrmRoute
+  '/orm': typeof OrmRouteWithChildren
   '/ps': typeof PsRouteWithChildren
   '/settings': typeof SettingsRoute
   '/system-cost': typeof SystemCostRoute
@@ -354,6 +408,7 @@ export interface FileRoutesById {
   '/bd/quotes': typeof BdQuotesRouteWithChildren
   '/bd/register-deal': typeof BdRegisterDealRoute
   '/l/$token': typeof LTokenRoute
+  '/orm/action-a': typeof OrmActionARouteWithChildren
   '/ps/contract-dashboard': typeof PsContractDashboardRoute
   '/ps/contract-wizard': typeof PsContractWizardRoute
   '/ps/contracts': typeof PsContractsRoute
@@ -361,16 +416,22 @@ export interface FileRoutesById {
   '/ps/system-cost': typeof PsSystemCostRoute
   '/ac/': typeof AcIndexRoute
   '/bd/': typeof BdIndexRoute
+  '/orm/': typeof OrmIndexRoute
   '/ps/': typeof PsIndexRoute
   '/bd/calculator/marcom': typeof BdCalculatorMarcomRoute
   '/bd/calculator/orm': typeof BdCalculatorOrmRoute
   '/bd/quotations/$quoteId': typeof BdQuotationsQuoteIdRoute
   '/bd/quotes/$quoteId': typeof BdQuotesQuoteIdRoute
   '/bd/quotes/lifecycle': typeof BdQuotesLifecycleRoute
+  '/orm/action-a/analysis': typeof OrmActionAAnalysisRoute
+  '/orm/action-a/report': typeof OrmActionAReportRoute
+  '/orm/action-a/review': typeof OrmActionAReviewRoute
+  '/orm/action-a/settings': typeof OrmActionASettingsRoute
   '/ps/templates/$templateId': typeof PsTemplatesTemplateIdRoute
   '/ps/templates/auto-fields': typeof PsTemplatesAutoFieldsRoute
   '/bd/quotations/': typeof BdQuotationsIndexRoute
   '/bd/quotes/': typeof BdQuotesIndexRoute
+  '/orm/action-a/': typeof OrmActionAIndexRoute
   '/ps/templates/': typeof PsTemplatesIndexRoute
 }
 export interface FileRouteTypes {
@@ -398,6 +459,7 @@ export interface FileRouteTypes {
     | '/bd/quotes'
     | '/bd/register-deal'
     | '/l/$token'
+    | '/orm/action-a'
     | '/ps/contract-dashboard'
     | '/ps/contract-wizard'
     | '/ps/contracts'
@@ -405,16 +467,22 @@ export interface FileRouteTypes {
     | '/ps/system-cost'
     | '/ac/'
     | '/bd/'
+    | '/orm/'
     | '/ps/'
     | '/bd/calculator/marcom'
     | '/bd/calculator/orm'
     | '/bd/quotations/$quoteId'
     | '/bd/quotes/$quoteId'
     | '/bd/quotes/lifecycle'
+    | '/orm/action-a/analysis'
+    | '/orm/action-a/report'
+    | '/orm/action-a/review'
+    | '/orm/action-a/settings'
     | '/ps/templates/$templateId'
     | '/ps/templates/auto-fields'
     | '/bd/quotations/'
     | '/bd/quotes/'
+    | '/orm/action-a/'
     | '/ps/templates/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -423,7 +491,6 @@ export interface FileRouteTypes {
     | '/hotel-profile'
     | '/hr'
     | '/marcom'
-    | '/orm'
     | '/settings'
     | '/system-cost'
     | '/ac/billing'
@@ -442,16 +509,22 @@ export interface FileRouteTypes {
     | '/ps/system-cost'
     | '/ac'
     | '/bd'
+    | '/orm'
     | '/ps'
     | '/bd/calculator/marcom'
     | '/bd/calculator/orm'
     | '/bd/quotations/$quoteId'
     | '/bd/quotes/$quoteId'
     | '/bd/quotes/lifecycle'
+    | '/orm/action-a/analysis'
+    | '/orm/action-a/report'
+    | '/orm/action-a/review'
+    | '/orm/action-a/settings'
     | '/ps/templates/$templateId'
     | '/ps/templates/auto-fields'
     | '/bd/quotations'
     | '/bd/quotes'
+    | '/orm/action-a'
     | '/ps/templates'
   id:
     | '__root__'
@@ -477,6 +550,7 @@ export interface FileRouteTypes {
     | '/bd/quotes'
     | '/bd/register-deal'
     | '/l/$token'
+    | '/orm/action-a'
     | '/ps/contract-dashboard'
     | '/ps/contract-wizard'
     | '/ps/contracts'
@@ -484,16 +558,22 @@ export interface FileRouteTypes {
     | '/ps/system-cost'
     | '/ac/'
     | '/bd/'
+    | '/orm/'
     | '/ps/'
     | '/bd/calculator/marcom'
     | '/bd/calculator/orm'
     | '/bd/quotations/$quoteId'
     | '/bd/quotes/$quoteId'
     | '/bd/quotes/lifecycle'
+    | '/orm/action-a/analysis'
+    | '/orm/action-a/report'
+    | '/orm/action-a/review'
+    | '/orm/action-a/settings'
     | '/ps/templates/$templateId'
     | '/ps/templates/auto-fields'
     | '/bd/quotations/'
     | '/bd/quotes/'
+    | '/orm/action-a/'
     | '/ps/templates/'
   fileRoutesById: FileRoutesById
 }
@@ -505,7 +585,7 @@ export interface RootRouteChildren {
   HotelProfileRoute: typeof HotelProfileRoute
   HrRoute: typeof HrRoute
   MarcomRoute: typeof MarcomRoute
-  OrmRoute: typeof OrmRoute
+  OrmRoute: typeof OrmRouteWithChildren
   PsRoute: typeof PsRouteWithChildren
   SettingsRoute: typeof SettingsRoute
   SystemCostRoute: typeof SystemCostRoute
@@ -682,6 +762,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/orm/': {
+      id: '/orm/'
+      path: '/'
+      fullPath: '/orm/'
+      preLoaderRoute: typeof OrmIndexRouteImport
+      parentRoute: typeof OrmRoute
+    }
+    '/orm/action-a': {
+      id: '/orm/action-a'
+      path: '/action-a'
+      fullPath: '/orm/action-a'
+      preLoaderRoute: typeof OrmActionARouteImport
+      parentRoute: typeof OrmRoute
+    }
     '/ps/': {
       id: '/ps/'
       path: '/'
@@ -772,6 +866,41 @@ declare module '@tanstack/react-router' {
       fullPath: '/bd/quotes/lifecycle'
       preLoaderRoute: typeof BdQuotesLifecycleRouteImport
       parentRoute: typeof BdQuotesRoute
+    }
+    '/orm/action-a/': {
+      id: '/orm/action-a/'
+      path: '/'
+      fullPath: '/orm/action-a/'
+      preLoaderRoute: typeof OrmActionAIndexRouteImport
+      parentRoute: typeof OrmActionARoute
+    }
+    '/orm/action-a/analysis': {
+      id: '/orm/action-a/analysis'
+      path: '/analysis'
+      fullPath: '/orm/action-a/analysis'
+      preLoaderRoute: typeof OrmActionAAnalysisRouteImport
+      parentRoute: typeof OrmActionARoute
+    }
+    '/orm/action-a/report': {
+      id: '/orm/action-a/report'
+      path: '/report'
+      fullPath: '/orm/action-a/report'
+      preLoaderRoute: typeof OrmActionAReportRouteImport
+      parentRoute: typeof OrmActionARoute
+    }
+    '/orm/action-a/review': {
+      id: '/orm/action-a/review'
+      path: '/review'
+      fullPath: '/orm/action-a/review'
+      preLoaderRoute: typeof OrmActionAReviewRouteImport
+      parentRoute: typeof OrmActionARoute
+    }
+    '/orm/action-a/settings': {
+      id: '/orm/action-a/settings'
+      path: '/settings'
+      fullPath: '/orm/action-a/settings'
+      preLoaderRoute: typeof OrmActionASettingsRouteImport
+      parentRoute: typeof OrmActionARoute
     }
     '/ps/templates/': {
       id: '/ps/templates/'
@@ -881,6 +1010,38 @@ const BdRouteChildren: BdRouteChildren = {
 
 const BdRouteWithChildren = BdRoute._addFileChildren(BdRouteChildren)
 
+interface OrmActionARouteChildren {
+  OrmActionAAnalysisRoute: typeof OrmActionAAnalysisRoute
+  OrmActionAReportRoute: typeof OrmActionAReportRoute
+  OrmActionAReviewRoute: typeof OrmActionAReviewRoute
+  OrmActionASettingsRoute: typeof OrmActionASettingsRoute
+  OrmActionAIndexRoute: typeof OrmActionAIndexRoute
+}
+
+const OrmActionARouteChildren: OrmActionARouteChildren = {
+  OrmActionAAnalysisRoute: OrmActionAAnalysisRoute,
+  OrmActionAReportRoute: OrmActionAReportRoute,
+  OrmActionAReviewRoute: OrmActionAReviewRoute,
+  OrmActionASettingsRoute: OrmActionASettingsRoute,
+  OrmActionAIndexRoute: OrmActionAIndexRoute,
+}
+
+const OrmActionARouteWithChildren = OrmActionARoute._addFileChildren(
+  OrmActionARouteChildren,
+)
+
+interface OrmRouteChildren {
+  OrmActionARoute: typeof OrmActionARouteWithChildren
+  OrmIndexRoute: typeof OrmIndexRoute
+}
+
+const OrmRouteChildren: OrmRouteChildren = {
+  OrmActionARoute: OrmActionARouteWithChildren,
+  OrmIndexRoute: OrmIndexRoute,
+}
+
+const OrmRouteWithChildren = OrmRoute._addFileChildren(OrmRouteChildren)
+
 interface PsRouteChildren {
   PsContractDashboardRoute: typeof PsContractDashboardRoute
   PsContractWizardRoute: typeof PsContractWizardRoute
@@ -915,7 +1076,7 @@ const rootRouteChildren: RootRouteChildren = {
   HotelProfileRoute: HotelProfileRoute,
   HrRoute: HrRoute,
   MarcomRoute: MarcomRoute,
-  OrmRoute: OrmRoute,
+  OrmRoute: OrmRouteWithChildren,
   PsRoute: PsRouteWithChildren,
   SettingsRoute: SettingsRoute,
   SystemCostRoute: SystemCostRoute,

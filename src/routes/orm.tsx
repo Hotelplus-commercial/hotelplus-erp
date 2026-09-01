@@ -1,9 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { ModuleView } from "@/components/erp-ui";
+import { ModuleLayout } from "@/components/hotel/module-layout";
 import { getModule } from "@/lib/erp-data";
 
 const mod = getModule("orm");
+
+export const ormTabs = [
+  { label: "ORM Overview", to: "/orm" },
+  { label: "Action A · Hotel Plus ORM", to: "/orm/action-a" },
+];
 
 export const Route = createFileRoute("/orm")({
   head: () => ({
@@ -14,5 +19,5 @@ export const Route = createFileRoute("/orm")({
       { property: "og:description", content: mod.description },
     ],
   }),
-  component: () => <ModuleView module={mod} />,
+  component: () => <ModuleLayout tabs={ormTabs} />,
 });
