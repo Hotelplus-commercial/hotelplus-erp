@@ -39,6 +39,7 @@ import { Route as PsIndexRouteImport } from './routes/ps.index'
 import { Route as PsContractDashboardRouteImport } from './routes/ps.contract-dashboard'
 import { Route as PsContractWizardRouteImport } from './routes/ps.contract-wizard'
 import { Route as PsContractsRouteImport } from './routes/ps.contracts'
+import { Route as PsMeetingManagementRouteImport } from './routes/ps.meeting-management'
 import { Route as PsProductionRouteImport } from './routes/ps.production'
 import { Route as PsSystemCostRouteImport } from './routes/ps.system-cost'
 import { Route as BdCalculatorMarcomRouteImport } from './routes/bd.calculator.marcom'
@@ -207,6 +208,11 @@ const PsContractsRoute = PsContractsRouteImport.update({
   path: '/contracts',
   getParentRoute: () => PsRoute,
 } as any)
+const PsMeetingManagementRoute = PsMeetingManagementRouteImport.update({
+  id: '/meeting-management',
+  path: '/meeting-management',
+  getParentRoute: () => PsRoute,
+} as any)
 const PsProductionRoute = PsProductionRouteImport.update({
   id: '/production',
   path: '/production',
@@ -320,6 +326,7 @@ export interface FileRoutesByFullPath {
   '/ps/contract-dashboard': typeof PsContractDashboardRoute
   '/ps/contract-wizard': typeof PsContractWizardRoute
   '/ps/contracts': typeof PsContractsRoute
+  '/ps/meeting-management': typeof PsMeetingManagementRoute
   '/ps/production': typeof PsProductionRoute
   '/ps/system-cost': typeof PsSystemCostRoute
   '/ac/': typeof AcIndexRoute
@@ -362,6 +369,7 @@ export interface FileRoutesByTo {
   '/ps/contract-dashboard': typeof PsContractDashboardRoute
   '/ps/contract-wizard': typeof PsContractWizardRoute
   '/ps/contracts': typeof PsContractsRoute
+  '/ps/meeting-management': typeof PsMeetingManagementRoute
   '/ps/production': typeof PsProductionRoute
   '/ps/system-cost': typeof PsSystemCostRoute
   '/ac': typeof AcIndexRoute
@@ -412,6 +420,7 @@ export interface FileRoutesById {
   '/ps/contract-dashboard': typeof PsContractDashboardRoute
   '/ps/contract-wizard': typeof PsContractWizardRoute
   '/ps/contracts': typeof PsContractsRoute
+  '/ps/meeting-management': typeof PsMeetingManagementRoute
   '/ps/production': typeof PsProductionRoute
   '/ps/system-cost': typeof PsSystemCostRoute
   '/ac/': typeof AcIndexRoute
@@ -463,6 +472,7 @@ export interface FileRouteTypes {
     | '/ps/contract-dashboard'
     | '/ps/contract-wizard'
     | '/ps/contracts'
+    | '/ps/meeting-management'
     | '/ps/production'
     | '/ps/system-cost'
     | '/ac/'
@@ -505,6 +515,7 @@ export interface FileRouteTypes {
     | '/ps/contract-dashboard'
     | '/ps/contract-wizard'
     | '/ps/contracts'
+    | '/ps/meeting-management'
     | '/ps/production'
     | '/ps/system-cost'
     | '/ac'
@@ -554,6 +565,7 @@ export interface FileRouteTypes {
     | '/ps/contract-dashboard'
     | '/ps/contract-wizard'
     | '/ps/contracts'
+    | '/ps/meeting-management'
     | '/ps/production'
     | '/ps/system-cost'
     | '/ac/'
@@ -804,6 +816,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PsContractsRouteImport
       parentRoute: typeof PsRoute
     }
+    '/ps/meeting-management': {
+      id: '/ps/meeting-management'
+      path: '/meeting-management'
+      fullPath: '/ps/meeting-management'
+      preLoaderRoute: typeof PsMeetingManagementRouteImport
+      parentRoute: typeof PsRoute
+    }
     '/ps/production': {
       id: '/ps/production'
       path: '/production'
@@ -1046,6 +1065,7 @@ interface PsRouteChildren {
   PsContractDashboardRoute: typeof PsContractDashboardRoute
   PsContractWizardRoute: typeof PsContractWizardRoute
   PsContractsRoute: typeof PsContractsRoute
+  PsMeetingManagementRoute: typeof PsMeetingManagementRoute
   PsProductionRoute: typeof PsProductionRoute
   PsSystemCostRoute: typeof PsSystemCostRoute
   PsIndexRoute: typeof PsIndexRoute
@@ -1058,6 +1078,7 @@ const PsRouteChildren: PsRouteChildren = {
   PsContractDashboardRoute: PsContractDashboardRoute,
   PsContractWizardRoute: PsContractWizardRoute,
   PsContractsRoute: PsContractsRoute,
+  PsMeetingManagementRoute: PsMeetingManagementRoute,
   PsProductionRoute: PsProductionRoute,
   PsSystemCostRoute: PsSystemCostRoute,
   PsIndexRoute: PsIndexRoute,
