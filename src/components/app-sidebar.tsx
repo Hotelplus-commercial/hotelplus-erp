@@ -3,6 +3,8 @@ import {
   BarChart3,
   BuildingIcon,
   Calculator,
+  CalendarCheck,
+
   Megaphone,
   FileSignature,
   FileText,
