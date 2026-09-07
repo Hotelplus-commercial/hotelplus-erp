@@ -54,6 +54,7 @@ import { Route as OrmActionAAnalysisRouteImport } from './routes/orm.action-a.an
 import { Route as OrmActionAReportRouteImport } from './routes/orm.action-a.report'
 import { Route as OrmActionAReviewRouteImport } from './routes/orm.action-a.review'
 import { Route as OrmActionASettingsRouteImport } from './routes/orm.action-a.settings'
+import { Route as PsMeetingManagementIndexRouteImport } from './routes/ps.meeting-management.index'
 import { Route as PsTemplatesIndexRouteImport } from './routes/ps.templates.index'
 import { Route as PsTemplatesTemplateIdRouteImport } from './routes/ps.templates.$templateId'
 import { Route as PsTemplatesAutoFieldsRouteImport } from './routes/ps.templates.auto-fields'
@@ -283,6 +284,12 @@ const OrmActionASettingsRoute = OrmActionASettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => OrmActionARoute,
 } as any)
+const PsMeetingManagementIndexRoute =
+  PsMeetingManagementIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => PsMeetingManagementRoute,
+  } as any)
 const PsTemplatesIndexRoute = PsTemplatesIndexRouteImport.update({
   id: '/templates/',
   path: '/templates/',
@@ -326,7 +333,7 @@ export interface FileRoutesByFullPath {
   '/ps/contract-dashboard': typeof PsContractDashboardRoute
   '/ps/contract-wizard': typeof PsContractWizardRoute
   '/ps/contracts': typeof PsContractsRoute
-  '/ps/meeting-management': typeof PsMeetingManagementRoute
+  '/ps/meeting-management': typeof PsMeetingManagementRouteWithChildren
   '/ps/production': typeof PsProductionRoute
   '/ps/system-cost': typeof PsSystemCostRoute
   '/ac/': typeof AcIndexRoute
@@ -347,6 +354,7 @@ export interface FileRoutesByFullPath {
   '/bd/quotations/': typeof BdQuotationsIndexRoute
   '/bd/quotes/': typeof BdQuotesIndexRoute
   '/orm/action-a/': typeof OrmActionAIndexRoute
+  '/ps/meeting-management/': typeof PsMeetingManagementIndexRoute
   '/ps/templates/': typeof PsTemplatesIndexRoute
 }
 export interface FileRoutesByTo {
@@ -369,7 +377,6 @@ export interface FileRoutesByTo {
   '/ps/contract-dashboard': typeof PsContractDashboardRoute
   '/ps/contract-wizard': typeof PsContractWizardRoute
   '/ps/contracts': typeof PsContractsRoute
-  '/ps/meeting-management': typeof PsMeetingManagementRoute
   '/ps/production': typeof PsProductionRoute
   '/ps/system-cost': typeof PsSystemCostRoute
   '/ac': typeof AcIndexRoute
@@ -390,6 +397,7 @@ export interface FileRoutesByTo {
   '/bd/quotations': typeof BdQuotationsIndexRoute
   '/bd/quotes': typeof BdQuotesIndexRoute
   '/orm/action-a': typeof OrmActionAIndexRoute
+  '/ps/meeting-management': typeof PsMeetingManagementIndexRoute
   '/ps/templates': typeof PsTemplatesIndexRoute
 }
 export interface FileRoutesById {
@@ -420,7 +428,7 @@ export interface FileRoutesById {
   '/ps/contract-dashboard': typeof PsContractDashboardRoute
   '/ps/contract-wizard': typeof PsContractWizardRoute
   '/ps/contracts': typeof PsContractsRoute
-  '/ps/meeting-management': typeof PsMeetingManagementRoute
+  '/ps/meeting-management': typeof PsMeetingManagementRouteWithChildren
   '/ps/production': typeof PsProductionRoute
   '/ps/system-cost': typeof PsSystemCostRoute
   '/ac/': typeof AcIndexRoute
@@ -441,6 +449,7 @@ export interface FileRoutesById {
   '/bd/quotations/': typeof BdQuotationsIndexRoute
   '/bd/quotes/': typeof BdQuotesIndexRoute
   '/orm/action-a/': typeof OrmActionAIndexRoute
+  '/ps/meeting-management/': typeof PsMeetingManagementIndexRoute
   '/ps/templates/': typeof PsTemplatesIndexRoute
 }
 export interface FileRouteTypes {
@@ -493,6 +502,7 @@ export interface FileRouteTypes {
     | '/bd/quotations/'
     | '/bd/quotes/'
     | '/orm/action-a/'
+    | '/ps/meeting-management/'
     | '/ps/templates/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -515,7 +525,6 @@ export interface FileRouteTypes {
     | '/ps/contract-dashboard'
     | '/ps/contract-wizard'
     | '/ps/contracts'
-    | '/ps/meeting-management'
     | '/ps/production'
     | '/ps/system-cost'
     | '/ac'
@@ -536,6 +545,7 @@ export interface FileRouteTypes {
     | '/bd/quotations'
     | '/bd/quotes'
     | '/orm/action-a'
+    | '/ps/meeting-management'
     | '/ps/templates'
   id:
     | '__root__'
@@ -586,6 +596,7 @@ export interface FileRouteTypes {
     | '/bd/quotations/'
     | '/bd/quotes/'
     | '/orm/action-a/'
+    | '/ps/meeting-management/'
     | '/ps/templates/'
   fileRoutesById: FileRoutesById
 }
@@ -921,6 +932,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrmActionASettingsRouteImport
       parentRoute: typeof OrmActionARoute
     }
+    '/ps/meeting-management/': {
+      id: '/ps/meeting-management/'
+      path: '/'
+      fullPath: '/ps/meeting-management/'
+      preLoaderRoute: typeof PsMeetingManagementIndexRouteImport
+      parentRoute: typeof PsMeetingManagementRoute
+    }
     '/ps/templates/': {
       id: '/ps/templates/'
       path: '/templates'
@@ -1061,11 +1079,22 @@ const OrmRouteChildren: OrmRouteChildren = {
 
 const OrmRouteWithChildren = OrmRoute._addFileChildren(OrmRouteChildren)
 
+interface PsMeetingManagementRouteChildren {
+  PsMeetingManagementIndexRoute: typeof PsMeetingManagementIndexRoute
+}
+
+const PsMeetingManagementRouteChildren: PsMeetingManagementRouteChildren = {
+  PsMeetingManagementIndexRoute: PsMeetingManagementIndexRoute,
+}
+
+const PsMeetingManagementRouteWithChildren =
+  PsMeetingManagementRoute._addFileChildren(PsMeetingManagementRouteChildren)
+
 interface PsRouteChildren {
   PsContractDashboardRoute: typeof PsContractDashboardRoute
   PsContractWizardRoute: typeof PsContractWizardRoute
   PsContractsRoute: typeof PsContractsRoute
-  PsMeetingManagementRoute: typeof PsMeetingManagementRoute
+  PsMeetingManagementRoute: typeof PsMeetingManagementRouteWithChildren
   PsProductionRoute: typeof PsProductionRoute
   PsSystemCostRoute: typeof PsSystemCostRoute
   PsIndexRoute: typeof PsIndexRoute
@@ -1078,7 +1107,7 @@ const PsRouteChildren: PsRouteChildren = {
   PsContractDashboardRoute: PsContractDashboardRoute,
   PsContractWizardRoute: PsContractWizardRoute,
   PsContractsRoute: PsContractsRoute,
-  PsMeetingManagementRoute: PsMeetingManagementRoute,
+  PsMeetingManagementRoute: PsMeetingManagementRouteWithChildren,
   PsProductionRoute: PsProductionRoute,
   PsSystemCostRoute: PsSystemCostRoute,
   PsIndexRoute: PsIndexRoute,
