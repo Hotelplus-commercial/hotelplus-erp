@@ -55,6 +55,7 @@ import { Route as OrmActionAReportRouteImport } from './routes/orm.action-a.repo
 import { Route as OrmActionAReviewRouteImport } from './routes/orm.action-a.review'
 import { Route as OrmActionASettingsRouteImport } from './routes/orm.action-a.settings'
 import { Route as PsMeetingManagementIndexRouteImport } from './routes/ps.meeting-management.index'
+import { Route as PsMeetingManagementDashboardRouteImport } from './routes/ps.meeting-management.dashboard'
 import { Route as PsTemplatesIndexRouteImport } from './routes/ps.templates.index'
 import { Route as PsTemplatesTemplateIdRouteImport } from './routes/ps.templates.$templateId'
 import { Route as PsTemplatesAutoFieldsRouteImport } from './routes/ps.templates.auto-fields'
@@ -290,6 +291,12 @@ const PsMeetingManagementIndexRoute =
     path: '/',
     getParentRoute: () => PsMeetingManagementRoute,
   } as any)
+const PsMeetingManagementDashboardRoute =
+  PsMeetingManagementDashboardRouteImport.update({
+    id: '/dashboard',
+    path: '/dashboard',
+    getParentRoute: () => PsMeetingManagementRoute,
+  } as any)
 const PsTemplatesIndexRoute = PsTemplatesIndexRouteImport.update({
   id: '/templates/',
   path: '/templates/',
@@ -349,6 +356,7 @@ export interface FileRoutesByFullPath {
   '/orm/action-a/report': typeof OrmActionAReportRoute
   '/orm/action-a/review': typeof OrmActionAReviewRoute
   '/orm/action-a/settings': typeof OrmActionASettingsRoute
+  '/ps/meeting-management/dashboard': typeof PsMeetingManagementDashboardRoute
   '/ps/templates/$templateId': typeof PsTemplatesTemplateIdRoute
   '/ps/templates/auto-fields': typeof PsTemplatesAutoFieldsRoute
   '/bd/quotations/': typeof BdQuotationsIndexRoute
@@ -392,6 +400,7 @@ export interface FileRoutesByTo {
   '/orm/action-a/report': typeof OrmActionAReportRoute
   '/orm/action-a/review': typeof OrmActionAReviewRoute
   '/orm/action-a/settings': typeof OrmActionASettingsRoute
+  '/ps/meeting-management/dashboard': typeof PsMeetingManagementDashboardRoute
   '/ps/templates/$templateId': typeof PsTemplatesTemplateIdRoute
   '/ps/templates/auto-fields': typeof PsTemplatesAutoFieldsRoute
   '/bd/quotations': typeof BdQuotationsIndexRoute
@@ -444,6 +453,7 @@ export interface FileRoutesById {
   '/orm/action-a/report': typeof OrmActionAReportRoute
   '/orm/action-a/review': typeof OrmActionAReviewRoute
   '/orm/action-a/settings': typeof OrmActionASettingsRoute
+  '/ps/meeting-management/dashboard': typeof PsMeetingManagementDashboardRoute
   '/ps/templates/$templateId': typeof PsTemplatesTemplateIdRoute
   '/ps/templates/auto-fields': typeof PsTemplatesAutoFieldsRoute
   '/bd/quotations/': typeof BdQuotationsIndexRoute
@@ -497,6 +507,7 @@ export interface FileRouteTypes {
     | '/orm/action-a/report'
     | '/orm/action-a/review'
     | '/orm/action-a/settings'
+    | '/ps/meeting-management/dashboard'
     | '/ps/templates/$templateId'
     | '/ps/templates/auto-fields'
     | '/bd/quotations/'
@@ -540,6 +551,7 @@ export interface FileRouteTypes {
     | '/orm/action-a/report'
     | '/orm/action-a/review'
     | '/orm/action-a/settings'
+    | '/ps/meeting-management/dashboard'
     | '/ps/templates/$templateId'
     | '/ps/templates/auto-fields'
     | '/bd/quotations'
@@ -591,6 +603,7 @@ export interface FileRouteTypes {
     | '/orm/action-a/report'
     | '/orm/action-a/review'
     | '/orm/action-a/settings'
+    | '/ps/meeting-management/dashboard'
     | '/ps/templates/$templateId'
     | '/ps/templates/auto-fields'
     | '/bd/quotations/'
@@ -939,6 +952,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PsMeetingManagementIndexRouteImport
       parentRoute: typeof PsMeetingManagementRoute
     }
+    '/ps/meeting-management/dashboard': {
+      id: '/ps/meeting-management/dashboard'
+      path: '/dashboard'
+      fullPath: '/ps/meeting-management/dashboard'
+      preLoaderRoute: typeof PsMeetingManagementDashboardRouteImport
+      parentRoute: typeof PsMeetingManagementRoute
+    }
     '/ps/templates/': {
       id: '/ps/templates/'
       path: '/templates'
@@ -1080,10 +1100,12 @@ const OrmRouteChildren: OrmRouteChildren = {
 const OrmRouteWithChildren = OrmRoute._addFileChildren(OrmRouteChildren)
 
 interface PsMeetingManagementRouteChildren {
+  PsMeetingManagementDashboardRoute: typeof PsMeetingManagementDashboardRoute
   PsMeetingManagementIndexRoute: typeof PsMeetingManagementIndexRoute
 }
 
 const PsMeetingManagementRouteChildren: PsMeetingManagementRouteChildren = {
+  PsMeetingManagementDashboardRoute: PsMeetingManagementDashboardRoute,
   PsMeetingManagementIndexRoute: PsMeetingManagementIndexRoute,
 }
 
