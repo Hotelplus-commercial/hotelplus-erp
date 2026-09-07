@@ -56,6 +56,7 @@ import { Route as OrmActionAReviewRouteImport } from './routes/orm.action-a.revi
 import { Route as OrmActionASettingsRouteImport } from './routes/orm.action-a.settings'
 import { Route as PsMeetingManagementIndexRouteImport } from './routes/ps.meeting-management.index'
 import { Route as PsMeetingManagementCalendarRouteImport } from './routes/ps.meeting-management.calendar'
+import { Route as PsMeetingManagementCoachingRouteImport } from './routes/ps.meeting-management.coaching'
 import { Route as PsMeetingManagementDashboardRouteImport } from './routes/ps.meeting-management.dashboard'
 import { Route as PsMeetingManagementMeetingsRouteImport } from './routes/ps.meeting-management.meetings'
 import { Route as PsMeetingManagementSurveysRouteImport } from './routes/ps.meeting-management.surveys'
@@ -300,6 +301,12 @@ const PsMeetingManagementCalendarRoute =
     path: '/calendar',
     getParentRoute: () => PsMeetingManagementRoute,
   } as any)
+const PsMeetingManagementCoachingRoute =
+  PsMeetingManagementCoachingRouteImport.update({
+    id: '/coaching',
+    path: '/coaching',
+    getParentRoute: () => PsMeetingManagementRoute,
+  } as any)
 const PsMeetingManagementDashboardRoute =
   PsMeetingManagementDashboardRouteImport.update({
     id: '/dashboard',
@@ -378,6 +385,7 @@ export interface FileRoutesByFullPath {
   '/orm/action-a/review': typeof OrmActionAReviewRoute
   '/orm/action-a/settings': typeof OrmActionASettingsRoute
   '/ps/meeting-management/calendar': typeof PsMeetingManagementCalendarRoute
+  '/ps/meeting-management/coaching': typeof PsMeetingManagementCoachingRoute
   '/ps/meeting-management/dashboard': typeof PsMeetingManagementDashboardRoute
   '/ps/meeting-management/meetings': typeof PsMeetingManagementMeetingsRoute
   '/ps/meeting-management/surveys': typeof PsMeetingManagementSurveysRoute
@@ -425,6 +433,7 @@ export interface FileRoutesByTo {
   '/orm/action-a/review': typeof OrmActionAReviewRoute
   '/orm/action-a/settings': typeof OrmActionASettingsRoute
   '/ps/meeting-management/calendar': typeof PsMeetingManagementCalendarRoute
+  '/ps/meeting-management/coaching': typeof PsMeetingManagementCoachingRoute
   '/ps/meeting-management/dashboard': typeof PsMeetingManagementDashboardRoute
   '/ps/meeting-management/meetings': typeof PsMeetingManagementMeetingsRoute
   '/ps/meeting-management/surveys': typeof PsMeetingManagementSurveysRoute
@@ -481,6 +490,7 @@ export interface FileRoutesById {
   '/orm/action-a/review': typeof OrmActionAReviewRoute
   '/orm/action-a/settings': typeof OrmActionASettingsRoute
   '/ps/meeting-management/calendar': typeof PsMeetingManagementCalendarRoute
+  '/ps/meeting-management/coaching': typeof PsMeetingManagementCoachingRoute
   '/ps/meeting-management/dashboard': typeof PsMeetingManagementDashboardRoute
   '/ps/meeting-management/meetings': typeof PsMeetingManagementMeetingsRoute
   '/ps/meeting-management/surveys': typeof PsMeetingManagementSurveysRoute
@@ -538,6 +548,7 @@ export interface FileRouteTypes {
     | '/orm/action-a/review'
     | '/orm/action-a/settings'
     | '/ps/meeting-management/calendar'
+    | '/ps/meeting-management/coaching'
     | '/ps/meeting-management/dashboard'
     | '/ps/meeting-management/meetings'
     | '/ps/meeting-management/surveys'
@@ -585,6 +596,7 @@ export interface FileRouteTypes {
     | '/orm/action-a/review'
     | '/orm/action-a/settings'
     | '/ps/meeting-management/calendar'
+    | '/ps/meeting-management/coaching'
     | '/ps/meeting-management/dashboard'
     | '/ps/meeting-management/meetings'
     | '/ps/meeting-management/surveys'
@@ -640,6 +652,7 @@ export interface FileRouteTypes {
     | '/orm/action-a/review'
     | '/orm/action-a/settings'
     | '/ps/meeting-management/calendar'
+    | '/ps/meeting-management/coaching'
     | '/ps/meeting-management/dashboard'
     | '/ps/meeting-management/meetings'
     | '/ps/meeting-management/surveys'
@@ -998,6 +1011,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PsMeetingManagementCalendarRouteImport
       parentRoute: typeof PsMeetingManagementRoute
     }
+    '/ps/meeting-management/coaching': {
+      id: '/ps/meeting-management/coaching'
+      path: '/coaching'
+      fullPath: '/ps/meeting-management/coaching'
+      preLoaderRoute: typeof PsMeetingManagementCoachingRouteImport
+      parentRoute: typeof PsMeetingManagementRoute
+    }
     '/ps/meeting-management/dashboard': {
       id: '/ps/meeting-management/dashboard'
       path: '/dashboard'
@@ -1161,6 +1181,7 @@ const OrmRouteWithChildren = OrmRoute._addFileChildren(OrmRouteChildren)
 
 interface PsMeetingManagementRouteChildren {
   PsMeetingManagementCalendarRoute: typeof PsMeetingManagementCalendarRoute
+  PsMeetingManagementCoachingRoute: typeof PsMeetingManagementCoachingRoute
   PsMeetingManagementDashboardRoute: typeof PsMeetingManagementDashboardRoute
   PsMeetingManagementMeetingsRoute: typeof PsMeetingManagementMeetingsRoute
   PsMeetingManagementSurveysRoute: typeof PsMeetingManagementSurveysRoute
@@ -1169,6 +1190,7 @@ interface PsMeetingManagementRouteChildren {
 
 const PsMeetingManagementRouteChildren: PsMeetingManagementRouteChildren = {
   PsMeetingManagementCalendarRoute: PsMeetingManagementCalendarRoute,
+  PsMeetingManagementCoachingRoute: PsMeetingManagementCoachingRoute,
   PsMeetingManagementDashboardRoute: PsMeetingManagementDashboardRoute,
   PsMeetingManagementMeetingsRoute: PsMeetingManagementMeetingsRoute,
   PsMeetingManagementSurveysRoute: PsMeetingManagementSurveysRoute,

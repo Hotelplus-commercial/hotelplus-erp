@@ -12,6 +12,8 @@ export const psTabs = [
   { label: "Contract Dashboard", to: "/ps/contract-dashboard" },
   { label: "Production Report", to: "/ps/production" },
   { label: "Templates", to: "/ps/templates" },
+  { label: "ORM Meeting Management", to: "/ps/meeting-management/dashboard" },
+
 ];
 
 export const Route = createFileRoute("/ps")({
