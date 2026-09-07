@@ -58,6 +58,7 @@ import { Route as PsMeetingManagementIndexRouteImport } from './routes/ps.meetin
 import { Route as PsMeetingManagementCalendarRouteImport } from './routes/ps.meeting-management.calendar'
 import { Route as PsMeetingManagementDashboardRouteImport } from './routes/ps.meeting-management.dashboard'
 import { Route as PsMeetingManagementMeetingsRouteImport } from './routes/ps.meeting-management.meetings'
+import { Route as PsMeetingManagementSurveysRouteImport } from './routes/ps.meeting-management.surveys'
 import { Route as PsTemplatesIndexRouteImport } from './routes/ps.templates.index'
 import { Route as PsTemplatesTemplateIdRouteImport } from './routes/ps.templates.$templateId'
 import { Route as PsTemplatesAutoFieldsRouteImport } from './routes/ps.templates.auto-fields'
@@ -311,6 +312,12 @@ const PsMeetingManagementMeetingsRoute =
     path: '/meetings',
     getParentRoute: () => PsMeetingManagementRoute,
   } as any)
+const PsMeetingManagementSurveysRoute =
+  PsMeetingManagementSurveysRouteImport.update({
+    id: '/surveys',
+    path: '/surveys',
+    getParentRoute: () => PsMeetingManagementRoute,
+  } as any)
 const PsTemplatesIndexRoute = PsTemplatesIndexRouteImport.update({
   id: '/templates/',
   path: '/templates/',
@@ -373,6 +380,7 @@ export interface FileRoutesByFullPath {
   '/ps/meeting-management/calendar': typeof PsMeetingManagementCalendarRoute
   '/ps/meeting-management/dashboard': typeof PsMeetingManagementDashboardRoute
   '/ps/meeting-management/meetings': typeof PsMeetingManagementMeetingsRoute
+  '/ps/meeting-management/surveys': typeof PsMeetingManagementSurveysRoute
   '/ps/templates/$templateId': typeof PsTemplatesTemplateIdRoute
   '/ps/templates/auto-fields': typeof PsTemplatesAutoFieldsRoute
   '/bd/quotations/': typeof BdQuotationsIndexRoute
@@ -419,6 +427,7 @@ export interface FileRoutesByTo {
   '/ps/meeting-management/calendar': typeof PsMeetingManagementCalendarRoute
   '/ps/meeting-management/dashboard': typeof PsMeetingManagementDashboardRoute
   '/ps/meeting-management/meetings': typeof PsMeetingManagementMeetingsRoute
+  '/ps/meeting-management/surveys': typeof PsMeetingManagementSurveysRoute
   '/ps/templates/$templateId': typeof PsTemplatesTemplateIdRoute
   '/ps/templates/auto-fields': typeof PsTemplatesAutoFieldsRoute
   '/bd/quotations': typeof BdQuotationsIndexRoute
@@ -474,6 +483,7 @@ export interface FileRoutesById {
   '/ps/meeting-management/calendar': typeof PsMeetingManagementCalendarRoute
   '/ps/meeting-management/dashboard': typeof PsMeetingManagementDashboardRoute
   '/ps/meeting-management/meetings': typeof PsMeetingManagementMeetingsRoute
+  '/ps/meeting-management/surveys': typeof PsMeetingManagementSurveysRoute
   '/ps/templates/$templateId': typeof PsTemplatesTemplateIdRoute
   '/ps/templates/auto-fields': typeof PsTemplatesAutoFieldsRoute
   '/bd/quotations/': typeof BdQuotationsIndexRoute
@@ -530,6 +540,7 @@ export interface FileRouteTypes {
     | '/ps/meeting-management/calendar'
     | '/ps/meeting-management/dashboard'
     | '/ps/meeting-management/meetings'
+    | '/ps/meeting-management/surveys'
     | '/ps/templates/$templateId'
     | '/ps/templates/auto-fields'
     | '/bd/quotations/'
@@ -576,6 +587,7 @@ export interface FileRouteTypes {
     | '/ps/meeting-management/calendar'
     | '/ps/meeting-management/dashboard'
     | '/ps/meeting-management/meetings'
+    | '/ps/meeting-management/surveys'
     | '/ps/templates/$templateId'
     | '/ps/templates/auto-fields'
     | '/bd/quotations'
@@ -630,6 +642,7 @@ export interface FileRouteTypes {
     | '/ps/meeting-management/calendar'
     | '/ps/meeting-management/dashboard'
     | '/ps/meeting-management/meetings'
+    | '/ps/meeting-management/surveys'
     | '/ps/templates/$templateId'
     | '/ps/templates/auto-fields'
     | '/bd/quotations/'
@@ -999,6 +1012,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PsMeetingManagementMeetingsRouteImport
       parentRoute: typeof PsMeetingManagementRoute
     }
+    '/ps/meeting-management/surveys': {
+      id: '/ps/meeting-management/surveys'
+      path: '/surveys'
+      fullPath: '/ps/meeting-management/surveys'
+      preLoaderRoute: typeof PsMeetingManagementSurveysRouteImport
+      parentRoute: typeof PsMeetingManagementRoute
+    }
     '/ps/templates/': {
       id: '/ps/templates/'
       path: '/templates'
@@ -1143,6 +1163,7 @@ interface PsMeetingManagementRouteChildren {
   PsMeetingManagementCalendarRoute: typeof PsMeetingManagementCalendarRoute
   PsMeetingManagementDashboardRoute: typeof PsMeetingManagementDashboardRoute
   PsMeetingManagementMeetingsRoute: typeof PsMeetingManagementMeetingsRoute
+  PsMeetingManagementSurveysRoute: typeof PsMeetingManagementSurveysRoute
   PsMeetingManagementIndexRoute: typeof PsMeetingManagementIndexRoute
 }
 
@@ -1150,6 +1171,7 @@ const PsMeetingManagementRouteChildren: PsMeetingManagementRouteChildren = {
   PsMeetingManagementCalendarRoute: PsMeetingManagementCalendarRoute,
   PsMeetingManagementDashboardRoute: PsMeetingManagementDashboardRoute,
   PsMeetingManagementMeetingsRoute: PsMeetingManagementMeetingsRoute,
+  PsMeetingManagementSurveysRoute: PsMeetingManagementSurveysRoute,
   PsMeetingManagementIndexRoute: PsMeetingManagementIndexRoute,
 }
 
