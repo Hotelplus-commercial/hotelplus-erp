@@ -57,6 +57,7 @@ import { Route as OrmActionASettingsRouteImport } from './routes/orm.action-a.se
 import { Route as PsMeetingManagementIndexRouteImport } from './routes/ps.meeting-management.index'
 import { Route as PsMeetingManagementCalendarRouteImport } from './routes/ps.meeting-management.calendar'
 import { Route as PsMeetingManagementDashboardRouteImport } from './routes/ps.meeting-management.dashboard'
+import { Route as PsMeetingManagementMeetingsRouteImport } from './routes/ps.meeting-management.meetings'
 import { Route as PsTemplatesIndexRouteImport } from './routes/ps.templates.index'
 import { Route as PsTemplatesTemplateIdRouteImport } from './routes/ps.templates.$templateId'
 import { Route as PsTemplatesAutoFieldsRouteImport } from './routes/ps.templates.auto-fields'
@@ -304,6 +305,12 @@ const PsMeetingManagementDashboardRoute =
     path: '/dashboard',
     getParentRoute: () => PsMeetingManagementRoute,
   } as any)
+const PsMeetingManagementMeetingsRoute =
+  PsMeetingManagementMeetingsRouteImport.update({
+    id: '/meetings',
+    path: '/meetings',
+    getParentRoute: () => PsMeetingManagementRoute,
+  } as any)
 const PsTemplatesIndexRoute = PsTemplatesIndexRouteImport.update({
   id: '/templates/',
   path: '/templates/',
@@ -365,6 +372,7 @@ export interface FileRoutesByFullPath {
   '/orm/action-a/settings': typeof OrmActionASettingsRoute
   '/ps/meeting-management/calendar': typeof PsMeetingManagementCalendarRoute
   '/ps/meeting-management/dashboard': typeof PsMeetingManagementDashboardRoute
+  '/ps/meeting-management/meetings': typeof PsMeetingManagementMeetingsRoute
   '/ps/templates/$templateId': typeof PsTemplatesTemplateIdRoute
   '/ps/templates/auto-fields': typeof PsTemplatesAutoFieldsRoute
   '/bd/quotations/': typeof BdQuotationsIndexRoute
@@ -410,6 +418,7 @@ export interface FileRoutesByTo {
   '/orm/action-a/settings': typeof OrmActionASettingsRoute
   '/ps/meeting-management/calendar': typeof PsMeetingManagementCalendarRoute
   '/ps/meeting-management/dashboard': typeof PsMeetingManagementDashboardRoute
+  '/ps/meeting-management/meetings': typeof PsMeetingManagementMeetingsRoute
   '/ps/templates/$templateId': typeof PsTemplatesTemplateIdRoute
   '/ps/templates/auto-fields': typeof PsTemplatesAutoFieldsRoute
   '/bd/quotations': typeof BdQuotationsIndexRoute
@@ -464,6 +473,7 @@ export interface FileRoutesById {
   '/orm/action-a/settings': typeof OrmActionASettingsRoute
   '/ps/meeting-management/calendar': typeof PsMeetingManagementCalendarRoute
   '/ps/meeting-management/dashboard': typeof PsMeetingManagementDashboardRoute
+  '/ps/meeting-management/meetings': typeof PsMeetingManagementMeetingsRoute
   '/ps/templates/$templateId': typeof PsTemplatesTemplateIdRoute
   '/ps/templates/auto-fields': typeof PsTemplatesAutoFieldsRoute
   '/bd/quotations/': typeof BdQuotationsIndexRoute
@@ -519,6 +529,7 @@ export interface FileRouteTypes {
     | '/orm/action-a/settings'
     | '/ps/meeting-management/calendar'
     | '/ps/meeting-management/dashboard'
+    | '/ps/meeting-management/meetings'
     | '/ps/templates/$templateId'
     | '/ps/templates/auto-fields'
     | '/bd/quotations/'
@@ -564,6 +575,7 @@ export interface FileRouteTypes {
     | '/orm/action-a/settings'
     | '/ps/meeting-management/calendar'
     | '/ps/meeting-management/dashboard'
+    | '/ps/meeting-management/meetings'
     | '/ps/templates/$templateId'
     | '/ps/templates/auto-fields'
     | '/bd/quotations'
@@ -617,6 +629,7 @@ export interface FileRouteTypes {
     | '/orm/action-a/settings'
     | '/ps/meeting-management/calendar'
     | '/ps/meeting-management/dashboard'
+    | '/ps/meeting-management/meetings'
     | '/ps/templates/$templateId'
     | '/ps/templates/auto-fields'
     | '/bd/quotations/'
@@ -979,6 +992,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PsMeetingManagementDashboardRouteImport
       parentRoute: typeof PsMeetingManagementRoute
     }
+    '/ps/meeting-management/meetings': {
+      id: '/ps/meeting-management/meetings'
+      path: '/meetings'
+      fullPath: '/ps/meeting-management/meetings'
+      preLoaderRoute: typeof PsMeetingManagementMeetingsRouteImport
+      parentRoute: typeof PsMeetingManagementRoute
+    }
     '/ps/templates/': {
       id: '/ps/templates/'
       path: '/templates'
@@ -1122,12 +1142,14 @@ const OrmRouteWithChildren = OrmRoute._addFileChildren(OrmRouteChildren)
 interface PsMeetingManagementRouteChildren {
   PsMeetingManagementCalendarRoute: typeof PsMeetingManagementCalendarRoute
   PsMeetingManagementDashboardRoute: typeof PsMeetingManagementDashboardRoute
+  PsMeetingManagementMeetingsRoute: typeof PsMeetingManagementMeetingsRoute
   PsMeetingManagementIndexRoute: typeof PsMeetingManagementIndexRoute
 }
 
 const PsMeetingManagementRouteChildren: PsMeetingManagementRouteChildren = {
   PsMeetingManagementCalendarRoute: PsMeetingManagementCalendarRoute,
   PsMeetingManagementDashboardRoute: PsMeetingManagementDashboardRoute,
+  PsMeetingManagementMeetingsRoute: PsMeetingManagementMeetingsRoute,
   PsMeetingManagementIndexRoute: PsMeetingManagementIndexRoute,
 }
 
