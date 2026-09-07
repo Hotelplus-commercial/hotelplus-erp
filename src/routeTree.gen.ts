@@ -39,6 +39,7 @@ import { Route as PsIndexRouteImport } from './routes/ps.index'
 import { Route as PsContractDashboardRouteImport } from './routes/ps.contract-dashboard'
 import { Route as PsContractWizardRouteImport } from './routes/ps.contract-wizard'
 import { Route as PsContractsRouteImport } from './routes/ps.contracts'
+import { Route as PsMeetingManagementRouteImport } from './routes/ps.meeting-management'
 import { Route as PsProductionRouteImport } from './routes/ps.production'
 import { Route as PsSystemCostRouteImport } from './routes/ps.system-cost'
 import { Route as BdCalculatorMarcomRouteImport } from './routes/bd.calculator.marcom'
@@ -53,6 +54,12 @@ import { Route as OrmActionAAnalysisRouteImport } from './routes/orm.action-a.an
 import { Route as OrmActionAReportRouteImport } from './routes/orm.action-a.report'
 import { Route as OrmActionAReviewRouteImport } from './routes/orm.action-a.review'
 import { Route as OrmActionASettingsRouteImport } from './routes/orm.action-a.settings'
+import { Route as PsMeetingManagementIndexRouteImport } from './routes/ps.meeting-management.index'
+import { Route as PsMeetingManagementCalendarRouteImport } from './routes/ps.meeting-management.calendar'
+import { Route as PsMeetingManagementCoachingRouteImport } from './routes/ps.meeting-management.coaching'
+import { Route as PsMeetingManagementDashboardRouteImport } from './routes/ps.meeting-management.dashboard'
+import { Route as PsMeetingManagementMeetingsRouteImport } from './routes/ps.meeting-management.meetings'
+import { Route as PsMeetingManagementSurveysRouteImport } from './routes/ps.meeting-management.surveys'
 import { Route as PsTemplatesIndexRouteImport } from './routes/ps.templates.index'
 import { Route as PsTemplatesTemplateIdRouteImport } from './routes/ps.templates.$templateId'
 import { Route as PsTemplatesAutoFieldsRouteImport } from './routes/ps.templates.auto-fields'
@@ -207,6 +214,11 @@ const PsContractsRoute = PsContractsRouteImport.update({
   path: '/contracts',
   getParentRoute: () => PsRoute,
 } as any)
+const PsMeetingManagementRoute = PsMeetingManagementRouteImport.update({
+  id: '/meeting-management',
+  path: '/meeting-management',
+  getParentRoute: () => PsRoute,
+} as any)
 const PsProductionRoute = PsProductionRouteImport.update({
   id: '/production',
   path: '/production',
@@ -277,6 +289,42 @@ const OrmActionASettingsRoute = OrmActionASettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => OrmActionARoute,
 } as any)
+const PsMeetingManagementIndexRoute =
+  PsMeetingManagementIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => PsMeetingManagementRoute,
+  } as any)
+const PsMeetingManagementCalendarRoute =
+  PsMeetingManagementCalendarRouteImport.update({
+    id: '/calendar',
+    path: '/calendar',
+    getParentRoute: () => PsMeetingManagementRoute,
+  } as any)
+const PsMeetingManagementCoachingRoute =
+  PsMeetingManagementCoachingRouteImport.update({
+    id: '/coaching',
+    path: '/coaching',
+    getParentRoute: () => PsMeetingManagementRoute,
+  } as any)
+const PsMeetingManagementDashboardRoute =
+  PsMeetingManagementDashboardRouteImport.update({
+    id: '/dashboard',
+    path: '/dashboard',
+    getParentRoute: () => PsMeetingManagementRoute,
+  } as any)
+const PsMeetingManagementMeetingsRoute =
+  PsMeetingManagementMeetingsRouteImport.update({
+    id: '/meetings',
+    path: '/meetings',
+    getParentRoute: () => PsMeetingManagementRoute,
+  } as any)
+const PsMeetingManagementSurveysRoute =
+  PsMeetingManagementSurveysRouteImport.update({
+    id: '/surveys',
+    path: '/surveys',
+    getParentRoute: () => PsMeetingManagementRoute,
+  } as any)
 const PsTemplatesIndexRoute = PsTemplatesIndexRouteImport.update({
   id: '/templates/',
   path: '/templates/',
@@ -320,6 +368,7 @@ export interface FileRoutesByFullPath {
   '/ps/contract-dashboard': typeof PsContractDashboardRoute
   '/ps/contract-wizard': typeof PsContractWizardRoute
   '/ps/contracts': typeof PsContractsRoute
+  '/ps/meeting-management': typeof PsMeetingManagementRouteWithChildren
   '/ps/production': typeof PsProductionRoute
   '/ps/system-cost': typeof PsSystemCostRoute
   '/ac/': typeof AcIndexRoute
@@ -335,11 +384,17 @@ export interface FileRoutesByFullPath {
   '/orm/action-a/report': typeof OrmActionAReportRoute
   '/orm/action-a/review': typeof OrmActionAReviewRoute
   '/orm/action-a/settings': typeof OrmActionASettingsRoute
+  '/ps/meeting-management/calendar': typeof PsMeetingManagementCalendarRoute
+  '/ps/meeting-management/coaching': typeof PsMeetingManagementCoachingRoute
+  '/ps/meeting-management/dashboard': typeof PsMeetingManagementDashboardRoute
+  '/ps/meeting-management/meetings': typeof PsMeetingManagementMeetingsRoute
+  '/ps/meeting-management/surveys': typeof PsMeetingManagementSurveysRoute
   '/ps/templates/$templateId': typeof PsTemplatesTemplateIdRoute
   '/ps/templates/auto-fields': typeof PsTemplatesAutoFieldsRoute
   '/bd/quotations/': typeof BdQuotationsIndexRoute
   '/bd/quotes/': typeof BdQuotesIndexRoute
   '/orm/action-a/': typeof OrmActionAIndexRoute
+  '/ps/meeting-management/': typeof PsMeetingManagementIndexRoute
   '/ps/templates/': typeof PsTemplatesIndexRoute
 }
 export interface FileRoutesByTo {
@@ -377,11 +432,17 @@ export interface FileRoutesByTo {
   '/orm/action-a/report': typeof OrmActionAReportRoute
   '/orm/action-a/review': typeof OrmActionAReviewRoute
   '/orm/action-a/settings': typeof OrmActionASettingsRoute
+  '/ps/meeting-management/calendar': typeof PsMeetingManagementCalendarRoute
+  '/ps/meeting-management/coaching': typeof PsMeetingManagementCoachingRoute
+  '/ps/meeting-management/dashboard': typeof PsMeetingManagementDashboardRoute
+  '/ps/meeting-management/meetings': typeof PsMeetingManagementMeetingsRoute
+  '/ps/meeting-management/surveys': typeof PsMeetingManagementSurveysRoute
   '/ps/templates/$templateId': typeof PsTemplatesTemplateIdRoute
   '/ps/templates/auto-fields': typeof PsTemplatesAutoFieldsRoute
   '/bd/quotations': typeof BdQuotationsIndexRoute
   '/bd/quotes': typeof BdQuotesIndexRoute
   '/orm/action-a': typeof OrmActionAIndexRoute
+  '/ps/meeting-management': typeof PsMeetingManagementIndexRoute
   '/ps/templates': typeof PsTemplatesIndexRoute
 }
 export interface FileRoutesById {
@@ -412,6 +473,7 @@ export interface FileRoutesById {
   '/ps/contract-dashboard': typeof PsContractDashboardRoute
   '/ps/contract-wizard': typeof PsContractWizardRoute
   '/ps/contracts': typeof PsContractsRoute
+  '/ps/meeting-management': typeof PsMeetingManagementRouteWithChildren
   '/ps/production': typeof PsProductionRoute
   '/ps/system-cost': typeof PsSystemCostRoute
   '/ac/': typeof AcIndexRoute
@@ -427,11 +489,17 @@ export interface FileRoutesById {
   '/orm/action-a/report': typeof OrmActionAReportRoute
   '/orm/action-a/review': typeof OrmActionAReviewRoute
   '/orm/action-a/settings': typeof OrmActionASettingsRoute
+  '/ps/meeting-management/calendar': typeof PsMeetingManagementCalendarRoute
+  '/ps/meeting-management/coaching': typeof PsMeetingManagementCoachingRoute
+  '/ps/meeting-management/dashboard': typeof PsMeetingManagementDashboardRoute
+  '/ps/meeting-management/meetings': typeof PsMeetingManagementMeetingsRoute
+  '/ps/meeting-management/surveys': typeof PsMeetingManagementSurveysRoute
   '/ps/templates/$templateId': typeof PsTemplatesTemplateIdRoute
   '/ps/templates/auto-fields': typeof PsTemplatesAutoFieldsRoute
   '/bd/quotations/': typeof BdQuotationsIndexRoute
   '/bd/quotes/': typeof BdQuotesIndexRoute
   '/orm/action-a/': typeof OrmActionAIndexRoute
+  '/ps/meeting-management/': typeof PsMeetingManagementIndexRoute
   '/ps/templates/': typeof PsTemplatesIndexRoute
 }
 export interface FileRouteTypes {
@@ -463,6 +531,7 @@ export interface FileRouteTypes {
     | '/ps/contract-dashboard'
     | '/ps/contract-wizard'
     | '/ps/contracts'
+    | '/ps/meeting-management'
     | '/ps/production'
     | '/ps/system-cost'
     | '/ac/'
@@ -478,11 +547,17 @@ export interface FileRouteTypes {
     | '/orm/action-a/report'
     | '/orm/action-a/review'
     | '/orm/action-a/settings'
+    | '/ps/meeting-management/calendar'
+    | '/ps/meeting-management/coaching'
+    | '/ps/meeting-management/dashboard'
+    | '/ps/meeting-management/meetings'
+    | '/ps/meeting-management/surveys'
     | '/ps/templates/$templateId'
     | '/ps/templates/auto-fields'
     | '/bd/quotations/'
     | '/bd/quotes/'
     | '/orm/action-a/'
+    | '/ps/meeting-management/'
     | '/ps/templates/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -520,11 +595,17 @@ export interface FileRouteTypes {
     | '/orm/action-a/report'
     | '/orm/action-a/review'
     | '/orm/action-a/settings'
+    | '/ps/meeting-management/calendar'
+    | '/ps/meeting-management/coaching'
+    | '/ps/meeting-management/dashboard'
+    | '/ps/meeting-management/meetings'
+    | '/ps/meeting-management/surveys'
     | '/ps/templates/$templateId'
     | '/ps/templates/auto-fields'
     | '/bd/quotations'
     | '/bd/quotes'
     | '/orm/action-a'
+    | '/ps/meeting-management'
     | '/ps/templates'
   id:
     | '__root__'
@@ -554,6 +635,7 @@ export interface FileRouteTypes {
     | '/ps/contract-dashboard'
     | '/ps/contract-wizard'
     | '/ps/contracts'
+    | '/ps/meeting-management'
     | '/ps/production'
     | '/ps/system-cost'
     | '/ac/'
@@ -569,11 +651,17 @@ export interface FileRouteTypes {
     | '/orm/action-a/report'
     | '/orm/action-a/review'
     | '/orm/action-a/settings'
+    | '/ps/meeting-management/calendar'
+    | '/ps/meeting-management/coaching'
+    | '/ps/meeting-management/dashboard'
+    | '/ps/meeting-management/meetings'
+    | '/ps/meeting-management/surveys'
     | '/ps/templates/$templateId'
     | '/ps/templates/auto-fields'
     | '/bd/quotations/'
     | '/bd/quotes/'
     | '/orm/action-a/'
+    | '/ps/meeting-management/'
     | '/ps/templates/'
   fileRoutesById: FileRoutesById
 }
@@ -804,6 +892,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PsContractsRouteImport
       parentRoute: typeof PsRoute
     }
+    '/ps/meeting-management': {
+      id: '/ps/meeting-management'
+      path: '/meeting-management'
+      fullPath: '/ps/meeting-management'
+      preLoaderRoute: typeof PsMeetingManagementRouteImport
+      parentRoute: typeof PsRoute
+    }
     '/ps/production': {
       id: '/ps/production'
       path: '/production'
@@ -901,6 +996,48 @@ declare module '@tanstack/react-router' {
       fullPath: '/orm/action-a/settings'
       preLoaderRoute: typeof OrmActionASettingsRouteImport
       parentRoute: typeof OrmActionARoute
+    }
+    '/ps/meeting-management/': {
+      id: '/ps/meeting-management/'
+      path: '/'
+      fullPath: '/ps/meeting-management/'
+      preLoaderRoute: typeof PsMeetingManagementIndexRouteImport
+      parentRoute: typeof PsMeetingManagementRoute
+    }
+    '/ps/meeting-management/calendar': {
+      id: '/ps/meeting-management/calendar'
+      path: '/calendar'
+      fullPath: '/ps/meeting-management/calendar'
+      preLoaderRoute: typeof PsMeetingManagementCalendarRouteImport
+      parentRoute: typeof PsMeetingManagementRoute
+    }
+    '/ps/meeting-management/coaching': {
+      id: '/ps/meeting-management/coaching'
+      path: '/coaching'
+      fullPath: '/ps/meeting-management/coaching'
+      preLoaderRoute: typeof PsMeetingManagementCoachingRouteImport
+      parentRoute: typeof PsMeetingManagementRoute
+    }
+    '/ps/meeting-management/dashboard': {
+      id: '/ps/meeting-management/dashboard'
+      path: '/dashboard'
+      fullPath: '/ps/meeting-management/dashboard'
+      preLoaderRoute: typeof PsMeetingManagementDashboardRouteImport
+      parentRoute: typeof PsMeetingManagementRoute
+    }
+    '/ps/meeting-management/meetings': {
+      id: '/ps/meeting-management/meetings'
+      path: '/meetings'
+      fullPath: '/ps/meeting-management/meetings'
+      preLoaderRoute: typeof PsMeetingManagementMeetingsRouteImport
+      parentRoute: typeof PsMeetingManagementRoute
+    }
+    '/ps/meeting-management/surveys': {
+      id: '/ps/meeting-management/surveys'
+      path: '/surveys'
+      fullPath: '/ps/meeting-management/surveys'
+      preLoaderRoute: typeof PsMeetingManagementSurveysRouteImport
+      parentRoute: typeof PsMeetingManagementRoute
     }
     '/ps/templates/': {
       id: '/ps/templates/'
@@ -1042,10 +1179,32 @@ const OrmRouteChildren: OrmRouteChildren = {
 
 const OrmRouteWithChildren = OrmRoute._addFileChildren(OrmRouteChildren)
 
+interface PsMeetingManagementRouteChildren {
+  PsMeetingManagementCalendarRoute: typeof PsMeetingManagementCalendarRoute
+  PsMeetingManagementCoachingRoute: typeof PsMeetingManagementCoachingRoute
+  PsMeetingManagementDashboardRoute: typeof PsMeetingManagementDashboardRoute
+  PsMeetingManagementMeetingsRoute: typeof PsMeetingManagementMeetingsRoute
+  PsMeetingManagementSurveysRoute: typeof PsMeetingManagementSurveysRoute
+  PsMeetingManagementIndexRoute: typeof PsMeetingManagementIndexRoute
+}
+
+const PsMeetingManagementRouteChildren: PsMeetingManagementRouteChildren = {
+  PsMeetingManagementCalendarRoute: PsMeetingManagementCalendarRoute,
+  PsMeetingManagementCoachingRoute: PsMeetingManagementCoachingRoute,
+  PsMeetingManagementDashboardRoute: PsMeetingManagementDashboardRoute,
+  PsMeetingManagementMeetingsRoute: PsMeetingManagementMeetingsRoute,
+  PsMeetingManagementSurveysRoute: PsMeetingManagementSurveysRoute,
+  PsMeetingManagementIndexRoute: PsMeetingManagementIndexRoute,
+}
+
+const PsMeetingManagementRouteWithChildren =
+  PsMeetingManagementRoute._addFileChildren(PsMeetingManagementRouteChildren)
+
 interface PsRouteChildren {
   PsContractDashboardRoute: typeof PsContractDashboardRoute
   PsContractWizardRoute: typeof PsContractWizardRoute
   PsContractsRoute: typeof PsContractsRoute
+  PsMeetingManagementRoute: typeof PsMeetingManagementRouteWithChildren
   PsProductionRoute: typeof PsProductionRoute
   PsSystemCostRoute: typeof PsSystemCostRoute
   PsIndexRoute: typeof PsIndexRoute
@@ -1058,6 +1217,7 @@ const PsRouteChildren: PsRouteChildren = {
   PsContractDashboardRoute: PsContractDashboardRoute,
   PsContractWizardRoute: PsContractWizardRoute,
   PsContractsRoute: PsContractsRoute,
+  PsMeetingManagementRoute: PsMeetingManagementRouteWithChildren,
   PsProductionRoute: PsProductionRoute,
   PsSystemCostRoute: PsSystemCostRoute,
   PsIndexRoute: PsIndexRoute,

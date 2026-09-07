@@ -3,6 +3,8 @@ import {
   BarChart3,
   BuildingIcon,
   Calculator,
+  CalendarCheck,
+
   Megaphone,
   FileSignature,
   FileText,
@@ -61,6 +63,8 @@ const moduleChildren: Record<string, { title: string; url: string; icon: typeof 
     { title: "Contract Dashboard", url: "/ps/contract-dashboard", icon: LayoutDashboard },
     { title: "Production Report", url: "/ps/production", icon: BarChart3 },
     { title: "Templates", url: "/ps/templates", icon: FileText },
+    { title: "ORM Meeting Management", url: "/ps/meeting-management/dashboard", icon: CalendarCheck },
+
   ],
 };
 
