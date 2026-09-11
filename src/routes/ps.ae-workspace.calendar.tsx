@@ -19,7 +19,7 @@ import { Label } from "@/components/ui/label";
 import { mmMeetings, statusTone, type Meeting } from "@/lib/orm-meeting";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/ps/meeting-management/calendar")({
+export const Route = createFileRoute("/ps/ae-workspace/calendar")({
   head: () => ({
     meta: [
       { title: "Meeting Calendar — ORM Meeting Management | Meridia" },

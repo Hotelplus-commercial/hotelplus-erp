@@ -33,7 +33,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { mmFlags, useMeetingMgmt, type Flag } from "@/lib/orm-meeting";
 
-export const Route = createFileRoute("/ps/meeting-management/coaching")({
+export const Route = createFileRoute("/ps/ae-workspace/coaching")({
   head: () => ({
     meta: [
       { title: "Coaching Queue — ORM Meeting Management | Meridia" },

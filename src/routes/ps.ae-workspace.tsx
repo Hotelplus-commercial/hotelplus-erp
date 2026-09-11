@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 const description =
   "ORM Meeting Management: จัดการนัดหมาย ORM รายเดือน — Dashboard, Calendar, Meetings, Surveys และ Coaching queue";
 
-export const Route = createFileRoute("/ps/meeting-management")({
+export const Route = createFileRoute("/ps/ae-workspace")({
   head: () => ({
     meta: [
       { title: "ORM Meeting Management — PS App | Meridia Hotel ERP" },

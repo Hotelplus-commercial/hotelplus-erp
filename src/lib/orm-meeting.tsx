@@ -59,7 +59,13 @@ export type SurveyRow = {
 export type Flag = {
   id: string;
   priority: "High" | "Medium";
-  type: "Decline" | "Survey ORM" | "Survey AE" | "Survey Overall" | "No-show";
+  type:
+    | "Decline"
+    | "Survey ORM"
+    | "Survey AE"
+    | "Survey Overall"
+    | "No-show"
+    | "SLA Overdue";
   ae: string;
   orm?: string;
   hotel: string;

@@ -33,7 +33,7 @@ import {
   useMeetingMgmt,
 } from "@/lib/orm-meeting";
 
-export const Route = createFileRoute("/ps/meeting-management/surveys")({
+export const Route = createFileRoute("/ps/ae-workspace/surveys")({
   head: () => ({
     meta: [
       { title: "Meeting Surveys — ORM Meeting Management | Meridia" },

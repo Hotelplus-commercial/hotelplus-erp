@@ -36,10 +36,10 @@ import { Route as LTokenRouteImport } from './routes/l.$token'
 import { Route as OrmIndexRouteImport } from './routes/orm.index'
 import { Route as OrmActionARouteImport } from './routes/orm.action-a'
 import { Route as PsIndexRouteImport } from './routes/ps.index'
+import { Route as PsAeWorkspaceRouteImport } from './routes/ps.ae-workspace'
 import { Route as PsContractDashboardRouteImport } from './routes/ps.contract-dashboard'
 import { Route as PsContractWizardRouteImport } from './routes/ps.contract-wizard'
 import { Route as PsContractsRouteImport } from './routes/ps.contracts'
-import { Route as PsMeetingManagementRouteImport } from './routes/ps.meeting-management'
 import { Route as PsProductionRouteImport } from './routes/ps.production'
 import { Route as PsSystemCostRouteImport } from './routes/ps.system-cost'
 import { Route as BdCalculatorMarcomRouteImport } from './routes/bd.calculator.marcom'
@@ -54,12 +54,12 @@ import { Route as OrmActionAAnalysisRouteImport } from './routes/orm.action-a.an
 import { Route as OrmActionAReportRouteImport } from './routes/orm.action-a.report'
 import { Route as OrmActionAReviewRouteImport } from './routes/orm.action-a.review'
 import { Route as OrmActionASettingsRouteImport } from './routes/orm.action-a.settings'
-import { Route as PsMeetingManagementIndexRouteImport } from './routes/ps.meeting-management.index'
-import { Route as PsMeetingManagementCalendarRouteImport } from './routes/ps.meeting-management.calendar'
-import { Route as PsMeetingManagementCoachingRouteImport } from './routes/ps.meeting-management.coaching'
-import { Route as PsMeetingManagementDashboardRouteImport } from './routes/ps.meeting-management.dashboard'
-import { Route as PsMeetingManagementMeetingsRouteImport } from './routes/ps.meeting-management.meetings'
-import { Route as PsMeetingManagementSurveysRouteImport } from './routes/ps.meeting-management.surveys'
+import { Route as PsAeWorkspaceIndexRouteImport } from './routes/ps.ae-workspace.index'
+import { Route as PsAeWorkspaceCalendarRouteImport } from './routes/ps.ae-workspace.calendar'
+import { Route as PsAeWorkspaceCoachingRouteImport } from './routes/ps.ae-workspace.coaching'
+import { Route as PsAeWorkspaceDashboardRouteImport } from './routes/ps.ae-workspace.dashboard'
+import { Route as PsAeWorkspaceMeetingsRouteImport } from './routes/ps.ae-workspace.meetings'
+import { Route as PsAeWorkspaceSurveysRouteImport } from './routes/ps.ae-workspace.surveys'
 import { Route as PsTemplatesIndexRouteImport } from './routes/ps.templates.index'
 import { Route as PsTemplatesTemplateIdRouteImport } from './routes/ps.templates.$templateId'
 import { Route as PsTemplatesAutoFieldsRouteImport } from './routes/ps.templates.auto-fields'
@@ -199,6 +199,11 @@ const PsIndexRoute = PsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => PsRoute,
 } as any)
+const PsAeWorkspaceRoute = PsAeWorkspaceRouteImport.update({
+  id: '/ae-workspace',
+  path: '/ae-workspace',
+  getParentRoute: () => PsRoute,
+} as any)
 const PsContractDashboardRoute = PsContractDashboardRouteImport.update({
   id: '/contract-dashboard',
   path: '/contract-dashboard',
@@ -212,11 +217,6 @@ const PsContractWizardRoute = PsContractWizardRouteImport.update({
 const PsContractsRoute = PsContractsRouteImport.update({
   id: '/contracts',
   path: '/contracts',
-  getParentRoute: () => PsRoute,
-} as any)
-const PsMeetingManagementRoute = PsMeetingManagementRouteImport.update({
-  id: '/meeting-management',
-  path: '/meeting-management',
   getParentRoute: () => PsRoute,
 } as any)
 const PsProductionRoute = PsProductionRouteImport.update({
@@ -289,42 +289,36 @@ const OrmActionASettingsRoute = OrmActionASettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => OrmActionARoute,
 } as any)
-const PsMeetingManagementIndexRoute =
-  PsMeetingManagementIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => PsMeetingManagementRoute,
-  } as any)
-const PsMeetingManagementCalendarRoute =
-  PsMeetingManagementCalendarRouteImport.update({
-    id: '/calendar',
-    path: '/calendar',
-    getParentRoute: () => PsMeetingManagementRoute,
-  } as any)
-const PsMeetingManagementCoachingRoute =
-  PsMeetingManagementCoachingRouteImport.update({
-    id: '/coaching',
-    path: '/coaching',
-    getParentRoute: () => PsMeetingManagementRoute,
-  } as any)
-const PsMeetingManagementDashboardRoute =
-  PsMeetingManagementDashboardRouteImport.update({
-    id: '/dashboard',
-    path: '/dashboard',
-    getParentRoute: () => PsMeetingManagementRoute,
-  } as any)
-const PsMeetingManagementMeetingsRoute =
-  PsMeetingManagementMeetingsRouteImport.update({
-    id: '/meetings',
-    path: '/meetings',
-    getParentRoute: () => PsMeetingManagementRoute,
-  } as any)
-const PsMeetingManagementSurveysRoute =
-  PsMeetingManagementSurveysRouteImport.update({
-    id: '/surveys',
-    path: '/surveys',
-    getParentRoute: () => PsMeetingManagementRoute,
-  } as any)
+const PsAeWorkspaceIndexRoute = PsAeWorkspaceIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PsAeWorkspaceRoute,
+} as any)
+const PsAeWorkspaceCalendarRoute = PsAeWorkspaceCalendarRouteImport.update({
+  id: '/calendar',
+  path: '/calendar',
+  getParentRoute: () => PsAeWorkspaceRoute,
+} as any)
+const PsAeWorkspaceCoachingRoute = PsAeWorkspaceCoachingRouteImport.update({
+  id: '/coaching',
+  path: '/coaching',
+  getParentRoute: () => PsAeWorkspaceRoute,
+} as any)
+const PsAeWorkspaceDashboardRoute = PsAeWorkspaceDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => PsAeWorkspaceRoute,
+} as any)
+const PsAeWorkspaceMeetingsRoute = PsAeWorkspaceMeetingsRouteImport.update({
+  id: '/meetings',
+  path: '/meetings',
+  getParentRoute: () => PsAeWorkspaceRoute,
+} as any)
+const PsAeWorkspaceSurveysRoute = PsAeWorkspaceSurveysRouteImport.update({
+  id: '/surveys',
+  path: '/surveys',
+  getParentRoute: () => PsAeWorkspaceRoute,
+} as any)
 const PsTemplatesIndexRoute = PsTemplatesIndexRouteImport.update({
   id: '/templates/',
   path: '/templates/',
@@ -365,10 +359,10 @@ export interface FileRoutesByFullPath {
   '/bd/register-deal': typeof BdRegisterDealRoute
   '/l/$token': typeof LTokenRoute
   '/orm/action-a': typeof OrmActionARouteWithChildren
+  '/ps/ae-workspace': typeof PsAeWorkspaceRouteWithChildren
   '/ps/contract-dashboard': typeof PsContractDashboardRoute
   '/ps/contract-wizard': typeof PsContractWizardRoute
   '/ps/contracts': typeof PsContractsRoute
-  '/ps/meeting-management': typeof PsMeetingManagementRouteWithChildren
   '/ps/production': typeof PsProductionRoute
   '/ps/system-cost': typeof PsSystemCostRoute
   '/ac/': typeof AcIndexRoute
@@ -384,17 +378,17 @@ export interface FileRoutesByFullPath {
   '/orm/action-a/report': typeof OrmActionAReportRoute
   '/orm/action-a/review': typeof OrmActionAReviewRoute
   '/orm/action-a/settings': typeof OrmActionASettingsRoute
-  '/ps/meeting-management/calendar': typeof PsMeetingManagementCalendarRoute
-  '/ps/meeting-management/coaching': typeof PsMeetingManagementCoachingRoute
-  '/ps/meeting-management/dashboard': typeof PsMeetingManagementDashboardRoute
-  '/ps/meeting-management/meetings': typeof PsMeetingManagementMeetingsRoute
-  '/ps/meeting-management/surveys': typeof PsMeetingManagementSurveysRoute
+  '/ps/ae-workspace/calendar': typeof PsAeWorkspaceCalendarRoute
+  '/ps/ae-workspace/coaching': typeof PsAeWorkspaceCoachingRoute
+  '/ps/ae-workspace/dashboard': typeof PsAeWorkspaceDashboardRoute
+  '/ps/ae-workspace/meetings': typeof PsAeWorkspaceMeetingsRoute
+  '/ps/ae-workspace/surveys': typeof PsAeWorkspaceSurveysRoute
   '/ps/templates/$templateId': typeof PsTemplatesTemplateIdRoute
   '/ps/templates/auto-fields': typeof PsTemplatesAutoFieldsRoute
   '/bd/quotations/': typeof BdQuotationsIndexRoute
   '/bd/quotes/': typeof BdQuotesIndexRoute
   '/orm/action-a/': typeof OrmActionAIndexRoute
-  '/ps/meeting-management/': typeof PsMeetingManagementIndexRoute
+  '/ps/ae-workspace/': typeof PsAeWorkspaceIndexRoute
   '/ps/templates/': typeof PsTemplatesIndexRoute
 }
 export interface FileRoutesByTo {
@@ -432,17 +426,17 @@ export interface FileRoutesByTo {
   '/orm/action-a/report': typeof OrmActionAReportRoute
   '/orm/action-a/review': typeof OrmActionAReviewRoute
   '/orm/action-a/settings': typeof OrmActionASettingsRoute
-  '/ps/meeting-management/calendar': typeof PsMeetingManagementCalendarRoute
-  '/ps/meeting-management/coaching': typeof PsMeetingManagementCoachingRoute
-  '/ps/meeting-management/dashboard': typeof PsMeetingManagementDashboardRoute
-  '/ps/meeting-management/meetings': typeof PsMeetingManagementMeetingsRoute
-  '/ps/meeting-management/surveys': typeof PsMeetingManagementSurveysRoute
+  '/ps/ae-workspace/calendar': typeof PsAeWorkspaceCalendarRoute
+  '/ps/ae-workspace/coaching': typeof PsAeWorkspaceCoachingRoute
+  '/ps/ae-workspace/dashboard': typeof PsAeWorkspaceDashboardRoute
+  '/ps/ae-workspace/meetings': typeof PsAeWorkspaceMeetingsRoute
+  '/ps/ae-workspace/surveys': typeof PsAeWorkspaceSurveysRoute
   '/ps/templates/$templateId': typeof PsTemplatesTemplateIdRoute
   '/ps/templates/auto-fields': typeof PsTemplatesAutoFieldsRoute
   '/bd/quotations': typeof BdQuotationsIndexRoute
   '/bd/quotes': typeof BdQuotesIndexRoute
   '/orm/action-a': typeof OrmActionAIndexRoute
-  '/ps/meeting-management': typeof PsMeetingManagementIndexRoute
+  '/ps/ae-workspace': typeof PsAeWorkspaceIndexRoute
   '/ps/templates': typeof PsTemplatesIndexRoute
 }
 export interface FileRoutesById {
@@ -470,10 +464,10 @@ export interface FileRoutesById {
   '/bd/register-deal': typeof BdRegisterDealRoute
   '/l/$token': typeof LTokenRoute
   '/orm/action-a': typeof OrmActionARouteWithChildren
+  '/ps/ae-workspace': typeof PsAeWorkspaceRouteWithChildren
   '/ps/contract-dashboard': typeof PsContractDashboardRoute
   '/ps/contract-wizard': typeof PsContractWizardRoute
   '/ps/contracts': typeof PsContractsRoute
-  '/ps/meeting-management': typeof PsMeetingManagementRouteWithChildren
   '/ps/production': typeof PsProductionRoute
   '/ps/system-cost': typeof PsSystemCostRoute
   '/ac/': typeof AcIndexRoute
@@ -489,17 +483,17 @@ export interface FileRoutesById {
   '/orm/action-a/report': typeof OrmActionAReportRoute
   '/orm/action-a/review': typeof OrmActionAReviewRoute
   '/orm/action-a/settings': typeof OrmActionASettingsRoute
-  '/ps/meeting-management/calendar': typeof PsMeetingManagementCalendarRoute
-  '/ps/meeting-management/coaching': typeof PsMeetingManagementCoachingRoute
-  '/ps/meeting-management/dashboard': typeof PsMeetingManagementDashboardRoute
-  '/ps/meeting-management/meetings': typeof PsMeetingManagementMeetingsRoute
-  '/ps/meeting-management/surveys': typeof PsMeetingManagementSurveysRoute
+  '/ps/ae-workspace/calendar': typeof PsAeWorkspaceCalendarRoute
+  '/ps/ae-workspace/coaching': typeof PsAeWorkspaceCoachingRoute
+  '/ps/ae-workspace/dashboard': typeof PsAeWorkspaceDashboardRoute
+  '/ps/ae-workspace/meetings': typeof PsAeWorkspaceMeetingsRoute
+  '/ps/ae-workspace/surveys': typeof PsAeWorkspaceSurveysRoute
   '/ps/templates/$templateId': typeof PsTemplatesTemplateIdRoute
   '/ps/templates/auto-fields': typeof PsTemplatesAutoFieldsRoute
   '/bd/quotations/': typeof BdQuotationsIndexRoute
   '/bd/quotes/': typeof BdQuotesIndexRoute
   '/orm/action-a/': typeof OrmActionAIndexRoute
-  '/ps/meeting-management/': typeof PsMeetingManagementIndexRoute
+  '/ps/ae-workspace/': typeof PsAeWorkspaceIndexRoute
   '/ps/templates/': typeof PsTemplatesIndexRoute
 }
 export interface FileRouteTypes {
@@ -528,10 +522,10 @@ export interface FileRouteTypes {
     | '/bd/register-deal'
     | '/l/$token'
     | '/orm/action-a'
+    | '/ps/ae-workspace'
     | '/ps/contract-dashboard'
     | '/ps/contract-wizard'
     | '/ps/contracts'
-    | '/ps/meeting-management'
     | '/ps/production'
     | '/ps/system-cost'
     | '/ac/'
@@ -547,17 +541,17 @@ export interface FileRouteTypes {
     | '/orm/action-a/report'
     | '/orm/action-a/review'
     | '/orm/action-a/settings'
-    | '/ps/meeting-management/calendar'
-    | '/ps/meeting-management/coaching'
-    | '/ps/meeting-management/dashboard'
-    | '/ps/meeting-management/meetings'
-    | '/ps/meeting-management/surveys'
+    | '/ps/ae-workspace/calendar'
+    | '/ps/ae-workspace/coaching'
+    | '/ps/ae-workspace/dashboard'
+    | '/ps/ae-workspace/meetings'
+    | '/ps/ae-workspace/surveys'
     | '/ps/templates/$templateId'
     | '/ps/templates/auto-fields'
     | '/bd/quotations/'
     | '/bd/quotes/'
     | '/orm/action-a/'
-    | '/ps/meeting-management/'
+    | '/ps/ae-workspace/'
     | '/ps/templates/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -595,17 +589,17 @@ export interface FileRouteTypes {
     | '/orm/action-a/report'
     | '/orm/action-a/review'
     | '/orm/action-a/settings'
-    | '/ps/meeting-management/calendar'
-    | '/ps/meeting-management/coaching'
-    | '/ps/meeting-management/dashboard'
-    | '/ps/meeting-management/meetings'
-    | '/ps/meeting-management/surveys'
+    | '/ps/ae-workspace/calendar'
+    | '/ps/ae-workspace/coaching'
+    | '/ps/ae-workspace/dashboard'
+    | '/ps/ae-workspace/meetings'
+    | '/ps/ae-workspace/surveys'
     | '/ps/templates/$templateId'
     | '/ps/templates/auto-fields'
     | '/bd/quotations'
     | '/bd/quotes'
     | '/orm/action-a'
-    | '/ps/meeting-management'
+    | '/ps/ae-workspace'
     | '/ps/templates'
   id:
     | '__root__'
@@ -632,10 +626,10 @@ export interface FileRouteTypes {
     | '/bd/register-deal'
     | '/l/$token'
     | '/orm/action-a'
+    | '/ps/ae-workspace'
     | '/ps/contract-dashboard'
     | '/ps/contract-wizard'
     | '/ps/contracts'
-    | '/ps/meeting-management'
     | '/ps/production'
     | '/ps/system-cost'
     | '/ac/'
@@ -651,17 +645,17 @@ export interface FileRouteTypes {
     | '/orm/action-a/report'
     | '/orm/action-a/review'
     | '/orm/action-a/settings'
-    | '/ps/meeting-management/calendar'
-    | '/ps/meeting-management/coaching'
-    | '/ps/meeting-management/dashboard'
-    | '/ps/meeting-management/meetings'
-    | '/ps/meeting-management/surveys'
+    | '/ps/ae-workspace/calendar'
+    | '/ps/ae-workspace/coaching'
+    | '/ps/ae-workspace/dashboard'
+    | '/ps/ae-workspace/meetings'
+    | '/ps/ae-workspace/surveys'
     | '/ps/templates/$templateId'
     | '/ps/templates/auto-fields'
     | '/bd/quotations/'
     | '/bd/quotes/'
     | '/orm/action-a/'
-    | '/ps/meeting-management/'
+    | '/ps/ae-workspace/'
     | '/ps/templates/'
   fileRoutesById: FileRoutesById
 }
@@ -871,6 +865,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PsIndexRouteImport
       parentRoute: typeof PsRoute
     }
+    '/ps/ae-workspace': {
+      id: '/ps/ae-workspace'
+      path: '/ae-workspace'
+      fullPath: '/ps/ae-workspace'
+      preLoaderRoute: typeof PsAeWorkspaceRouteImport
+      parentRoute: typeof PsRoute
+    }
     '/ps/contract-dashboard': {
       id: '/ps/contract-dashboard'
       path: '/contract-dashboard'
@@ -890,13 +891,6 @@ declare module '@tanstack/react-router' {
       path: '/contracts'
       fullPath: '/ps/contracts'
       preLoaderRoute: typeof PsContractsRouteImport
-      parentRoute: typeof PsRoute
-    }
-    '/ps/meeting-management': {
-      id: '/ps/meeting-management'
-      path: '/meeting-management'
-      fullPath: '/ps/meeting-management'
-      preLoaderRoute: typeof PsMeetingManagementRouteImport
       parentRoute: typeof PsRoute
     }
     '/ps/production': {
@@ -997,47 +991,47 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrmActionASettingsRouteImport
       parentRoute: typeof OrmActionARoute
     }
-    '/ps/meeting-management/': {
-      id: '/ps/meeting-management/'
+    '/ps/ae-workspace/': {
+      id: '/ps/ae-workspace/'
       path: '/'
-      fullPath: '/ps/meeting-management/'
-      preLoaderRoute: typeof PsMeetingManagementIndexRouteImport
-      parentRoute: typeof PsMeetingManagementRoute
+      fullPath: '/ps/ae-workspace/'
+      preLoaderRoute: typeof PsAeWorkspaceIndexRouteImport
+      parentRoute: typeof PsAeWorkspaceRoute
     }
-    '/ps/meeting-management/calendar': {
-      id: '/ps/meeting-management/calendar'
+    '/ps/ae-workspace/calendar': {
+      id: '/ps/ae-workspace/calendar'
       path: '/calendar'
-      fullPath: '/ps/meeting-management/calendar'
-      preLoaderRoute: typeof PsMeetingManagementCalendarRouteImport
-      parentRoute: typeof PsMeetingManagementRoute
+      fullPath: '/ps/ae-workspace/calendar'
+      preLoaderRoute: typeof PsAeWorkspaceCalendarRouteImport
+      parentRoute: typeof PsAeWorkspaceRoute
     }
-    '/ps/meeting-management/coaching': {
-      id: '/ps/meeting-management/coaching'
+    '/ps/ae-workspace/coaching': {
+      id: '/ps/ae-workspace/coaching'
       path: '/coaching'
-      fullPath: '/ps/meeting-management/coaching'
-      preLoaderRoute: typeof PsMeetingManagementCoachingRouteImport
-      parentRoute: typeof PsMeetingManagementRoute
+      fullPath: '/ps/ae-workspace/coaching'
+      preLoaderRoute: typeof PsAeWorkspaceCoachingRouteImport
+      parentRoute: typeof PsAeWorkspaceRoute
     }
-    '/ps/meeting-management/dashboard': {
-      id: '/ps/meeting-management/dashboard'
+    '/ps/ae-workspace/dashboard': {
+      id: '/ps/ae-workspace/dashboard'
       path: '/dashboard'
-      fullPath: '/ps/meeting-management/dashboard'
-      preLoaderRoute: typeof PsMeetingManagementDashboardRouteImport
-      parentRoute: typeof PsMeetingManagementRoute
+      fullPath: '/ps/ae-workspace/dashboard'
+      preLoaderRoute: typeof PsAeWorkspaceDashboardRouteImport
+      parentRoute: typeof PsAeWorkspaceRoute
     }
-    '/ps/meeting-management/meetings': {
-      id: '/ps/meeting-management/meetings'
+    '/ps/ae-workspace/meetings': {
+      id: '/ps/ae-workspace/meetings'
       path: '/meetings'
-      fullPath: '/ps/meeting-management/meetings'
-      preLoaderRoute: typeof PsMeetingManagementMeetingsRouteImport
-      parentRoute: typeof PsMeetingManagementRoute
+      fullPath: '/ps/ae-workspace/meetings'
+      preLoaderRoute: typeof PsAeWorkspaceMeetingsRouteImport
+      parentRoute: typeof PsAeWorkspaceRoute
     }
-    '/ps/meeting-management/surveys': {
-      id: '/ps/meeting-management/surveys'
+    '/ps/ae-workspace/surveys': {
+      id: '/ps/ae-workspace/surveys'
       path: '/surveys'
-      fullPath: '/ps/meeting-management/surveys'
-      preLoaderRoute: typeof PsMeetingManagementSurveysRouteImport
-      parentRoute: typeof PsMeetingManagementRoute
+      fullPath: '/ps/ae-workspace/surveys'
+      preLoaderRoute: typeof PsAeWorkspaceSurveysRouteImport
+      parentRoute: typeof PsAeWorkspaceRoute
     }
     '/ps/templates/': {
       id: '/ps/templates/'
@@ -1179,32 +1173,33 @@ const OrmRouteChildren: OrmRouteChildren = {
 
 const OrmRouteWithChildren = OrmRoute._addFileChildren(OrmRouteChildren)
 
-interface PsMeetingManagementRouteChildren {
-  PsMeetingManagementCalendarRoute: typeof PsMeetingManagementCalendarRoute
-  PsMeetingManagementCoachingRoute: typeof PsMeetingManagementCoachingRoute
-  PsMeetingManagementDashboardRoute: typeof PsMeetingManagementDashboardRoute
-  PsMeetingManagementMeetingsRoute: typeof PsMeetingManagementMeetingsRoute
-  PsMeetingManagementSurveysRoute: typeof PsMeetingManagementSurveysRoute
-  PsMeetingManagementIndexRoute: typeof PsMeetingManagementIndexRoute
+interface PsAeWorkspaceRouteChildren {
+  PsAeWorkspaceCalendarRoute: typeof PsAeWorkspaceCalendarRoute
+  PsAeWorkspaceCoachingRoute: typeof PsAeWorkspaceCoachingRoute
+  PsAeWorkspaceDashboardRoute: typeof PsAeWorkspaceDashboardRoute
+  PsAeWorkspaceMeetingsRoute: typeof PsAeWorkspaceMeetingsRoute
+  PsAeWorkspaceSurveysRoute: typeof PsAeWorkspaceSurveysRoute
+  PsAeWorkspaceIndexRoute: typeof PsAeWorkspaceIndexRoute
 }
 
-const PsMeetingManagementRouteChildren: PsMeetingManagementRouteChildren = {
-  PsMeetingManagementCalendarRoute: PsMeetingManagementCalendarRoute,
-  PsMeetingManagementCoachingRoute: PsMeetingManagementCoachingRoute,
-  PsMeetingManagementDashboardRoute: PsMeetingManagementDashboardRoute,
-  PsMeetingManagementMeetingsRoute: PsMeetingManagementMeetingsRoute,
-  PsMeetingManagementSurveysRoute: PsMeetingManagementSurveysRoute,
-  PsMeetingManagementIndexRoute: PsMeetingManagementIndexRoute,
+const PsAeWorkspaceRouteChildren: PsAeWorkspaceRouteChildren = {
+  PsAeWorkspaceCalendarRoute: PsAeWorkspaceCalendarRoute,
+  PsAeWorkspaceCoachingRoute: PsAeWorkspaceCoachingRoute,
+  PsAeWorkspaceDashboardRoute: PsAeWorkspaceDashboardRoute,
+  PsAeWorkspaceMeetingsRoute: PsAeWorkspaceMeetingsRoute,
+  PsAeWorkspaceSurveysRoute: PsAeWorkspaceSurveysRoute,
+  PsAeWorkspaceIndexRoute: PsAeWorkspaceIndexRoute,
 }
 
-const PsMeetingManagementRouteWithChildren =
-  PsMeetingManagementRoute._addFileChildren(PsMeetingManagementRouteChildren)
+const PsAeWorkspaceRouteWithChildren = PsAeWorkspaceRoute._addFileChildren(
+  PsAeWorkspaceRouteChildren,
+)
 
 interface PsRouteChildren {
+  PsAeWorkspaceRoute: typeof PsAeWorkspaceRouteWithChildren
   PsContractDashboardRoute: typeof PsContractDashboardRoute
   PsContractWizardRoute: typeof PsContractWizardRoute
   PsContractsRoute: typeof PsContractsRoute
-  PsMeetingManagementRoute: typeof PsMeetingManagementRouteWithChildren
   PsProductionRoute: typeof PsProductionRoute
   PsSystemCostRoute: typeof PsSystemCostRoute
   PsIndexRoute: typeof PsIndexRoute
@@ -1214,10 +1209,10 @@ interface PsRouteChildren {
 }
 
 const PsRouteChildren: PsRouteChildren = {
+  PsAeWorkspaceRoute: PsAeWorkspaceRouteWithChildren,
   PsContractDashboardRoute: PsContractDashboardRoute,
   PsContractWizardRoute: PsContractWizardRoute,
   PsContractsRoute: PsContractsRoute,
-  PsMeetingManagementRoute: PsMeetingManagementRouteWithChildren,
   PsProductionRoute: PsProductionRoute,
   PsSystemCostRoute: PsSystemCostRoute,
   PsIndexRoute: PsIndexRoute,

@@ -44,7 +44,7 @@ import {
 } from "@/lib/orm-meeting";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/ps/meeting-management/meetings")({
+export const Route = createFileRoute("/ps/ae-workspace/meetings")({
   head: () => ({
     meta: [
       { title: "Meetings List — ORM Meeting Management | Meridia" },
