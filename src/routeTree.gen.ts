@@ -59,6 +59,7 @@ import { Route as PsAeWorkspaceCalendarRouteImport } from './routes/ps.ae-worksp
 import { Route as PsAeWorkspaceCoachingRouteImport } from './routes/ps.ae-workspace.coaching'
 import { Route as PsAeWorkspaceDashboardRouteImport } from './routes/ps.ae-workspace.dashboard'
 import { Route as PsAeWorkspaceMeetingsRouteImport } from './routes/ps.ae-workspace.meetings'
+import { Route as PsAeWorkspacePropertyInfoRouteImport } from './routes/ps.ae-workspace.property-info'
 import { Route as PsAeWorkspaceSurveysRouteImport } from './routes/ps.ae-workspace.surveys'
 import { Route as PsTemplatesIndexRouteImport } from './routes/ps.templates.index'
 import { Route as PsTemplatesTemplateIdRouteImport } from './routes/ps.templates.$templateId'
@@ -314,6 +315,12 @@ const PsAeWorkspaceMeetingsRoute = PsAeWorkspaceMeetingsRouteImport.update({
   path: '/meetings',
   getParentRoute: () => PsAeWorkspaceRoute,
 } as any)
+const PsAeWorkspacePropertyInfoRoute =
+  PsAeWorkspacePropertyInfoRouteImport.update({
+    id: '/property-info',
+    path: '/property-info',
+    getParentRoute: () => PsAeWorkspaceRoute,
+  } as any)
 const PsAeWorkspaceSurveysRoute = PsAeWorkspaceSurveysRouteImport.update({
   id: '/surveys',
   path: '/surveys',
@@ -382,6 +389,7 @@ export interface FileRoutesByFullPath {
   '/ps/ae-workspace/coaching': typeof PsAeWorkspaceCoachingRoute
   '/ps/ae-workspace/dashboard': typeof PsAeWorkspaceDashboardRoute
   '/ps/ae-workspace/meetings': typeof PsAeWorkspaceMeetingsRoute
+  '/ps/ae-workspace/property-info': typeof PsAeWorkspacePropertyInfoRoute
   '/ps/ae-workspace/surveys': typeof PsAeWorkspaceSurveysRoute
   '/ps/templates/$templateId': typeof PsTemplatesTemplateIdRoute
   '/ps/templates/auto-fields': typeof PsTemplatesAutoFieldsRoute
@@ -430,6 +438,7 @@ export interface FileRoutesByTo {
   '/ps/ae-workspace/coaching': typeof PsAeWorkspaceCoachingRoute
   '/ps/ae-workspace/dashboard': typeof PsAeWorkspaceDashboardRoute
   '/ps/ae-workspace/meetings': typeof PsAeWorkspaceMeetingsRoute
+  '/ps/ae-workspace/property-info': typeof PsAeWorkspacePropertyInfoRoute
   '/ps/ae-workspace/surveys': typeof PsAeWorkspaceSurveysRoute
   '/ps/templates/$templateId': typeof PsTemplatesTemplateIdRoute
   '/ps/templates/auto-fields': typeof PsTemplatesAutoFieldsRoute
@@ -487,6 +496,7 @@ export interface FileRoutesById {
   '/ps/ae-workspace/coaching': typeof PsAeWorkspaceCoachingRoute
   '/ps/ae-workspace/dashboard': typeof PsAeWorkspaceDashboardRoute
   '/ps/ae-workspace/meetings': typeof PsAeWorkspaceMeetingsRoute
+  '/ps/ae-workspace/property-info': typeof PsAeWorkspacePropertyInfoRoute
   '/ps/ae-workspace/surveys': typeof PsAeWorkspaceSurveysRoute
   '/ps/templates/$templateId': typeof PsTemplatesTemplateIdRoute
   '/ps/templates/auto-fields': typeof PsTemplatesAutoFieldsRoute
@@ -545,6 +555,7 @@ export interface FileRouteTypes {
     | '/ps/ae-workspace/coaching'
     | '/ps/ae-workspace/dashboard'
     | '/ps/ae-workspace/meetings'
+    | '/ps/ae-workspace/property-info'
     | '/ps/ae-workspace/surveys'
     | '/ps/templates/$templateId'
     | '/ps/templates/auto-fields'
@@ -593,6 +604,7 @@ export interface FileRouteTypes {
     | '/ps/ae-workspace/coaching'
     | '/ps/ae-workspace/dashboard'
     | '/ps/ae-workspace/meetings'
+    | '/ps/ae-workspace/property-info'
     | '/ps/ae-workspace/surveys'
     | '/ps/templates/$templateId'
     | '/ps/templates/auto-fields'
@@ -649,6 +661,7 @@ export interface FileRouteTypes {
     | '/ps/ae-workspace/coaching'
     | '/ps/ae-workspace/dashboard'
     | '/ps/ae-workspace/meetings'
+    | '/ps/ae-workspace/property-info'
     | '/ps/ae-workspace/surveys'
     | '/ps/templates/$templateId'
     | '/ps/templates/auto-fields'
@@ -1026,6 +1039,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PsAeWorkspaceMeetingsRouteImport
       parentRoute: typeof PsAeWorkspaceRoute
     }
+    '/ps/ae-workspace/property-info': {
+      id: '/ps/ae-workspace/property-info'
+      path: '/property-info'
+      fullPath: '/ps/ae-workspace/property-info'
+      preLoaderRoute: typeof PsAeWorkspacePropertyInfoRouteImport
+      parentRoute: typeof PsAeWorkspaceRoute
+    }
     '/ps/ae-workspace/surveys': {
       id: '/ps/ae-workspace/surveys'
       path: '/surveys'
@@ -1178,6 +1198,7 @@ interface PsAeWorkspaceRouteChildren {
   PsAeWorkspaceCoachingRoute: typeof PsAeWorkspaceCoachingRoute
   PsAeWorkspaceDashboardRoute: typeof PsAeWorkspaceDashboardRoute
   PsAeWorkspaceMeetingsRoute: typeof PsAeWorkspaceMeetingsRoute
+  PsAeWorkspacePropertyInfoRoute: typeof PsAeWorkspacePropertyInfoRoute
   PsAeWorkspaceSurveysRoute: typeof PsAeWorkspaceSurveysRoute
   PsAeWorkspaceIndexRoute: typeof PsAeWorkspaceIndexRoute
 }
@@ -1187,6 +1208,7 @@ const PsAeWorkspaceRouteChildren: PsAeWorkspaceRouteChildren = {
   PsAeWorkspaceCoachingRoute: PsAeWorkspaceCoachingRoute,
   PsAeWorkspaceDashboardRoute: PsAeWorkspaceDashboardRoute,
   PsAeWorkspaceMeetingsRoute: PsAeWorkspaceMeetingsRoute,
+  PsAeWorkspacePropertyInfoRoute: PsAeWorkspacePropertyInfoRoute,
   PsAeWorkspaceSurveysRoute: PsAeWorkspaceSurveysRoute,
   PsAeWorkspaceIndexRoute: PsAeWorkspaceIndexRoute,
 }
