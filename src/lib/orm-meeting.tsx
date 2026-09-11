@@ -38,6 +38,9 @@ export type Meeting = {
   status: MeetingStatus;
   survey: SurveyStatus;
   email: string;
+  tierPct?: number;
+  hotelStatus?: HotelStatus;
+  carriedOver?: boolean;
 };
 
 export type SurveyRow = {
