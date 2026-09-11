@@ -36,12 +36,12 @@ import {
 export const Route = createFileRoute("/ps/ae-workspace/surveys")({
   head: () => ({
     meta: [
-      { title: "Meeting Surveys — ORM Meeting Management | Meridia" },
+      { title: "Meeting Surveys — AE Workspace | Meridia" },
       {
         name: "description",
         content: "แบบสอบถามหลังประชุม ORM — คิวที่ต้องกรอก, คะแนนที่ส่งแล้ว และ flag ที่ต้องติดตาม",
       },
-      { property: "og:title", content: "Meeting Surveys — ORM Meeting Management" },
+      { property: "og:title", content: "Meeting Surveys — AE Workspace" },
       { property: "og:description", content: "แบบสอบถามหลังประชุม ORM และคะแนนความพึงพอใจ" },
     ],
   }),
@@ -64,7 +64,7 @@ function SurveysTab() {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
-        eyebrow="PS App · ORM Meeting Management · Surveys"
+        eyebrow="PS App · AE Workspace · Surveys"
         title="Post-Meeting Surveys"
         description="เก็บคะแนนความพึงพอใจหลังประชุม 9 คำถาม 4 หมวด — คะแนนต่ำกว่า 6.5 จะสร้าง flag อัตโนมัติ"
       />
