@@ -1,10 +1,18 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
 
-export type MmRole = "AE" | "Partner Manager" | "ORM" | "GRM";
+export type MmRole = "AE" | "Partner Manager" | "On-boarding Specialist" | "ORM" | "GRM";
 
-export const mmRoles: MmRole[] = ["AE", "Partner Manager", "ORM", "GRM"];
+export const mmRoles: MmRole[] = [
+  "AE",
+  "Partner Manager",
+  "On-boarding Specialist",
+  "ORM",
+  "GRM",
+];
 
-export type Tier = "A" | "B";
+export type Tier = "A" | "B" | "C";
+
+export type HotelStatus = "Active" | "NEW" | "REPORT ONLY";
 
 export type MeetingStatus =
   | "Draft"
@@ -12,6 +20,7 @@ export type MeetingStatus =
   | "Confirmed"
   | "Completed"
   | "Postponed"
+  | "Postponed-Next-Month"
   | "Declined"
   | "No-show";
 
