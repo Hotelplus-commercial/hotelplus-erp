@@ -1,13 +1,19 @@
 import { Chip } from "@/components/crm/crm-ui";
 import { Progress } from "@/components/ui/progress";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { tierRule, type HotelStatus, type Tier } from "@/lib/orm-meeting";
 
 export function TierBadge({ tier, pct }: { tier: Tier; pct?: number }) {
   const tone = tier === "A" ? "danger" : tier === "B" ? "warn" : "success";
   return (
-    <Tooltip>
+    <TooltipProvider>
+      <Tooltip>
       <TooltipTrigger asChild>
         <span>
           <Chip tone={tone}>
@@ -19,7 +25,8 @@ export function TierBadge({ tier, pct }: { tier: Tier; pct?: number }) {
       <TooltipContent>
         Tier {tier} — {tierRule[tier].criteria} · {tierRule[tier].meeting}
       </TooltipContent>
-    </Tooltip>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
 
