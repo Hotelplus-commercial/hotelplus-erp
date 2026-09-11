@@ -1,10 +1,18 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
 
-export type MmRole = "AE" | "Partner Manager" | "ORM" | "GRM";
+export type MmRole = "AE" | "Partner Manager" | "On-boarding Specialist" | "ORM" | "GRM";
 
-export const mmRoles: MmRole[] = ["AE", "Partner Manager", "ORM", "GRM"];
+export const mmRoles: MmRole[] = [
+  "AE",
+  "Partner Manager",
+  "On-boarding Specialist",
+  "ORM",
+  "GRM",
+];
 
-export type Tier = "A" | "B";
+export type Tier = "A" | "B" | "C";
+
+export type HotelStatus = "Active" | "NEW" | "REPORT ONLY";
 
 export type MeetingStatus =
   | "Draft"
@@ -12,6 +20,7 @@ export type MeetingStatus =
   | "Confirmed"
   | "Completed"
   | "Postponed"
+  | "Postponed-Next-Month"
   | "Declined"
   | "No-show";
 
@@ -29,6 +38,9 @@ export type Meeting = {
   status: MeetingStatus;
   survey: SurveyStatus;
   email: string;
+  tierPct?: number;
+  hotelStatus?: HotelStatus;
+  carriedOver?: boolean;
 };
 
 export type SurveyRow = {
@@ -47,7 +59,13 @@ export type SurveyRow = {
 export type Flag = {
   id: string;
   priority: "High" | "Medium";
-  type: "Decline" | "Survey ORM" | "Survey AE" | "Survey Overall" | "No-show";
+  type:
+    | "Decline"
+    | "Survey ORM"
+    | "Survey AE"
+    | "Survey Overall"
+    | "No-show"
+    | "SLA Overdue";
   ae: string;
   orm?: string;
   hotel: string;
@@ -327,6 +345,17 @@ export const mmFlags: Flag[] = [
     createdAt: "5 Sep 2026",
   },
   {
+    id: "FL-005",
+    priority: "Medium",
+    type: "SLA Overdue",
+    ae: "Boss Thompson",
+    hotel: "Green Valley",
+    detail: "Property overdue 3d (1st Check)",
+    ageDays: 2,
+    status: "In Coaching",
+    createdAt: "5 Sep 2026",
+  },
+  {
     id: "FL-004",
     priority: "Medium",
     type: "No-show",
@@ -433,8 +462,375 @@ export const statusTone: Record<MeetingStatus, "muted" | "info" | "success" | "w
   Confirmed: "success",
   Completed: "info",
   Postponed: "warn",
+  "Postponed-Next-Month": "info",
   Declined: "danger",
   "No-show": "danger",
 };
 
 export const scoreTone = (n: number) => (n < 6.5 ? "danger" : n <= 7.5 ? "warn" : "success");
+
+/* ------------------------------------------------------------------ */
+/* AE Workspace v2 — portfolio, property pipeline, calendar model      */
+/* ------------------------------------------------------------------ */
+
+export const tierRule: Record<Tier, { criteria: string; meeting: string }> = {
+  A: { criteria: "< 65% ของเป้ารายได้เดือนก่อน", meeting: "Required (100%)" },
+  B: { criteria: "66–95% ของเป้ารายได้เดือนก่อน", meeting: "Optional (filler)" },
+  C: { criteria: "≥ 96% ของเป้ารายได้เดือนก่อน", meeting: "ไม่ต้องนัด" },
+};
+
+export const portfolio = {
+  totalHotels: 42,
+  tierAHotels: 18,
+  churnMonth: 2,
+  churnPct: 20,
+  churnYtd: 15,
+  churnBreakdown: "ฉีกสัญญา 1 / ไม่ต่อ 1",
+  surveysCollected: 27,
+  surveyAvg: 7.8,
+  tierACompletion: 88,
+};
+
+export const renewals = [
+  { hotel: "Grand Palace BKK", daysLeft: 12 },
+  { hotel: "Ocean View Phuket", daysLeft: 28 },
+  { hotel: "City Center BKK", daysLeft: 41 },
+];
+
+export const tierAPipeline = [
+  { label: "Not Assign", value: 4, tone: "muted" as const },
+  { label: "Draft", value: 6, tone: "info" as const },
+  { label: "Confirm Slot", value: 7, tone: "success" as const },
+  { label: "Reject Slot", value: 1, tone: "danger" as const },
+];
+
+export const upcomingTeam = [
+  { time: "09:00", hotel: "Grand Palace Bangkok", tier: "A" as Tier, mine: true },
+  { time: "11:00", hotel: "Riverside Resort Krabi", tier: "B" as Tier, mine: false },
+  { time: "14:00", hotel: "Ocean View Phuket + Sunset Villa", tier: "A" as Tier, mine: true },
+];
+
+export const upcomingSummary = { team: 15, mine: 8 };
+
+/* --- Property Info pipeline --- */
+
+export const preStages = [
+  { key: "new", title: "New Property", sla: "24h" },
+  { key: "intro", title: "Introduction & Sent Form", sla: "24h" },
+  { key: "collect", title: "Collect Data", sla: "72h" },
+  { key: "check1", title: "1st Check & Follow up", sla: "24h" },
+  { key: "pending", title: "Property Pending", sla: "48h" },
+  { key: "final", title: "Final Check", sla: "24h" },
+];
+
+export const servicingStages = [
+  { key: "approved", title: "Approved", sla: "—" },
+  { key: "processing", title: "On-boarding Processing", sla: "Overall SLA" },
+  { key: "completed", title: "Completed", sla: "—" },
+  { key: "score", title: "Survey Score", sla: "—" },
+];
+
+export type PropertyCard = {
+  id: string;
+  hotel: string;
+  stage: string;
+  daysInStage: number;
+  slaDays: number;
+  overdue: boolean;
+  owner: string;
+  action: string;
+  note?: string;
+  score?: string;
+  readOnly?: boolean;
+  journeyStep: number; // 0..4
+  signedDaysAgo: number;
+  rooms: number;
+  location: string;
+  roomTypes: string;
+  otas: string;
+  history: { at: string; text: string }[];
+};
+
+export const journeyPhases = ["BD", "AE", "On-boarding", "ทีมบริการ", "Lived"];
+
+export const propertyCards: PropertyCard[] = [
+  {
+    id: "PC-1",
+    hotel: "Hotel Aurora BKK",
+    stage: "new",
+    daysInStage: 0,
+    slaDays: 1,
+    overdue: false,
+    owner: "Nont Wilson",
+    action: "Move →",
+    journeyStep: 1,
+    signedDaysAgo: 2,
+    rooms: 86,
+    location: "สุขุมวิท, กรุงเทพฯ",
+    roomTypes: "Deluxe / Suite",
+    otas: "Agoda, Booking.com",
+    history: [{ at: "9 Sep 2026", text: "BD ส่งต่อให้ AE" }],
+  },
+  {
+    id: "PC-2",
+    hotel: "Sunrise Hotel",
+    stage: "collect",
+    daysInStage: 2,
+    slaDays: 3,
+    overdue: false,
+    owner: "Nont Wilson",
+    action: "Move →",
+    journeyStep: 1,
+    signedDaysAgo: 15,
+    rooms: 120,
+    location: "หัวหิน, ประจวบฯ",
+    roomTypes: "Superior / Deluxe / Villa",
+    otas: "Agoda, Expedia, Trip.com",
+    history: [
+      { at: "26 Aug 2026", text: "เซ็นสัญญา — BD ส่งต่อ AE" },
+      { at: "5 Sep 2026", text: "ส่งฟอร์มเก็บข้อมูลให้โรงแรม" },
+      { at: "7 Sep 2026", text: "เข้าสู่ Collect Data" },
+    ],
+  },
+  {
+    id: "PC-3",
+    hotel: "Green Valley",
+    stage: "check1",
+    daysInStage: 4,
+    slaDays: 1,
+    overdue: true,
+    owner: "Dao S.",
+    action: "Request Review",
+    journeyStep: 2,
+    signedDaysAgo: 22,
+    rooms: 64,
+    location: "เชียงใหม่",
+    roomTypes: "Standard / Family",
+    otas: "Agoda, Booking.com",
+    history: [
+      { at: "1 Sep 2026", text: "ส่งข้อมูลครบ" },
+      { at: "4 Sep 2026", text: "เข้าสู่ 1st Check — เกิน SLA 3 วัน" },
+    ],
+  },
+  {
+    id: "PC-4",
+    hotel: "Blue Lagoon",
+    stage: "final",
+    daysInStage: 1,
+    slaDays: 1,
+    overdue: false,
+    owner: "Dao S.",
+    action: "Approve",
+    journeyStep: 2,
+    signedDaysAgo: 18,
+    rooms: 45,
+    location: "กระบี่",
+    roomTypes: "Pool Villa",
+    otas: "Agoda, Booking.com, Airbnb",
+    history: [
+      { at: "3 Sep 2026", text: "ผ่าน 1st Check" },
+      { at: "6 Sep 2026", text: "เข้าสู่ Final Check" },
+    ],
+  },
+];
+
+export const servicingCards: PropertyCard[] = [
+  {
+    id: "SC-1",
+    hotel: "Hotel Zenith",
+    stage: "approved",
+    daysInStage: 1,
+    slaDays: 2,
+    overdue: false,
+    owner: "Dao S.",
+    action: "View",
+    readOnly: true,
+    journeyStep: 2,
+    signedDaysAgo: 24,
+    rooms: 150,
+    location: "พัทยา, ชลบุรี",
+    roomTypes: "Deluxe / Suite",
+    otas: "Agoda, Booking.com",
+    history: [{ at: "8 Sep 2026", text: "อนุมัติข้อมูล — ส่ง ticket ให้ ORM/Marcom" }],
+  },
+  {
+    id: "SC-2",
+    hotel: "Hotel Yara",
+    stage: "processing",
+    daysInStage: 5,
+    slaDays: 10,
+    overdue: false,
+    owner: "ORM + Marcom",
+    action: "View",
+    note: "ORM + Marcom processing…",
+    readOnly: true,
+    journeyStep: 3,
+    signedDaysAgo: 34,
+    rooms: 98,
+    location: "ภูเก็ต",
+    roomTypes: "Deluxe / Suite",
+    otas: "Agoda, Expedia",
+    history: [{ at: "3 Sep 2026", text: "เริ่ม on-boarding processing" }],
+  },
+  {
+    id: "SC-3",
+    hotel: "Hotel Zephyr",
+    stage: "score",
+    daysInStage: 2,
+    slaDays: 5,
+    overdue: false,
+    owner: "Nont Wilson",
+    action: "View",
+    score: "8.5/10",
+    readOnly: true,
+    journeyStep: 4,
+    signedDaysAgo: 61,
+    rooms: 72,
+    location: "สมุย, สุราษฎร์ธานี",
+    roomTypes: "Beachfront / Garden",
+    otas: "Agoda, Booking.com, Trip.com",
+    history: [
+      { at: "20 Aug 2026", text: "On-boarding เสร็จสมบูรณ์" },
+      { at: "5 Sep 2026", text: "ได้รับ Survey Score 8.5" },
+    ],
+  },
+];
+
+export const specialistStages = [
+  { key: "check1", title: "1st Check", sla: "24h" },
+  { key: "final", title: "Final Check", sla: "24h" },
+  { key: "approved", title: "Approved", sla: "—" },
+  { key: "processing", title: "On-boarding Processing", sla: "Overall SLA" },
+  { key: "completed", title: "Completed", sla: "—" },
+  { key: "score", title: "Survey Score", sla: "—" },
+];
+
+/* --- Calendar (default-available model) --- */
+
+export type DayState = "available" | "block" | "dayoff" | "cutoff" | "past";
+
+export type CalendarDay = {
+  day: number;
+  state: DayState;
+  slots: ("available" | "block" | "dayoff" | "booked" | "cutoff")[];
+  label?: string | undefined;
+  marker?: string | undefined;
+};
+
+const baseSlots = ["09:00", "13:00", "15:00"] as const;
+export const slotTimes = baseSlots;
+
+export const septemberDays: CalendarDay[] = Array.from({ length: 30 }, (_, i) => {
+  const day = i + 1;
+  const dow = (i + 2) % 7; // 1 Sep 2026 = Tuesday
+  const weekend = dow === 0 || dow === 6;
+  const base: CalendarDay = {
+    day,
+    state: "available",
+    slots: ["available", "available", "available"],
+  };
+  if (day === 3) base.marker = "🔄 Tier Classify";
+  if (day === 10) base.marker = "✉ Report Send";
+  if (day > 25) return { ...base, state: "cutoff", slots: ["cutoff", "cutoff", "cutoff"], label: "ปิดรับประชุม" };
+  if (day < 11) return { ...base, state: "past", slots: ["cutoff", "cutoff", "cutoff"], label: day < 3 ? undefined : "draft ล่วงหน้า" };
+  if (weekend || day === 18) return { ...base, state: "dayoff", slots: ["dayoff", "dayoff", "dayoff"], label: day === 18 ? "(ORM ลา)" : "HR day-off" };
+  if (day === 16) return { ...base, slots: ["available", "block", "block"], label: "ORM: OTA" };
+  if (day === 22) return { ...base, slots: ["available", "available", "booked"] };
+  if (day === 24) return { ...base, slots: ["available", "booked", "booked"] };
+  if (day === 25) return { ...base, marker: "↑ cutoff" };
+  return base;
+});
+
+export const slotReason: Record<string, string> = {
+  block: "ORM ติดประชุม OTA / งานภายใน",
+  dayoff: "วันหยุดตามตาราง HR",
+  cutoff: "นอกช่วงประชุม (วันที่ 11–25 เท่านั้น)",
+  booked: "มีนัดหมายแล้ว",
+};
+
+/* --- Extra meeting rows required by v2 --- */
+
+export const extraMeetings: Meeting[] = [
+  {
+    id: "MTG-011",
+    hotel: "Coral Reef Samui",
+    tier: "A",
+    tierPct: 44,
+    orm: "Fern A.",
+    ae: "Fern Anderson",
+    date: "—",
+    status: "Postponed-Next-Month",
+    carriedOver: true,
+    survey: "—",
+    hotelStatus: "Active",
+    email: "gm@coralreefsamui.com",
+  },
+  {
+    id: "MTG-012",
+    hotel: "Bangkok Boutique Sukhumvit",
+    tier: "A",
+    tierPct: 41,
+    orm: "Somchai K.",
+    ae: "Nont Wilson",
+    date: "—",
+    status: "Draft",
+    survey: "—",
+    hotelStatus: "NEW",
+    email: "gm@bkkboutique.com",
+  },
+  {
+    id: "MTG-013",
+    hotel: "Old Town Ayutthaya",
+    tier: "B",
+    tierPct: 72,
+    orm: "Malee P.",
+    ae: "Nont Wilson",
+    date: "—",
+    status: "Draft",
+    survey: "—",
+    hotelStatus: "REPORT ONLY",
+    email: "gm@oldtownayutthaya.com",
+  },
+];
+
+const pctByHotel: Record<string, number> = {
+  "Grand Palace Bangkok": 52,
+  "Riverside Resort Krabi": 78,
+  "Ocean View Phuket": 48,
+  "Sunset Villa Phuket": 48,
+  "Sky Tower Bangkok": 58,
+  "Emerald Bay Pattaya": 61,
+  "Mountain View Chiang Mai": 85,
+  "Beach Front Hua Hin": 55,
+  "Lakeside Retreat Phayao": 49,
+  "City Center Bangkok": 91,
+  "Sunset Beach Samui": 46,
+};
+
+export const allMeetings: Meeting[] = [
+  ...mmMeetings.map((m) => ({
+    ...m,
+    tierPct: pctByHotel[m.hotel] ?? 60,
+    hotelStatus: "Active" as HotelStatus,
+  })),
+  ...extraMeetings,
+];
+
+export const hotelStatusTone: Record<HotelStatus, "success" | "info" | "muted"> = {
+  Active: "success",
+  NEW: "info",
+  "REPORT ONLY": "muted",
+};
+
+export const coachingSummary = { open: 12, inCoaching: 5, resolved: 18 };
+
+export const flagTypes = [
+  "All",
+  "Decline",
+  "Survey ORM",
+  "Survey AE",
+  "Survey Overall",
+  "No-show",
+  "SLA Overdue",
+];
+

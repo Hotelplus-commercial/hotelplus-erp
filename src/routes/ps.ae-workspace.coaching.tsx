@@ -33,15 +33,15 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { mmFlags, useMeetingMgmt, type Flag } from "@/lib/orm-meeting";
 
-export const Route = createFileRoute("/ps/meeting-management/coaching")({
+export const Route = createFileRoute("/ps/ae-workspace/coaching")({
   head: () => ({
     meta: [
-      { title: "Coaching Queue — ORM Meeting Management | Meridia" },
+      { title: "Coaching Queue — AE Workspace | Meridia" },
       {
         name: "description",
         content: "คิว coaching ของ Partner Manager — flag จากการปฏิเสธนัดและคะแนนสำรวจต่ำ",
       },
-      { property: "og:title", content: "Coaching Queue — ORM Meeting Management" },
+      { property: "og:title", content: "Coaching Queue — AE Workspace" },
       { property: "og:description", content: "คิว coaching และ flag ของทีม Partner Success" },
     ],
   }),
@@ -87,7 +87,7 @@ function CoachingTab() {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
-        eyebrow="PS App · ORM Meeting Management · Coaching"
+        eyebrow="PS App · AE Workspace · Coaching"
         title="Coaching Queue"
         description="Flag ที่เกิดจากการปฏิเสธนัด, no-show และคะแนนสำรวจต่ำ — ติดตามจนปิดเคส"
       />

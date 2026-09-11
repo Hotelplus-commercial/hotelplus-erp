@@ -5,7 +5,7 @@ import { toast } from "sonner";
 
 import { Chip, Panel } from "@/components/crm/crm-ui";
 import { PageHeader } from "@/components/erp-ui";
-import { EmptyState, TierBadge } from "@/components/ps/meeting-ui";
+import { EmptyState, HotelStatusBadge, TierBadge } from "@/components/ps/meeting-ui";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -35,25 +35,29 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  allMeetings,
   availableSlots,
   mmHotels,
-  mmMeetings,
   statusTone,
   useMeetingMgmt,
   type MeetingStatus,
 } from "@/lib/orm-meeting";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/ps/meeting-management/meetings")({
+export const Route = createFileRoute("/ps/ae-workspace/meetings")({
   head: () => ({
     meta: [
-      { title: "Meetings List — ORM Meeting Management | Meridia" },
+      { title: "Meetings — AE Workspace | Meridia Hotel ERP" },
       {
         name: "description",
-        content: "รายการนัดหมาย ORM ทั้งหมด พร้อมฟิลเตอร์สถานะ tier และการร่างนัดหมายใหม่",
+        content:
+          "รายการนัดหมาย ORM ทั้งหมด พร้อมฟิลเตอร์สถานะ tier สถานะโรงแรม และการร่าง/เลื่อนนัดหมาย",
       },
-      { property: "og:title", content: "Meetings List — ORM Meeting Management" },
-      { property: "og:description", content: "รายการนัดหมาย ORM ทั้งหมดของทีม Partner Success" },
+      { property: "og:title", content: "Meetings — AE Workspace" },
+      {
+        property: "og:description",
+        content: "รายการนัดหมาย ORM ทั้งหมดของทีม AE พร้อมสถานะและ tier",
+      },
     ],
   }),
   component: MeetingsTab,
@@ -66,6 +70,7 @@ const statusOptions: (MeetingStatus | "All")[] = [
   "Confirmed",
   "Completed",
   "Postponed",
+  "Postponed-Next-Month",
   "Declined",
   "No-show",
 ];
@@ -81,10 +86,11 @@ function MeetingsTab() {
   const [hotel2, setHotel2] = useState<string>("");
   const [slot, setSlot] = useState<string>("");
   const [note, setNote] = useState("");
+  const [postponeFor, setPostponeFor] = useState<string | null>(null);
 
   const rows = useMemo(
     () =>
-      mmMeetings.filter(
+      allMeetings.filter(
         (m) =>
           (status === "All" || m.status === status) &&
           (tier === "All" || m.tier === tier) &&
@@ -109,9 +115,9 @@ function MeetingsTab() {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
-        eyebrow="PS App · ORM Meeting Management · Meetings"
+        eyebrow="PS App · AE Workspace · Meetings"
         title="Meetings"
-        description="รายการนัดหมายทั้งหมด ค้นหาและกรองตามสถานะ tier หรือชื่อโรงแรม"
+        description="รายการนัดหมายทั้งหมด ค้นหาและกรองตามสถานะ tier สถานะโรงแรม หรือชื่อโรงแรม"
         actions={
           role === "AE" ? (
             <Button onClick={() => setDraftOpen(true)}>
@@ -143,6 +149,7 @@ function MeetingsTab() {
               <SelectItem value="All">All tiers</SelectItem>
               <SelectItem value="A">Tier A</SelectItem>
               <SelectItem value="B">Tier B</SelectItem>
+              <SelectItem value="C">Tier C</SelectItem>
             </SelectContent>
           </Select>
           <div className="relative min-w-[200px] flex-1">
@@ -164,7 +171,8 @@ function MeetingsTab() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Hotel</TableHead>
-                  <TableHead>Tier</TableHead>
+                  <TableHead>Hotel Status</TableHead>
+                  <TableHead>Tier · %</TableHead>
                   <TableHead>ORM</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Status</TableHead>
@@ -182,12 +190,20 @@ function MeetingsTab() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <TierBadge tier={m.tier} />
+                      <HotelStatusBadge status={m.hotelStatus ?? "Active"} />
+                    </TableCell>
+                    <TableCell>
+                      <TierBadge tier={m.tier} pct={m.tierPct} />
                     </TableCell>
                     <TableCell>{m.orm}</TableCell>
                     <TableCell>
                       {m.date}
                       {m.time ? ` · ${m.time}` : ""}
+                      {m.carriedOver && (
+                        <span className="ml-2 text-xs text-muted-foreground">
+                          ยกยอดจากเดือนก่อน
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Chip tone={statusTone[m.status]}>{m.status}</Chip>
@@ -203,13 +219,21 @@ function MeetingsTab() {
                       </span>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => toast.info(`เปิดรายละเอียด ${m.hotel}`)}
-                      >
-                        View
-                      </Button>
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => toast.info(`เปิดรายละเอียด ${m.hotel}`)}
+                        >
+                          View
+                        </Button>
+                        {role === "AE" &&
+                          (m.status === "Confirmed" || m.status === "Sent") && (
+                            <Button size="sm" onClick={() => setPostponeFor(m.hotel)}>
+                              Postpone
+                            </Button>
+                          )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -219,7 +243,9 @@ function MeetingsTab() {
         </div>
 
         <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
-          <span>Showing 1–{Math.min(10, rows.length)} of 42 meetings</span>
+          <span>
+            Showing 1–{Math.min(10, rows.length)} of {rows.length} meetings
+          </span>
           <div className="flex gap-2">
             <Button size="sm" variant="outline" disabled>
               Previous
@@ -353,6 +379,37 @@ function MeetingsTab() {
               }}
             >
               Send Invitation
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={postponeFor !== null} onOpenChange={(o) => !o && setPostponeFor(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Postpone Meeting — {postponeFor}</DialogTitle>
+            <DialogDescription>
+              เลื่อนภายในเดือนนี้ได้ถ้ายังไม่ถึงวันที่ 25 · หากเลยกำหนดระบบจะยกยอดไปเดือนถัดไปและนับเป็น
+              Tier A ที่ยังไม่สำเร็จ
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-wrap gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                toast.success("เลื่อนภายในเดือนนี้ — ส่งช่วงเวลาใหม่ให้ลูกค้าแล้ว");
+                setPostponeFor(null);
+              }}
+            >
+              เลื่อนภายในเดือนนี้
+            </Button>
+            <Button
+              onClick={() => {
+                toast.info("ยกยอดเป็น Postponed-Next-Month และแจ้ง Partner Manager");
+                setPostponeFor(null);
+              }}
+            >
+              ยกยอดไปเดือนถัดไป
             </Button>
           </DialogFooter>
         </DialogContent>
