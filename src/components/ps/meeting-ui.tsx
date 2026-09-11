@@ -9,7 +9,7 @@ import {
 import { cn } from "@/lib/utils";
 import { tierRule, type HotelStatus, type Tier } from "@/lib/orm-meeting";
 
-export function TierBadge({ tier, pct }: { tier: Tier; pct?: number }) {
+export function TierBadge({ tier, pct }: { tier: Tier; pct?: number | undefined }) {
   const tone = tier === "A" ? "danger" : tier === "B" ? "warn" : "success";
   return (
     <TooltipProvider>

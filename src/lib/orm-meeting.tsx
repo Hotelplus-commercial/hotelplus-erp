@@ -713,8 +713,8 @@ export type CalendarDay = {
   day: number;
   state: DayState;
   slots: ("available" | "block" | "dayoff" | "booked" | "cutoff")[];
-  label?: string;
-  marker?: string;
+  label?: string | undefined;
+  marker?: string | undefined;
 };
 
 const baseSlots = ["09:00", "13:00", "15:00"] as const;
