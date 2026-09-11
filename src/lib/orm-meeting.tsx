@@ -345,6 +345,17 @@ export const mmFlags: Flag[] = [
     createdAt: "5 Sep 2026",
   },
   {
+    id: "FL-005",
+    priority: "Medium",
+    type: "SLA Overdue",
+    ae: "Boss Thompson",
+    hotel: "Green Valley",
+    detail: "Property overdue 3d (1st Check)",
+    ageDays: 2,
+    status: "In Coaching",
+    createdAt: "5 Sep 2026",
+  },
+  {
     id: "FL-004",
     priority: "Medium",
     type: "No-show",
