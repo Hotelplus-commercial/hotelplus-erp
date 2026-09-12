@@ -1,10 +1,14 @@
 import { Link, useRouterState } from "@tanstack/react-router";
+import { Fragment } from "react";
 import {
   BarChart3,
   BuildingIcon,
   Calculator,
   CalendarCheck,
   ClipboardCheck,
+  Crown,
+  Trophy,
+
 
   Megaphone,
   FileSignature,
@@ -113,10 +117,10 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={pathname === "/"} tooltip="Executive">
+                <SidebarMenuButton asChild isActive={pathname === "/"} tooltip="Overview">
                   <Link to="/" className="flex items-center gap-2">
                     <LayoutDashboard className="size-4 shrink-0" />
-                    <span className="truncate">Executive App</span>
+                    <span className="truncate">Overview Dashboard</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -131,8 +135,10 @@ export function AppSidebar() {
               {modules.map((m) => {
                 const children = (moduleChildren[m.slug] ?? []).filter((c) => !hiddenUrls.has(c.url));
                 const inSection = pathname === m.to || pathname.startsWith(`${m.to}/`);
+                const officeActive = pathname.startsWith("/the-office-app");
                 return (
-                  <SidebarMenuItem key={m.slug}>
+                  <Fragment key={m.slug}>
+                  <SidebarMenuItem>
                     <SidebarMenuButton
                       asChild
                       isActive={pathname === m.to}
@@ -158,6 +164,36 @@ export function AppSidebar() {
                       </SidebarMenuSub>
                     )}
                   </SidebarMenuItem>
+                  {m.slug === "marcom" && (
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={officeActive}
+                        tooltip="The Office APP"
+                      >
+                        <Link to="/the-office-app/orm-bonus" className="flex items-center gap-2">
+                          <Crown className="size-4 shrink-0" />
+                          <span className="truncate">The Office APP</span>
+                        </Link>
+                      </SidebarMenuButton>
+                      {!collapsed && officeActive && (
+                        <SidebarMenuSub>
+                          <SidebarMenuSubItem>
+                            <SidebarMenuSubButton
+                              asChild
+                              isActive={pathname === "/the-office-app/orm-bonus"}
+                            >
+                              <Link to="/the-office-app/orm-bonus" className="flex items-center gap-2">
+                                <Trophy className="size-3.5 shrink-0" />
+                                <span className="truncate">ORM Bonus</span>
+                              </Link>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        </SidebarMenuSub>
+                      )}
+                    </SidebarMenuItem>
+                  )}
+                  </Fragment>
                 );
               })}
             </SidebarMenu>

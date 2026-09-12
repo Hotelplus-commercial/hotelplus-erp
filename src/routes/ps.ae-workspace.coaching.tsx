@@ -31,6 +31,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ActivityFeedList, useAutoRefresh } from "@/components/ps/v4-ui";
+import { activityFeed, coachGroups, coachRoles, coachStatuses, feedTypes } from "@/lib/ps-v4";
 import { mmFlags, useMeetingMgmt, type Flag } from "@/lib/orm-meeting";
 
 export const Route = createFileRoute("/ps/ae-workspace/coaching")({
@@ -272,6 +275,113 @@ function CoachingTab() {
           )}
         </DialogContent>
       </Dialog>
+
+      <TeamCoachingTabs />
     </div>
+  );
+}
+
+/** v4.0 additions — 2 new tabs, PM only (rendered inside the PM-gated view) */
+function TeamCoachingTabs() {
+  const [tab, setTab] = useState<"overview" | "feed">("overview");
+  const [coachRole, setCoachRole] = useState("All");
+  const [taskStatus, setTaskStatus] = useState("All");
+  const [feedType, setFeedType] = useState<string>("All");
+  useAutoRefresh(30);
+
+  const groups = coachGroups.filter((g) => coachRole === "All" || g.role === coachRole);
+  const events = activityFeed.filter((e) => feedType === "All" || e.type === feedType);
+
+  return (
+    <Panel
+      title="Team Coaching & Notifications (v4.0)"
+      subtitle="Layer 2 feed = สตรีมอ่านอย่างเดียวสำหรับ PM — ลงมือทำผ่าน deep link ในหน้าที่เกี่ยวข้อง"
+    >
+      <Tabs value={tab} onValueChange={(v) => setTab(v as "overview" | "feed")}>
+        <TabsList>
+          <TabsTrigger value="overview">Team Coaching Overview</TabsTrigger>
+          <TabsTrigger value="feed">All Team Notifications</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="mt-3 flex flex-col gap-3">
+          <div className="flex flex-wrap gap-2">
+            <Select value={coachRole} onValueChange={setCoachRole}>
+              <SelectTrigger className="h-9 w-[170px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {coachRoles.map((r) => (
+                  <SelectItem key={r} value={r}>
+                    Coach: {r}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={taskStatus} onValueChange={setTaskStatus}>
+              <SelectTrigger className="h-9 w-[170px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {coachStatuses.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    Status: {s}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {groups.map((g) => {
+            const tasks = g.tasks.filter((t) => taskStatus === "All" || t.status === taskStatus);
+            return (
+              <div key={g.coach} className="rounded-xl border">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b bg-muted/40 px-3 py-2">
+                  <p className="text-sm font-semibold">
+                    {g.role} ({g.coach})
+                  </p>
+                  <Chip tone={tasks.length > 2 ? "danger" : "warn"}>{tasks.length} open tasks</Chip>
+                </div>
+                <ul className="flex flex-col gap-1.5 p-2">
+                  {tasks.map((t) => (
+                    <li
+                      key={t.id}
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-2.5 text-sm"
+                    >
+                      <span className="font-medium">{t.hotel}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {t.question} · Score {t.score} · Opened {t.opened}
+                      </span>
+                      <Chip tone={t.status === "Open" ? "warn" : "info"}>{t.status}</Chip>
+                      <Button size="sm" variant="outline" onClick={() => toast.info(`เปิดเคส ${t.hotel}`)}>
+                        Open
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
+        </TabsContent>
+
+        <TabsContent value="feed" className="mt-3 flex flex-col gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <Select value={feedType} onValueChange={setFeedType}>
+              <SelectTrigger className="h-9 w-[190px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {feedTypes.map((t) => (
+                  <SelectItem key={t} value={t}>
+                    Event: {t}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Chip tone="muted">Auto-refresh 30s</Chip>
+          </div>
+          <ActivityFeedList events={events} />
+        </TabsContent>
+      </Tabs>
+    </Panel>
   );
 }

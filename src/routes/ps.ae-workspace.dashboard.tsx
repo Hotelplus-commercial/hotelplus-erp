@@ -4,6 +4,14 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { Chip, Panel } from "@/components/crm/crm-ui";
+import {
+  marcomPipeline,
+  marcomQuantityTotal,
+  ormPipeline,
+  ormQuantityBars,
+  surveyStatusBox,
+  v4Color,
+} from "@/lib/ps-v4";
 import { PageHeader } from "@/components/erp-ui";
 import { JourneyBar, TierBadge } from "@/components/ps/meeting-ui";
 import { RenewalActivityCards } from "@/components/ps/renewal-ui";
@@ -190,21 +198,20 @@ function DashboardTab() {
         <RenewalActivityCards scope={scope} currentUser={currentUser} canOverride={isPm} />
       </Panel>
 
-      {/* Zone 2 — Meeting & Survey Performance (v3.1) */}
+      {/* Zone 2 — Meeting & Survey Performance (v4.0 refactor) */}
       {showKpi && (
         <Panel
           title="Zone 2 · Meeting & Survey Performance"
           subtitle={isPm ? "ผลรวมของทีม (team aggregate)" : "KPI ของฉันเดือนนี้"}
         >
-          <div className="grid gap-3 lg:grid-cols-2">
+          {/* Row 1 — 3 cards */}
+          <div className="grid gap-3 lg:grid-cols-3">
             <div className="card-elevated p-4">
-              <p className="text-sm font-semibold">Meeting Quantity ({month})</p>
-              <p className="text-xs text-muted-foreground">
-                Base: Tier A scheduled = {meetingQuantity.base}
-              </p>
+              <p className="text-sm font-semibold">🟦 ORM Meeting Quantity ({month})</p>
+              <p className="text-xs text-muted-foreground">Base: Tier target ต่อเดือน</p>
               <ul className="mt-3 flex flex-col gap-2.5">
-                {meetingQuantity.bars.map((b) => {
-                  const p = pct(b.count, meetingQuantity.base);
+                {ormQuantityBars.map((b) => {
+                  const p = pct(b.count, b.base);
                   const bar =
                     b.tone === "danger"
                       ? "bg-destructive"
@@ -229,54 +236,106 @@ function DashboardTab() {
               </ul>
             </div>
 
-            <div className="card-elevated grid place-items-center p-4 text-center">
-              <div>
-                <p className="text-sm font-semibold">Survey Collection ({month})</p>
-                <p className="mt-3 font-display text-4xl font-bold">
-                  {surveyCollection.filled} / {surveyCollection.meetings}
-                </p>
-                <p className="mx-auto mt-1 w-24 border-t pt-1 font-display text-2xl font-bold text-success">
-                  {pct(surveyCollection.filled, surveyCollection.meetings)}%
-                </p>
-                <p className="mt-2 text-xs text-muted-foreground">
-                  Filled surveys ÷ meetings completed (ทุก Tier)
-                </p>
+            <div className="card-elevated p-4">
+              <p className="text-sm font-semibold">🟪 Marcom Meeting Quantity ({month})</p>
+              <div className="mt-1 rounded-lg border bg-muted/40 p-2 text-xs text-muted-foreground">
+                Marcom Tier TBD — ยังไม่มีเกณฑ์ tier สำหรับ Marcom
+              </div>
+              <ul className="mt-3 flex flex-col gap-2.5">
+                {(["A", "B", "C"] as const).map((t) => (
+                  <li key={t} className="flex items-center gap-2 text-xs opacity-50">
+                    <span className="w-12 font-semibold">Tier {t}</span>
+                    <span className="h-2.5 flex-1 overflow-hidden rounded-full bg-muted" />
+                    <span className="w-20 text-right text-muted-foreground">—</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-2 rounded-lg border p-2 text-xs">
+                Overall total: <span className="font-semibold">{marcomQuantityTotal.done}</span> /{" "}
+                {marcomQuantityTotal.target} โรงแรม
+              </div>
+            </div>
+
+            <div className="card-elevated p-4">
+              <p className="text-sm font-semibold">Survey Status ({month})</p>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <div className="rounded-xl border p-3 text-center">
+                  <p className="font-display text-3xl font-bold">{surveyStatusBox.queue}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Queue Count</p>
+                  <Button variant="link" size="sm" className="h-auto p-0" asChild>
+                    <Link to="/ps/ae-workspace/surveys">ไปกรอก →</Link>
+                  </Button>
+                </div>
+                <div className="rounded-xl border p-3 text-center">
+                  <p className="font-display text-3xl font-bold text-success">
+                    {pct(surveyStatusBox.filled, surveyStatusBox.meetings)}%
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Collection {surveyStatusBox.filled}/{surveyStatusBox.meetings}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="card-elevated mt-3 p-4">
-            <p className="text-sm font-semibold">Tier A Meeting Pipeline ({month})</p>
-            <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-7">
-              {tierAPipeline7.map((s) => (
-                <Link
-                  key={s.label}
-                  to="/ps/ae-workspace/meetings"
-                  className="rounded-lg border p-2.5 text-center transition-colors hover:bg-muted/60"
-                >
-                  <p className="font-display text-2xl font-bold leading-none">{s.value}</p>
-                  <p className="mt-1 text-[11px] text-muted-foreground">{s.label}</p>
-                </Link>
-              ))}
+          {/* Row 2 / Row 3 — separate pipelines */}
+          {[
+            { key: "ORM", title: "🟦 ORM Meeting Pipeline", data: ormPipeline, tint: v4Color.ormTint },
+            {
+              key: "Marcom",
+              title: "🟪 Marcom Meeting Pipeline",
+              data: marcomPipeline,
+              tint: v4Color.marcomTint,
+            },
+          ].map((row) => (
+            <div key={row.key} className="card-elevated mt-3 overflow-hidden">
+              <p
+                className="px-4 py-2 text-sm font-semibold"
+                style={{ backgroundColor: row.tint, color: "#0f172a" }}
+              >
+                {row.title} ({month})
+              </p>
+              <div className="p-4">
+                <div className="grid grid-cols-2 gap-2 overflow-x-auto sm:grid-cols-4 xl:grid-cols-7">
+                  {row.data.map((s) => (
+                    <div key={s.label} className="rounded-lg border p-2.5 text-center">
+                      <Link
+                        to="/ps/ae-workspace/meetings"
+                        className="block transition-colors hover:text-primary"
+                      >
+                        <p className="font-display text-2xl font-bold leading-none">{s.value}</p>
+                        <p className="mt-1 text-[11px] text-muted-foreground">{s.label}</p>
+                      </Link>
+                      {s.label === "Not Assign" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="mt-1.5 h-7 w-full text-[11px]"
+                          disabled={isPm}
+                          asChild={!isPm}
+                        >
+                          {isPm ? (
+                            <span>+ Draft Meeting</span>
+                          ) : (
+                            <Link to="/ps/ae-workspace/calendar" hash="draft">
+                              <CalendarPlus className="size-3" /> + Draft Meeting
+                            </Link>
+                          )}
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-3">
+                  <Button variant="outline" size="sm" asChild>
+                    <Link to="/ps/ae-workspace/calendar">
+                      <ListChecks className="size-4" /> → Take Action on Calendar
+                    </Link>
+                  </Button>
+                </div>
+              </div>
             </div>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Button variant="outline" asChild>
-                <Link to="/ps/ae-workspace/calendar">
-                  <ListChecks className="size-4" /> → Take Action on Calendar
-                </Link>
-              </Button>
-              <Button asChild>
-                <Link to="/ps/ae-workspace/calendar" hash="draft">
-                  <CalendarPlus className="size-4" /> + Draft Meeting
-                </Link>
-              </Button>
-              <Button variant="outline" asChild>
-                <Link to="/ps/ae-workspace/surveys">
-                  <ClipboardList className="size-4" /> Survey Queue (3)
-                </Link>
-              </Button>
-            </div>
-          </div>
+          ))}
         </Panel>
       )}
 

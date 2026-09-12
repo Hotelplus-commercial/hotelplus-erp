@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { Chip, Panel } from "@/components/crm/crm-ui";
 import { PageHeader } from "@/components/erp-ui";
 import { EmptyState, TierBadge } from "@/components/ps/meeting-ui";
+import { LikertRow, TypeBadge } from "@/components/ps/v4-ui";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,8 +15,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -25,13 +33,20 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { monthOptions, scoreTone, useMeetingMgmt } from "@/lib/orm-meeting";
 import {
-  mmSurveys,
-  pendingSurveys,
-  scoreTone,
-  surveyQuestions,
-  useMeetingMgmt,
-} from "@/lib/orm-meeting";
+  surveyFlagCards,
+  surveyPending,
+  surveySubStatuses,
+  surveySubmitted,
+  surveyUpcoming,
+  v4Color,
+  v4SurveyQuestions,
+  type MeetingType,
+  type SurveyZoneCard,
+} from "@/lib/ps-v4";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/ps/ae-workspace/surveys")({
   head: () => ({
@@ -39,60 +54,140 @@ export const Route = createFileRoute("/ps/ae-workspace/surveys")({
       { title: "Meeting Surveys — AE Workspace | Meridia" },
       {
         name: "description",
-        content: "แบบสอบถามหลังประชุม ORM — คิวที่ต้องกรอก, คะแนนที่ส่งแล้ว และ flag ที่ต้องติดตาม",
+        content:
+          "แบบสอบถามหลังประชุม ORM และ Marcom — คิวที่ต้องกรอก, คะแนนที่ส่งแล้ว และ flag ที่ต้องติดตาม",
       },
       { property: "og:title", content: "Meeting Surveys — AE Workspace" },
-      { property: "og:description", content: "แบบสอบถามหลังประชุม ORM และคะแนนความพึงพอใจ" },
+      { property: "og:description", content: "แบบสอบถามหลังประชุม ORM/Marcom และคะแนนความพึงพอใจ" },
     ],
   }),
   component: SurveysTab,
 });
 
-const flatQuestions = surveyQuestions.flatMap((c) =>
-  c.items.map((q) => ({ category: c.category, coach: c.coach, notify: c.notify, q })),
-);
+type FormTarget = { card: SurveyZoneCard; preview: boolean };
 
 function SurveysTab() {
-  const { role } = useMeetingMgmt();
-  const [fillFor, setFillFor] = useState<string | null>(null);
-  const [scores, setScores] = useState<number[]>(flatQuestions.map(() => 8));
-  const [comment, setComment] = useState("");
+  const { role, month, setMonth } = useMeetingMgmt();
+  const [tier, setTier] = useState("All");
+  const [type, setType] = useState("All");
+  const [subStatus, setSubStatus] = useState<string>("All");
+  const [form, setForm] = useState<FormTarget | null>(null);
 
-  const setScore = (i: number, v: number) =>
-    setScores((prev) => prev.map((s, idx) => (idx === i ? v : s)));
+  const typeOk = (t: MeetingType) => type === "All" || type === (t === "ORM" ? "ORM" : "Marcom");
+  const tierOk = (t: string) => tier === "All" || tier === t;
+
+  const upcoming = surveyUpcoming.filter((c) => typeOk(c.type) && tierOk(c.tier));
+  const pending = surveyPending.filter((c) => typeOk(c.type) && tierOk(c.tier));
+  const submitted = useMemo(
+    () =>
+      surveySubmitted.filter(
+        (s) => typeOk(s.type) && tierOk(s.tier) && (subStatus === "All" || s.subStatus === subStatus),
+      ),
+    [type, tier, subStatus],
+  );
 
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
         eyebrow="PS App · AE Workspace · Surveys"
         title="Post-Meeting Surveys"
-        description="เก็บคะแนนความพึงพอใจหลังประชุม 9 คำถาม 4 หมวด — คะแนนต่ำกว่า 6.5 จะสร้าง flag อัตโนมัติ"
+        description="4 โซน: Inquiry (กำลังจะถึง) · Pending (ต้องกรอก) · Submitted (ส่งแล้ว) · Flagged — คะแนน ≤ 5 จะสร้าง flag อัตโนมัติ"
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <Select value={month} onValueChange={setMonth}>
+              <SelectTrigger className="h-9 w-[160px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {monthOptions.map((m) => (
+                  <SelectItem key={m} value={m}>
+                    {m}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={tier} onValueChange={setTier}>
+              <SelectTrigger className="h-9 w-[130px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {["All", "A", "B", "C", "—"].map((t) => (
+                  <SelectItem key={t} value={t}>
+                    Tier: {t}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={type} onValueChange={setType}>
+              <SelectTrigger className="h-9 w-[150px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {["All", "ORM", "Marcom"].map((t) => (
+                  <SelectItem key={t} value={t}>
+                    Type: {t}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        }
       />
 
-      {role === "AE" && (
+      {/* Zone A — Inquiry / upcoming */}
+      <Panel
+        title={`Zone A · Survey Inquiry (${upcoming.length})`}
+        subtitle="ประชุมที่กำลังจะถึง — คลิกการ์ดเพื่อดูตัวอย่างฟอร์ม (ยังส่งไม่ได้)"
+      >
+        {upcoming.length === 0 ? (
+          <EmptyState text="ไม่มีประชุมที่กำลังจะถึงตามฟิลเตอร์นี้" />
+        ) : (
+          <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+            {upcoming.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => setForm({ card: c, preview: true })}
+                className="rounded-xl border p-3 text-left transition-colors hover:bg-muted/60"
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm font-semibold">{c.hotel}</span>
+                  <TypeBadge type={c.type} />
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {c.hotelId} · Tier {c.tier} · {c.date}
+                </p>
+                <p className="text-xs text-muted-foreground">{c.attendees}</p>
+              </button>
+            ))}
+          </div>
+        )}
+      </Panel>
+
+      {/* Zone B — Pending queue */}
+      {(role === "AE" || role === "Partner Manager") && (
         <Panel
-          title={`Pending Survey Queue (${pendingSurveys.length})`}
-          subtitle="กรอกภายใน 24 ชั่วโมงหลังประชุม"
+          title={`Zone B · Pending Survey Queue (${pending.length})`}
+          subtitle="กรอกภายใน 24 ชั่วโมงหลังประชุม · เกิน 3 วันจะขึ้นเตือน"
         >
-          {pendingSurveys.length === 0 ? (
+          {pending.length === 0 ? (
             <EmptyState text="ไม่มีแบบสอบถามค้างอยู่" />
           ) : (
             <ul className="flex flex-col gap-2">
-              {pendingSurveys.map((p) => (
+              {pending.map((p) => (
                 <li
                   key={p.id}
                   className="flex flex-wrap items-center justify-between gap-3 rounded-xl border p-3"
                 >
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-sm font-medium">{p.hotel}</span>
-                    <TierBadge tier={p.tier} />
-                    <span className="text-xs text-muted-foreground">
-                      ประชุมเมื่อ {p.meetingDate}
-                    </span>
-                    {p.overdue && <Chip tone="danger">Overdue</Chip>}
+                    <TypeBadge type={p.type} />
+                    {p.tier !== "—" && <TierBadge tier={p.tier as "A" | "B" | "C"} />}
+                    <span className="text-xs text-muted-foreground">ประชุมเมื่อ {p.date}</span>
+                    {(p.daysAgo ?? 0) > 3 && <Chip tone="danger">⚠ ค้าง {p.daysAgo} วัน</Chip>}
                   </div>
-                  <Button size="sm" onClick={() => setFillFor(p.hotel)}>
-                    Fill Survey
+                  <Button size="sm" onClick={() => setForm({ card: p, preview: false })}>
+                    Fill Survey →
                   </Button>
                 </li>
               ))}
@@ -101,26 +196,46 @@ function SurveysTab() {
         </Panel>
       )}
 
-      <Panel title="Submitted Surveys" subtitle="คะแนนที่ส่งแล้วในเดือนนี้">
-        <div className="overflow-x-auto">
+      {/* Zone C — Submitted */}
+      <Panel title={`Zone C · Submitted Surveys (${submitted.length})`} subtitle="คะแนนที่ส่งแล้วในเดือนนี้">
+        <div className="flex flex-wrap gap-2">
+          {surveySubStatuses.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => setSubStatus(s)}
+              className={cn(
+                "rounded-full border px-3 py-1 text-xs font-semibold transition-colors",
+                subStatus === s ? "border-primary bg-primary text-primary-foreground" : "hover:bg-muted",
+              )}
+            >
+              {s} · {s === "All" ? surveySubmitted.length : surveySubmitted.filter((x) => x.subStatus === s).length}
+            </button>
+          ))}
+        </div>
+        <div className="mt-3 overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Hotel</TableHead>
+                <TableHead>Type</TableHead>
                 <TableHead>Tier</TableHead>
                 <TableHead>Meeting</TableHead>
                 <TableHead>Submitted</TableHead>
                 <TableHead>Overall</TableHead>
-                <TableHead>Confirmation</TableHead>
+                <TableHead>Sub-status</TableHead>
                 <TableHead>Flags</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mmSurveys.map((s) => (
+              {submitted.map((s) => (
                 <TableRow key={s.id}>
                   <TableCell className="font-medium">{s.hotel}</TableCell>
                   <TableCell>
-                    <TierBadge tier={s.tier} />
+                    <TypeBadge type={s.type} />
+                  </TableCell>
+                  <TableCell>
+                    {s.tier === "—" ? "—" : <TierBadge tier={s.tier as "A" | "B" | "C"} />}
                   </TableCell>
                   <TableCell>{s.meetingDate}</TableCell>
                   <TableCell>{s.submitted}</TableCell>
@@ -128,14 +243,17 @@ function SurveysTab() {
                     <Chip tone={scoreTone(s.overall)}>{s.overall.toFixed(1)}</Chip>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Chip tone={s.confirmation === "Pending" ? "warn" : "success"}>
-                        {s.confirmation}
-                      </Chip>
-                      {s.confirmationHint && (
-                        <span className="text-xs text-muted-foreground">{s.confirmationHint}</span>
-                      )}
-                    </div>
+                    <Chip
+                      tone={
+                        s.subStatus === "Flagged"
+                          ? "danger"
+                          : s.subStatus === "Waiting Customer"
+                            ? "warn"
+                            : "success"
+                      }
+                    >
+                      {s.subStatus}
+                    </Chip>
                   </TableCell>
                   <TableCell>
                     {s.flags > 0 ? (
@@ -151,91 +269,168 @@ function SurveysTab() {
         </div>
       </Panel>
 
-      <Dialog
-        open={fillFor !== null}
-        onOpenChange={(o) => {
-          if (!o) {
-            setFillFor(null);
-            setScores(flatQuestions.map(() => 8));
-            setComment("");
-          }
-        }}
+      {/* Zone D — Flagged (read-only awareness for AE) */}
+      <Panel
+        title={`Zone D · Flagged Surveys (${surveyFlagCards.length})`}
+        subtitle="อ่านอย่างเดียว — โค้ชจะดำเนินการต่อในแท็บ Coaching"
       >
-        <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Post-Meeting Survey — {fillFor}</DialogTitle>
-            <DialogDescription>
-              ให้คะแนน 1–10 ต่อข้อ · คะแนนต่ำกว่า 6.5 จะสร้าง flag และแจ้งผู้รับผิดชอบอัตโนมัติ
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="flex flex-col gap-5">
-            {surveyQuestions.map((cat) => (
-              <div key={cat.category} className="rounded-xl border p-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-sm font-semibold">{cat.category}</p>
-                  <Chip tone="muted">{cat.coach}</Chip>
-                </div>
-                <div className="mt-3 flex flex-col gap-4">
-                  {cat.items.map((q) => {
-                    const idx = flatQuestions.findIndex(
-                      (f) => f.category === cat.category && f.q === q,
-                    );
-                    const value = scores[idx] ?? 8;
-                    return (
-                      <div key={q}>
-                        <div className="flex items-center justify-between gap-3">
-                          <Label className="text-sm font-normal">{q}</Label>
-                          <Chip tone={scoreTone(value)}>{value}</Chip>
-                        </div>
-                        <Slider
-                          className="mt-2"
-                          min={1}
-                          max={10}
-                          step={1}
-                          value={[value]}
-                          onValueChange={(v) => setScore(idx, v[0] ?? 8)}
-                        />
-                        {value < 6.5 && (
-                          <p className="mt-1 text-xs text-destructive">
-                            คะแนนต่ำ — ระบบจะ {cat.notify}
-                          </p>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+        <div className="grid gap-2 md:grid-cols-2">
+          {surveyFlagCards.map((f) => (
+            <div key={f.id} className="rounded-xl border border-destructive/40 bg-destructive/5 p-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm font-semibold">🔴 {f.hotel}</span>
+                <TypeBadge type={f.type} />
+                <Chip tone="danger">
+                  {f.question} score {f.score}
+                </Chip>
               </div>
-            ))}
-
-            <div>
-              <Label className="text-xs">Comment</Label>
-              <Textarea
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                placeholder="ความเห็นเพิ่มเติมจากลูกค้า…"
-                className="mt-1"
-              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Owner: {f.owner} · Route to: {f.route}
+              </p>
             </div>
-          </div>
+          ))}
+        </div>
+      </Panel>
 
-          <DialogFooter>
-            <Button
-              onClick={() => {
-                const low = scores.filter((s) => s < 6.5).length;
-                toast.success(
-                  low > 0 ? `ส่งแบบสอบถามแล้ว · สร้าง ${low} flag` : "ส่งแบบสอบถามแล้ว",
-                );
-                setFillFor(null);
-                setScores(flatQuestions.map(() => 8));
-                setComment("");
-              }}
-            >
-              Submit Survey
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {form && <SurveyForm target={form} onClose={() => setForm(null)} />}
     </div>
+  );
+}
+
+function SurveyForm({ target, onClose }: { target: FormTarget; onClose: () => void }) {
+  const { card, preview } = target;
+  const sectionKey = card.type === "ORM" ? "ORM" : "MARCOM";
+  const questions = v4SurveyQuestions.filter(
+    (q) => q.section === sectionKey || q.section === "OVERALL",
+  );
+  const scored = questions.filter((q) => !q.open);
+
+  const [scores, setScores] = useState<Record<string, number>>({});
+  const [comments, setComments] = useState<Record<string, string>>({});
+  const [open9, setOpen9] = useState("");
+  const [notes, setNotes] = useState("");
+
+  const complete = scored.every((q) => scores[q.key] !== undefined);
+  const lowCount = scored.filter((q) => (scores[q.key] ?? 10) <= 5).length;
+
+  const sectionBg = (s: string) =>
+    s === "ORM" ? v4Color.ormTint : s === "MARCOM" ? v4Color.marcomTint : "#F1F5F9";
+
+  const groups: ("ORM" | "MARCOM" | "OVERALL")[] = [sectionKey as "ORM" | "MARCOM", "OVERALL"];
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-h-[85vh] max-w-3xl overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>
+            📋 Survey — {card.hotel} · {card.date}
+          </DialogTitle>
+          <DialogDescription>
+            Meeting Type: {card.type === "ORM" ? "🟦 ORM" : "🟪 Marcom"} · Attendees: {card.attendees},
+            Customer (Contact: {card.contact})
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="flex flex-col gap-4">
+          {groups.map((g) => (
+            <div key={g} className="overflow-hidden rounded-xl border">
+              <div className="px-3 py-2 text-sm font-bold" style={{ backgroundColor: sectionBg(g) }}>
+                【 SECTION: {g} 】
+              </div>
+              <div className="flex flex-col gap-4 p-3">
+                {questions
+                  .filter((q) => q.section === g)
+                  .map((q) => (
+                    <div key={q.key}>
+                      <Label className="text-sm font-normal">
+                        {q.key}. {q.text}
+                      </Label>
+                      {q.open ? (
+                        <Textarea
+                          className="mt-1.5"
+                          value={open9}
+                          disabled={preview}
+                          onChange={(e) => setOpen9(e.target.value)}
+                          placeholder="ความเห็นเพิ่มเติมจากลูกค้า…"
+                        />
+                      ) : (
+                        <>
+                          <LikertRow
+                            value={scores[q.key] ?? null}
+                            disabled={preview}
+                            onChange={(n) => setScores((p) => ({ ...p, [q.key]: n }))}
+                          />
+                          {(scores[q.key] ?? 10) <= 5 && (
+                            <p className="mt-1 text-xs text-destructive">
+                              คะแนนต่ำ — ระบบจะสร้าง flag และแจ้งโค้ชที่รับผิดชอบ
+                            </p>
+                          )}
+                          {q.comment && (
+                            <Input
+                              className="mt-1.5"
+                              disabled={preview}
+                              value={comments[q.key] ?? ""}
+                              onChange={(e) => setComments((p) => ({ ...p, [q.key]: e.target.value }))}
+                              placeholder="Comment (optional)"
+                            />
+                          )}
+                        </>
+                      )}
+                    </div>
+                  ))}
+              </div>
+            </div>
+          ))}
+
+          <div className="rounded-xl border p-3">
+            <p className="text-sm font-semibold">【 Take Notes 】 (AE internal)</p>
+            <Textarea
+              className="mt-1.5"
+              rows={3}
+              disabled={preview}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+            />
+            <p className="mt-1 text-xs text-muted-foreground">
+              This is for your internal reference only. Not shared with customer.
+            </p>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span>
+                  <Button
+                    disabled={preview || !complete}
+                    onClick={() => {
+                      toast.success(
+                        lowCount > 0
+                          ? `✅ Survey submitted, customer notified · สร้าง ${lowCount} flag`
+                          : "✅ Survey submitted, customer notified",
+                      );
+                      onClose();
+                    }}
+                  >
+                    Submit Survey
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                {preview
+                  ? "Preview mode — ส่งได้เมื่อประชุมจบแล้ว"
+                  : complete
+                    ? "ส่งแบบสอบถาม"
+                    : "ให้คะแนนทุกข้อที่จำเป็นก่อนส่ง"}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

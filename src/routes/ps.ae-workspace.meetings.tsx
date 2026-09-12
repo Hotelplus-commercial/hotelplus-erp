@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Chip, Panel } from "@/components/crm/crm-ui";
 import { PageHeader } from "@/components/erp-ui";
 import { EmptyState, HotelStatusBadge, TierBadge } from "@/components/ps/meeting-ui";
+import { TypeBadge } from "@/components/ps/v4-ui";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -76,9 +77,14 @@ const statusOptions: (MeetingStatus | "All")[] = [
   "No-show",
 ];
 
+/** v4.0: deterministic ORM/Marcom type for prototype rows */
+const meetingTypeOf = (id: string): "ORM" | "MARCOM" =>
+  id.split("").reduce((a, c) => a + c.charCodeAt(0), 0) % 4 === 0 ? "MARCOM" : "ORM";
+
 function MeetingsTab() {
   const { role } = useMeetingMgmt();
   const [status, setStatus] = useState<string>("All");
+  const [mtype, setMtype] = useState<string>("All");
   const [tier, setTier] = useState<string>("All");
   const [search, setSearch] = useState("");
   const [draftOpen, setDraftOpen] = useState(false);
@@ -96,13 +102,14 @@ function MeetingsTab() {
       allMeetings.filter(
         (m) =>
           (status === "All" || m.status === status) &&
+          (mtype === "All" || meetingTypeOf(m.id) === (mtype === "ORM" ? "ORM" : "MARCOM")) &&
           (tier === "All" || m.tier === tier) &&
           (scope === "team" || m.ae === me) &&
           (search === "" ||
             m.hotel.toLowerCase().includes(search.toLowerCase()) ||
             (m.hotel2 ?? "").toLowerCase().includes(search.toLowerCase())),
       ),
-    [status, tier, search, scope, me],
+    [status, mtype, tier, search, scope, me],
   );
 
   const selected = mmHotels.find((h) => h.name === hotel);
@@ -141,6 +148,18 @@ function MeetingsTab() {
               {statusOptions.map((s) => (
                 <SelectItem key={s} value={s}>
                   {s === "All" ? "All statuses" : s}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={mtype} onValueChange={setMtype}>
+            <SelectTrigger className="h-9 w-[160px]">
+              <SelectValue placeholder="Meeting Type" />
+            </SelectTrigger>
+            <SelectContent>
+              {["All", "ORM", "Marcom"].map((t) => (
+                <SelectItem key={t} value={t}>
+                  Type: {t}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -184,6 +203,7 @@ function MeetingsTab() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Hotel</TableHead>
+                  <TableHead>Type</TableHead>
                   <TableHead>Owner AE</TableHead>
                   <TableHead>Hotel Status</TableHead>
                   <TableHead>Tier · %</TableHead>
@@ -202,6 +222,9 @@ function MeetingsTab() {
                       {m.hotel2 && (
                         <span className="text-muted-foreground"> + {m.hotel2}</span>
                       )}
+                    </TableCell>
+                    <TableCell>
+                      <TypeBadge type={meetingTypeOf(m.id)} />
                     </TableCell>
                     <TableCell>
                       <span className="text-sm">{m.ae}</span>
