@@ -5,6 +5,13 @@ import { createContext, useContext, useMemo, useState, type ReactNode } from "re
 /* ------------------------------------------------------------------ */
 
 export type RenewalStatus = "NOT_STARTED" | "ON_PROCESS" | "COMPLETED" | "CHURN";
+
+/** PS Dashboard filter: Role + Team + Person combined with AND logic */
+export type AssignmentFilter = {
+  role: "none" | "AE" | "ORM" | "Marcom";
+  teams: string[];
+  people: string[];
+};
 export type ActivityType = "Meeting" | "Call" | "Email" | "LINE" | "Documents" | "Contract";
 export type ChurnType = "ฉีกสัญญา (Early Termination)" | "ไม่ต่อ (Non-renewal)";
 
