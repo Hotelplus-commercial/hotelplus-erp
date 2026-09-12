@@ -67,7 +67,10 @@ export const Route = createFileRoute("/ps/ae-workspace/dashboard")({
 
 function DashboardTab() {
   const { role, month, setMonth } = useMeetingMgmt();
+  const { cards: renewalCards } = usePsRenewal();
+  const [scope, setScope] = useState<"my" | "team">("my");
   const isPm = role === "Partner Manager";
+  const currentUser = isPm ? "PM001-Alex" : "AE001-Nont";
   const showKpi = role === "AE" || isPm;
   const overdue = propertyCards.filter((p) => p.overdue).length;
   const firstProperty = propertyCards[1] ?? propertyCards[0]!;
