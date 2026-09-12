@@ -190,6 +190,11 @@ function CalendarTab() {
             </button>
           ))}
         </div>
+        <p className="mt-3 rounded-lg border bg-muted/40 p-2.5 text-[11px] text-muted-foreground">
+          Draft meeting = AE จองช่วงเวลาไว้ แต่ ORM ยังไม่ยืนยัน (สีเทา + ขอบทึบ + ป้าย DRAFT) ·
+          เมื่อ ORM กด Confirm การ์ดจะเปลี่ยนเป็นสีน้ำเงิน (Confirmed) และช่วงเวลานั้นจะถูกจองถาวร ·
+          ถ้า ORM ปฏิเสธหรือ AE ยกเลิก การ์ดจะหายไปและช่วงเวลากลับเป็น Available
+        </p>
       </Panel>
 
       <Dialog open={day !== null} onOpenChange={(o) => !o && setDay(null)}>
