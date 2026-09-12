@@ -909,3 +909,168 @@ export const flagTypes = [
   "SLA Overdue",
 ];
 
+/* ------------------------------------------------------------------ */
+/* v3.0 — Stage 8 checklist, cross-hotel ownership, On-boarding menu   */
+/* ------------------------------------------------------------------ */
+
+export const currentUserByRole: Record<MmRole, string> = {
+  AE: "Nont Wilson",
+  "Partner Manager": "Alex Chen",
+  "On-boarding Specialist": "Dao S.",
+  ORM: "Somchai K.",
+  GRM: "Wichai T.",
+};
+
+export const aeUsers = ["All", "Nont Wilson", "Fern Anderson", "Boss Thompson"];
+
+export type ChecklistKey = "handover" | "rate" | "setup" | "golive";
+export type Tick = { at: string; by: string };
+
+export const checklistDefs: {
+  key: ChecklistKey;
+  no: number;
+  label: string;
+  owner: "Specialist" | "ORM";
+}[] = [
+  { key: "handover", no: 1, label: "Handover to ORM", owner: "Specialist" },
+  { key: "rate", no: 2, label: "Rate Structure Meeting", owner: "ORM" },
+  { key: "setup", no: 3, label: "Setup / Mapping / Training", owner: "ORM" },
+  { key: "golive", no: 4, label: "Go Lived 🚀", owner: "ORM" },
+];
+
+export const initialTicks: Record<string, Partial<Record<ChecklistKey, Tick>>> = {
+  "SC-2": {
+    handover: { at: "2 Sep 10:30", by: "Dao S." },
+    rate: { at: "4 Sep 14:00", by: "Somchai K." },
+  },
+  "SC-4": {
+    handover: { at: "2 Sep 09:00", by: "Nan A." },
+    rate: { at: "3 Sep 11:00", by: "Malee P." },
+    setup: { at: "5 Sep 16:00", by: "Malee P." },
+    golive: { at: "8 Sep 10:00", by: "Malee P." },
+  },
+};
+
+export const initialAudit: { at: string; text: string }[] = [
+  {
+    at: "7 Sep 11:20",
+    text: "Nont Wilson ย้าย Sunrise Hotel → Collect Data (owner: Fern Anderson)",
+  },
+  { at: "4 Sep 14:00", text: "Somchai K. ติ๊ก Rate Structure Meeting — Hotel Yara" },
+  { at: "2 Sep 10:30", text: "Dao S. ติ๊ก Handover to ORM — Hotel Yara" },
+];
+
+export const checklistProgress = (t: Partial<Record<ChecklistKey, Tick>>) =>
+  checklistDefs.filter((d) => t[d.key]).length * 25;
+
+export type SlaTone = "success" | "warn" | "danger";
+
+export const stage8Sla = (daysElapsed: number, slaDays = 7): { tone: SlaTone; text: string } => {
+  const left = slaDays - daysElapsed;
+  if (left < 0) return { tone: "danger", text: `🔴 Overdue ${-left}d / ${slaDays}d SLA` };
+  if (left <= 2) return { tone: "warn", text: `🟡 SLA warn ${daysElapsed}d / ${slaDays}d` };
+  return { tone: "success", text: `🟢 ${daysElapsed}d / ${slaDays}d SLA` };
+};
+
+/* --- On-boarding Process dashboard --- */
+
+export const opMetrics = [
+  {
+    key: "check1",
+    label: "Pending 1st Check",
+    value: 3,
+    sub: "1 overdue",
+    tone: "danger" as const,
+  },
+  { key: "final", label: "Pending Final Check", value: 2, sub: "On-time", tone: "success" as const },
+  {
+    key: "processing",
+    label: "In Processing (Stage 8)",
+    value: 5,
+    sub: "SLA warn: 1",
+    tone: "warn" as const,
+  },
+  { key: "processing", label: "Overdue Alerts", value: 2, sub: "escalated", tone: "danger" as const },
+];
+
+export const specialistTeam = [
+  { name: "Dao S.", open: 8 },
+  { name: "Nan A.", open: 5 },
+  { name: "Kwan P.", open: 3 },
+];
+
+export const avgProcessing = { days: 4.2, trend: "▼ 0.8d vs August" };
+
+export const recentlyApproved = [
+  { id: "SC-1", hotel: "Hotel Zenith", approved: "Approved 2d ago", stage: "Stage 8", progress: 60 },
+  { id: "SC-2", hotel: "Hotel Yara", approved: "Approved 4d ago", stage: "Stage 8", progress: 50 },
+  { id: "SC-4", hotel: "Hotel Aurora", approved: "Approved 6d ago", stage: "Stage 9", progress: 100 },
+];
+
+export type OpHistoryRow = {
+  id: string;
+  hotel: string;
+  owner: string;
+  approved: string;
+  goLived: string;
+  duration: string;
+  status: "Live" | "In Progress" | "SLA";
+  statusText: string;
+};
+
+export const opHistory: OpHistoryRow[] = [
+  {
+    id: "H-1",
+    hotel: "Hotel Aurora",
+    owner: "Nont Wilson",
+    approved: "2 Sep",
+    goLived: "8 Sep",
+    duration: "6 days",
+    status: "Live",
+    statusText: "✅ Live",
+  },
+  {
+    id: "H-2",
+    hotel: "Hotel Zenith",
+    owner: "Fern Anderson",
+    approved: "5 Sep",
+    goLived: "—",
+    duration: "4d elapsed",
+    status: "In Progress",
+    statusText: "🟡 60%",
+  },
+  {
+    id: "H-3",
+    hotel: "Hotel Yara",
+    owner: "Boss Thompson",
+    approved: "3 Sep",
+    goLived: "—",
+    duration: "6d elapsed",
+    status: "SLA",
+    statusText: "🔴 SLA",
+  },
+  {
+    id: "H-4",
+    hotel: "Hotel Zephyr",
+    owner: "Nont Wilson",
+    approved: "1 Sep",
+    goLived: "7 Sep",
+    duration: "6 days",
+    status: "Live",
+    statusText: "✅ Live",
+  },
+  {
+    id: "H-5",
+    hotel: "Hotel Blossom",
+    owner: "Fern Anderson",
+    approved: "28 Aug",
+    goLived: "3 Sep",
+    duration: "6 days",
+    status: "Live",
+    statusText: "✅ Live",
+  },
+];
+
+export const opStatusFilters = ["All", "Approved", "Go Lived", "In Progress"];
+
+
