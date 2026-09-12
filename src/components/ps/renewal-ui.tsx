@@ -510,13 +510,19 @@ export function RenewalCardModal({
 export function NewContractUpdates() {
   const { updates, unread, markAllRead } = usePsRenewal();
   const [detail, setDetail] = useState<string | null>(null);
+  const [refreshedAt, setRefreshedAt] = useState(() => new Date());
   const { cards } = usePsRenewal();
   const card = cards.find((c) => c.hotelId === detail);
+
+  useEffect(() => {
+    const id = setInterval(() => setRefreshedAt(new Date()), 30_000);
+    return () => clearInterval(id);
+  }, []);
 
   return (
     <Panel
       title={`📬 New Contract Updates (${unread} unread)`}
-      subtitle="อัปเดตผลการต่อสัญญาจากทีม AE · auto-refresh ทุก 30 วินาที"
+      subtitle={`อัปเดตผลการต่อสัญญาจากทีม AE · auto-refresh ทุก 30 วินาที · ล่าสุด ${refreshedAt.toLocaleTimeString("th-TH")}`}
       right={
         <Button size="sm" variant="outline" onClick={markAllRead}>
           Mark all read
