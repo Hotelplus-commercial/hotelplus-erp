@@ -66,20 +66,21 @@ function ServiceCell({ items }: { items: { serviceType: string; periodStart?: Da
   );
 }
 
-export function PsDashboard() {
+export function PsDashboard({ assignment }: { assignment?: AssignmentFilter }) {
   const { hotels, select } = useHotelStore();
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<"all" | HotelStatus>("all");
 
   const rows = useMemo(
     () =>
-      hotels.map((h: HotelProfile) => ({
+      hotels.map((h: HotelProfile, i: number) => ({
         h,
         status: hotelStatus(h),
         services: servicesByCategory(h),
         start: serviceStart(h),
         end: contractRange(h).end,
         left: daysToEnd(h),
+        assignees: hotelAssignees(i),
       })),
     [hotels],
   );
