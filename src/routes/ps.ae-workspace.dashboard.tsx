@@ -36,7 +36,6 @@ import {
   monthOptions,
   portfolio,
   propertyCards,
-  renewals,
   teamPerformance,
   tierAPipeline,
   todayMeetings,
@@ -44,6 +43,8 @@ import {
   upcomingTeam,
   useMeetingMgmt,
 } from "@/lib/orm-meeting";
+
+const pct = (n: number, total: number) => (total ? Math.round((n / total) * 100) : 0);
 
 export const Route = createFileRoute("/ps/ae-workspace/dashboard")({
   head: () => ({
