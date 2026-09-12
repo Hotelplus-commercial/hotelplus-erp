@@ -4,7 +4,7 @@ import { toast } from "sonner";
 
 import { Chip, Kpi, Panel } from "@/components/crm/crm-ui";
 import { PageHeader } from "@/components/erp-ui";
-import { MetricCard, TierBadge } from "@/components/ps/meeting-ui";
+import { JourneyBar, MetricCard, TierBadge } from "@/components/ps/meeting-ui";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -58,6 +58,7 @@ function DashboardTab() {
   const isPm = role === "Partner Manager";
   const showKpi = role === "AE" || isPm;
   const overdue = propertyCards.filter((p) => p.overdue).length;
+  const firstProperty = propertyCards[1] ?? propertyCards[0]!;
 
   return (
     <div className="flex flex-col gap-4">
