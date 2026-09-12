@@ -33,12 +33,9 @@ export const Route = createFileRoute("/ps/ae-workspace")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: () => (
-    <MeetingMgmtProvider>
-      <WorkspaceShell />
-    </MeetingMgmtProvider>
-  ),
+  component: WorkspaceShell,
 });
+
 
 const allTabs: { label: string; to: string; roles: MmRole[] }[] = [
   {
