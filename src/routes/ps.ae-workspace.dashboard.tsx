@@ -82,73 +82,178 @@ function DashboardTab() {
         }
       />
 
-      {/* Zone 1 — Portfolio Overview */}
-      <Panel title="Zone 1 · Portfolio Overview" subtitle="ภาพรวมพอร์ตโรงแรมที่ดูแล">
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <Kpi label="Total Hotels" value={`${portfolio.totalHotels}`} hint="โรงแรมในพอร์ต" />
-          <Kpi
-            label="Tier A This Month"
-            value={`${portfolio.tierAHotels}`}
-            hint="ต้องนัดประชุม 100%"
-          />
-          <Kpi
-            label="Churn (เดือนนี้)"
-            value={`${portfolio.churnMonth} (${portfolio.churnPct}%)`}
-            hint={portfolio.churnBreakdown}
-          />
-          <Kpi label="Churn YTD" value={`${portfolio.churnYtd}`} hint="สะสมตั้งแต่ต้นปี" />
-        </div>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <span className="text-xs font-medium text-muted-foreground">Contract renewals:</span>
-          {renewals.map((r) => (
-            <Chip key={r.hotel} tone={r.daysLeft <= 14 ? "danger" : "warn"}>
-              {r.hotel} · {r.daysLeft}d
-            </Chip>
-          ))}
-        </div>
-      </Panel>
-
-      {/* Zone 2 — Performance */}
-      {showKpi && (
-        <Panel
-          title="Zone 2 · My Performance"
-          subtitle="ตัวชี้วัดหลักของเดือนนี้ (Tier A completion, quantity, survey)"
-        >
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            <MetricCard
-              label="Tier A Completion"
-              value={`${portfolio.tierACompletion}%`}
-              badge="↓ 12%"
-              sub={`${Math.round((portfolio.tierAHotels * portfolio.tierACompletion) / 100)} จาก ${portfolio.tierAHotels} โรงแรม Tier A`}
-              percent={portfolio.tierACompletion}
-              barTone="warn"
-            />
-            <MetricCard
-              label="Meeting Quantity"
-              value="34/40"
-              sub="รวม Tier A + Tier B filler"
-              percent={85}
-              barTone="warn"
-            />
-            <MetricCard
-              label="Survey Collection"
-              value={`${portfolio.surveysCollected}/30`}
-              sub={`คะแนนเฉลี่ย ${portfolio.surveyAvg.toFixed(1)}/10`}
-              percent={90}
-              barTone="success"
-            />
+      {/* Zone 1 — Portfolio Overview (v3.1) */}
+      <Panel
+        title="Zone 1 · Portfolio Overview"
+        subtitle="ภาพรวมพอร์ตโรงแรม + กิจกรรมการต่อสัญญา"
+        right={
+          <div className="flex items-center gap-1 rounded-lg border bg-card p-1">
+            {(["my", "team"] as const).map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setScope(s)}
+                className={cn(
+                  "rounded-md px-3 py-1 text-xs font-semibold transition-colors",
+                  scope === s
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted",
+                )}
+              >
+                {s === "my" ? "My" : "Team"}
+              </button>
+            ))}
+          </div>
+        }
+      >
+        <div className="grid gap-3 lg:grid-cols-3">
+          <div className="rounded-xl border bg-surface/50 p-4">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              Total Hotels
+            </p>
+            <p className="mt-1 font-display text-4xl font-bold">
+              {scope === "my" ? portfolioTotals.totalHotels : portfolioTotals.totalHotels * 3}
+            </p>
+            <p className="mt-0.5 text-xs text-muted-foreground">โรงแรมในพอร์ต</p>
+            <Button variant="link" size="sm" className="mt-1 h-auto p-0" asChild>
+              <Link to="/ps">more details →</Link>
+            </Button>
           </div>
 
-          {role === "AE" && (
+          <div className="rounded-xl border bg-surface/50 p-4">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              Contract Renewals
+            </p>
+            <p className="mt-1 font-display text-4xl font-bold">
+              {renewalCards.filter((c) => (scope === "my" ? c.owner === currentUser : true)).length}
+            </p>
+            <p className="mt-0.5 text-xs text-muted-foreground">ต้องต่อสัญญา (≤ 45 วัน)</p>
+            <Button variant="link" size="sm" className="mt-1 h-auto p-0" asChild>
+              <Link to="/ps">more details →</Link>
+            </Button>
+          </div>
+
+          <div className="rounded-xl border bg-surface/50 p-4">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              อัตราการต่อสัญญา
+            </p>
+            <div className="mt-2 grid grid-cols-2 gap-3 divide-x">
+              <div>
+                <p className="text-xs font-semibold">{renewalRate.month.label}</p>
+                <p className="mt-1 text-xs">Total: {renewalRate.month.total}</p>
+                <p className="text-xs font-semibold text-primary">
+                  On Process: {renewalRate.month.onProcess} (
+                  {pct(renewalRate.month.onProcess, renewalRate.month.total)}%)
+                </p>
+                <p className="text-xs font-semibold text-success">
+                  Completed: {renewalRate.month.completed} (
+                  {pct(renewalRate.month.completed, renewalRate.month.total)}%)
+                </p>
+                <p className="text-xs font-semibold text-destructive">
+                  Churn: {renewalRate.month.churn} (
+                  {pct(renewalRate.month.churn, renewalRate.month.total)}%)
+                </p>
+              </div>
+              <div className="pl-3">
+                <p className="text-xs font-semibold">{renewalRate.ytd.label}</p>
+                <p className="mt-1 text-xs">Total: {renewalRate.ytd.total}</p>
+                <p className="text-xs font-semibold text-success">
+                  Completed: {renewalRate.ytd.completed} (
+                  {pct(renewalRate.ytd.completed, renewalRate.ytd.total)}%)
+                </p>
+                <p className="text-xs font-semibold text-destructive">
+                  Churn: {renewalRate.ytd.churn} ({pct(renewalRate.ytd.churn, renewalRate.ytd.total)}
+                  %)
+                </p>
+              </div>
+            </div>
+            <Button variant="link" size="sm" className="mt-1 h-auto p-0" asChild>
+              <Link to="/ps">more details →</Link>
+            </Button>
+          </div>
+        </div>
+
+        <RenewalActivityCards scope={scope} currentUser={currentUser} canOverride={isPm} />
+      </Panel>
+
+      {/* Zone 2 — Meeting & Survey Performance (v3.1) */}
+      {showKpi && (
+        <Panel
+          title="Zone 2 · Meeting & Survey Performance"
+          subtitle={isPm ? "ผลรวมของทีม (team aggregate)" : "KPI ของฉันเดือนนี้"}
+        >
+          <div className="grid gap-3 lg:grid-cols-2">
+            <div className="card-elevated p-4">
+              <p className="text-sm font-semibold">Meeting Quantity ({month})</p>
+              <p className="text-xs text-muted-foreground">
+                Base: Tier A scheduled = {meetingQuantity.base}
+              </p>
+              <ul className="mt-3 flex flex-col gap-2.5">
+                {meetingQuantity.bars.map((b) => {
+                  const p = pct(b.count, meetingQuantity.base);
+                  const bar =
+                    b.tone === "danger"
+                      ? "bg-destructive"
+                      : b.tone === "warn"
+                        ? "bg-warning"
+                        : "bg-success";
+                  return (
+                    <li key={b.tier} className="flex items-center gap-2 text-xs">
+                      <span className="w-12 font-semibold">Tier {b.tier}</span>
+                      <span className="h-2.5 flex-1 overflow-hidden rounded-full bg-muted">
+                        <span
+                          className={cn("block h-full rounded-full", bar)}
+                          style={{ width: `${Math.min(p, 100)}%` }}
+                        />
+                      </span>
+                      <span className="w-20 text-right tabular-nums">
+                        {b.count} ({p}%)
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+
+            <div className="card-elevated grid place-items-center p-4 text-center">
+              <div>
+                <p className="text-sm font-semibold">Survey Collection ({month})</p>
+                <p className="mt-3 font-display text-4xl font-bold">
+                  {surveyCollection.filled} / {surveyCollection.meetings}
+                </p>
+                <p className="mx-auto mt-1 w-24 border-t pt-1 font-display text-2xl font-bold text-success">
+                  {pct(surveyCollection.filled, surveyCollection.meetings)}%
+                </p>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Filled surveys ÷ meetings completed (ทุก Tier)
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="card-elevated mt-3 p-4">
+            <p className="text-sm font-semibold">Tier A Meeting Pipeline ({month})</p>
+            <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-7">
+              {tierAPipeline7.map((s) => (
+                <Link
+                  key={s.label}
+                  to="/ps/ae-workspace/meetings"
+                  className="rounded-lg border p-2.5 text-center transition-colors hover:bg-muted/60"
+                >
+                  <p className="font-display text-2xl font-bold leading-none">{s.value}</p>
+                  <p className="mt-1 text-[11px] text-muted-foreground">{s.label}</p>
+                </Link>
+              ))}
+            </div>
             <div className="mt-3 flex flex-wrap gap-2">
-              <Button asChild>
-                <Link to="/ps/ae-workspace/meetings">
-                  <CalendarPlus className="size-4" /> Draft New Meeting
+              <Button variant="outline" asChild>
+                <Link to="/ps/ae-workspace/calendar">
+                  <ListChecks className="size-4" /> → Take Action on Calendar
                 </Link>
               </Button>
-              <Button variant="outline" asChild>
-                <Link to="/ps/ae-workspace/meetings">
-                  <ListChecks className="size-4" /> View Pending (5)
+              <Button asChild>
+                <Link to="/ps/ae-workspace/calendar" search={{ draft: true }}>
+                  <CalendarPlus className="size-4" /> + Draft Meeting
                 </Link>
               </Button>
               <Button variant="outline" asChild>
@@ -157,7 +262,7 @@ function DashboardTab() {
                 </Link>
               </Button>
             </div>
-          )}
+          </div>
         </Panel>
       )}
 
