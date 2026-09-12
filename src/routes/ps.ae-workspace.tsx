@@ -93,6 +93,33 @@ function WorkspaceShell() {
     </div>
   );
 
+  if (role === "On-boarding Specialist" || role === "ORM") {
+    return (
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            PS App · AE Workspace
+          </p>
+          {roleSwitcher}
+        </div>
+        <Panel
+          title="ไม่มีสิทธิ์เข้าถึง AE Workspace"
+          subtitle={
+            role === "On-boarding Specialist"
+              ? "On-boarding Specialist ใช้เมนู On-boarding Process เป็นพื้นที่ทำงานหลัก"
+              : "ORM ใช้ ORM App สำหรับงาน servicing และ Stage 8 checklist"
+          }
+        >
+          {role === "On-boarding Specialist" && (
+            <Button asChild>
+              <Link to="/ps/onboarding-process">ไปที่ On-boarding Process →</Link>
+            </Button>
+          )}
+        </Panel>
+      </div>
+    );
+  }
+
   if (role === "GRM") {
     return (
       <div className="flex flex-col gap-4">
