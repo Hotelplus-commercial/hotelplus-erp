@@ -34,7 +34,6 @@ import {
 } from "@/components/ui/table";
 import {
   monthOptions,
-  portfolio,
   propertyCards,
   teamPerformance,
   tierAPipeline,
@@ -267,7 +266,7 @@ function DashboardTab() {
                 </Link>
               </Button>
               <Button asChild>
-                <Link to="/ps/ae-workspace/calendar" search={{ draft: true }}>
+                <Link to="/ps/ae-workspace/calendar" hash="draft">
                   <CalendarPlus className="size-4" /> + Draft Meeting
                 </Link>
               </Button>
