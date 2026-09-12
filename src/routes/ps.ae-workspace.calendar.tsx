@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  calendarMeetingCards,
   septemberDays,
   slotReason,
   slotTimes,
@@ -51,6 +52,8 @@ export const Route = createFileRoute("/ps/ae-workspace/calendar")({
 const orms = ["ทั้งหมด", "Somchai K.", "Malee P.", "Nont W.", "Prasert L."];
 
 const legend = [
+  { dot: "bg-primary", label: "Confirmed meeting" },
+  { dot: "bg-muted-foreground/60", label: "Draft meeting (DRAFT)" },
   { dot: "bg-success", label: "Available (ค่าเริ่มต้น)" },
   { dot: "bg-warning", label: "Blocked (ORM ติดงาน)" },
   { dot: "bg-muted-foreground/40", label: "Day-off / นอกเวลา" },
