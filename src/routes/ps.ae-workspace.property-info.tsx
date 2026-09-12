@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Chip, Panel } from "@/components/crm/crm-ui";
 import { PageHeader } from "@/components/erp-ui";
 import { EmptyState, JourneyBar, SlaBadge } from "@/components/ps/meeting-ui";
+import { OwnerLabel, Stage8Checklist, Stage8SlaBadge } from "@/components/ps/onboarding-ui";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -16,6 +17,14 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  currentUserByRole,
   preStages,
   propertyCards,
   servicingCards,
@@ -47,6 +56,7 @@ export const Route = createFileRoute("/ps/ae-workspace/property-info")({
 
 function PropertyInfoTab() {
   const { role } = useMeetingMgmt();
+  const [scope, setScope] = useState<"my" | "all">("my");
   const isSpecialist = role === "On-boarding Specialist";
   const [view, setView] = useState<"pre" | "servicing">(isSpecialist ? "servicing" : "pre");
   const [q, setQ] = useState("");
@@ -59,9 +69,13 @@ function PropertyInfoTab() {
       ? preStages
       : servicingStages;
 
+  const me = currentUserByRole[role];
   const cardsFor = (stageKey: string) =>
     allCards.filter(
-      (c) => c.stage === stageKey && c.hotel.toLowerCase().includes(q.trim().toLowerCase()),
+      (c) =>
+        c.stage === stageKey &&
+        c.hotel.toLowerCase().includes(q.trim().toLowerCase()) &&
+        (scope === "all" || role !== "AE" || c.owner === me),
     );
 
   const overdue = allCards.filter((c) => c.overdue).length;
@@ -80,6 +94,15 @@ function PropertyInfoTab() {
               placeholder="ค้นหาโรงแรม…"
               className="h-9 w-[200px]"
             />
+            <Select value={scope} onValueChange={(v) => setScope(v as "my" | "all")}>
+              <SelectTrigger className="h-9 w-[140px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="my">My hotels</SelectItem>
+                <SelectItem value="all">All hotels</SelectItem>
+              </SelectContent>
+            </Select>
             <Chip tone={overdue > 0 ? "danger" : "success"}>{overdue} overdue</Chip>
           </div>
         }
@@ -90,7 +113,7 @@ function PropertyInfoTab() {
           {(
             [
               { key: "pre", label: "Pre-Services (AE)" },
-              { key: "servicing", label: "Servicing (Read-only)" },
+              { key: "servicing", label: "Servicing (AE action)" },
             ] as const
           ).map((t) => (
             <button
@@ -129,25 +152,37 @@ function PropertyInfoTab() {
                     </p>
                   ) : (
                     cards.map((c) => (
-                      <button
+                      <div
                         key={c.id}
-                        type="button"
-                        onClick={() => setDetail(c)}
                         className="rounded-lg border p-3 text-left transition-colors hover:bg-muted/60"
                       >
                         <p className="truncate text-sm font-medium">{c.hotel}</p>
-                        <p className="mt-0.5 text-[11px] text-muted-foreground">
-                          ในขั้นนี้ {c.daysInStage} วัน · {c.owner}
+                        <OwnerLabel owner={c.owner} lastActionBy={c.lastActionBy} />
+                        <p className="mt-1 text-[11px] text-muted-foreground">
+                          ในขั้นนี้ {c.daysInStage} วัน / SLA {c.slaDays} วัน
                         </p>
                         <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                          <SlaBadge overdue={c.overdue} days={c.daysInStage - c.slaDays} />
+                          {c.stage === "processing" ? (
+                            <Stage8SlaBadge days={c.daysInStage} slaDays={c.slaDays} />
+                          ) : (
+                            <SlaBadge overdue={c.overdue} days={c.daysInStage - c.slaDays} />
+                          )}
                           {c.score && <Chip tone="success">{c.score}</Chip>}
-                          {c.readOnly && <Chip tone="muted">Read-only</Chip>}
                         </div>
+                        {c.stage === "processing" && (
+                          <div className="mt-2">
+                            <Stage8Checklist card={c} />
+                          </div>
+                        )}
                         {c.note && (
                           <p className="mt-1.5 text-[11px] text-muted-foreground">{c.note}</p>
                         )}
-                      </button>
+                        <div className="mt-2 flex gap-1.5">
+                          <Button size="sm" variant="outline" onClick={() => setDetail(c)}>
+                            {c.action}
+                          </Button>
+                        </div>
+                      </div>
                     ))
                   )}
                 </div>
@@ -163,7 +198,7 @@ function PropertyInfoTab() {
         <ul className="flex list-disc flex-col gap-1 pl-5 text-sm text-muted-foreground">
           <li>เกิน SLA → การ์ดขึ้นสีแดง และแจ้งเตือน AE เจ้าของงาน</li>
           <li>เกิน SLA 2 เท่า → แจ้ง Partner Manager และสร้าง flag ประเภท SLA Overdue</li>
-          <li>Servicing เป็นข้อมูลอ่านอย่างเดียวสำหรับ AE — ทีมบริการเป็นผู้อัปเดต</li>
+          <li>AE action โรงแรมของ AE คนอื่นได้ทันที (ไม่มี confirm) — ระบบบันทึก actor + owner และ KPI นับให้ owner</li>
         </ul>
       </Panel>
 
@@ -179,7 +214,9 @@ function PropertyInfoTab() {
               </DialogHeader>
 
               <div className="flex flex-col gap-4">
+                <OwnerLabel owner={detail.owner} lastActionBy={detail.lastActionBy} />
                 <JourneyBar step={detail.journeyStep} signedDaysAgo={detail.signedDaysAgo} />
+                {detail.stage === "processing" && <Stage8Checklist card={detail} />}
 
                 <div className="grid gap-3 sm:grid-cols-2">
                   <Info label="ประเภทห้อง" value={detail.roomTypes} />
@@ -201,9 +238,7 @@ function PropertyInfoTab() {
               </div>
 
               <DialogFooter>
-                {detail.readOnly ? (
-                  <Chip tone="muted">Read-only สำหรับ AE</Chip>
-                ) : (
+                {false ? null : (
                   <>
                     <Button
                       variant="outline"
