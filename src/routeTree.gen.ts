@@ -20,6 +20,7 @@ import { Route as OrmRouteImport } from './routes/orm'
 import { Route as PsRouteImport } from './routes/ps'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SystemCostRouteImport } from './routes/system-cost'
+import { Route as TheOfficeAppRouteImport } from './routes/the-office-app'
 import { Route as AcIndexRouteImport } from './routes/ac.index'
 import { Route as AcBillingRouteImport } from './routes/ac.billing'
 import { Route as AcCustomersRouteImport } from './routes/ac.customers'
@@ -43,6 +44,7 @@ import { Route as PsContractsRouteImport } from './routes/ps.contracts'
 import { Route as PsOnboardingProcessRouteImport } from './routes/ps.onboarding-process'
 import { Route as PsProductionRouteImport } from './routes/ps.production'
 import { Route as PsSystemCostRouteImport } from './routes/ps.system-cost'
+import { Route as TheOfficeAppIndexRouteImport } from './routes/the-office-app.index'
 import { Route as TheOfficeAppOrmBonusRouteImport } from './routes/the-office-app.orm-bonus'
 import { Route as BdCalculatorMarcomRouteImport } from './routes/bd.calculator.marcom'
 import { Route as BdCalculatorOrmRouteImport } from './routes/bd.calculator.orm'
@@ -120,6 +122,11 @@ const SettingsRoute = SettingsRouteImport.update({
 const SystemCostRoute = SystemCostRouteImport.update({
   id: '/system-cost',
   path: '/system-cost',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TheOfficeAppRoute = TheOfficeAppRouteImport.update({
+  id: '/the-office-app',
+  path: '/the-office-app',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AcIndexRoute = AcIndexRouteImport.update({
@@ -237,10 +244,15 @@ const PsSystemCostRoute = PsSystemCostRouteImport.update({
   path: '/system-cost',
   getParentRoute: () => PsRoute,
 } as any)
+const TheOfficeAppIndexRoute = TheOfficeAppIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => TheOfficeAppRoute,
+} as any)
 const TheOfficeAppOrmBonusRoute = TheOfficeAppOrmBonusRouteImport.update({
-  id: '/the-office-app/orm-bonus',
-  path: '/the-office-app/orm-bonus',
-  getParentRoute: () => rootRouteImport,
+  id: '/orm-bonus',
+  path: '/orm-bonus',
+  getParentRoute: () => TheOfficeAppRoute,
 } as any)
 const BdCalculatorMarcomRoute = BdCalculatorMarcomRouteImport.update({
   id: '/marcom',
@@ -366,6 +378,7 @@ export interface FileRoutesByFullPath {
   '/ps': typeof PsRouteWithChildren
   '/settings': typeof SettingsRoute
   '/system-cost': typeof SystemCostRoute
+  '/the-office-app': typeof TheOfficeAppRouteWithChildren
   '/ac/billing': typeof AcBillingRoute
   '/ac/customers': typeof AcCustomersRoute
   '/ac/hotel-profile': typeof AcHotelProfileRoute
@@ -390,6 +403,7 @@ export interface FileRoutesByFullPath {
   '/bd/': typeof BdIndexRoute
   '/orm/': typeof OrmIndexRoute
   '/ps/': typeof PsIndexRoute
+  '/the-office-app/': typeof TheOfficeAppIndexRoute
   '/bd/calculator/marcom': typeof BdCalculatorMarcomRoute
   '/bd/calculator/orm': typeof BdCalculatorOrmRoute
   '/bd/quotations/$quoteId': typeof BdQuotationsQuoteIdRoute
@@ -441,6 +455,7 @@ export interface FileRoutesByTo {
   '/bd': typeof BdIndexRoute
   '/orm': typeof OrmIndexRoute
   '/ps': typeof PsIndexRoute
+  '/the-office-app': typeof TheOfficeAppIndexRoute
   '/bd/calculator/marcom': typeof BdCalculatorMarcomRoute
   '/bd/calculator/orm': typeof BdCalculatorOrmRoute
   '/bd/quotations/$quoteId': typeof BdQuotationsQuoteIdRoute
@@ -477,6 +492,7 @@ export interface FileRoutesById {
   '/ps': typeof PsRouteWithChildren
   '/settings': typeof SettingsRoute
   '/system-cost': typeof SystemCostRoute
+  '/the-office-app': typeof TheOfficeAppRouteWithChildren
   '/ac/billing': typeof AcBillingRoute
   '/ac/customers': typeof AcCustomersRoute
   '/ac/hotel-profile': typeof AcHotelProfileRoute
@@ -501,6 +517,7 @@ export interface FileRoutesById {
   '/bd/': typeof BdIndexRoute
   '/orm/': typeof OrmIndexRoute
   '/ps/': typeof PsIndexRoute
+  '/the-office-app/': typeof TheOfficeAppIndexRoute
   '/bd/calculator/marcom': typeof BdCalculatorMarcomRoute
   '/bd/calculator/orm': typeof BdCalculatorOrmRoute
   '/bd/quotations/$quoteId': typeof BdQuotationsQuoteIdRoute
@@ -538,6 +555,7 @@ export interface FileRouteTypes {
     | '/ps'
     | '/settings'
     | '/system-cost'
+    | '/the-office-app'
     | '/ac/billing'
     | '/ac/customers'
     | '/ac/hotel-profile'
@@ -562,6 +580,7 @@ export interface FileRouteTypes {
     | '/bd/'
     | '/orm/'
     | '/ps/'
+    | '/the-office-app/'
     | '/bd/calculator/marcom'
     | '/bd/calculator/orm'
     | '/bd/quotations/$quoteId'
@@ -613,6 +632,7 @@ export interface FileRouteTypes {
     | '/bd'
     | '/orm'
     | '/ps'
+    | '/the-office-app'
     | '/bd/calculator/marcom'
     | '/bd/calculator/orm'
     | '/bd/quotations/$quoteId'
@@ -648,6 +668,7 @@ export interface FileRouteTypes {
     | '/ps'
     | '/settings'
     | '/system-cost'
+    | '/the-office-app'
     | '/ac/billing'
     | '/ac/customers'
     | '/ac/hotel-profile'
@@ -672,6 +693,7 @@ export interface FileRouteTypes {
     | '/bd/'
     | '/orm/'
     | '/ps/'
+    | '/the-office-app/'
     | '/bd/calculator/marcom'
     | '/bd/calculator/orm'
     | '/bd/quotations/$quoteId'
@@ -708,8 +730,8 @@ export interface RootRouteChildren {
   PsRoute: typeof PsRouteWithChildren
   SettingsRoute: typeof SettingsRoute
   SystemCostRoute: typeof SystemCostRoute
+  TheOfficeAppRoute: typeof TheOfficeAppRouteWithChildren
   LTokenRoute: typeof LTokenRoute
-  TheOfficeAppOrmBonusRoute: typeof TheOfficeAppOrmBonusRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -789,6 +811,13 @@ declare module '@tanstack/react-router' {
       path: '/system-cost'
       fullPath: '/system-cost'
       preLoaderRoute: typeof SystemCostRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/the-office-app': {
+      id: '/the-office-app'
+      path: '/the-office-app'
+      fullPath: '/the-office-app'
+      preLoaderRoute: typeof TheOfficeAppRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/ac/': {
@@ -952,12 +981,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PsSystemCostRouteImport
       parentRoute: typeof PsRoute
     }
+    '/the-office-app/': {
+      id: '/the-office-app/'
+      path: '/'
+      fullPath: '/the-office-app/'
+      preLoaderRoute: typeof TheOfficeAppIndexRouteImport
+      parentRoute: typeof TheOfficeAppRoute
+    }
     '/the-office-app/orm-bonus': {
       id: '/the-office-app/orm-bonus'
-      path: '/the-office-app/orm-bonus'
+      path: '/orm-bonus'
       fullPath: '/the-office-app/orm-bonus'
       preLoaderRoute: typeof TheOfficeAppOrmBonusRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof TheOfficeAppRoute
     }
     '/bd/calculator/marcom': {
       id: '/bd/calculator/marcom'
@@ -1286,6 +1322,20 @@ const PsRouteChildren: PsRouteChildren = {
 
 const PsRouteWithChildren = PsRoute._addFileChildren(PsRouteChildren)
 
+interface TheOfficeAppRouteChildren {
+  TheOfficeAppOrmBonusRoute: typeof TheOfficeAppOrmBonusRoute
+  TheOfficeAppIndexRoute: typeof TheOfficeAppIndexRoute
+}
+
+const TheOfficeAppRouteChildren: TheOfficeAppRouteChildren = {
+  TheOfficeAppOrmBonusRoute: TheOfficeAppOrmBonusRoute,
+  TheOfficeAppIndexRoute: TheOfficeAppIndexRoute,
+}
+
+const TheOfficeAppRouteWithChildren = TheOfficeAppRoute._addFileChildren(
+  TheOfficeAppRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AcRoute: AcRouteWithChildren,
@@ -1298,8 +1348,8 @@ const rootRouteChildren: RootRouteChildren = {
   PsRoute: PsRouteWithChildren,
   SettingsRoute: SettingsRoute,
   SystemCostRoute: SystemCostRoute,
+  TheOfficeAppRoute: TheOfficeAppRouteWithChildren,
   LTokenRoute: LTokenRoute,
-  TheOfficeAppOrmBonusRoute: TheOfficeAppOrmBonusRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
