@@ -117,7 +117,7 @@ export function PsDashboard({ assignment }: { assignment?: AssignmentFilter }) {
       !term ||
       r.h.name.toLowerCase().includes(term) ||
       r.h.code.toLowerCase().includes(term);
-    return okQ && (status === "all" || r.status === status);
+    return okQ && (status === "all" || r.status === status) && matchAssignment(r.assignees, assignment);
   });
 
   return (
