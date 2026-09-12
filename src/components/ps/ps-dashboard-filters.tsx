@@ -126,11 +126,7 @@ export function PsDashboardFilters({
         <Button
           size="sm"
           variant="ghost"
-          onClick={() => {
-            setRole("none");
-            setTeams([]);
-            setPeople([]);
-          }}
+          onClick={() => onChange({ role: "none", teams: [], people: [] })}
         >
           Clear All
         </Button>
