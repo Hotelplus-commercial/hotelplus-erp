@@ -36,6 +36,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import {
   allMeetings,
+  currentUserByRole,
   availableSlots,
   mmHotels,
   statusTone,
@@ -87,6 +88,8 @@ function MeetingsTab() {
   const [slot, setSlot] = useState<string>("");
   const [note, setNote] = useState("");
   const [postponeFor, setPostponeFor] = useState<string | null>(null);
+  const [scope, setScope] = useState<"my" | "team">("team");
+  const me = currentUserByRole[role];
 
   const rows = useMemo(
     () =>
@@ -94,11 +97,12 @@ function MeetingsTab() {
         (m) =>
           (status === "All" || m.status === status) &&
           (tier === "All" || m.tier === tier) &&
+          (scope === "team" || m.ae === me) &&
           (search === "" ||
             m.hotel.toLowerCase().includes(search.toLowerCase()) ||
             (m.hotel2 ?? "").toLowerCase().includes(search.toLowerCase())),
       ),
-    [status, tier, search],
+    [status, tier, search, scope, me],
   );
 
   const selected = mmHotels.find((h) => h.name === hotel);
@@ -152,6 +156,15 @@ function MeetingsTab() {
               <SelectItem value="C">Tier C</SelectItem>
             </SelectContent>
           </Select>
+          <Select value={scope} onValueChange={(v) => setScope(v as "my" | "team")}>
+            <SelectTrigger className="h-9 w-[150px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="my">My hotels</SelectItem>
+              <SelectItem value="team">Team</SelectItem>
+            </SelectContent>
+          </Select>
           <div className="relative min-w-[200px] flex-1">
             <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -171,6 +184,7 @@ function MeetingsTab() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Hotel</TableHead>
+                  <TableHead>Owner AE</TableHead>
                   <TableHead>Hotel Status</TableHead>
                   <TableHead>Tier · %</TableHead>
                   <TableHead>ORM</TableHead>
@@ -187,6 +201,12 @@ function MeetingsTab() {
                       {m.hotel}
                       {m.hotel2 && (
                         <span className="text-muted-foreground"> + {m.hotel2}</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm">{m.ae}</span>
+                      {m.ae === me && (
+                        <span className="ml-1 text-[11px] text-muted-foreground">(self)</span>
                       )}
                     </TableCell>
                     <TableCell>
@@ -228,6 +248,8 @@ function MeetingsTab() {
                           View
                         </Button>
                         {role === "AE" &&
+                          m.hotelStatus !== "NEW" &&
+                          m.hotelStatus !== "REPORT ONLY" &&
                           (m.status === "Confirmed" || m.status === "Sent") && (
                             <Button size="sm" onClick={() => setPostponeFor(m.hotel)}>
                               Postpone
@@ -312,6 +334,13 @@ function MeetingsTab() {
                   </SelectContent>
                 </Select>
               </div>
+            )}
+
+            {hotel && (
+              <p className="rounded-lg border border-primary/40 bg-primary/10 p-2.5 text-xs">
+                🔵 คุณกำลัง draft meeting ให้โรงแรม {hotel} — ทุก action จะถูก log ในระบบ (actor{" "}
+                {me})
+              </p>
             )}
 
             {selected && (
