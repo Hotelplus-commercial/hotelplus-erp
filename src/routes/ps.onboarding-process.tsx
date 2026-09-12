@@ -38,7 +38,6 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   aeUsers,
   avgProcessing,
-  checklistProgress,
   currentUserByRole,
   monthOptions,
   opHistory,
@@ -679,5 +678,3 @@ function Info({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
-
-void checklistProgress;

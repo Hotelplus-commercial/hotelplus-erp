@@ -13,8 +13,9 @@ export const psTabs = [
   { label: "Production Report", to: "/ps/production" },
   { label: "Templates", to: "/ps/templates" },
   { label: "AE Workspace", to: "/ps/ae-workspace/dashboard" },
-
+  { label: "On-boarding Process", to: "/ps/onboarding-process" },
 ];
+
 
 export const Route = createFileRoute("/ps")({
   head: () => ({

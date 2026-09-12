@@ -64,8 +64,9 @@ const moduleChildren: Record<string, { title: string; url: string; icon: typeof 
     { title: "Production Report", url: "/ps/production", icon: BarChart3 },
     { title: "Templates", url: "/ps/templates", icon: FileText },
     { title: "AE Workspace", url: "/ps/ae-workspace/dashboard", icon: CalendarCheck },
-
+    { title: "On-boarding Process", url: "/ps/onboarding-process", icon: ClipboardCheck },
   ],
+
 };
 
 
