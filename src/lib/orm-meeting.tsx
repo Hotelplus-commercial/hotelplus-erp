@@ -581,7 +581,12 @@ export type PropertyCard = {
   roomTypes: string;
   otas: string;
   history: { at: string; text: string }[];
+  lastActionBy?: string | undefined;
+  specialist?: string | undefined;
+  orm?: string | undefined;
+  approvedDaysAgo?: number | undefined;
 };
+
 
 export const journeyPhases = ["BD", "AE", "On-boarding", "ทีมบริการ", "Lived"];
 
