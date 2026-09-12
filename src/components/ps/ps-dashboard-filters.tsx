@@ -133,13 +133,7 @@ export function PsDashboardFilters({
       }
     >
       <div className="flex flex-wrap items-center gap-2">
-        <Select
-          value={role}
-          onValueChange={(v) => {
-            setRole(v as Role);
-            setTeams([]);
-          }}
-        >
+        <Select value={role} onValueChange={(v) => setRole(v as Role)}>
           <SelectTrigger className="h-9 w-[150px]">
             <SelectValue />
           </SelectTrigger>
