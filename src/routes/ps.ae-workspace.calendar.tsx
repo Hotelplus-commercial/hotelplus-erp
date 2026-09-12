@@ -156,6 +156,29 @@ function CalendarTab() {
                   </span>
                 ))}
               </div>
+              {calendarMeetingCards
+                .filter((m) => m.day === d.day)
+                .map((m) => (
+                  <div
+                    key={m.hotel + m.time}
+                    className={cn(
+                      "relative mt-1 rounded px-1 py-0.5 text-[10px] leading-tight",
+                      m.draft
+                        ? "border-2 border-solid border-muted-foreground/60 bg-muted text-muted-foreground"
+                        : "bg-primary font-bold text-primary-foreground",
+                    )}
+                  >
+                    <span className="block truncate">{m.hotel}</span>
+                    <span className="block">
+                      Tier {m.tier} · {m.time}
+                    </span>
+                    {m.draft && (
+                      <span className="mt-0.5 inline-block rounded-full bg-muted-foreground px-1.5 text-[9px] font-bold text-background">
+                        DRAFT
+                      </span>
+                    )}
+                  </div>
+                ))}
               {d.marker && (
                 <span className="mt-1 block truncate text-[10px] text-muted-foreground">
                   {d.marker}
