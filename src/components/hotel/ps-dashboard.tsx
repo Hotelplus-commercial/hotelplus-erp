@@ -72,6 +72,26 @@ function ServiceCell({ items }: { items: { serviceType: string; periodStart?: Da
   );
 }
 
+/** Deterministic mock assignment: AE owner / ORM team / Marcom owner per hotel */
+function hotelAssignees(i: number) {
+  return {
+    AE: aeDirectory[i % aeDirectory.length]!,
+    ORM: ormTeams[i % ormTeams.length]!,
+    Marcom: marcomDirectory[i % marcomDirectory.length]!,
+  };
+}
+
+function matchAssignment(
+  a: { AE: string; ORM: string; Marcom: string },
+  f?: AssignmentFilter,
+): boolean {
+  if (!f) return true;
+  const people = [a.AE, a.ORM, a.Marcom];
+  if (f.role !== "none" && f.teams.length && !f.teams.includes(a[f.role])) return false;
+  if (f.people.length && !f.people.some((p) => people.includes(p))) return false;
+  return true;
+}
+
 export function PsDashboard({ assignment }: { assignment?: AssignmentFilter }) {
   const { hotels, select } = useHotelStore();
   const [q, setQ] = useState("");

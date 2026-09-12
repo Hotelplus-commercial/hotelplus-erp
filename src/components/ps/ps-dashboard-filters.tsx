@@ -18,9 +18,10 @@ import {
   allPeople,
   marcomDirectory,
   ormTeams,
+  type AssignmentFilter,
 } from "@/lib/ps-renewal";
 
-type Role = "none" | "AE" | "ORM" | "Marcom";
+type Role = AssignmentFilter["role"];
 
 const teamOptions: Record<Role, string[]> = {
   none: [],
