@@ -1,11 +1,22 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { CalendarPlus, ClipboardList, Link2, ListChecks } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 
-import { Chip, Kpi, Panel } from "@/components/crm/crm-ui";
+import { Chip, Panel } from "@/components/crm/crm-ui";
 import { PageHeader } from "@/components/erp-ui";
-import { JourneyBar, MetricCard, TierBadge } from "@/components/ps/meeting-ui";
+import { JourneyBar, TierBadge } from "@/components/ps/meeting-ui";
+import { RenewalActivityCards } from "@/components/ps/renewal-ui";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import {
+  meetingQuantity,
+  portfolioTotals,
+  renewalRate,
+  surveyCollection,
+  tierAPipeline7,
+  usePsRenewal,
+} from "@/lib/ps-renewal";
 import {
   Select,
   SelectContent,
