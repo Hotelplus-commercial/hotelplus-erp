@@ -434,11 +434,17 @@ export const availableSlots = [
   { date: "16 Sep 2026", times: ["09:30", "13:30"] },
 ];
 
+export type HotelFilter = "my" | "all";
+
 type Ctx = {
   role: MmRole;
   setRole: (r: MmRole) => void;
   month: string;
   setMonth: (m: string) => void;
+  ticks: Record<string, Partial<Record<ChecklistKey, Tick>>>;
+  toggleTick: (cardId: string, key: ChecklistKey, by: string) => void;
+  audit: { at: string; text: string }[];
+  log: (text: string) => void;
 };
 
 const MmContext = createContext<Ctx | null>(null);
@@ -446,7 +452,32 @@ const MmContext = createContext<Ctx | null>(null);
 export function MeetingMgmtProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<MmRole>("AE");
   const [month, setMonth] = useState(currentMonthLabel);
-  const value = useMemo(() => ({ role, setRole, month, setMonth }), [role, month]);
+  const [ticks, setTicks] = useState<Record<string, Partial<Record<ChecklistKey, Tick>>>>(
+    () => initialTicks,
+  );
+  const [audit, setAudit] = useState<{ at: string; text: string }[]>(initialAudit);
+
+  const value = useMemo<Ctx>(
+    () => ({
+      role,
+      setRole,
+      month,
+      setMonth,
+      ticks,
+      audit,
+      log: (text: string) =>
+        setAudit((prev) => [{ at: "เมื่อสักครู่", text }, ...prev].slice(0, 20)),
+      toggleTick: (cardId, key, by) =>
+        setTicks((prev) => {
+          const card = prev[cardId] ?? {};
+          const next = { ...card };
+          if (next[key]) delete next[key];
+          else next[key] = { at: "วันนี้ " + new Date().toTimeString().slice(0, 5), by };
+          return { ...prev, [cardId]: next };
+        }),
+    }),
+    [role, month, ticks, audit],
+  );
   return <MmContext.Provider value={value}>{children}</MmContext.Provider>;
 }
 
@@ -455,6 +486,7 @@ export function useMeetingMgmt() {
   if (!ctx) throw new Error("useMeetingMgmt must be used inside MeetingMgmtProvider");
   return ctx;
 }
+
 
 export const statusTone: Record<MeetingStatus, "muted" | "info" | "success" | "warn" | "danger"> = {
   Draft: "muted",
