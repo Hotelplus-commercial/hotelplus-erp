@@ -12,6 +12,12 @@ import {
 } from "@/components/ui/select";
 import { formatDate, statusMeta, type HotelStatus } from "@/lib/hotel-profile";
 import {
+  aeDirectory,
+  marcomDirectory,
+  ormTeams,
+  type AssignmentFilter,
+} from "@/lib/ps-renewal";
+import {
   contractRange,
   daysToEnd,
   hotelStatus,
@@ -66,20 +72,41 @@ function ServiceCell({ items }: { items: { serviceType: string; periodStart?: Da
   );
 }
 
-export function PsDashboard() {
+/** Deterministic mock assignment: AE owner / ORM team / Marcom owner per hotel */
+function hotelAssignees(i: number) {
+  return {
+    AE: aeDirectory[i % aeDirectory.length]!,
+    ORM: ormTeams[i % ormTeams.length]!,
+    Marcom: marcomDirectory[i % marcomDirectory.length]!,
+  };
+}
+
+function matchAssignment(
+  a: { AE: string; ORM: string; Marcom: string },
+  f?: AssignmentFilter,
+): boolean {
+  if (!f) return true;
+  const people = [a.AE, a.ORM, a.Marcom];
+  if (f.role !== "none" && f.teams.length && !f.teams.includes(a[f.role])) return false;
+  if (f.people.length && !f.people.some((p) => people.includes(p))) return false;
+  return true;
+}
+
+export function PsDashboard({ assignment }: { assignment?: AssignmentFilter }) {
   const { hotels, select } = useHotelStore();
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<"all" | HotelStatus>("all");
 
   const rows = useMemo(
     () =>
-      hotels.map((h: HotelProfile) => ({
+      hotels.map((h: HotelProfile, i: number) => ({
         h,
         status: hotelStatus(h),
         services: servicesByCategory(h),
         start: serviceStart(h),
         end: contractRange(h).end,
         left: daysToEnd(h),
+        assignees: hotelAssignees(i),
       })),
     [hotels],
   );
@@ -116,7 +143,7 @@ export function PsDashboard() {
       !term ||
       r.h.name.toLowerCase().includes(term) ||
       r.h.code.toLowerCase().includes(term);
-    return okQ && (status === "all" || r.status === status);
+    return okQ && (status === "all" || r.status === status) && matchAssignment(r.assignees, assignment);
   });
 
   return (

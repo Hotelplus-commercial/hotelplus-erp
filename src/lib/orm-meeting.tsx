@@ -816,6 +816,24 @@ export const septemberDays: CalendarDay[] = Array.from({ length: 30 }, (_, i) =>
   return base;
 });
 
+/** v3.1 — calendar meeting cards: Draft (gray + solid border + DRAFT badge) vs Confirmed (blue) */
+export type CalendarMeetingCard = {
+  day: number;
+  time: string;
+  hotel: string;
+  tier: Tier;
+  draft: boolean;
+};
+
+export const calendarMeetingCards: CalendarMeetingCard[] = [
+  { day: 12, time: "09:00", hotel: "Grand Palace Bangkok", tier: "A", draft: false },
+  { day: 15, time: "11:00", hotel: "Riverside Resort Krabi", tier: "B", draft: false },
+  { day: 15, time: "14:00", hotel: "Ocean View Phuket", tier: "A", draft: true },
+  { day: 17, time: "10:00", hotel: "Coral Reef Samui", tier: "A", draft: true },
+  { day: 22, time: "15:00", hotel: "Beach Front Hua Hin", tier: "A", draft: true },
+  { day: 24, time: "13:00", hotel: "Sunset Villa Krabi", tier: "A", draft: false },
+];
+
 export const slotReason: Record<string, string> = {
   block: "ORM ติดประชุม OTA / งานภายใน",
   dayoff: "วันหยุดตามตาราง HR",

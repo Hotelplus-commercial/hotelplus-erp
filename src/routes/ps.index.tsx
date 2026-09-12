@@ -1,7 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 
 import { PageHeader } from "@/components/erp-ui";
 import { PsDashboard } from "@/components/hotel/ps-dashboard";
+import { PsDashboardFilters } from "@/components/ps/ps-dashboard-filters";
+import { NewContractUpdates } from "@/components/ps/renewal-ui";
+import { useMeetingMgmt } from "@/lib/orm-meeting";
+import type { AssignmentFilter } from "@/lib/ps-renewal";
 
 const description =
   "PS Dashboard: ภาพรวมสัญญาบริการของลูกค้าทั้งหมด — AC สร้างโรงแรม · PS เติมสัญญาให้ครบ พร้อมสถานะ ORM / Marcom / Production รายโรงแรม";
@@ -17,14 +22,23 @@ export const Route = createFileRoute("/ps/")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: () => (
-    <div className="flex flex-col gap-4">
-      <PageHeader
-        eyebrow="PS App · Dashboard"
-        title="PS Dashboard"
-        description={description}
-      />
-      <PsDashboard />
-    </div>
-  ),
+  component: PsDashboardPage,
 });
+
+function PsDashboardPage() {
+  const { role } = useMeetingMgmt();
+  const [filter, setFilter] = useState<AssignmentFilter>({
+    role: "none",
+    teams: [],
+    people: [],
+  });
+
+  return (
+    <div className="flex flex-col gap-4">
+      <PageHeader eyebrow="PS App · Dashboard" title="PS Dashboard" description={description} />
+      <PsDashboardFilters value={filter} onChange={setFilter} />
+      {role === "Partner Manager" && <NewContractUpdates />}
+      <PsDashboard assignment={filter} />
+    </div>
+  );
+}

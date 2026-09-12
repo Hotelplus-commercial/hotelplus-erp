@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  calendarMeetingCards,
   septemberDays,
   slotReason,
   slotTimes,
@@ -51,6 +52,8 @@ export const Route = createFileRoute("/ps/ae-workspace/calendar")({
 const orms = ["ทั้งหมด", "Somchai K.", "Malee P.", "Nont W.", "Prasert L."];
 
 const legend = [
+  { dot: "bg-primary", label: "Confirmed meeting" },
+  { dot: "bg-muted-foreground/60", label: "Draft meeting (DRAFT)" },
   { dot: "bg-success", label: "Available (ค่าเริ่มต้น)" },
   { dot: "bg-warning", label: "Blocked (ORM ติดงาน)" },
   { dot: "bg-muted-foreground/40", label: "Day-off / นอกเวลา" },
@@ -156,6 +159,29 @@ function CalendarTab() {
                   </span>
                 ))}
               </div>
+              {calendarMeetingCards
+                .filter((m) => m.day === d.day)
+                .map((m) => (
+                  <div
+                    key={m.hotel + m.time}
+                    className={cn(
+                      "relative mt-1 rounded px-1 py-0.5 text-[10px] leading-tight",
+                      m.draft
+                        ? "border-2 border-solid border-muted-foreground/60 bg-muted text-muted-foreground"
+                        : "bg-primary font-bold text-primary-foreground",
+                    )}
+                  >
+                    <span className="block truncate">{m.hotel}</span>
+                    <span className="block">
+                      Tier {m.tier} · {m.time}
+                    </span>
+                    {m.draft && (
+                      <span className="mt-0.5 inline-block rounded-full bg-muted-foreground px-1.5 text-[9px] font-bold text-background">
+                        DRAFT
+                      </span>
+                    )}
+                  </div>
+                ))}
               {d.marker && (
                 <span className="mt-1 block truncate text-[10px] text-muted-foreground">
                   {d.marker}
@@ -164,6 +190,11 @@ function CalendarTab() {
             </button>
           ))}
         </div>
+        <p className="mt-3 rounded-lg border bg-muted/40 p-2.5 text-[11px] text-muted-foreground">
+          Draft meeting = AE จองช่วงเวลาไว้ แต่ ORM ยังไม่ยืนยัน (สีเทา + ขอบทึบ + ป้าย DRAFT) ·
+          เมื่อ ORM กด Confirm การ์ดจะเปลี่ยนเป็นสีน้ำเงิน (Confirmed) และช่วงเวลานั้นจะถูกจองถาวร ·
+          ถ้า ORM ปฏิเสธหรือ AE ยกเลิก การ์ดจะหายไปและช่วงเวลากลับเป็น Available
+        </p>
       </Panel>
 
       <Dialog open={day !== null} onOpenChange={(o) => !o && setDay(null)}>

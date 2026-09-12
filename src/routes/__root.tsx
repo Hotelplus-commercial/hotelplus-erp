@@ -18,6 +18,7 @@ import { CrmStoreProvider } from "@/lib/crm-store";
 import { BdStoreProvider } from "@/lib/bd-store";
 import { PsTemplateProvider } from "@/lib/ps-templates";
 import { MeetingMgmtProvider } from "@/lib/orm-meeting";
+import { PsRenewalProvider } from "@/lib/ps-renewal";
 
 
 
@@ -142,11 +143,13 @@ function RootComponent() {
           <BdStoreProvider>
           <PsTemplateProvider>
           <MeetingMgmtProvider>
+          <PsRenewalProvider>
           <Toaster />
           <AppShell>
             {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
             <Outlet />
           </AppShell>
+          </PsRenewalProvider>
           </MeetingMgmtProvider>
           </PsTemplateProvider>
 
