@@ -40,6 +40,7 @@ import { Route as PsAeWorkspaceRouteImport } from './routes/ps.ae-workspace'
 import { Route as PsContractDashboardRouteImport } from './routes/ps.contract-dashboard'
 import { Route as PsContractWizardRouteImport } from './routes/ps.contract-wizard'
 import { Route as PsContractsRouteImport } from './routes/ps.contracts'
+import { Route as PsOnboardingProcessRouteImport } from './routes/ps.onboarding-process'
 import { Route as PsProductionRouteImport } from './routes/ps.production'
 import { Route as PsSystemCostRouteImport } from './routes/ps.system-cost'
 import { Route as BdCalculatorMarcomRouteImport } from './routes/bd.calculator.marcom'
@@ -220,6 +221,11 @@ const PsContractsRoute = PsContractsRouteImport.update({
   path: '/contracts',
   getParentRoute: () => PsRoute,
 } as any)
+const PsOnboardingProcessRoute = PsOnboardingProcessRouteImport.update({
+  id: '/onboarding-process',
+  path: '/onboarding-process',
+  getParentRoute: () => PsRoute,
+} as any)
 const PsProductionRoute = PsProductionRouteImport.update({
   id: '/production',
   path: '/production',
@@ -370,6 +376,7 @@ export interface FileRoutesByFullPath {
   '/ps/contract-dashboard': typeof PsContractDashboardRoute
   '/ps/contract-wizard': typeof PsContractWizardRoute
   '/ps/contracts': typeof PsContractsRoute
+  '/ps/onboarding-process': typeof PsOnboardingProcessRoute
   '/ps/production': typeof PsProductionRoute
   '/ps/system-cost': typeof PsSystemCostRoute
   '/ac/': typeof AcIndexRoute
@@ -419,6 +426,7 @@ export interface FileRoutesByTo {
   '/ps/contract-dashboard': typeof PsContractDashboardRoute
   '/ps/contract-wizard': typeof PsContractWizardRoute
   '/ps/contracts': typeof PsContractsRoute
+  '/ps/onboarding-process': typeof PsOnboardingProcessRoute
   '/ps/production': typeof PsProductionRoute
   '/ps/system-cost': typeof PsSystemCostRoute
   '/ac': typeof AcIndexRoute
@@ -477,6 +485,7 @@ export interface FileRoutesById {
   '/ps/contract-dashboard': typeof PsContractDashboardRoute
   '/ps/contract-wizard': typeof PsContractWizardRoute
   '/ps/contracts': typeof PsContractsRoute
+  '/ps/onboarding-process': typeof PsOnboardingProcessRoute
   '/ps/production': typeof PsProductionRoute
   '/ps/system-cost': typeof PsSystemCostRoute
   '/ac/': typeof AcIndexRoute
@@ -536,6 +545,7 @@ export interface FileRouteTypes {
     | '/ps/contract-dashboard'
     | '/ps/contract-wizard'
     | '/ps/contracts'
+    | '/ps/onboarding-process'
     | '/ps/production'
     | '/ps/system-cost'
     | '/ac/'
@@ -585,6 +595,7 @@ export interface FileRouteTypes {
     | '/ps/contract-dashboard'
     | '/ps/contract-wizard'
     | '/ps/contracts'
+    | '/ps/onboarding-process'
     | '/ps/production'
     | '/ps/system-cost'
     | '/ac'
@@ -642,6 +653,7 @@ export interface FileRouteTypes {
     | '/ps/contract-dashboard'
     | '/ps/contract-wizard'
     | '/ps/contracts'
+    | '/ps/onboarding-process'
     | '/ps/production'
     | '/ps/system-cost'
     | '/ac/'
@@ -904,6 +916,13 @@ declare module '@tanstack/react-router' {
       path: '/contracts'
       fullPath: '/ps/contracts'
       preLoaderRoute: typeof PsContractsRouteImport
+      parentRoute: typeof PsRoute
+    }
+    '/ps/onboarding-process': {
+      id: '/ps/onboarding-process'
+      path: '/onboarding-process'
+      fullPath: '/ps/onboarding-process'
+      preLoaderRoute: typeof PsOnboardingProcessRouteImport
       parentRoute: typeof PsRoute
     }
     '/ps/production': {
@@ -1222,6 +1241,7 @@ interface PsRouteChildren {
   PsContractDashboardRoute: typeof PsContractDashboardRoute
   PsContractWizardRoute: typeof PsContractWizardRoute
   PsContractsRoute: typeof PsContractsRoute
+  PsOnboardingProcessRoute: typeof PsOnboardingProcessRoute
   PsProductionRoute: typeof PsProductionRoute
   PsSystemCostRoute: typeof PsSystemCostRoute
   PsIndexRoute: typeof PsIndexRoute
@@ -1235,6 +1255,7 @@ const PsRouteChildren: PsRouteChildren = {
   PsContractDashboardRoute: PsContractDashboardRoute,
   PsContractWizardRoute: PsContractWizardRoute,
   PsContractsRoute: PsContractsRoute,
+  PsOnboardingProcessRoute: PsOnboardingProcessRoute,
   PsProductionRoute: PsProductionRoute,
   PsSystemCostRoute: PsSystemCostRoute,
   PsIndexRoute: PsIndexRoute,

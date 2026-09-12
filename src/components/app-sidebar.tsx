@@ -4,6 +4,7 @@ import {
   BuildingIcon,
   Calculator,
   CalendarCheck,
+  ClipboardCheck,
 
   Megaphone,
   FileSignature,
@@ -36,6 +37,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { modules } from "@/lib/erp-data";
+import { useMeetingMgmt } from "@/lib/orm-meeting";
 
 const moduleChildren: Record<string, { title: string; url: string; icon: typeof BuildingIcon }[]> = {
   bd: [
@@ -64,8 +66,9 @@ const moduleChildren: Record<string, { title: string; url: string; icon: typeof 
     { title: "Production Report", url: "/ps/production", icon: BarChart3 },
     { title: "Templates", url: "/ps/templates", icon: FileText },
     { title: "AE Workspace", url: "/ps/ae-workspace/dashboard", icon: CalendarCheck },
-
+    { title: "On-boarding Process", url: "/ps/onboarding-process", icon: ClipboardCheck },
   ],
+
 };
 
 
@@ -78,6 +81,13 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const pathname = useRouterState({ select: (r) => r.location.pathname });
+  const { role } = useMeetingMgmt();
+
+  const hiddenUrls = new Set<string>();
+  if (role === "On-boarding Specialist" || role === "ORM" || role === "GRM") {
+    hiddenUrls.add("/ps/ae-workspace/dashboard");
+  }
+  if (role === "ORM" || role === "GRM") hiddenUrls.add("/ps/onboarding-process");
 
   return (
     <Sidebar collapsible="icon" className="border-sidebar-border">
@@ -119,7 +129,7 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {modules.map((m) => {
-                const children = moduleChildren[m.slug] ?? [];
+                const children = (moduleChildren[m.slug] ?? []).filter((c) => !hiddenUrls.has(c.url));
                 const inSection = pathname === m.to || pathname.startsWith(`${m.to}/`);
                 return (
                   <SidebarMenuItem key={m.slug}>
