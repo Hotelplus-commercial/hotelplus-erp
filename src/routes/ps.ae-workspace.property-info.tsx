@@ -238,24 +238,21 @@ function PropertyInfoTab() {
               </div>
 
               <DialogFooter>
-                {false ? null : (
-                  <>
-                    <Button
-                      variant="outline"
-                      onClick={() => toast.info("ส่ง follow-up ให้โรงแรมแล้ว")}
-                    >
-                      Follow up
-                    </Button>
-                    <Button
-                      onClick={() => {
-                        toast.success(`${detail.hotel} → ${detail.action}`);
-                        setDetail(null);
-                      }}
-                    >
-                      {detail.action}
-                    </Button>
-                  </>
-                )}
+                <Button
+                  variant="outline"
+                  onClick={() => toast.info("ส่ง follow-up ให้โรงแรมแล้ว")}
+                >
+                  Follow up
+                </Button>
+                <Button
+                  onClick={() => {
+                    toast.success(`${detail.hotel} → ${detail.action}`);
+                    setDetail(null);
+                  }}
+                >
+                  {detail.action}
+                </Button>
+
               </DialogFooter>
             </>
           )}
