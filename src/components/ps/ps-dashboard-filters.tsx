@@ -99,10 +99,18 @@ function MultiSelect({
   );
 }
 
-export function PsDashboardFilters() {
-  const [role, setRole] = useState<Role>("none");
-  const [teams, setTeams] = useState<string[]>([]);
-  const [people, setPeople] = useState<string[]>([]);
+export function PsDashboardFilters({
+  value,
+  onChange,
+}: {
+  value: AssignmentFilter;
+  onChange: (v: AssignmentFilter) => void;
+}) {
+  const { role, teams, people } = value;
+  const setRole = (r: Role) => onChange({ role: r, teams: [], people });
+  const setTeams = (t: string[]) => onChange({ ...value, teams: t });
+  const setPeople = (p: string[]) => onChange({ ...value, people: p });
+
 
   const active = [
     ...(role !== "none" ? [`Role: ${role}`] : []),
