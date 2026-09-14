@@ -68,6 +68,7 @@ import { Route as PsAeWorkspaceSurveysRouteImport } from './routes/ps.ae-workspa
 import { Route as PsTemplatesIndexRouteImport } from './routes/ps.templates.index'
 import { Route as PsTemplatesTemplateIdRouteImport } from './routes/ps.templates.$templateId'
 import { Route as PsTemplatesAutoFieldsRouteImport } from './routes/ps.templates.auto-fields'
+import { Route as PsTemplatesLayer2RouteImport } from './routes/ps.templates.layer2'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -365,6 +366,11 @@ const PsTemplatesAutoFieldsRoute = PsTemplatesAutoFieldsRouteImport.update({
   path: '/templates/auto-fields',
   getParentRoute: () => PsRoute,
 } as any)
+const PsTemplatesLayer2Route = PsTemplatesLayer2RouteImport.update({
+  id: '/templates/layer2',
+  path: '/templates/layer2',
+  getParentRoute: () => PsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -421,6 +427,7 @@ export interface FileRoutesByFullPath {
   '/ps/ae-workspace/surveys': typeof PsAeWorkspaceSurveysRoute
   '/ps/templates/$templateId': typeof PsTemplatesTemplateIdRoute
   '/ps/templates/auto-fields': typeof PsTemplatesAutoFieldsRoute
+  '/ps/templates/layer2': typeof PsTemplatesLayer2Route
   '/bd/quotations/': typeof BdQuotationsIndexRoute
   '/bd/quotes/': typeof BdQuotesIndexRoute
   '/orm/action-a/': typeof OrmActionAIndexRoute
@@ -473,6 +480,7 @@ export interface FileRoutesByTo {
   '/ps/ae-workspace/surveys': typeof PsAeWorkspaceSurveysRoute
   '/ps/templates/$templateId': typeof PsTemplatesTemplateIdRoute
   '/ps/templates/auto-fields': typeof PsTemplatesAutoFieldsRoute
+  '/ps/templates/layer2': typeof PsTemplatesLayer2Route
   '/bd/quotations': typeof BdQuotationsIndexRoute
   '/bd/quotes': typeof BdQuotesIndexRoute
   '/orm/action-a': typeof OrmActionAIndexRoute
@@ -535,6 +543,7 @@ export interface FileRoutesById {
   '/ps/ae-workspace/surveys': typeof PsAeWorkspaceSurveysRoute
   '/ps/templates/$templateId': typeof PsTemplatesTemplateIdRoute
   '/ps/templates/auto-fields': typeof PsTemplatesAutoFieldsRoute
+  '/ps/templates/layer2': typeof PsTemplatesLayer2Route
   '/bd/quotations/': typeof BdQuotationsIndexRoute
   '/bd/quotes/': typeof BdQuotesIndexRoute
   '/orm/action-a/': typeof OrmActionAIndexRoute
@@ -598,6 +607,7 @@ export interface FileRouteTypes {
     | '/ps/ae-workspace/surveys'
     | '/ps/templates/$templateId'
     | '/ps/templates/auto-fields'
+    | '/ps/templates/layer2'
     | '/bd/quotations/'
     | '/bd/quotes/'
     | '/orm/action-a/'
@@ -650,6 +660,7 @@ export interface FileRouteTypes {
     | '/ps/ae-workspace/surveys'
     | '/ps/templates/$templateId'
     | '/ps/templates/auto-fields'
+    | '/ps/templates/layer2'
     | '/bd/quotations'
     | '/bd/quotes'
     | '/orm/action-a'
@@ -711,6 +722,7 @@ export interface FileRouteTypes {
     | '/ps/ae-workspace/surveys'
     | '/ps/templates/$templateId'
     | '/ps/templates/auto-fields'
+    | '/ps/templates/layer2'
     | '/bd/quotations/'
     | '/bd/quotes/'
     | '/orm/action-a/'
@@ -1149,6 +1161,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PsTemplatesAutoFieldsRouteImport
       parentRoute: typeof PsRoute
     }
+    '/ps/templates/layer2': {
+      id: '/ps/templates/layer2'
+      path: '/templates/layer2'
+      fullPath: '/ps/templates/layer2'
+      preLoaderRoute: typeof PsTemplatesLayer2RouteImport
+      parentRoute: typeof PsRoute
+    }
   }
 }
 
@@ -1303,6 +1322,7 @@ interface PsRouteChildren {
   PsIndexRoute: typeof PsIndexRoute
   PsTemplatesTemplateIdRoute: typeof PsTemplatesTemplateIdRoute
   PsTemplatesAutoFieldsRoute: typeof PsTemplatesAutoFieldsRoute
+  PsTemplatesLayer2Route: typeof PsTemplatesLayer2Route
   PsTemplatesIndexRoute: typeof PsTemplatesIndexRoute
 }
 
@@ -1317,6 +1337,7 @@ const PsRouteChildren: PsRouteChildren = {
   PsIndexRoute: PsIndexRoute,
   PsTemplatesTemplateIdRoute: PsTemplatesTemplateIdRoute,
   PsTemplatesAutoFieldsRoute: PsTemplatesAutoFieldsRoute,
+  PsTemplatesLayer2Route: PsTemplatesLayer2Route,
   PsTemplatesIndexRoute: PsTemplatesIndexRoute,
 }
 
