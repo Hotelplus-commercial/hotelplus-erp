@@ -1,11 +1,11 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { FileSignature, FileText, Layers, PencilLine, RotateCcw } from "lucide-react";
+import { FileSignature, FileText, Layers, PencilLine, RotateCcw, Shield, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 
 import { Chip, Kpi, Panel, fmtDate } from "@/components/crm/crm-ui";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { usePsTemplates, type Template, type TemplateType } from "@/lib/ps-templates";
+import { lockMeta, usePsTemplates, type Template, type TemplateType } from "@/lib/ps-templates";
 
 export const Route = createFileRoute("/ps/templates/")({
   head: () => ({
@@ -22,9 +22,15 @@ export const Route = createFileRoute("/ps/templates/")({
 const statusTone = (s: string): "success" | "warn" | "muted" => (s === "active" ? "success" : s === "draft" ? "warn" : "muted");
 
 function TemplateCard({ t }: { t: Template }) {
-  const { activeVersion, draftVersion } = usePsTemplates();
+  const { activeVersion, draftVersion, missingConditionalBlocks } = usePsTemplates();
   const active = activeVersion(t);
   const draft = draftVersion(t);
+  const missing = t.sections.length > 0 ? missingConditionalBlocks(t) : [];
+  const counts = {
+    locked: t.sections.filter((s) => s.lock_mode === "locked").length,
+    structured: t.sections.filter((s) => s.lock_mode === "structured").length,
+    free: t.sections.filter((s) => s.lock_mode === "free").length,
+  };
 
   return (
     <div className="card-elevated flex flex-col gap-3 p-4">
@@ -34,6 +40,12 @@ function TemplateCard({ t }: { t: Template }) {
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px]">{t.template_id}</code>
             <Chip tone={statusTone(active?.status ?? "muted")}>{active?.version_label ?? "—"} active</Chip>
             {draft && <Chip tone="warn">{draft.version_label} draft</Chip>}
+            {t.superseded && <Chip tone="danger">superseded</Chip>}
+            {t.sections.length > 0 && (
+              <Chip tone="info">
+                {lockMeta.locked.icon} {counts.locked} · {lockMeta.structured.icon} {counts.structured} · {lockMeta.free.icon} {counts.free}
+              </Chip>
+            )}
           </div>
           <p className="mt-1 font-display text-sm font-semibold">{t.name}</p>
           <p className="text-xs text-muted-foreground">
@@ -59,6 +71,12 @@ function TemplateCard({ t }: { t: Template }) {
         </div>
       )}
 
+      {missing.length > 0 && (
+        <p className="rounded-lg border border-amber-400/50 bg-amber-50 px-2 py-1 text-[11px] dark:bg-amber-950/20">
+          ⚠️ ยังขาดเนื้อหา conditional block {missing.length} รายการ
+        </p>
+      )}
+
       <div className="flex flex-wrap gap-x-4 gap-y-1 border-t pt-2 text-[11px] text-muted-foreground">
         <span>เอกสารที่ออกแล้ว {t.docs_generated}</span>
         <span>Active ตั้งแต่ {active?.activated_at ? fmtDate(active.activated_at) : "—"}</span>
@@ -69,7 +87,7 @@ function TemplateCard({ t }: { t: Template }) {
 }
 
 function TemplatesDashboard() {
-  const { templates, hydrated, resetTemplates } = usePsTemplates();
+  const { templates, hydrated, resetTemplates, isLegalAdmin, setLegalAdmin } = usePsTemplates();
   const [tab, setTab] = useState<TemplateType>("quote");
   const [q, setQ] = useState("");
 
@@ -90,6 +108,20 @@ function TemplatesDashboard() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button
+            variant={isLegalAdmin ? "default" : "outline"}
+            size="sm"
+            className="gap-1.5"
+            onClick={() => setLegalAdmin(!isLegalAdmin)}
+          >
+            {isLegalAdmin ? <ShieldCheck className="size-4" /> : <Shield className="size-4" />}
+            {isLegalAdmin ? "Legal Admin" : "โหมด PS user"}
+          </Button>
+          <Button asChild variant="outline" size="sm" className="gap-1.5">
+            <Link to="/ps/templates/layer2">
+              <ShieldCheck className="size-4" /> Layer 2 registry
+            </Link>
+          </Button>
           <Button asChild variant="outline" size="sm" className="gap-1.5">
             <Link to="/ps/templates/auto-fields">
               <Layers className="size-4" /> Auto-field reference
