@@ -282,8 +282,6 @@ function TemplateEditor() {
       }
       const start = el.selectionStart;
       const next = el.value.slice(0, start) + token + el.value.slice(el.selectionEnd);
-      el.value = next;
-      el.dispatchEvent(new Event("input", { bubbles: true }));
       const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")?.set;
       setter?.call(el, next);
       el.dispatchEvent(new Event("input", { bubbles: true }));
@@ -495,7 +493,7 @@ function TemplateEditor() {
                     <p key={r.rule_id} className="text-muted-foreground">
                       🛡 {r.field_path} · {r.constraint.locked ? `locked = ${r.constraint.default}` : `min ${r.constraint.min} / max ${r.constraint.max}`}
                     </p>
-                  )) || null}
+                  ))}
                 </div>
                 <div className="border-t pt-2">
                   <p className="mb-1 font-medium">Computed field ที่ใช้</p>
