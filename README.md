@@ -1,14 +1,32 @@
-# Welcome to your Lovable project
+# Hotel Harmony Suite
+
+You are a Senior ERP UX Designer.
+Design a Hotel Management ERP.
+
+Modules
+-BD App
+-AC App
+-PS App
+-ORM App
+-Marcom App
+-HR App
+-Automation App
+-Executive App
+
+The style should be modern, clean and enterprise.
+Sidebar on the left.
+Notification
+Responsive
 
 This project was built with [Lovable](https://lovable.dev).
 
 ## Build with Lovable
 
-Open your project in the [Lovable editor](https://lovable.dev) and keep building.
+Continue developing this project in the [Lovable editor](https://lovable.dev/projects/ff3b7606-c6cb-411f-8f5f-0c0ce1b78e6c).
 
 - **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: connect the project to GitHub and every change made in Lovable is committed straight to your repository.
-- **Full ownership**: this code is yours. Push to your repository and your changes sync back into Lovable, ready for your next prompt.
+- **Stay in sync**: every change made in Lovable is committed straight to this repository.
+- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
 
 ## Development
 
@@ -20,10 +38,3 @@ cd <repository-name>
 npm i
 npm run dev
 ```
-
-## Built with
-
-- TanStack Start
-- TypeScript
-- React
-- Tailwind CSS
