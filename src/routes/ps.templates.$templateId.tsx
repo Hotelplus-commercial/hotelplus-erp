@@ -467,7 +467,7 @@ function TemplateEditor() {
         </div>
 
         <div className="space-y-4">
-          <Panel title="Inspector" subtitle={hasSections ? sel?.title : "Quote template"}>
+          <Panel title="Inspector" subtitle={(hasSections ? sel?.title : "Quote template") ?? "—"}>
             {hasSections && sel ? (
               <div className="space-y-2 text-xs">
                 <p>
