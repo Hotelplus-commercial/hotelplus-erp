@@ -536,4 +536,4 @@ function BankForm({
   );
 }
 
-export type { BdQuote };
+
