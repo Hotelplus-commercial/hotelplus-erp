@@ -913,6 +913,11 @@ export function BdStoreProvider({ children }: { children: ReactNode }) {
         linked_quote_ids: input.linked_quote_ids,
         created_by: CURRENT_USER,
         created_at: now,
+        customer_id: null,
+        hotel_id: null,
+        next_package_seq: 1,
+        active_package_code: null,
+        archived_package_codes: [],
       },
       ...prev.filter((d) => d.deal_id !== dealId),
     ]);
