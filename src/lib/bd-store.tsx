@@ -944,6 +944,108 @@ export function BdStoreProvider({ children }: { children: ReactNode }) {
     return dealId;
   }, []);
 
+  /* ---------------- v2.5 · PS App wizard event bus (mock) ---------------- */
+
+  const dealHasActiveDraftPackage = useCallback(
+    (dealId: string | null) => {
+      if (!dealId) return false;
+      return quotes.some((q) => q.deal_id === dealId && q.status === "contract_in_progress");
+    },
+    [quotes],
+  );
+
+  const startWizard = useCallback((quoteId: string) => {
+    const now = new Date().toISOString();
+    let dealId: string | null = null;
+    setQuotes((prev) =>
+      prev.map((q) => {
+        if (q.quote_id !== quoteId || q.status !== "approved") return q;
+        dealId = q.deal_id;
+        return {
+          ...q,
+          status: "contract_in_progress" as BdStatus,
+          wizard_step: 1,
+          wizard_started_at: now,
+          activity_log: [...q.activity_log, log("contract_wizard_started", now, "Wizard step 1 of 5")],
+        };
+      }),
+    );
+    return dealId;
+  }, []);
+
+  const setWizardStep = useCallback((quoteId: string, step: number) => {
+    setQuotes((prev) =>
+      prev.map((q) => (q.quote_id === quoteId && q.status === "contract_in_progress" ? { ...q, wizard_step: step } : q)),
+    );
+  }, []);
+
+  const cancelWizard = useCallback((quoteId: string) => {
+    const now = new Date().toISOString();
+    setQuotes((prev) =>
+      prev.map((q) =>
+        q.quote_id === quoteId && q.status === "contract_in_progress"
+          ? {
+              ...q,
+              status: "approved" as BdStatus,
+              wizard_step: null,
+              wizard_started_at: null,
+              activity_log: [...q.activity_log, log("contract_wizard_cancelled", now, "wizard ถูกยกเลิก · quote กลับสถานะ approved")],
+            }
+          : q,
+      ),
+    );
+  }, []);
+
+  const completeWizard = useCallback(
+    (quoteId: string, durationMonths = 12) => {
+      const quote = quotes.find((q) => q.quote_id === quoteId);
+      if (!quote) return null;
+      const deal = deals.find((d) => d.deal_id === quote.deal_id);
+      const now = new Date();
+      const seq = deal?.next_package_seq ?? 1;
+      const ymd = `${String((now.getFullYear() + 543) % 100).padStart(2, "0")}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
+      const hotelId = deal?.hotel_id ?? "00000";
+      const customerId = deal?.customer_id ?? "00000";
+      const contractCode = `CT-${hotelId}-${quote.type}-${ymd}-${String(seq).padStart(2, "0")}`;
+      const packageCode = `SP-100084-${customerId}-${hotelId}-P${String(seq).padStart(2, "0")}-${ymd}`;
+      const iso = now.toISOString();
+
+      setQuotes((prev) =>
+        prev.map((q) =>
+          q.quote_id === quoteId
+            ? {
+                ...q,
+                status: "contract_generated" as BdStatus,
+                wizard_step: 5,
+                contract_codes: [contractCode],
+                package_code: packageCode,
+                activity_log: [
+                  ...q.activity_log,
+                  log("contract_generated", iso, `${contractCode} · Package v${seq} · ${durationMonths} เดือน`),
+                ],
+              }
+            : q,
+        ),
+      );
+      setDeals((prev) =>
+        prev.map((d) =>
+          d.deal_id === quote.deal_id
+            ? {
+                ...d,
+                next_package_seq: (d.next_package_seq ?? 1) + 1,
+                active_package_code: packageCode,
+                archived_package_codes: d.active_package_code
+                  ? [...(d.archived_package_codes ?? []), d.active_package_code]
+                  : (d.archived_package_codes ?? []),
+              }
+            : d,
+        ),
+      );
+      return { contract_code: contractCode, package_code: packageCode };
+    },
+    [quotes, deals],
+  );
+
   const resetDemo = useCallback(() => {
     setQuotes(seedQuotes().map(withSkus).map(applyAging));
     setDeals(seedDeals());
@@ -961,9 +1063,14 @@ export function BdStoreProvider({ children }: { children: ReactNode }) {
       siblingsOf,
       createRevision,
       registerDeal,
+      startWizard,
+      cancelWizard,
+      completeWizard,
+      setWizardStep,
+      dealHasActiveDraftPackage,
       resetDemo,
     }),
-    [hydrated, quotes, deals, createQuote, markSent, saveNote, approveQuote, siblingsOf, createRevision, registerDeal, resetDemo],
+    [hydrated, quotes, deals, createQuote, markSent, saveNote, approveQuote, siblingsOf, createRevision, registerDeal, startWizard, cancelWizard, completeWizard, setWizardStep, dealHasActiveDraftPackage, resetDemo],
   );
 
   return <BdCtx.Provider value={value}>{children}</BdCtx.Provider>;
