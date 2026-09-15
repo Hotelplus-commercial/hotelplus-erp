@@ -39,7 +39,13 @@ function LifecycleGuide() {
                                                                      |
                                           sibling เดียวกัน (โรงแรม + ประเภทเดียวกัน)
                                                                      v
-                                                            [Expired: superseded]`}</pre>
+                                                            [Expired: superseded]
+
+  [Approved] --"Go to Create Contract on PS App"--> [Contract in progress]
+       ^                                                    |     |
+       +------------------ wizard cancelled ----------------+     | wizard completed
+                                                                  v
+                                                        [Contract generated]  (terminal)`}</pre>
       </Panel>
 
       <Panel title="ตารางสถานะตามอายุเอกสาร">
@@ -64,6 +70,11 @@ function LifecycleGuide() {
           <li>R6/R7 · Approve จะทำให้ใบเสนอราคาอื่นของ “โรงแรมเดียวกัน + ประเภทเดียวกัน” หมดอายุแบบ superseded</li>
           <li>R8 · 1 ดีลผูกได้หลายใบเสนอราคา (ORM + Marcom)</li>
           <li>R10 · ใบเสนอราคาที่หมดอายุแล้วผูกเข้าดีลไม่ได้</li>
+          <li>R24 · ปุ่ม “Go to Create Contract on PS App” เป็นทางเดียวที่เริ่ม Wizard ได้ · ถ้าดีลมี Package ค้าง sign ปุ่มจะถูกปิด</li>
+          <li>R25 · เหตุการณ์จาก PS App: wizard_started → contract_in_progress · wizard_cancelled → กลับเป็น approved · wizard_completed → contract_generated</li>
+          <li>R26 · next_package_seq ของดีลถูกบวกโดย PS App เท่านั้น BD อ่านได้เพื่อแสดงผล</li>
+          <li>R27 · ดีลเดียวกันหลายใบเสนอราคา (ORM + Marcom) รวมเป็น Signing Package เดียวใน Wizard step 1</li>
+          <li>R28 · เมื่อสถานะเป็น contract_generated แล้ว ทำอะไรต่อไม่ได้ (ห้าม approve / revise / re-send)</li>
         </ul>
       </Panel>
     </div>
