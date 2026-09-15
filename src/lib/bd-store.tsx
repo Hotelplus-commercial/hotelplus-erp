@@ -541,20 +541,129 @@ function seedQuotes(): BdQuote[] {
       },
       activity_log: [log("created", daysAgo(40)), log("sent", daysAgo(38))],
     }),
+    /* --- v2.5 seed: PS App handoff states --- */
+    base({
+      quote_id: "Q-ORM-0410",
+      type: "ORM",
+      hotel_name: "Chaam Peumsuk",
+      created_at: daysAgo(5),
+      sent_at: daysAgo(5),
+      status: "approved",
+      approved_at: daysAgo(3),
+      approved_by: CURRENT_USER,
+      deal_id: "D-47512",
+      pipedrive_deal_id: "47512",
+      calculator_input: { room_key: 36 },
+      calculator_output: { packages: ormPackages, recommended_package: "smart", recommended_level: "L3" },
+      skus: ormSkus(ormPackages, ["smart", "fixed", "performance"]),
+      activity_log: [log("created", daysAgo(5)), log("sent", daysAgo(5)), log("approved", daysAgo(3))],
+    }),
+    base({
+      quote_id: "Q-ORM-0405",
+      type: "ORM",
+      hotel_name: "Bangkok Riverside",
+      created_at: daysAgo(7),
+      sent_at: daysAgo(7),
+      status: "contract_in_progress",
+      approved_at: daysAgo(4),
+      approved_by: CURRENT_USER,
+      deal_id: "D-47498",
+      pipedrive_deal_id: "47498",
+      wizard_step: 2,
+      wizard_started_at: daysAgo(2),
+      calculator_input: { room_key: 88 },
+      calculator_output: { packages: ormPackages, recommended_package: "fixed", recommended_level: "L4" },
+      skus: ormSkus(ormPackages, ["fixed"]),
+      activity_log: [
+        log("created", daysAgo(7)),
+        log("sent", daysAgo(7)),
+        log("approved", daysAgo(4)),
+        log("contract_wizard_started", daysAgo(2), "Wizard step 2 of 5"),
+      ],
+    }),
+    base({
+      quote_id: "Q-ORM-0389",
+      type: "ORM",
+      hotel_name: "Hua Hin Beach Villa",
+      created_at: daysAgo(14),
+      sent_at: daysAgo(14),
+      status: "contract_generated",
+      approved_at: daysAgo(10),
+      approved_by: CURRENT_USER,
+      deal_id: "D-47421",
+      pipedrive_deal_id: "47421",
+      contract_codes: ["CT-00087-ORM-690910-01"],
+      package_code: "SP-100084-01023-00087-P01-690910",
+      calculator_input: { room_key: 24 },
+      calculator_output: { packages: ormPackages, recommended_package: "smart", recommended_level: "L3" },
+      skus: ormSkus(ormPackages, ["smart"]),
+      activity_log: [
+        log("created", daysAgo(14)),
+        log("sent", daysAgo(14)),
+        log("approved", daysAgo(10)),
+        log("contract_wizard_started", daysAgo(5)),
+        log("contract_generated", daysAgo(5), "CT-00087-ORM-690910-01 · Package v1"),
+      ],
+    }),
   ];
 }
 
+const dealBase = (d: Partial<BdDeal> & Pick<BdDeal, "deal_id" | "pipedrive_deal_id" | "hotel_name" | "room_key">): BdDeal => ({
+  contact_person: { name: "ผู้ติดต่อโรงแรม", email: "contact@example.com" },
+  linked_quote_ids: [],
+  created_by: CURRENT_USER,
+  created_at: daysAgo(6),
+  customer_id: null,
+  hotel_id: null,
+  next_package_seq: 1,
+  active_package_code: null,
+  archived_package_codes: [],
+  ...d,
+});
+
 const seedDeals = (): BdDeal[] => [
-  {
+  dealBase({
     deal_id: "D-47312",
     pipedrive_deal_id: "47312",
     hotel_name: "Sumator Resort",
     room_key: 9,
     contact_person: { name: "คุณพิมพ์ใจ ศรีสุข", email: "pimjai@sumator.co.th" },
     linked_quote_ids: ["Q-ORM-0287", "Q-MARCOM-0341"],
-    created_by: CURRENT_USER,
-    created_at: daysAgo(6),
-  },
+  }),
+  dealBase({
+    deal_id: "D-47512",
+    pipedrive_deal_id: "47512",
+    hotel_name: "Chaam Peumsuk",
+    room_key: 36,
+    contact_person: { name: "คุณเปมสุข วงศ์ทอง", email: "owner@chaampeumsuk.com" },
+    linked_quote_ids: ["Q-ORM-0410"],
+    created_at: daysAgo(5),
+  }),
+  dealBase({
+    deal_id: "D-47498",
+    pipedrive_deal_id: "47498",
+    hotel_name: "Bangkok Riverside",
+    room_key: 88,
+    contact_person: { name: "คุณธนพล อินทรีย์", email: "gm@bkkriverside.com" },
+    linked_quote_ids: ["Q-ORM-0405"],
+    created_at: daysAgo(7),
+    customer_id: "01023",
+    hotel_id: "00091",
+    active_package_code: null,
+  }),
+  dealBase({
+    deal_id: "D-47421",
+    pipedrive_deal_id: "47421",
+    hotel_name: "Hua Hin Beach Villa",
+    room_key: 24,
+    contact_person: { name: "คุณศิริพร ทะเลใส", email: "siriporn@hhbeachvilla.com" },
+    linked_quote_ids: ["Q-ORM-0389"],
+    created_at: daysAgo(14),
+    customer_id: "01023",
+    hotel_id: "00087",
+    next_package_seq: 2,
+    active_package_code: "SP-100084-01023-00087-P01-690910",
+  }),
 ];
 
 /* ---------------- store ---------------- */
@@ -586,6 +695,12 @@ type Ctx = {
     linked_quote_ids: string[];
     send?: boolean;
   }) => string;
+  /* v2.5 — cross-app Contract Wizard events (mock event bus) */
+  startWizard: (quoteId: string) => string | null;
+  cancelWizard: (quoteId: string) => void;
+  completeWizard: (quoteId: string, durationMonths?: number) => { contract_code: string; package_code: string } | null;
+  setWizardStep: (quoteId: string, step: number) => void;
+  dealHasActiveDraftPackage: (dealId: string | null) => boolean;
   resetDemo: () => void;
 };
 
