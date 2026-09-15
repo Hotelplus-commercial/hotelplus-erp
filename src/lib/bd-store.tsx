@@ -21,7 +21,10 @@ export type BdStatus =
   | "aging_46_60"
   | "aging_61_90"
   | "expired"
-  | "approved";
+  | "approved"
+  /* v2.5 — PS App Contract Wizard handoff */
+  | "contract_in_progress"
+  | "contract_generated";
 
 export type ActivityLogEntry = { timestamp: string; actor: string; action: string; details?: string };
 
@@ -99,6 +102,11 @@ export type BdQuote = {
   note_mentions: NoteMention[];
   note_updated_at: string | null;
   note_updated_by: string | null;
+  /* v2.5 — populated by PS App when the Contract Wizard runs */
+  contract_codes: string[] | null;
+  package_code: string | null;
+  wizard_step: number | null;
+  wizard_started_at: string | null;
 };
 
 export type NoteMention = { target_app: "PS" | "AC"; mentioned_at: string; acknowledged: boolean };
@@ -112,6 +120,13 @@ export type BdDeal = {
   linked_quote_ids: string[];
   created_by: string;
   created_at: string;
+  /* v2.5 — AC-owned IDs (null until AC App issues the first invoice) */
+  customer_id: string | null;
+  hotel_id: string | null;
+  /* v2.5 — Signing Package tracking (incremented by PS App) */
+  next_package_seq: number;
+  active_package_code: string | null;
+  archived_package_codes: string[];
 };
 
 export const CURRENT_USER = "somchai.n@hotelplus.asia";
@@ -142,11 +157,17 @@ export const statusLabel: Record<BdStatus, string> = {
   aging_61_90: "🔴 Aging 61-90d",
   expired: "⚫ Expired",
   approved: "✅ Approved",
+  contract_in_progress: "🧙 Contract in progress",
+  contract_generated: "📄 Contract generated",
 };
 
+const HANDOFF_STATUSES: BdStatus[] = ["contract_in_progress", "contract_generated"];
+
 export const statusTone = (s: BdStatus): "muted" | "info" | "success" | "warn" | "danger" =>
-  s === "approved"
+  s === "approved" || s === "contract_generated"
     ? "success"
+    : s === "contract_in_progress"
+      ? "info"
     : s === "expired"
       ? "danger"
       : s === "draft"
@@ -163,7 +184,7 @@ export const normalizeHotel = (n: string) => n.trim().replace(/\s+/g, " ").toLow
 const preSendStatus = (q: BdQuote): BdStatus => (q.deal_id ? "ready_to_send" : "draft");
 
 const applyAging = (q: BdQuote): BdQuote => {
-  if (q.status === "approved" || q.status === "expired") return q;
+  if (q.status === "approved" || q.status === "expired" || HANDOFF_STATUSES.includes(q.status)) return q;
   if (!q.sent_at) {
     const next = preSendStatus(q);
     return next === q.status ? q : { ...q, status: next };
@@ -220,6 +241,10 @@ const base = (
   note_mentions: [],
   note_updated_at: null,
   note_updated_by: null,
+  contract_codes: null,
+  package_code: null,
+  wizard_step: null,
+  wizard_started_at: null,
   ...q,
 });
 
@@ -337,6 +362,10 @@ export const withSkus = (q: BdQuote): BdQuote => {
     note_mentions: q.note_mentions ?? [],
     note_updated_at: q.note_updated_at ?? null,
     note_updated_by: q.note_updated_by ?? null,
+    contract_codes: q.contract_codes ?? null,
+    package_code: q.package_code ?? null,
+    wizard_step: q.wizard_step ?? null,
+    wizard_started_at: q.wizard_started_at ?? null,
   };
 };
 
@@ -530,7 +559,7 @@ const seedDeals = (): BdDeal[] => [
 
 /* ---------------- store ---------------- */
 
-const KEY = "meridia.bd.v23";
+const KEY = "meridia.bd.v25";
 
 type Ctx = {
   hydrated: boolean;
