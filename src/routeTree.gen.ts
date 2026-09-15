@@ -65,6 +65,7 @@ import { Route as PsAeWorkspaceDashboardRouteImport } from './routes/ps.ae-works
 import { Route as PsAeWorkspaceMeetingsRouteImport } from './routes/ps.ae-workspace.meetings'
 import { Route as PsAeWorkspacePropertyInfoRouteImport } from './routes/ps.ae-workspace.property-info'
 import { Route as PsAeWorkspaceSurveysRouteImport } from './routes/ps.ae-workspace.surveys'
+import { Route as PsContractWizardIndexRouteImport } from './routes/ps.contract-wizard.index'
 import { Route as PsContractWizardClassicRouteImport } from './routes/ps.contract-wizard.classic'
 import { Route as PsTemplatesIndexRouteImport } from './routes/ps.templates.index'
 import { Route as PsTemplatesTemplateIdRouteImport } from './routes/ps.templates.$templateId'
@@ -352,6 +353,11 @@ const PsAeWorkspaceSurveysRoute = PsAeWorkspaceSurveysRouteImport.update({
   path: '/surveys',
   getParentRoute: () => PsAeWorkspaceRoute,
 } as any)
+const PsContractWizardIndexRoute = PsContractWizardIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PsContractWizardRoute,
+} as any)
 const PsContractWizardClassicRoute = PsContractWizardClassicRouteImport.update({
   id: '/classic',
   path: '/classic',
@@ -439,6 +445,7 @@ export interface FileRoutesByFullPath {
   '/bd/quotes/': typeof BdQuotesIndexRoute
   '/orm/action-a/': typeof OrmActionAIndexRoute
   '/ps/ae-workspace/': typeof PsAeWorkspaceIndexRoute
+  '/ps/contract-wizard/': typeof PsContractWizardIndexRoute
   '/ps/templates/': typeof PsTemplatesIndexRoute
 }
 export interface FileRoutesByTo {
@@ -459,7 +466,6 @@ export interface FileRoutesByTo {
   '/bd/register-deal': typeof BdRegisterDealRoute
   '/l/$token': typeof LTokenRoute
   '/ps/contract-dashboard': typeof PsContractDashboardRoute
-  '/ps/contract-wizard': typeof PsContractWizardRouteWithChildren
   '/ps/contracts': typeof PsContractsRoute
   '/ps/onboarding-process': typeof PsOnboardingProcessRoute
   '/ps/production': typeof PsProductionRoute
@@ -493,6 +499,7 @@ export interface FileRoutesByTo {
   '/bd/quotes': typeof BdQuotesIndexRoute
   '/orm/action-a': typeof OrmActionAIndexRoute
   '/ps/ae-workspace': typeof PsAeWorkspaceIndexRoute
+  '/ps/contract-wizard': typeof PsContractWizardIndexRoute
   '/ps/templates': typeof PsTemplatesIndexRoute
 }
 export interface FileRoutesById {
@@ -557,6 +564,7 @@ export interface FileRoutesById {
   '/bd/quotes/': typeof BdQuotesIndexRoute
   '/orm/action-a/': typeof OrmActionAIndexRoute
   '/ps/ae-workspace/': typeof PsAeWorkspaceIndexRoute
+  '/ps/contract-wizard/': typeof PsContractWizardIndexRoute
   '/ps/templates/': typeof PsTemplatesIndexRoute
 }
 export interface FileRouteTypes {
@@ -622,6 +630,7 @@ export interface FileRouteTypes {
     | '/bd/quotes/'
     | '/orm/action-a/'
     | '/ps/ae-workspace/'
+    | '/ps/contract-wizard/'
     | '/ps/templates/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -642,7 +651,6 @@ export interface FileRouteTypes {
     | '/bd/register-deal'
     | '/l/$token'
     | '/ps/contract-dashboard'
-    | '/ps/contract-wizard'
     | '/ps/contracts'
     | '/ps/onboarding-process'
     | '/ps/production'
@@ -676,6 +684,7 @@ export interface FileRouteTypes {
     | '/bd/quotes'
     | '/orm/action-a'
     | '/ps/ae-workspace'
+    | '/ps/contract-wizard'
     | '/ps/templates'
   id:
     | '__root__'
@@ -739,6 +748,7 @@ export interface FileRouteTypes {
     | '/bd/quotes/'
     | '/orm/action-a/'
     | '/ps/ae-workspace/'
+    | '/ps/contract-wizard/'
     | '/ps/templates/'
   fileRoutesById: FileRoutesById
 }
@@ -1152,6 +1162,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PsAeWorkspaceSurveysRouteImport
       parentRoute: typeof PsAeWorkspaceRoute
     }
+    '/ps/contract-wizard/': {
+      id: '/ps/contract-wizard/'
+      path: '/'
+      fullPath: '/ps/contract-wizard/'
+      preLoaderRoute: typeof PsContractWizardIndexRouteImport
+      parentRoute: typeof PsContractWizardRoute
+    }
     '/ps/contract-wizard/classic': {
       id: '/ps/contract-wizard/classic'
       path: '/classic'
@@ -1332,10 +1349,12 @@ const PsAeWorkspaceRouteWithChildren = PsAeWorkspaceRoute._addFileChildren(
 
 interface PsContractWizardRouteChildren {
   PsContractWizardClassicRoute: typeof PsContractWizardClassicRoute
+  PsContractWizardIndexRoute: typeof PsContractWizardIndexRoute
 }
 
 const PsContractWizardRouteChildren: PsContractWizardRouteChildren = {
   PsContractWizardClassicRoute: PsContractWizardClassicRoute,
+  PsContractWizardIndexRoute: PsContractWizardIndexRoute,
 }
 
 const PsContractWizardRouteWithChildren =
