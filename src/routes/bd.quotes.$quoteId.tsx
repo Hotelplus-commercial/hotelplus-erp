@@ -1,5 +1,5 @@
 import { Link, createFileRoute, useNavigate, useParams } from "@tanstack/react-router";
-import { ArrowLeft, Check, Download, ExternalLink, Mail, PenLine } from "lucide-react";
+import { ArrowLeft, Check, Download, ExternalLink, Mail, PenLine, Wand2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -35,7 +35,18 @@ export const Route = createFileRoute("/bd/quotes/$quoteId")({
 
 function QuoteDetail() {
   const { quoteId } = useParams({ from: "/bd/quotes/$quoteId" });
-  const { quotes, deals, hydrated, siblingsOf, approveQuote, createRevision, markSent, saveNote } = useBd();
+  const {
+    quotes,
+    deals,
+    hydrated,
+    siblingsOf,
+    approveQuote,
+    createRevision,
+    markSent,
+    saveNote,
+    startWizard,
+    dealHasActiveDraftPackage,
+  } = useBd();
   const navigate = useNavigate();
   const [approveOpen, setApproveOpen] = useState(false);
   const [confirmRevise, setConfirmRevise] = useState(false);
@@ -51,7 +62,23 @@ function QuoteDetail() {
 
   const siblings = siblingsOf(quote);
   const deal = deals.find((d) => d.deal_id === quote.deal_id);
-  const terminal = quote.status === "approved" || quote.status === "expired";
+  const inWizard = quote.status === "contract_in_progress";
+  const generated = quote.status === "contract_generated";
+  const terminal = quote.status === "approved" || quote.status === "expired" || inWizard || generated;
+  const blockedByDraftPackage =
+    quote.status === "approved" &&
+    !!quote.deal_id &&
+    dealHasActiveDraftPackage(quote.deal_id) &&
+    quotes.some((q) => q.deal_id === quote.deal_id && q.status === "contract_in_progress" && q.quote_id !== quote.quote_id);
+  const dealPackageSeq = deals.find((d) => d.deal_id === quote.deal_id)?.next_package_seq ?? 1;
+  const goWizard = () => {
+    if (!quote.deal_id) {
+      toast.error("ต้องผูก Deal ก่อนจึงจะสร้างสัญญาได้");
+      return;
+    }
+    if (quote.status === "approved") startWizard(quote.quote_id);
+    navigate({ to: "/ps/contract-wizard/$dealId", params: { dealId: quote.deal_id } });
+  };
   const days = daysSince(quote.sent_at);
   const snap = quote.approved_snapshot;
 
@@ -69,11 +96,23 @@ function QuoteDetail() {
           <Button variant="outline" size="sm" className="gap-1.5" onClick={() => toast.success("ดาวน์โหลด PDF (จำลอง)")}>
             <Download className="size-4" /> {snap ? "Download approved PDF" : "Re-download PDF"}
           </Button>
-          {snap ? (
-            <Button asChild size="sm" variant="outline" className="gap-1.5">
-              <Link to="/ps/contract-wizard">
-                <ExternalLink className="size-4" /> View Contract in PS App
-              </Link>
+          {generated ? (
+            <Button size="sm" variant="outline" className="gap-1.5" onClick={goWizard}>
+              <ExternalLink className="size-4" /> View Contract in PS App
+            </Button>
+          ) : inWizard ? (
+            <Button size="sm" className="gap-1.5 bg-[color:var(--ps,#7048A3)] text-white hover:opacity-90" onClick={goWizard}>
+              <Wand2 className="size-4" /> Continue Wizard →
+            </Button>
+          ) : snap ? (
+            <Button
+              size="sm"
+              className="gap-1.5 bg-[color:var(--ps,#7048A3)] text-white hover:opacity-90"
+              disabled={blockedByDraftPackage}
+              title={blockedByDraftPackage ? `Deal นี้มี Package v${dealPackageSeq} กำลังรอ sign อยู่` : undefined}
+              onClick={goWizard}
+            >
+              <Wand2 className="size-4" /> Go to Create Contract on PS App →
             </Button>
           ) : (
             <>
@@ -99,11 +138,21 @@ function QuoteDetail() {
         </div>
       </div>
 
-      {snap ? (
+      {snap || inWizard || generated ? (
         <div className="rounded-xl border border-success/40 bg-success/10 p-4 text-sm">
           <p className="font-semibold text-success">
             Approved {fmtDate(quote.approved_at)} by {quote.approved_by} — quote snapshot locked · handed off to PS App
           </p>
+          {inWizard && (
+            <p className="mt-1 text-xs">
+              🧙 Wizard in progress · Step {quote.wizard_step ?? 1} of 5 · started {fmtDate(quote.wizard_started_at)}
+            </p>
+          )}
+          {generated && (
+            <p className="mt-1 text-xs">
+              ✅ Contract {quote.contract_codes?.join(", ")} generated · Package {quote.package_code}
+            </p>
+          )}
         </div>
       ) : (
         !terminal && (
@@ -195,6 +244,59 @@ function QuoteDetail() {
         </div>
 
         <div className="space-y-4">
+          {(snap || inWizard || generated) && (
+            <Panel
+              title="Handoff Status"
+              subtitle={
+                generated ? "Contract generated" : inWizard ? "Contract in progress" : "Approved (waiting for contract creation)"
+              }
+            >
+              <ul className="space-y-1.5 text-xs">
+                <li>✅ Quote handed off to PS App</li>
+                <li>
+                  {generated ? "✅" : inWizard ? "🔄" : "⏸"} Contract Wizard:{" "}
+                  {generated
+                    ? "completed"
+                    : inWizard
+                      ? `Step ${quote.wizard_step ?? 1} of 5`
+                      : "not started yet"}
+                </li>
+                {generated && (
+                  <>
+                    <li className="pl-4 font-mono text-[11px]">Contract: {quote.contract_codes?.join(", ")}</li>
+                    <li className="pl-4 font-mono text-[11px]">Package: {quote.package_code}</li>
+                  </>
+                )}
+                <li>⏸ Invoice: pending (AC App)</li>
+                <li>⏸ Live Link: pending (AC App)</li>
+                <li className="pt-1 text-muted-foreground">
+                  Deal packages: {dealPackageSeq - 1} สร้างแล้ว · next_package_seq = {dealPackageSeq} (read-only ใน BD)
+                </li>
+              </ul>
+              {blockedByDraftPackage && (
+                <p className="mt-2 rounded-lg border border-amber-400/50 bg-amber-50 px-2 py-1 text-[11px] dark:bg-amber-950/20">
+                  Deal นี้มี Package v{dealPackageSeq} กำลังรอ sign อยู่ — ต้องปิด package เดิมก่อน (R20)
+                </p>
+              )}
+              <div className="mt-3">
+                {generated ? (
+                  <Button size="sm" variant="outline" className="w-full gap-1.5" onClick={goWizard}>
+                    <ExternalLink className="size-4" /> View Contract in PS App →
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    className="w-full gap-1.5 bg-[color:var(--ps,#7048A3)] text-white hover:opacity-90"
+                    disabled={!inWizard && blockedByDraftPackage}
+                    onClick={goWizard}
+                  >
+                    <Wand2 className="size-4" />
+                    {inWizard ? "Continue Wizard on PS App →" : "Go to Create Contract on PS App →"}
+                  </Button>
+                )}
+              </div>
+            </Panel>
+          )}
           {snap && (
             <>
               <Panel title="Contract Value Summary">
