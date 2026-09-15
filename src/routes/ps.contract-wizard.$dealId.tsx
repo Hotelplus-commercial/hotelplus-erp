@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useBd, type BdQuote } from "@/lib/bd-store";
+import { useBd } from "@/lib/bd-store";
 import { coverageOf, resolveVariants, usePsBlockGroups } from "@/lib/ps-block-groups";
 import { thb } from "@/lib/crm-rules";
 import { cn } from "@/lib/utils";
