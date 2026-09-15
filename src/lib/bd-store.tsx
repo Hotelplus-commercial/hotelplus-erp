@@ -21,7 +21,10 @@ export type BdStatus =
   | "aging_46_60"
   | "aging_61_90"
   | "expired"
-  | "approved";
+  | "approved"
+  /* v2.5 — PS App Contract Wizard handoff */
+  | "contract_in_progress"
+  | "contract_generated";
 
 export type ActivityLogEntry = { timestamp: string; actor: string; action: string; details?: string };
 
@@ -99,6 +102,11 @@ export type BdQuote = {
   note_mentions: NoteMention[];
   note_updated_at: string | null;
   note_updated_by: string | null;
+  /* v2.5 — populated by PS App when the Contract Wizard runs */
+  contract_codes: string[] | null;
+  package_code: string | null;
+  wizard_step: number | null;
+  wizard_started_at: string | null;
 };
 
 export type NoteMention = { target_app: "PS" | "AC"; mentioned_at: string; acknowledged: boolean };
@@ -112,6 +120,13 @@ export type BdDeal = {
   linked_quote_ids: string[];
   created_by: string;
   created_at: string;
+  /* v2.5 — AC-owned IDs (null until AC App issues the first invoice) */
+  customer_id: string | null;
+  hotel_id: string | null;
+  /* v2.5 — Signing Package tracking (incremented by PS App) */
+  next_package_seq: number;
+  active_package_code: string | null;
+  archived_package_codes: string[];
 };
 
 export const CURRENT_USER = "somchai.n@hotelplus.asia";
@@ -142,11 +157,17 @@ export const statusLabel: Record<BdStatus, string> = {
   aging_61_90: "🔴 Aging 61-90d",
   expired: "⚫ Expired",
   approved: "✅ Approved",
+  contract_in_progress: "🧙 Contract in progress",
+  contract_generated: "📄 Contract generated",
 };
 
+const HANDOFF_STATUSES: BdStatus[] = ["contract_in_progress", "contract_generated"];
+
 export const statusTone = (s: BdStatus): "muted" | "info" | "success" | "warn" | "danger" =>
-  s === "approved"
+  s === "approved" || s === "contract_generated"
     ? "success"
+    : s === "contract_in_progress"
+      ? "info"
     : s === "expired"
       ? "danger"
       : s === "draft"
@@ -163,7 +184,7 @@ export const normalizeHotel = (n: string) => n.trim().replace(/\s+/g, " ").toLow
 const preSendStatus = (q: BdQuote): BdStatus => (q.deal_id ? "ready_to_send" : "draft");
 
 const applyAging = (q: BdQuote): BdQuote => {
-  if (q.status === "approved" || q.status === "expired") return q;
+  if (q.status === "approved" || q.status === "expired" || HANDOFF_STATUSES.includes(q.status)) return q;
   if (!q.sent_at) {
     const next = preSendStatus(q);
     return next === q.status ? q : { ...q, status: next };
@@ -220,6 +241,10 @@ const base = (
   note_mentions: [],
   note_updated_at: null,
   note_updated_by: null,
+  contract_codes: null,
+  package_code: null,
+  wizard_step: null,
+  wizard_started_at: null,
   ...q,
 });
 
@@ -337,6 +362,10 @@ export const withSkus = (q: BdQuote): BdQuote => {
     note_mentions: q.note_mentions ?? [],
     note_updated_at: q.note_updated_at ?? null,
     note_updated_by: q.note_updated_by ?? null,
+    contract_codes: q.contract_codes ?? null,
+    package_code: q.package_code ?? null,
+    wizard_step: q.wizard_step ?? null,
+    wizard_started_at: q.wizard_started_at ?? null,
   };
 };
 
@@ -512,25 +541,134 @@ function seedQuotes(): BdQuote[] {
       },
       activity_log: [log("created", daysAgo(40)), log("sent", daysAgo(38))],
     }),
+    /* --- v2.5 seed: PS App handoff states --- */
+    base({
+      quote_id: "Q-ORM-0410",
+      type: "ORM",
+      hotel_name: "Chaam Peumsuk",
+      created_at: daysAgo(5),
+      sent_at: daysAgo(5),
+      status: "approved",
+      approved_at: daysAgo(3),
+      approved_by: CURRENT_USER,
+      deal_id: "D-47512",
+      pipedrive_deal_id: "47512",
+      calculator_input: { room_key: 36 },
+      calculator_output: { packages: ormPackages, recommended_package: "smart", recommended_level: "L3" },
+      skus: ormSkus(ormPackages, ["smart", "fixed", "performance"]),
+      activity_log: [log("created", daysAgo(5)), log("sent", daysAgo(5)), log("approved", daysAgo(3))],
+    }),
+    base({
+      quote_id: "Q-ORM-0405",
+      type: "ORM",
+      hotel_name: "Bangkok Riverside",
+      created_at: daysAgo(7),
+      sent_at: daysAgo(7),
+      status: "contract_in_progress",
+      approved_at: daysAgo(4),
+      approved_by: CURRENT_USER,
+      deal_id: "D-47498",
+      pipedrive_deal_id: "47498",
+      wizard_step: 2,
+      wizard_started_at: daysAgo(2),
+      calculator_input: { room_key: 88 },
+      calculator_output: { packages: ormPackages, recommended_package: "fixed", recommended_level: "L4" },
+      skus: ormSkus(ormPackages, ["fixed"]),
+      activity_log: [
+        log("created", daysAgo(7)),
+        log("sent", daysAgo(7)),
+        log("approved", daysAgo(4)),
+        log("contract_wizard_started", daysAgo(2), "Wizard step 2 of 5"),
+      ],
+    }),
+    base({
+      quote_id: "Q-ORM-0389",
+      type: "ORM",
+      hotel_name: "Hua Hin Beach Villa",
+      created_at: daysAgo(14),
+      sent_at: daysAgo(14),
+      status: "contract_generated",
+      approved_at: daysAgo(10),
+      approved_by: CURRENT_USER,
+      deal_id: "D-47421",
+      pipedrive_deal_id: "47421",
+      contract_codes: ["CT-00087-ORM-690910-01"],
+      package_code: "SP-100084-01023-00087-P01-690910",
+      calculator_input: { room_key: 24 },
+      calculator_output: { packages: ormPackages, recommended_package: "smart", recommended_level: "L3" },
+      skus: ormSkus(ormPackages, ["smart"]),
+      activity_log: [
+        log("created", daysAgo(14)),
+        log("sent", daysAgo(14)),
+        log("approved", daysAgo(10)),
+        log("contract_wizard_started", daysAgo(5)),
+        log("contract_generated", daysAgo(5), "CT-00087-ORM-690910-01 · Package v1"),
+      ],
+    }),
   ];
 }
 
+const dealBase = (d: Partial<BdDeal> & Pick<BdDeal, "deal_id" | "pipedrive_deal_id" | "hotel_name" | "room_key">): BdDeal => ({
+  contact_person: { name: "ผู้ติดต่อโรงแรม", email: "contact@example.com" },
+  linked_quote_ids: [],
+  created_by: CURRENT_USER,
+  created_at: daysAgo(6),
+  customer_id: null,
+  hotel_id: null,
+  next_package_seq: 1,
+  active_package_code: null,
+  archived_package_codes: [],
+  ...d,
+});
+
 const seedDeals = (): BdDeal[] => [
-  {
+  dealBase({
     deal_id: "D-47312",
     pipedrive_deal_id: "47312",
     hotel_name: "Sumator Resort",
     room_key: 9,
     contact_person: { name: "คุณพิมพ์ใจ ศรีสุข", email: "pimjai@sumator.co.th" },
     linked_quote_ids: ["Q-ORM-0287", "Q-MARCOM-0341"],
-    created_by: CURRENT_USER,
-    created_at: daysAgo(6),
-  },
+  }),
+  dealBase({
+    deal_id: "D-47512",
+    pipedrive_deal_id: "47512",
+    hotel_name: "Chaam Peumsuk",
+    room_key: 36,
+    contact_person: { name: "คุณเปมสุข วงศ์ทอง", email: "owner@chaampeumsuk.com" },
+    linked_quote_ids: ["Q-ORM-0410"],
+    created_at: daysAgo(5),
+  }),
+  dealBase({
+    deal_id: "D-47498",
+    pipedrive_deal_id: "47498",
+    hotel_name: "Bangkok Riverside",
+    room_key: 88,
+    contact_person: { name: "คุณธนพล อินทรีย์", email: "gm@bkkriverside.com" },
+    linked_quote_ids: ["Q-ORM-0405"],
+    created_at: daysAgo(7),
+    customer_id: "01023",
+    hotel_id: "00091",
+    active_package_code: null,
+  }),
+  dealBase({
+    deal_id: "D-47421",
+    pipedrive_deal_id: "47421",
+    hotel_name: "Hua Hin Beach Villa",
+    room_key: 24,
+    contact_person: { name: "คุณศิริพร ทะเลใส", email: "siriporn@hhbeachvilla.com" },
+    linked_quote_ids: ["Q-ORM-0389"],
+    created_at: daysAgo(14),
+    customer_id: "01023",
+    hotel_id: "00087",
+    next_package_seq: 2,
+    active_package_code: "SP-100084-01023-00087-P01-690910",
+  }),
 ];
 
 /* ---------------- store ---------------- */
 
-const KEY = "meridia.bd.v23";
+const KEY = "meridia.bd.v25";
 
 type Ctx = {
   hydrated: boolean;
@@ -557,6 +695,12 @@ type Ctx = {
     linked_quote_ids: string[];
     send?: boolean;
   }) => string;
+  /* v2.5 — cross-app Contract Wizard events (mock event bus) */
+  startWizard: (quoteId: string) => string | null;
+  cancelWizard: (quoteId: string) => void;
+  completeWizard: (quoteId: string, durationMonths?: number) => { contract_code: string; package_code: string } | null;
+  setWizardStep: (quoteId: string, step: number) => void;
+  dealHasActiveDraftPackage: (dealId: string | null) => boolean;
   resetDemo: () => void;
 };
 
@@ -769,6 +913,11 @@ export function BdStoreProvider({ children }: { children: ReactNode }) {
         linked_quote_ids: input.linked_quote_ids,
         created_by: CURRENT_USER,
         created_at: now,
+        customer_id: null,
+        hotel_id: null,
+        next_package_seq: 1,
+        active_package_code: null,
+        archived_package_codes: [],
       },
       ...prev.filter((d) => d.deal_id !== dealId),
     ]);
@@ -800,6 +949,108 @@ export function BdStoreProvider({ children }: { children: ReactNode }) {
     return dealId;
   }, []);
 
+  /* ---------------- v2.5 · PS App wizard event bus (mock) ---------------- */
+
+  const dealHasActiveDraftPackage = useCallback(
+    (dealId: string | null) => {
+      if (!dealId) return false;
+      return quotes.some((q) => q.deal_id === dealId && q.status === "contract_in_progress");
+    },
+    [quotes],
+  );
+
+  const startWizard = useCallback((quoteId: string) => {
+    const now = new Date().toISOString();
+    let dealId: string | null = null;
+    setQuotes((prev) =>
+      prev.map((q) => {
+        if (q.quote_id !== quoteId || q.status !== "approved") return q;
+        dealId = q.deal_id;
+        return {
+          ...q,
+          status: "contract_in_progress" as BdStatus,
+          wizard_step: 1,
+          wizard_started_at: now,
+          activity_log: [...q.activity_log, log("contract_wizard_started", now, "Wizard step 1 of 5")],
+        };
+      }),
+    );
+    return dealId;
+  }, []);
+
+  const setWizardStep = useCallback((quoteId: string, step: number) => {
+    setQuotes((prev) =>
+      prev.map((q) => (q.quote_id === quoteId && q.status === "contract_in_progress" ? { ...q, wizard_step: step } : q)),
+    );
+  }, []);
+
+  const cancelWizard = useCallback((quoteId: string) => {
+    const now = new Date().toISOString();
+    setQuotes((prev) =>
+      prev.map((q) =>
+        q.quote_id === quoteId && q.status === "contract_in_progress"
+          ? {
+              ...q,
+              status: "approved" as BdStatus,
+              wizard_step: null,
+              wizard_started_at: null,
+              activity_log: [...q.activity_log, log("contract_wizard_cancelled", now, "wizard ถูกยกเลิก · quote กลับสถานะ approved")],
+            }
+          : q,
+      ),
+    );
+  }, []);
+
+  const completeWizard = useCallback(
+    (quoteId: string, durationMonths = 12) => {
+      const quote = quotes.find((q) => q.quote_id === quoteId);
+      if (!quote) return null;
+      const deal = deals.find((d) => d.deal_id === quote.deal_id);
+      const now = new Date();
+      const seq = deal?.next_package_seq ?? 1;
+      const ymd = `${String((now.getFullYear() + 543) % 100).padStart(2, "0")}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
+      const hotelId = deal?.hotel_id ?? "00000";
+      const customerId = deal?.customer_id ?? "00000";
+      const contractCode = `CT-${hotelId}-${quote.type}-${ymd}-${String(seq).padStart(2, "0")}`;
+      const packageCode = `SP-100084-${customerId}-${hotelId}-P${String(seq).padStart(2, "0")}-${ymd}`;
+      const iso = now.toISOString();
+
+      setQuotes((prev) =>
+        prev.map((q) =>
+          q.quote_id === quoteId
+            ? {
+                ...q,
+                status: "contract_generated" as BdStatus,
+                wizard_step: 5,
+                contract_codes: [contractCode],
+                package_code: packageCode,
+                activity_log: [
+                  ...q.activity_log,
+                  log("contract_generated", iso, `${contractCode} · Package v${seq} · ${durationMonths} เดือน`),
+                ],
+              }
+            : q,
+        ),
+      );
+      setDeals((prev) =>
+        prev.map((d) =>
+          d.deal_id === quote.deal_id
+            ? {
+                ...d,
+                next_package_seq: (d.next_package_seq ?? 1) + 1,
+                active_package_code: packageCode,
+                archived_package_codes: d.active_package_code
+                  ? [...(d.archived_package_codes ?? []), d.active_package_code]
+                  : (d.archived_package_codes ?? []),
+              }
+            : d,
+        ),
+      );
+      return { contract_code: contractCode, package_code: packageCode };
+    },
+    [quotes, deals],
+  );
+
   const resetDemo = useCallback(() => {
     setQuotes(seedQuotes().map(withSkus).map(applyAging));
     setDeals(seedDeals());
@@ -817,9 +1068,14 @@ export function BdStoreProvider({ children }: { children: ReactNode }) {
       siblingsOf,
       createRevision,
       registerDeal,
+      startWizard,
+      cancelWizard,
+      completeWizard,
+      setWizardStep,
+      dealHasActiveDraftPackage,
       resetDemo,
     }),
-    [hydrated, quotes, deals, createQuote, markSent, saveNote, approveQuote, siblingsOf, createRevision, registerDeal, resetDemo],
+    [hydrated, quotes, deals, createQuote, markSent, saveNote, approveQuote, siblingsOf, createRevision, registerDeal, startWizard, cancelWizard, completeWizard, setWizardStep, dealHasActiveDraftPackage, resetDemo],
   );
 
   return <BdCtx.Provider value={value}>{children}</BdCtx.Provider>;

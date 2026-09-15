@@ -36,6 +36,8 @@ const SEND_FILTERS: ("all" | BdStatus)[] = [
   "aging_46_60",
   "aging_61_90",
   "approved",
+  "contract_in_progress",
+  "contract_generated",
   "expired",
 ];
 

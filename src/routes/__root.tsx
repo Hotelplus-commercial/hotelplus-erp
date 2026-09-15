@@ -19,6 +19,7 @@ import { BdStoreProvider } from "@/lib/bd-store";
 import { PsTemplateProvider } from "@/lib/ps-templates";
 import { MeetingMgmtProvider } from "@/lib/orm-meeting";
 import { PsRenewalProvider } from "@/lib/ps-renewal";
+import { PsBlockGroupProvider } from "@/lib/ps-block-groups";
 
 
 
@@ -142,6 +143,7 @@ function RootComponent() {
         <CrmStoreProvider>
           <BdStoreProvider>
           <PsTemplateProvider>
+            <PsBlockGroupProvider>
           <MeetingMgmtProvider>
           <PsRenewalProvider>
           <Toaster />
@@ -151,6 +153,7 @@ function RootComponent() {
           </AppShell>
           </PsRenewalProvider>
           </MeetingMgmtProvider>
+          </PsBlockGroupProvider>
           </PsTemplateProvider>
 
         </BdStoreProvider>
