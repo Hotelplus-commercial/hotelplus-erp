@@ -433,29 +433,37 @@
   font-size: 9pt;
 }
 
-/* Block group node · inline expanded (PS-3) */
+/* Block group node · inline expanded, no heavy box (PS-3 · v2.1 Path A §2.4) */
 .bg-node {
-  border: 1px solid var(--bg-chip-border);
-  background: var(--bg-chip-bg);
-  border-radius: 8px;
   margin: 6pt 0;
-  overflow: hidden;
 }
 
 .bg-node-chip {
+  height: 32px;
+  border-radius: 6px;
+  background: var(--bg-chip-bg);
+  border: 1px solid var(--bg-chip-border);
+  color: var(--bg-chip-border);
+  font-size: 8pt;
+  padding: 0 8px;
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  cursor: pointer;
+}
+
+.bg-node-chip:hover {
   background: var(--bg-chip-border);
   color: #fff;
-  font-size: 8pt;
-  padding: 3px 8px;
-  display: flex;
-  gap: 8px;
-  align-items: center;
 }
 
 .bg-node-content {
-  padding: 8px 10px;
+  margin-top: 4pt;
+  padding-left: 8px;
+  border-left: 2px solid var(--bg-chip-border);
   cursor: pointer;
 }
+
 
 @media print {
   body * {
