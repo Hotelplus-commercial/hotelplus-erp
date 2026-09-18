@@ -178,7 +178,7 @@ function FullPreview() {
             <section className="a4-page a4-page--fixed">
               {withCI && <CIHeader serviceLine={line} />}
               <div className="a4-body" dangerouslySetInnerHTML={{ __html: pages[safePage]?.html ?? "" }} />
-              {withCI && <CIFooter pageNumber={safePage + 1} totalPages={total} />}
+              {withCI && <CIFooter pageNum={safePage + 1} totalPages={total} />}
             </section>
           )}
         </div>
@@ -198,7 +198,7 @@ function FullPreview() {
             <section key={i} className="a4-page a4-page--fixed">
               {withCI && <CIHeader serviceLine={line} />}
               <div className="a4-body" dangerouslySetInnerHTML={{ __html: p.html ?? "" }} />
-              {withCI && <CIFooter pageNumber={i + 1} totalPages={total} />}
+              {withCI && <CIFooter pageNum={i + 1} totalPages={total} />}
             </section>
           ),
         )}
