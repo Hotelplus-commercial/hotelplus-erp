@@ -434,7 +434,7 @@ export const resolveConditionalBlock = (
         : ctx.sku_channel;
     if (value && value === c.condition_value) return { ok: true, block: c };
   }
-  return { ok: false, error: `Missing conditional block: ${blockGroup} for ${JSON.stringify(ctx)}` };
+  return { ok: false, error: `Missing block group: ${blockGroup} for ${JSON.stringify(ctx)}` };
 };
 
 /* ---------------- R9 · computed evaluation ---------------- */
@@ -584,28 +584,6 @@ export const CONTRACT_SECTIONS = [
   "ลายเซ็นผู้ทำสัญญา (Signatures)",
 ] as const;
 
-const legacyContractBody = (title: string) => `<section data-section="ผู้ทำสัญญา (Parties)">
-<h3>ข้อ 1 · ผู้ทำสัญญา</h3>
-<p>สัญญาฉบับนี้ทำขึ้นระหว่าง {{company.legal_name}} เลขประจำตัวผู้เสียภาษี {{company.tax_id}} ที่อยู่ {{company.address}} ("ผู้ให้บริการ")
-กับ {{customer.legal_name}} เลขประจำตัวผู้เสียภาษี {{customer.tax_id}} โดย {{customer.signer_name}} ตำแหน่ง {{customer.signer_title}} ("ผู้รับบริการ")
-สำหรับโรงแรม {{hotel.name}} จำนวน {{hotel.room_key}} ห้อง ที่อยู่ {{hotel.address}}</p>
-</section>
-<section data-section="ขอบเขตการให้บริการ (Service Scope)">
-<h3>ข้อ 2 · ขอบเขตการให้บริการ (${title})</h3>
-<foreach items="contract.approved_skus" as="sku">
-  <p>{{loop.index}}. {{sku.product_name}} — {{sku.billing_summary}}</p>
-</foreach>
-<p>อ้างอิงใบเสนอราคา {{contract.from_quote_id}}</p>
-</section>
-<section data-section="เงื่อนไขการชำระเงิน (Payment Terms)">
-<h3>ข้อ 3 · เงื่อนไขการชำระเงิน</h3>
-<p>ค่าบริการรายเดือน {{contract.monthly_fee | thb}} · ค่าคอมมิชชั่น {{contract.commission_rate | pct}} · ค่าติดตั้งแรกเข้า {{contract.setup_fee | thb}}</p>
-</section>
-<section data-section="ลายเซ็นผู้ทำสัญญา (Signatures)">
-<h3>ข้อ 7 · ลายเซ็น</h3>
-<p>ลงชื่อผู้ให้บริการ ____________________ · ลงชื่อ {{customer.signer_name}} ____________________</p>
-<p>หน้า {{page.current}} / {{page.total}}</p>
-</section>`;
 
 const s = (
   id: string,
