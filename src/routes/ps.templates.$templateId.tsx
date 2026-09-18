@@ -127,8 +127,8 @@ function BlockGroupNode({
   groupId: string;
   sku: string;
   templateId: string;
-  onReplace?: (nextGroupId: string) => void;
-  onRemove?: () => void;
+  onReplace?: ((nextGroupId: string) => void) | undefined;
+  onRemove?: (() => void) | undefined;
 }) {
   const { blockGroups } = usePsBlockGroups();
   const group = blockGroups.find((g) => g.block_group_id === groupId);
