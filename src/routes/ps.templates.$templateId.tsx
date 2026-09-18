@@ -10,6 +10,7 @@ import { Chip, Panel, fmtDate } from "@/components/crm/crm-ui";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { BlockGroupDrawer } from "@/components/ps/block-group-drawer";
 import { A4Canvas, SIGNATURE_MARKER, renderBody } from "@/lib/contract-renderer";
 import { MONTHLY_SKUS, activeBlockVersion, coverageOf, usePsBlockGroups } from "@/lib/ps-block-groups";
 import {
@@ -116,20 +117,41 @@ function FieldLibrary({
 
 /* ---------------- A4 section (WYSIWYG) ---------------- */
 
-function BlockGroupNode({ groupId, sku, templateId }: { groupId: string; sku: string; templateId: string }) {
+function BlockGroupNode({
+  groupId,
+  sku,
+  templateId,
+  onReplace,
+  onRemove,
+}: {
+  groupId: string;
+  sku: string;
+  templateId: string;
+  onReplace?: (nextGroupId: string) => void;
+  onRemove?: () => void;
+}) {
   const { blockGroups } = usePsBlockGroups();
   const group = blockGroups.find((g) => g.block_group_id === groupId);
   const variant = group
     ? activeBlockVersion(group).variants.find((v) => v.applies_to_skus.includes(sku))
     : undefined;
   const [ask, setAsk] = useState(false);
+  const [drawer, setDrawer] = useState(false);
 
   return (
     <div className="bg-node">
-      <div className="bg-node-chip">
+      <button
+        type="button"
+        className="bg-node-chip"
+        title="คลิกเพื่อจัดการ block group นี้"
+        onClick={(e) => {
+          e.stopPropagation();
+          setDrawer(true);
+        }}
+      >
         <span>🧩 {groupId}</span>
         <span>· {variant ? `V${variant.variant_seq} (${variant.variant_label})` : "ยังไม่มี variant สำหรับ SKU นี้"}</span>
-      </div>
+      </button>
       <div className="bg-node-content" onClick={() => setAsk(true)}>
         {variant ? (
           <div dangerouslySetInnerHTML={{ __html: variant.content }} />
@@ -159,9 +181,20 @@ function BlockGroupNode({ groupId, sku, templateId }: { groupId: string; sku: st
           </div>
         </div>
       )}
+      {drawer && (
+        <BlockGroupDrawer
+          groupId={groupId}
+          currentSku={sku}
+          templateId={templateId}
+          onClose={() => setDrawer(false)}
+          {...(onReplace ? { onReplace } : {})}
+          {...(onRemove ? { onRemove } : {})}
+        />
+      )}
     </div>
   );
 }
+
 
 function SectionOnPaper({
   templateId,
