@@ -593,39 +593,160 @@ const s = (
   uses_conditional_block: string | null = null,
 ): TemplateSection => ({ id, title, lock_mode, uses_conditional_block, content });
 
-const contractSections = (line: "ORM" | "MARCOM"): TemplateSection[] => [
-  s("cover", "Cover", "structured", `<h1>{{contract.cover_title}}</h1>
-<p class="badge">{{contract.cover_service_badge}}</p>
-<p>รหัสสัญญา {{contract.package_code}}</p>
-<p>{{hotel.name}} · {{hotel.address_number}} {{hotel.street}} {{hotel.subdistrict}} {{hotel.district}} {{hotel.province}}</p>`),
-  s("parties", "คู่สัญญา", "structured", `<p>สัญญาฉบับนี้ทำขึ้นระหว่าง {{company.legal_name}} เลขประจำตัวผู้เสียภาษี {{company.tax_id}} ที่อยู่ {{company.address}} ซึ่งต่อไปนี้จะเรียกว่า "ผู้ให้บริการ"</p>
-<ConditionalBlockPlaceholder group="party_b" />`, "party_b"),
-  s("definitions", "§1 คำนิยาม", "locked", `<ConditionalBlockPlaceholder group="definitions" />`, "definitions"),
-  s("duration", "§2 วันเริ่มต้น และระยะเวลา", "structured", `<p>เริ่มให้บริการวันที่ {{contract.start_date | date_th}} เป็นระยะเวลา {{contract.duration_months}} เดือน และต่ออายุอัตโนมัติคราวละ {{contract.renewal_months}} เดือน</p>`),
-  s("duties", "§3 หน้าที่ของคู่สัญญา", "locked", `<p>คู่สัญญาทั้งสองฝ่ายตกลงปฏิบัติหน้าที่ตามที่ระบุไว้ในสัญญาฉบับนี้และเอกสารแนบท้ายอย่างเคร่งครัด</p>`),
-  s("sig_1", "Signature block #1", "locked", `<p>ลงชื่อ ____________________ ผู้ให้บริการ · ลงชื่อ ____________________ เจ้าของโครงการ</p>`),
+/* v2.1 Path A · Phase 3 — real skeleton bodies taken from the signed contracts.
+ * ORM = §1-9 + App A/B · MARCOM = §1-7 + App A/B (no §8-9).
+ * Locked boilerplate is verbatim; every placeholder is in field-registry v2.1. */
+
+const PAYMENT_CONDITION = `<h4>PAYMENT CONDITION</h4>
+<p>COMPLETE TOTAL QUOTATION TO START CONTRACT<br/>PLEASE PROCESS THE PAYMENT AS FOLLOWING ACCOUNT INFORMATION</p>
+<p>ACCOUNT NAME<br/>{{payment.bank_account_name}}</p>
+<p>ACCOUNT NUMBER<br/>{{payment.bank_name}} {{payment.bank_account_no}}</p>`;
+
+const DEFAULT_CLAUSES = `<p>7.1 ในการยกเลิกสัญญาย้อนหลัง ค่าบริการในข้อ 4 จะถูกคำนวณจนถึงรอบเดือนถัดไป หรือไม่เกินกว่า 30 วัน นับจากวันที่แจ้งยกเลิกสัญญาเป็นลายลักษณ์อักษรเท่านั้น</p>
+<p>7.2 การเรียกเก็บดอกเบี้ยจากยอดค้างชำระ : โดยนับจากวันที่ครบกำหนดชำระจนถึงปัจจุบัน ตามอัตราดอกเบี้ย 1.25 เปอร์เซ็นต์ ต่อเดือน จากยอดมูลค่าที่ค้างชำระ</p>
+<p>7.3 ทางบริษัทขอสงวนสิทธิ์ในการเรียกเก็บค่าทวงถาม ครั้งละ 500 บาท หากเจ้าของโครงการชำระค่าบริการล่าช้ากว่าวันที่ 15 ของทุกเดือน</p>
+<p>7.4 ระงับการให้บริการและสิทธิการเข้าถึงข้อมูล จนกว่าจะมีการชำระค่าบริการทั้งหมด (รวมถึงดอกเบี้ย)</p>
+<p>7.5 หากมีการผิดนัดชำระค่าบริการจนเป็นเหตุทำให้ฝ่ายบริหารจัดการต้องระงับการให้บริการ และปิดระบบ หากภายหลังมีการดำเนินการและตั้งค่าระบบใหม่ เจ้าของโครงการจะต้องชำระค่าติดตั้งระบบใหม่มูลค่าไม่น้อยกว่า 7,000 บาท</p>
+<p>7.6 หากทำการผิดต่อหน้าที่ของคู่สัญญา ที่ระบุอยู่ในข้อ 3 ของเอกสารข้อตกลงนี้ ให้อีกฝ่ายสามารถบอกยกเลิกสัญญา และต้องชดใช้ค่าเสียหายหรือค่าปรับตามที่ระบุไว้ในเอกสารสัญญาหลัก</p>`;
+
+const DURATION_CLAUSES = `<p>2.1 สัญญานี้กำหนดระยะเวลา {{contract.duration_months}} เดือน</p>
+<p>2.1.1 การมีผลผูกพัน : สัญญานี้มีผลผูกพันและมีผลบังคับใช้นับแต่วันที่ลงนามตามที่ระบุในข้อ 1.4 เพื่อให้ฝ่ายบริหารจัดการมีสิทธิ์เข้าดำเนินการและเตรียมความพร้อมในระยะตั้งค่าที่ระบุในข้อ 1.6</p>
+<p>2.1.2 การนับระยะเวลาและการคิดค่าบริการ : การคำนวณค่าบริการให้เริ่มนับจาก วันเริ่มให้บริการตามที่ระบุในข้อ 1.5 โดยฝ่ายบริหารจัดการจะยืนยันวันดังกล่าวเป็นลายลักษณ์อักษรผ่านอีเมลของฝ่ายบริหารจัดการภายหลังการประชุมเสร็จสิ้น</p>
+<p>2.2 กรณีสัญญาฉบับนี้ครบกำหนด เจ้าของโครงการหากประสงค์ให้ฝ่ายบริหารจัดการเข้าบริหารกิจการต่อไป เจ้าของโครงการสามารถให้สิทธิ์แก่ฝ่ายบริหารจัดการ ที่จะแจ้งต่อสัญญาไปได้อีก 12 เดือน โดยเงื่อนไขสัญญาฉบับใหม่เป็นไปตามที่บริษัทกำหนด</p>`;
+
+const HEADER_AND_PARTIES = (title: string) => `<div class="ct-header">
+<div class="ct-header-left"><h2>${title}</h2><p>ข้อตกลงในการใช้บริการ</p><p>ระหว่าง</p></div>
+<div class="ct-header-right"><p>ข้อตกลงนี้ทำขึ้นที่ บริษัท พักดีพลัส จำกัด</p><p>เลขที่ 92/5 ชั้นสอง ห้อง 208 อาคารสาธรธานี 2</p><p>ถนนสาทรเหนือ แขวงสีลม เขตบางรัก กรุงเทพมหานคร 10500</p></div>
+</div>
+<p>(1) บริษัท พักดีพลัส จำกัด เลขที่ 92/5 ชั้น 2 ห้อง 208 อาคารสาธรธานี 2 ถนนสาทรเหนือ สีลม บางรัก กรุงเทพมหานคร 10500 ซึ่งต่อไปนี้ในสัญญานี้จะเรียกว่า "ฝ่ายบริหารจัดการ"</p>
+<p>(2) {{customer.legal_name}} {{customer.address_full}} ซึ่งต่อไปนี้ในสัญญานี้จะเรียกว่า "เจ้าของโครงการ"</p>`;
+
+const LIABILITY_EXCLUSION = `<p>เอกสารสัญญาฉบับนี้ทำขึ้นเป็นสองฉบับ มีข้อความถูกต้องตรงกัน คู่สัญญาทั้งสองฝ่ายได้อ่านและเข้าใจข้อความในสัญญาโดยตลอดแล้ว จึงได้ลงลายมือชื่อไว้เป็นสำคัญต่อหน้าพยาน</p>`;
+
+const TERMINATION_EFFECT = `<p>การสิ้นสุดหรือสัญญาที่หมดอายุ จะไม่มีผลกระทบต่อสิทธิ์ การแก้ไขปัญหา หรือความรับผิดชอบในหนี้สินของคู่สัญญาที่เกิดขึ้น และยังรวมถึงสิทธิ์ในการเรียกร้องค่าเสียหายจากการฝ่าฝืนข้อตกลงที่มีอยู่ในสัญญา</p>`;
+
+const ormContractSections = (): TemplateSection[] => [
+  s("header_parties", "หัวสัญญา + คู่สัญญา", "locked", HEADER_AND_PARTIES("สัญญาบริหารกิจการห้องพักรายเดือน")),
+  s("definitions", "1. คำนิยาม", "structured", `<ConditionalBlockPlaceholder group="definitions" />`, "definitions"),
+  s("duration", "2. วันเริ่มต้น และระยะเวลา", "locked", DURATION_CLAUSES),
+  s(
+    "duties",
+    "3. หน้าที่ของคู่สัญญา",
+    "structured",
+    `<ConditionalBlockPlaceholder group="scope_of_work" />\n<SignatureBlock />`,
+    "scope_of_work",
+  ),
   s(
     "fees",
-    line === "ORM" ? "§4 ค่าบริการ การชำระ และระยะเวลา (มี §4.2 Commission)" : "§4 ค่าบริการ การชำระ และระยะเวลา (ไม่มี §4.2 Commission)",
+    "4. ค่าบริการ, การชำระ, และระยะเวลา",
     "structured",
-    line === "ORM"
-      ? `<p>§4.1 ค่าบริการรายเดือน {{sku.monthly_fee | thb}} ค่าติดตั้งแรกเข้า {{sku.setup_fee | thb}} สำหรับ {{sku.setup_product_names}}</p>
-<p>§4.2 ค่าคอมมิชชั่น {{sku.commission_rate | pct}} ของรายได้ห้องพักที่เกิดขึ้นจริง</p>
-<p>§4.3 ชำระภายในวันที่ {{payment.due_date_of_month}} ของทุกเดือน เข้าบัญชี {{payment.bank_account_name}} เลขที่ {{payment.bank_account_no}} {{payment.bank_name}}</p>`
-      : `<p>§4.1 ค่าบริการรายเดือน {{sku.monthly_fee | thb}} ค่าติดตั้งแรกเข้า {{sku.setup_fee | thb}} สำหรับ {{sku.setup_product_names}} ช่องทาง {{sku.channel}}</p>
-<p>§4.2 ชำระภายในวันที่ {{payment.due_date_of_month}} ของทุกเดือน เข้าบัญชี {{payment.bank_account_name}} เลขที่ {{payment.bank_account_no}} {{payment.bank_name}}</p>`,
+    `<p>4.1 ค่า One Time Service เป็นจำนวนเงิน {{sku.setup_fee | thb}} บาท ({{sku.setup_fee | thb_thai_words}}) โดยเจ้าของโครงการต้องชำระเงินภายใน 3 วันนับจากวันที่ลงนามในสัญญา</p>
+<p>4.2 ค่าบริการจัดการห้องพักรายเดือน เป็นจำนวนเงิน {{sku.monthly_fee | thb}} บาท ({{sku.monthly_fee | thb_thai_words}}) ต่อเดือน + ค่าคอมมิชชั่นจากยอดขาย {{sku.commission_rate | pct}} จากยอดจองห้องพักที่เกิดขึ้นจริงในแต่ละเดือน</p>
+<p>{{contract.addon_lines_display}}</p>
+<p>4.3 เจ้าของโครงการมีหน้าที่ในการชำระค่าบริการที่ระบุในข้อ 4.2 ให้แก่ฝ่ายบริหารจัดการภายในทุกวันที่ 15 ของเดือนถัดไปโดยการโอนเข้าบัญชีเลขที่ {{payment.bank_account_no}} ธนาคาร{{payment.bank_name}} ชื่อบัญชี {{payment.bank_account_name}}</p>
+<p>4.4 การรายงานยอดขายและใบแจ้งหนี้ : ฝ่ายบริหารจัดการจะจัดส่งรายงานยอดขายรายเดือน พร้อมใบแจ้งหนี้ให้แก่เจ้าของโครงการ ภายในวันที่ 5 ของเดือนถัดไป โดยส่งผ่านทางอีเมลของเจ้าของโครงการที่ระบุไว้ในสัญญาฉบับนี้ เจ้าของโครงการมีหน้าที่ตรวจสอบใบแจ้งหนี้และแจ้งข้อโต้แย้ง (หากมี) เป็นลายลักษณ์อักษรภายใน 5 วันทำการนับจากวันที่ได้รับใบแจ้งหนี้ หากไม่มีการโต้แย้งภายในระยะเวลาดังกล่าว ถือว่าเจ้าของโครงการยอมรับความถูกต้องของใบแจ้งหนี้</p>
+<p>4.5 ในกรณีที่เจ้าของโครงการชำระค่าบริการล่าช้ากว่ากำหนดในข้อ 4.3 เจ้าของโครงการยินยอมชำระเบี้ยปรับให้แก่ฝ่ายบริหารจัดการในอัตรา {{contract.late_penalty_amount | thb}} บาท ({{contract.late_penalty_amount | thb_thai_words}}) ต่อวัน จนกว่าจะชำระเสร็จสิ้น</p>`,
   ),
-  s("termination", "§5 การสิ้นสุดของสัญญา", "structured", `<ConditionalBlockPlaceholder group="owner_asset_termination" />`, "owner_asset_termination"),
-  s("termination_effect", "§6 ผลของการสิ้นสุด", "locked", `<p>เมื่อสัญญาสิ้นสุด คู่สัญญาต้องส่งมอบข้อมูลและสิทธิ์การเข้าถึงระบบคืนภายใน 15 วัน</p>`),
-  s("default", "§7 การผิดนัดชำระ", "structured", `<p>หากผิดนัดชำระ เจ้าของโครงการตกลงชำระค่าปรับเป็นเงิน {{contract.late_penalty_amount | thb}} บาท</p>`),
-  s("start_calc", "§8 วันที่เริ่มคำนวณค่าบริการ", "locked", `<p>เริ่มคำนวณค่าบริการนับจากวันที่ระบบเริ่มให้บริการจริงตามที่ระบุใน Appendix B</p>`),
-  s("sig_2", "Signature block #2", "locked", `<p>ลงชื่อ ____________________ ผู้ให้บริการ · ลงชื่อ ____________________ เจ้าของโครงการ</p>`),
-  s("liability", "§9 ขอบเขตการรับผิดชอบ", "locked", `<p>ผู้ให้บริการรับผิดไม่เกินค่าบริการรายเดือนที่ได้รับชำระจริงในเดือนที่เกิดเหตุ</p>`),
-  s("sig_3", "Signature block #3", "locked", `<p>ลงชื่อ ____________________ พยาน · ลงชื่อ ____________________ พยาน</p>`),
-  s("appendix_a", "Appendix A: Letter of Authorization", "structured", `<ConditionalBlockPlaceholder group="letter_of_authorization" />`, "letter_of_authorization"),
-  s("appendix_b", "Appendix B: Work Proposal + Payment", "structured", `<ConditionalBlockPlaceholder group="work_proposal" />`, "work_proposal"),
-  s("appendix_c", "Appendix C: ข้อยกเว้นความรับผิด", "locked", `<p>ข้อยกเว้นความรับผิดตามที่ฝ่ายกฎหมายกำหนด</p>`),
+  s(
+    "termination",
+    "5. การสิ้นสุดของสัญญา",
+    "structured",
+    `<ConditionalBlockPlaceholder group="owner_asset_termination_notice" />\n<ConditionalBlockPlaceholder group="owner_asset_termination_list" />`,
+    "owner_asset_termination_list",
+  ),
+  s("termination_effect", "6. ผลของการสิ้นสุด", "locked", TERMINATION_EFFECT),
+  s(
+    "default",
+    "7. การผิดนัดชำระ, การยกเลิกสัญญาก่อนครบกำหนด",
+    "locked",
+    `<p>ในกรณีเจ้าของโครงการกระทำการยกเลิกสัญญาก่อนครบกำหนดอายุจะมีการเรียกค่าปรับจำนวน {{sku.monthly_fee | thb}} บาท ({{sku.monthly_fee | thb_thai_words}}) หรือในกรณีที่เจ้าของโครงการผิดนัดชำระค่าบริการตามที่ระบุในสัญญาฉบับนี้ ทางบริษัทจะดำเนินการอย่างใดอย่างหนึ่ง หรือ มากกว่า ตามข้อกำหนดที่ระบุไว้ ดังนี้</p>\n${DEFAULT_CLAUSES}`,
+  ),
+  s(
+    "start_calc",
+    "8. วันที่เริ่มคำนวนค่าบริการ",
+    "locked",
+    `<p>การคำนวณค่าบริการจะเริ่มต้นในวันที่ฝ่ายบริหารจัดการดำเนินการติดตั้งระบบและเริ่มให้บริการ ตามที่ระบุในข้อ 1.5 ของสัญญานี้</p>\n<SignatureBlock />`,
+  ),
+  s(
+    "liability",
+    "9. ขอบเขตการรับผิดชอบ",
+    "locked",
+    `<p>9.1 ฝ่ายบริหารจัดการรับผิดชอบเฉพาะการดำเนินการภายใต้ขอบเขตของบริการที่ระบุในสัญญาฉบับนี้เท่านั้น</p>
+<p>9.2 ฝ่ายบริหารจัดการไม่รับผิดชอบต่อความเสียหายทางอ้อม ความเสียหายที่เกิดจากเหตุสุดวิสัย ความเสียหายจากการกระทำหรือการละเว้นการกระทำของบุคคลที่สาม รวมถึงความเสียหายที่เกิดจากระบบ Online Travel Agent, ระบบชำระเงิน, ระบบธนาคาร, หรือระบบเทคโนโลยีอื่นๆที่อยู่นอกเหนือการควบคุมของฝ่ายบริหารจัดการ</p>
+<p>9.3 ความรับผิดสูงสุดของฝ่ายบริหารจัดการต่อเจ้าของโครงการภายใต้สัญญานี้จะไม่เกินมูลค่าค่าบริการรวม 3 เดือนล่าสุดที่เจ้าของโครงการชำระให้แก่ฝ่ายบริหารจัดการ</p>`,
+  ),
+  s(
+    "appendix_a",
+    "APPENDIX A · Letter of Authorization",
+    "structured",
+    `<ConditionalBlockPlaceholder group="letter_of_authorization" />`,
+    "letter_of_authorization",
+  ),
+  s(
+    "appendix_b",
+    "APPENDIX B · Work Proposal + Payment Condition",
+    "structured",
+    `<ConditionalBlockPlaceholder group="work_proposal" />\n${PAYMENT_CONDITION}\n<SignatureBlock />`,
+    "work_proposal",
+  ),
+  s("exclusion", "ข้อยกเว้นความรับผิด", "locked", LIABILITY_EXCLUSION),
 ];
+
+const marcomContractSections = (): TemplateSection[] => [
+  s("header_parties", "หัวสัญญา + คู่สัญญา", "locked", HEADER_AND_PARTIES("สัญญาว่าจ้างบริหารจัดการตลาดผ่านสื่อสังคมออนไลน์")),
+  s("definitions", "1. คำนิยาม", "structured", `<ConditionalBlockPlaceholder group="definitions" />`, "definitions"),
+  s("duration", "2. วันเริ่มต้น และระยะเวลา", "locked", DURATION_CLAUSES),
+  s(
+    "duties",
+    "3. หน้าที่ของคู่สัญญา",
+    "structured",
+    `<ConditionalBlockPlaceholder group="scope_of_work" />\n<SignatureBlock />`,
+    "scope_of_work",
+  ),
+  s(
+    "fees",
+    "4. ค่าบริการ, การชำระ, และระยะเวลา",
+    "structured",
+    `<p>4.1 ค่าบริการจัดการด้านการตลาดออนไลน์จำนวน {{hotel.room_key}} ห้อง เป็นจำนวนเงิน {{sku.monthly_fee | thb}} บาท ({{sku.monthly_fee | thb_thai_words}}) ต่อเดือน</p>
+<p>4.1.1 บริหารจัดการด้านการตลาดออนไลน์ Package Content ({{sku.channel}}) จำนวน 10 โพสต์ (Single or Album) ต่อเดือน</p>
+<p>4.1.2 บริหารจัดการโฆษณา Package Ads Management ({{sku.channel}})</p>
+<p>4.1.3 รวมค่าแพ็คเกจโฆษณาที่ใช้ตั้งขึ้นบนโซเชียลมีเดีย ({{sku.channel}}) แล้ว ตาม Ads KPIs ที่ฝ่ายบริหารจัดการกำหนด</p>
+<p>4.1.4 รวม 1 วิดีโอ และ 1 สไลด์โชว์ จาก 1 KOL สำหรับการโพสต์เท่านั้น (จำนวนไม่หมด 2 โพสต์) ต่อเดือน แต่ยังไม่รวมค่าเดินทางและค่าที่พักของ KOL</p>
+<p>4.1.5 ค่าบริหารจัดการที่ระบุในข้อที่ 4.1 ฝ่ายบริหารจัดการจะจัดส่งใบแจ้งหนี้ตามที่ระบุในข้อที่ 4.2</p>
+<p>4.2 เจ้าของโครงการมีหน้าที่ชำระค่าบริการ ที่ระบุในข้อที่ 4.1 ภายในทุกวันที่ 15 ของเดือนโดยนำเข้าบัญชีเลขที่ {{payment.bank_account_no}} ธนาคาร{{payment.bank_name}} โดยฝ่ายบริหารจัดการจะจัดส่งใบแจ้งหนี้ให้เจ้าของโครงการทุกวันที่ 5 ของเดือน</p>`,
+  ),
+  s(
+    "termination",
+    "5. การสิ้นสุดของสัญญา",
+    "locked",
+    `<p>เมื่อครบกำหนดตามอายุสัญญานี้แล้ว และหลังจากนั้นจะมีผลใช้ต่อไปจนกระทั่งผู้ทำสัญญาฝ่ายใดฝ่ายหนึ่งบอกเลิก โดยให้มีการแจ้งให้ทราบล่วงหน้าอย่างน้อย 30 วัน เป็นลายลักษณ์อักษรเท่านั้น เพื่อเป็นหลักฐานความประสงค์สำหรับการบอกเลิกสัญญา พร้อมระบุวันที่ต้องการสิ้นสุดสัญญา โดยฝ่ายบริหารจัดการจะขอสงวนสิทธิ์ในการคิดค่าบริการ และนำออก H+ Asset ทั้งหมด ภายใน 48 ชั่วโมง หลังวันสิ้นสุดสัญญา</p>
+<p>เมื่อสิ้นสุดสัญญา ฝ่ายบริหารจัดการ จะส่งมอบ Owner Asset อันได้แก่ อีเมลของเจ้าของโครงการ บัญชีผู้ใช้งาน รหัสผ่านเพจ Facebook, Instagram หลักของโรงแรม คืนให้แก่เจ้าของโครงการภายใน 48 ชั่วโมง หลังจากได้รับชำระ ค่าบริการ ค่าธรรมเนียมการขาย ค่าปรับ หรือค่าใช้จ่ายอื่นๆทั้งหมด จากทางเจ้าของโครงการเรียบร้อยแล้ว</p>`,
+  ),
+  s("termination_effect", "6. ผลของการสิ้นสุด", "locked", TERMINATION_EFFECT),
+  s(
+    "default",
+    "7. การผิดนัดชำระ, การยกเลิกสัญญาก่อนครบกำหนด",
+    "locked",
+    `<p>ในกรณีเจ้าของโครงการกระทำการยกเลิกสัญญาก่อนครบกำหนดอายุจะมีการเรียกค่าปรับจำนวน {{sku.monthly_fee | thb}} บาท</p>
+<p>หรือในกรณีที่เจ้าของโครงการผิดนัดชำระค่าบริการตามที่ระบุในสัญญาฉบับนี้ ทางบริษัทจะดำเนินการอย่างใดอย่างหนึ่ง หรือ มากกว่า ตามข้อกำหนดที่ระบุไว้ ดังนี้</p>\n${DEFAULT_CLAUSES}\n<SignatureBlock />`,
+  ),
+  s(
+    "appendix_a",
+    "APPENDIX A · Letter of Authorization",
+    "structured",
+    `<ConditionalBlockPlaceholder group="letter_of_authorization" />`,
+    "letter_of_authorization",
+  ),
+  s(
+    "appendix_b",
+    "APPENDIX B · Work Proposal + Payment Condition",
+    "structured",
+    `<ConditionalBlockPlaceholder group="work_proposal" />\n${PAYMENT_CONDITION}\n<SignatureBlock />`,
+    "work_proposal",
+  ),
+  s("exclusion", "ข้อยกเว้นความรับผิด", "locked", LIABILITY_EXCLUSION),
+];
+
 
 const sectionsToBody = (sections: TemplateSection[]) =>
   sections
