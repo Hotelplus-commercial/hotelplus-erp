@@ -800,7 +800,7 @@ function seedTemplates(): Template[] {
     }),
     t("TPL-C-ORM", "contract", "ORM Service Contract (Full/Lite unified)", {
       description: "Layer 2 · 17 sections · commission section included",
-      mapped_skus: ["ORM-MTH-FULL", "ORM-MTH-LITE"],
+      mapped_skus: ["ORM-MTH-FULL-SMART", "ORM-MTH-FULL-FIXED", "ORM-MTH-FULL-PERFORMANCE", "ORM-MTH-LITE-SMART", "ORM-MTH-LITE-FIXED"],
       service_line: "ORM",
       sections: ormSections,
       max_section: 9,
@@ -810,7 +810,7 @@ function seedTemplates(): Template[] {
     }),
     t("TPL-C-MARCOM", "contract", "Marcom Service Contract (Full/Lite unified · no commission)", {
       description: "โครงสัญญาจริง §1-7 · ไม่มี §4.2 Commission",
-      mapped_skus: ["MARCOM-MTH-META", "MARCOM-MTH-META-LITE", "MARCOM-MTH-TIKTOK", "MARCOM-MTH-TIKTOK-LITE", "MARCOM-MTH-GMB"],
+      mapped_skus: ["MARCOM-MTH-META-FULL", "MARCOM-MTH-META-LITE", "MARCOM-MTH-TIKTOK-FULL", "MARCOM-MTH-TIKTOK-LITE", "MARCOM-MTH-GOOGLE-FULL"],
       service_line: "MARCOM",
       sections: marcomSections,
       max_section: 7,
