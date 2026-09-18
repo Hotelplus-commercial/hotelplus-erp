@@ -37,7 +37,7 @@ export const Route = createFileRoute("/ps/templates/$templateId")({
       { property: "og:description", content: "แก้ไขเทมเพลตบนกระดาษ A4 จริง พร้อม Cover Page, CI header/footer และ signature block" },
     ],
   }),
-  component: TemplateEditor;
+  component: TemplateEditor,
 });
 
 const LOCK_MODES: LockMode[] = ["locked", "structured", "free"];
