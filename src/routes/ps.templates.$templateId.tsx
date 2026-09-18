@@ -526,7 +526,7 @@ function TemplateEditor() {
         <div className="flex items-start gap-2 rounded-xl border border-amber-400/50 bg-amber-50 p-3 text-sm dark:bg-amber-950/20">
           <AlertTriangle className="mt-0.5 size-4 text-amber-600" />
           <p>
-            ⚠️ ยังขาดเนื้อหา conditional block:{" "}
+            ⚠️ ยังขาดเนื้อหา block group:{" "}
             <span className="font-mono text-xs">{missing.map((m) => `${m.block_group}:${m.condition}`).join(", ")}</span>
           </p>
         </div>
