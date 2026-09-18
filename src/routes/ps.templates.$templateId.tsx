@@ -661,7 +661,16 @@ function TemplateEditor() {
               ))
             ) : (
               <div className="space-y-2">
-                <div dangerouslySetInnerHTML={{ __html: renderBody(text, data, { raw, pills: true }) }} />
+                <div
+                  className="q-doc"
+                  dangerouslySetInnerHTML={{
+                    __html: renderBody(text, data, {
+                      raw,
+                      pills: true,
+                      lineItems: quoteLineItemsFor(tpl.service_line ?? line),
+                    }),
+                  }}
+                />
                 <Textarea
                   ref={areaRef}
                   value={text}
