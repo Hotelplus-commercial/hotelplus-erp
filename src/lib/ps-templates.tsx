@@ -786,7 +786,7 @@ function seedTemplates(): Template[] {
       docs_generated: 148,
       active_version_id: "TPL-Q-ORM@v3.1",
       versions: [
-        v("TPL-Q-ORM", "v3.2", "draft", QUOTE_ORM_DRAFT, "Added: {{quote.created_by.email}}, {{page.total}}"),
+        v("TPL-Q-ORM", "v3.2", "draft", QUOTE_ORM_DRAFT, "Added: {{quote.created_by.email}}"),
         v("TPL-Q-ORM", "v3.1", "active", QUOTE_ORM_BODY, "Fixed: commission_rate formatting", "2026-07-15T00:00:00+07:00"),
         v("TPL-Q-ORM", "v3.0", "archived", QUOTE_ORM_BODY, "Major: 4-package comparison layout"),
       ],
