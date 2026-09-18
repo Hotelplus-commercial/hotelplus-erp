@@ -695,30 +695,10 @@ function seedTemplates(): Template[] {
       active_version_id: "TPL-C-MARCOM@v1.0",
       versions: [v("TPL-C-MARCOM", "v1.0", "active", sectionsToBody(marcomSections), "Layer 2 split จาก TPL-C-MARCOM-META", "2026-09-01T00:00:00+07:00")],
     }),
-    t("TPL-C-ORM-FULL", "contract", "ORM Full Service Contract (superseded)", {
-      mapped_skus: ["ORM-MTH-FULL-SMART", "ORM-MTH-FULL-FIXED", "ORM-MTH-FULL-PERFORMANCE"],
-      service_line: "ORM",
-      superseded: true,
-      docs_generated: 42,
-      active_version_id: "TPL-C-ORM-FULL@v2.0",
-      versions: [v("TPL-C-ORM-FULL", "v2.0", "active", legacyContractBody("ORM Full Service"), "Legal review 2026", "2026-04-01T00:00:00+07:00")],
-    }),
-    t("TPL-C-ORM-LITE", "contract", "ORM Lite Service Contract (superseded)", {
-      mapped_skus: ["ORM-MTH-LITE-STD"],
-      service_line: "ORM",
-      superseded: true,
-      docs_generated: 17,
-      active_version_id: "TPL-C-ORM-LITE@v1.5",
-      versions: [v("TPL-C-ORM-LITE", "v1.5", "active", legacyContractBody("ORM Lite Service"), "ปรับเงื่อนไขชำระเงิน", "2026-05-10T00:00:00+07:00")],
-    }),
-    t("TPL-C-MARCOM-META", "contract", "Marcom Meta Service Contract (superseded)", {
-      mapped_skus: ["MARCOM-MTH-META", "MARCOM-MTH-META-LITE-CONTENT", "MARCOM-MTH-META-LITE-ADS"],
-      service_line: "MARCOM",
-      superseded: true,
-      docs_generated: 23,
-      active_version_id: "TPL-C-MARCOM-META@v1.2",
-      versions: [v("TPL-C-MARCOM-META", "v1.2", "active", legacyContractBody("Marcom Meta"), "เพิ่มขอบเขต Ads management", "2026-06-01T00:00:00+07:00")],
-    }),
+    /* v2.1 Path A · Phase 1.1 — TPL-C-ORM-FULL / TPL-C-ORM-LITE / TPL-C-MARCOM-META
+     * hard-deleted. Issued contracts keep their own snapshot (template code +
+     * version stored as strings on the signing package), so history stays readable. */
+
   ];
 }
 
@@ -732,7 +712,7 @@ export const DEMO_PACKAGE_CODES = [
 
 /* ---------------- store ---------------- */
 
-const KEY = "meridia.ps.templates.v1_1";
+const KEY = "meridia.ps.templates.v2_1a";
 const ADMIN_KEY = "meridia.ps.templates.legal_admin";
 
 export type MissingBlock = { block_group: string; condition: string };
