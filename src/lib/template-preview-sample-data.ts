@@ -143,6 +143,7 @@ export function sampleDataFor(opts: {
   return {
     ...TEMPLATE_PREVIEW_SAMPLE_DATA,
     ...(customerType === "juristic" ? JURISTIC : INDIVIDUAL),
+    ...(line === "MARCOM" ? QUOTE_SAMPLE_MARCOM : QUOTE_SAMPLE_ORM),
     "service_line.label": SERVICE_LINE_LABEL[line],
     "sku.channel": channelOfSku(sku),
     "sku.product_name": sku,
@@ -151,5 +152,9 @@ export function sampleDataFor(opts: {
     "contract.package_code": `E024/${sku}/12M/2026-09-18/00003`,
   };
 }
+
+/** Sample quote rows for the preview loops (`<foreach items="quote.line_items">`). */
+export const quoteLineItemsFor = (line: PreviewServiceLine): QuoteLineItem[] =>
+  line === "MARCOM" ? QUOTE_LINE_ITEMS_SAMPLE.MARCOM : QUOTE_LINE_ITEMS_SAMPLE.ORM;
 
 export const serviceLineOf = serviceLineOfSku;
