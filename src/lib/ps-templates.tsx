@@ -128,6 +128,7 @@ export const fieldGroupLabel: Record<string, string> = {
   payment: "💰 Payment",
   sku: "📦 SKU / Package (approved_skus)",
   system: "⚙ System (ตอน render PDF)",
+  branding: "🎨 Branding v2.1 (Cover · CI · Signature)",
 };
 
 export const AUTO_FIELDS: AutoField[] = [
