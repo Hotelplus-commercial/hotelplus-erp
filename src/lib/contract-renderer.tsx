@@ -12,7 +12,7 @@ import heroMarcom from "@/assets/cover-hero-marcom.jpg";
 import heroOrm from "@/assets/cover-hero-orm.jpg";
 import heroPp from "@/assets/cover-hero-pp.jpg";
 import heroProd from "@/assets/cover-hero-prod.jpg";
-import { SERVICE_LINE_LABEL, type PreviewServiceLine } from "@/lib/template-preview-sample-data";
+import { SERVICE_LINE_LABEL, type PreviewServiceLine, type QuoteLineItem } from "@/lib/template-preview-sample-data";
 
 export const HERO_BY_SERVICE_LINE: Record<PreviewServiceLine, string> = {
   ORM: heroOrm,
