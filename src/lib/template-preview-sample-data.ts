@@ -85,6 +85,52 @@ const INDIVIDUAL = {
   "payment.account_no": "987-6-54321-0",
 } satisfies Record<string, string>;
 
+/* §2.8 Quote fields (v2.1 Path A · Phase 4) */
+export type QuoteLineItemCategory = "MTH" | "SETUP" | "ADDON";
+
+export type QuoteLineItem = {
+  product_name: string;
+  price: number;
+  unit?: "%" | "THB";
+  is_setup?: boolean;
+  category: QuoteLineItemCategory;
+};
+
+export const QUOTE_LINE_ITEMS_SAMPLE: Record<"ORM" | "MARCOM", QuoteLineItem[]> = {
+  ORM: [
+    { product_name: "ค่าบริการบริหารรายได้รายเดือน (ORM Full · Smart)", price: 5600, unit: "THB", category: "MTH" },
+    { product_name: "ค่าคอมมิชชั่นจากยอดขายห้องพัก", price: 10, unit: "%", category: "MTH" },
+    { product_name: "ค่าติดตั้งระบบและตั้งค่าเริ่มต้น", price: 3500, unit: "THB", is_setup: true, category: "SETUP" },
+    { product_name: "เชื่อมต่อ Channel Manager (โปรโมชั่นเดือนแรก)", price: 0, unit: "THB", category: "ADDON" },
+  ],
+  MARCOM: [
+    { product_name: "ค่าบริหารจัดการการตลาดออนไลน์ (Meta Full)", price: 18000, unit: "THB", category: "MTH" },
+    { product_name: "ค่าเปิดระบบและตั้งค่าเพจเริ่มต้น", price: 5000, unit: "THB", is_setup: true, category: "SETUP" },
+    { product_name: "ถ่ายภาพนิ่งชุดแรก (โปรโมชั่นเดือนแรก)", price: 0, unit: "THB", category: "ADDON" },
+  ],
+};
+
+const QUOTE_SAMPLE_ORM: Record<string, string> = {
+  "quote.quote_id": "Q-ORM-0287",
+  "quote.issue_date": "18 กันยายน 2569",
+  "quote.package_name": "ORM Full · Smart Package (A + B)",
+  "quote.package_description": "บริหารรายได้ห้องพักครบวงจร · ดูแลราคาและช่องทางขายทุก OTA พร้อมรายงานรายเดือน",
+  "quote.first_month_total": "฿9,100",
+  "quote.recurring_total": "฿5,600",
+  "quote.commission_rate": "10.00%",
+  "quote.created_by_email": "somchai.n@hotelplus.asia",
+};
+
+const QUOTE_SAMPLE_MARCOM: Record<string, string> = {
+  "quote.quote_id": "Q-MKT-0142",
+  "quote.issue_date": "18 กันยายน 2569",
+  "quote.package_name": "Marcom Meta Full Package",
+  "quote.package_description": "ดูแลคอนเทนต์และโฆษณาบน Facebook / Instagram 10 โพสต์ต่อเดือน พร้อมรายงานผลโฆษณา",
+  "quote.first_month_total": "฿23,000",
+  "quote.recurring_total": "฿18,000",
+  "quote.created_by_email": "napat.p@hotelplus.asia",
+};
+
 export function sampleDataFor(opts: {
   sku?: string | null;
   customerType?: PreviewCustomerType;
