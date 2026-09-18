@@ -563,7 +563,6 @@ const QUOTE_ORM_BODY = `<h2>ใบเสนอราคา · {{quote.quote_id}}
   <h3>{{loop.index}}. {{package.name}}</h3>
   <p>ค่าบริการ {{package.base_price | thb}} ต่อเดือน · คอมมิชชั่น {{package.commission_rate | pct}}</p>
   <p>รวมเดือนแรก {{package.first_month_total | thb}} · ประกอบด้วย {{package.includes[*].name}}</p>
-</foreach>
 </foreach>`;
 
 const QUOTE_ORM_DRAFT = `${QUOTE_ORM_BODY}\n<p>ผู้เสนอราคา: {{quote.created_by.email}}</p>`;
@@ -573,8 +572,7 @@ const QUOTE_MARCOM_BODY = `<h2>ใบเสนอราคา Marcom · {{quote.
 <p><strong>โรงแรม:</strong> {{quote.hotel_name}} · วันที่ {{quote.created_at | date_th}}</p>
 <foreach items="quote.calculator_output.packages" as="package">
   <p>{{loop.index}}. {{package.name}} — {{package.base_price | thb}}</p>
-</foreach>
-<p>หน้า {{page.current}} / {{page.total}}</p>`;
+</foreach>`;
 
 export const CONTRACT_SECTIONS = [
   "ผู้ทำสัญญา (Parties)",
