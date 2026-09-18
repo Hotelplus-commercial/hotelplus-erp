@@ -72,6 +72,9 @@ import { Route as PsTemplatesIndexRouteImport } from './routes/ps.templates.inde
 import { Route as PsTemplatesTemplateIdRouteImport } from './routes/ps.templates.$templateId'
 import { Route as PsTemplatesAutoFieldsRouteImport } from './routes/ps.templates.auto-fields'
 import { Route as PsTemplatesLayer2RouteImport } from './routes/ps.templates.layer2'
+import { Route as PsTemplatesBlockGroupsIndexRouteImport } from './routes/ps.templates.block-groups.index'
+import { Route as PsTemplatesBlockGroupsGroupIdRouteImport } from './routes/ps.templates.block-groups.$groupId'
+import { Route as PsTemplatesPreviewTemplateIdRouteImport } from './routes/ps.templates.preview.$templateId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -389,6 +392,24 @@ const PsTemplatesLayer2Route = PsTemplatesLayer2RouteImport.update({
   path: '/templates/layer2',
   getParentRoute: () => PsRoute,
 } as any)
+const PsTemplatesBlockGroupsIndexRoute =
+  PsTemplatesBlockGroupsIndexRouteImport.update({
+    id: '/templates/block-groups/',
+    path: '/templates/block-groups/',
+    getParentRoute: () => PsRoute,
+  } as any)
+const PsTemplatesBlockGroupsGroupIdRoute =
+  PsTemplatesBlockGroupsGroupIdRouteImport.update({
+    id: '/templates/block-groups/$groupId',
+    path: '/templates/block-groups/$groupId',
+    getParentRoute: () => PsRoute,
+  } as any)
+const PsTemplatesPreviewTemplateIdRoute =
+  PsTemplatesPreviewTemplateIdRouteImport.update({
+    id: '/templates/preview/$templateId',
+    path: '/templates/preview/$templateId',
+    getParentRoute: () => PsRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -454,6 +475,9 @@ export interface FileRoutesByFullPath {
   '/ps/ae-workspace/': typeof PsAeWorkspaceIndexRoute
   '/ps/contract-wizard/': typeof PsContractWizardIndexRoute
   '/ps/templates/': typeof PsTemplatesIndexRoute
+  '/ps/templates/block-groups/$groupId': typeof PsTemplatesBlockGroupsGroupIdRoute
+  '/ps/templates/preview/$templateId': typeof PsTemplatesPreviewTemplateIdRoute
+  '/ps/templates/block-groups/': typeof PsTemplatesBlockGroupsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -509,6 +533,9 @@ export interface FileRoutesByTo {
   '/ps/ae-workspace': typeof PsAeWorkspaceIndexRoute
   '/ps/contract-wizard': typeof PsContractWizardIndexRoute
   '/ps/templates': typeof PsTemplatesIndexRoute
+  '/ps/templates/block-groups/$groupId': typeof PsTemplatesBlockGroupsGroupIdRoute
+  '/ps/templates/preview/$templateId': typeof PsTemplatesPreviewTemplateIdRoute
+  '/ps/templates/block-groups': typeof PsTemplatesBlockGroupsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -575,6 +602,9 @@ export interface FileRoutesById {
   '/ps/ae-workspace/': typeof PsAeWorkspaceIndexRoute
   '/ps/contract-wizard/': typeof PsContractWizardIndexRoute
   '/ps/templates/': typeof PsTemplatesIndexRoute
+  '/ps/templates/block-groups/$groupId': typeof PsTemplatesBlockGroupsGroupIdRoute
+  '/ps/templates/preview/$templateId': typeof PsTemplatesPreviewTemplateIdRoute
+  '/ps/templates/block-groups/': typeof PsTemplatesBlockGroupsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -642,6 +672,9 @@ export interface FileRouteTypes {
     | '/ps/ae-workspace/'
     | '/ps/contract-wizard/'
     | '/ps/templates/'
+    | '/ps/templates/block-groups/$groupId'
+    | '/ps/templates/preview/$templateId'
+    | '/ps/templates/block-groups/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -697,6 +730,9 @@ export interface FileRouteTypes {
     | '/ps/ae-workspace'
     | '/ps/contract-wizard'
     | '/ps/templates'
+    | '/ps/templates/block-groups/$groupId'
+    | '/ps/templates/preview/$templateId'
+    | '/ps/templates/block-groups'
   id:
     | '__root__'
     | '/'
@@ -762,6 +798,9 @@ export interface FileRouteTypes {
     | '/ps/ae-workspace/'
     | '/ps/contract-wizard/'
     | '/ps/templates/'
+    | '/ps/templates/block-groups/$groupId'
+    | '/ps/templates/preview/$templateId'
+    | '/ps/templates/block-groups/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1223,6 +1262,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PsTemplatesLayer2RouteImport
       parentRoute: typeof PsRoute
     }
+    '/ps/templates/block-groups/': {
+      id: '/ps/templates/block-groups/'
+      path: '/templates/block-groups'
+      fullPath: '/ps/templates/block-groups/'
+      preLoaderRoute: typeof PsTemplatesBlockGroupsIndexRouteImport
+      parentRoute: typeof PsRoute
+    }
+    '/ps/templates/block-groups/$groupId': {
+      id: '/ps/templates/block-groups/$groupId'
+      path: '/templates/block-groups/$groupId'
+      fullPath: '/ps/templates/block-groups/$groupId'
+      preLoaderRoute: typeof PsTemplatesBlockGroupsGroupIdRouteImport
+      parentRoute: typeof PsRoute
+    }
+    '/ps/templates/preview/$templateId': {
+      id: '/ps/templates/preview/$templateId'
+      path: '/templates/preview/$templateId'
+      fullPath: '/ps/templates/preview/$templateId'
+      preLoaderRoute: typeof PsTemplatesPreviewTemplateIdRouteImport
+      parentRoute: typeof PsRoute
+    }
   }
 }
 
@@ -1394,6 +1454,9 @@ interface PsRouteChildren {
   PsTemplatesAutoFieldsRoute: typeof PsTemplatesAutoFieldsRoute
   PsTemplatesLayer2Route: typeof PsTemplatesLayer2Route
   PsTemplatesIndexRoute: typeof PsTemplatesIndexRoute
+  PsTemplatesBlockGroupsGroupIdRoute: typeof PsTemplatesBlockGroupsGroupIdRoute
+  PsTemplatesPreviewTemplateIdRoute: typeof PsTemplatesPreviewTemplateIdRoute
+  PsTemplatesBlockGroupsIndexRoute: typeof PsTemplatesBlockGroupsIndexRoute
 }
 
 const PsRouteChildren: PsRouteChildren = {
@@ -1409,6 +1472,9 @@ const PsRouteChildren: PsRouteChildren = {
   PsTemplatesAutoFieldsRoute: PsTemplatesAutoFieldsRoute,
   PsTemplatesLayer2Route: PsTemplatesLayer2Route,
   PsTemplatesIndexRoute: PsTemplatesIndexRoute,
+  PsTemplatesBlockGroupsGroupIdRoute: PsTemplatesBlockGroupsGroupIdRoute,
+  PsTemplatesPreviewTemplateIdRoute: PsTemplatesPreviewTemplateIdRoute,
+  PsTemplatesBlockGroupsIndexRoute: PsTemplatesBlockGroupsIndexRoute,
 }
 
 const PsRouteWithChildren = PsRoute._addFileChildren(PsRouteChildren)
