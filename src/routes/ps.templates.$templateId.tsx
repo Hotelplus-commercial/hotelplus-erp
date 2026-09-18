@@ -362,7 +362,6 @@ function TemplateEditor() {
     activateDraft,
     isLegalAdmin,
     setLegalAdmin,
-    missingConditionalBlocks,
   } = usePsTemplates();
   const { blockGroups } = usePsBlockGroups();
   const tpl = templates.find((t) => t.template_id === templateId);
@@ -400,21 +399,44 @@ function TemplateEditor() {
   const mappedSkus = tpl.mapped_skus.length > 0 ? tpl.mapped_skus : [...MONTHLY_SKUS];
   const activeSku = mappedSkus.includes(sku) ? sku : (mappedSkus[0] as string);
   const line = serviceLineOf(activeSku);
-  const data = useMemo(
-    () => sampleDataFor({ sku: activeSku, customerType, serviceLine: tpl.service_line ?? line }),
-    [activeSku, customerType, tpl.service_line, line],
-  );
+  const data = sampleDataFor({ sku: activeSku, customerType, serviceLine: tpl.service_line ?? line });
 
   const fields = AUTO_FIELDS.filter((f) => f.available_in.includes(tpl.template_type));
-  const missing = missingConditionalBlocks(tpl);
+  /* v2.1 Path A — coverage is judged against the block-group registry, not the legacy Layer-2 seeds */
+  const missing = ((): { block_group: string; condition: string }[] => {
+    const ids = [...new Set(tpl.sections.flatMap((sec) => (sec.uses_conditional_block ? [sec.uses_conditional_block] : [])))];
+    const out: { block_group: string; condition: string }[] = [];
+    for (const id of ids) {
+      const g = blockGroups.find((b) => b.block_group_id === id);
+      if (!g) {
+        out.push({ block_group: id, condition: "ยังไม่มีใน registry" });
+        continue;
+      }
+      for (const s of coverageOf(g).missing) if (mappedSkus.includes(s)) out.push({ block_group: id, condition: s });
+    }
+    return out;
+  })();
   const sel = tpl.sections.find((s) => s.id === selectedSection) ?? tpl.sections[0];
 
+  /* v2.1 Path A §3.6 — section numbering must be continuous up to template.max_section */
+  const numberingIssue = ((): number[] | null => {
+    const nums = tpl.sections
+      .map((s) => /^(\d+)\./.exec(s.title)?.[1])
+      .filter((n): n is string => !!n)
+      .map(Number);
+    if (nums.length === 0) return null;
+    const max = tpl.max_section ?? Math.max(...nums);
+    const gaps: number[] = [];
+    for (let i = 1; i <= max; i++) if (!nums.includes(i)) gaps.push(i);
+    const extra = nums.filter((n) => n > max);
+    if (gaps.length === 0 && extra.length === 0) return null;
+    return [...gaps, ...extra].sort((a, b) => a - b);
+  })();
+
   /* coverage across every block-group zone used by this template */
-  const usedGroups = useMemo(() => {
-    const all = tpl.sections.map((s) => s.content).join(" ") + text;
-    return [...new Set([...all.matchAll(BLOCK_RE)].map((m) => m[1] ?? ""))];
-  }, [tpl.sections, text]);
-  const coverage = useMemo(() => {
+  const allBodies = tpl.sections.map((s) => s.content).join(" ") + text;
+  const usedGroups = [...new Set([...allBodies.matchAll(BLOCK_RE)].map((m) => m[1] ?? ""))];
+  const coverage = ((): { covered: number; total: number } | null => {
     const groups = usedGroups
       .map((id) => blockGroups.find((g) => g.block_group_id === id))
       .filter((g): g is NonNullable<typeof g> => !!g);
@@ -423,7 +445,7 @@ function TemplateEditor() {
     for (const g of groups) for (const s of coverageOf(g).missing) missingSkus.add(s);
     const covered = mappedSkus.filter((s) => !missingSkus.has(s)).length;
     return { covered, total: mappedSkus.length };
-  }, [usedGroups, blockGroups, mappedSkus]);
+  })();
 
   const insert = (token: string) => {
     const el = hasSections ? sectionRef.current : areaRef.current;
@@ -528,6 +550,16 @@ function TemplateEditor() {
           <p>
             ⚠️ ยังขาดเนื้อหา block group:{" "}
             <span className="font-mono text-xs">{missing.map((m) => `${m.block_group}:${m.condition}`).join(", ")}</span>
+          </p>
+        </div>
+      )}
+
+      {numberingIssue && (
+        <div className="flex items-start gap-2 rounded-xl border border-amber-400/50 bg-amber-50 p-3 text-sm dark:bg-amber-950/20">
+          <AlertTriangle className="mt-0.5 size-4 text-amber-600" />
+          <p>
+            ⚠️ ตรวจพบการข้ามหมายเลขข้อ · แก้ไขให้เรียงต่อเนื่อง{" "}
+            <span className="font-mono text-xs">ข้อ {numberingIssue.join(", ")}</span>
           </p>
         </div>
       )}
