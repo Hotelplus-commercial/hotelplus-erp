@@ -151,6 +151,17 @@ export const AUTO_FIELDS: AutoField[] = [
   { field_path: "quote.created_at", source: "BD.quotes.created_at", type: "datetime", available_in: ["quote"], supported_filters: ["date_th", "date_en", "datetime"], example: "15 สิงหาคม 2569", group: "quote", sub_type: "2a" },
   { field_path: "quote.created_by.email", source: "Auth.users.email (join created_by)", type: "string", available_in: ["quote"], supported_filters: [], example: "somchai.n@hotelplus.asia", group: "quote", sub_type: "2a" },
 
+  /* v2.1 Path A · Phase 4 — one-page quote layout fields */
+  { field_path: "quote.issue_date", source: "BD.quotes.created_at (วันที่ออกเอกสาร)", type: "date", available_in: ["quote"], supported_filters: ["date_th", "date_en"], example: "18 กันยายน 2569", group: "quote", sub_type: "2a" },
+  { field_path: "quote.package_name", source: "calculator_output.selected_package.name", type: "string", available_in: ["quote"], supported_filters: [], example: "ORM Full · Smart Package", group: "quote", sub_type: "2a" },
+  { field_path: "quote.package_description", source: "calculator_output.selected_package.description", type: "string", available_in: ["quote"], supported_filters: [], example: "บริหารรายได้ห้องพักครบวงจร", group: "quote", sub_type: "2a" },
+  { field_path: "quote.first_month_total", source: "computed · MTH + SETUP + ADDON เดือนแรก", type: "number", available_in: ["quote"], supported_filters: ["thb", "number"], example: "฿9,100", group: "quote", sub_type: "2c", computed_when: "on_render" },
+  { field_path: "quote.recurring_total", source: "computed · ผลรวมรายการ MTH", type: "number", available_in: ["quote"], supported_filters: ["thb", "number"], example: "฿5,600", group: "quote", sub_type: "2c", computed_when: "on_render" },
+  { field_path: "quote.commission_rate", source: "calculator_output.commission_rate (ORM เท่านั้น)", type: "number", available_in: ["quote"], supported_filters: ["pct"], example: "10.00%", group: "quote", sub_type: "2a" },
+  { field_path: "quote.created_by_email", source: "Auth.users.email (join created_by)", type: "string", available_in: ["quote"], supported_filters: [], example: "somchai.n@hotelplus.asia", group: "quote", sub_type: "2a" },
+  { field_path: "line_item.product_name", source: "quote.line_items[i].product_name (ใช้ใน foreach)", type: "array_iterator", available_in: ["quote"], supported_filters: [], example: "ค่าบริการรายเดือน", group: "quote", sub_type: "2a" },
+  { field_path: "line_item.price", source: "quote.line_items[i].price (ใช้ใน foreach)", type: "array_iterator", available_in: ["quote"], supported_filters: ["thb_or_percent", "thb"], example: "฿5,600 / 10% / FREE / One Time Setup", group: "quote", sub_type: "2a" },
+
   { field_path: "package.name", source: "calculator_output.packages[i].name", type: "string", available_in: ["quote"], supported_filters: [], example: "Smart Package", group: "package", sub_type: "2a" },
   { field_path: "package.base_price", source: "calculator_output.packages[i].base_price", type: "number", available_in: ["quote"], supported_filters: ["thb", "number", "currency:en"], example: "฿5,600", group: "package", sub_type: "2a" },
   { field_path: "package.commission_rate", source: "calculator_output.packages[i].commission_rate", type: "number", available_in: ["quote"], supported_filters: ["pct"], example: "10.00%", group: "package", sub_type: "2a" },
