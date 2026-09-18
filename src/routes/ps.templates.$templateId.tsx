@@ -309,7 +309,36 @@ function SectionOnPaper({
         <div>
           {parts.map((p, i) =>
             p.type === "block" ? (
-              <BlockGroupNode key={`b${i}`} groupId={p.value} sku={sku} templateId={templateId} />
+              <BlockGroupNode
+                key={`b${i}`}
+                groupId={p.value}
+                sku={sku}
+                templateId={templateId}
+                onReplace={
+                  readOnly
+                    ? undefined
+                    : (next) => {
+                        const marker = `<ConditionalBlockPlaceholder group="${p.value}" />`;
+                        const res = saveSection(
+                          templateId,
+                          section.id,
+                          text.replace(marker, `<ConditionalBlockPlaceholder group="${next}" />`),
+                        );
+                        if (res.ok) toast.success(`เปลี่ยนเป็น ${next} แล้ว`);
+                        else toast.error(res.error ?? "แก้ไขไม่สำเร็จ");
+                      }
+                }
+                onRemove={
+                  readOnly
+                    ? undefined
+                    : () => {
+                        const marker = `<ConditionalBlockPlaceholder group="${p.value}" />`;
+                        const res = saveSection(templateId, section.id, text.replace(marker, ""));
+                        if (res.ok) toast.success(`ลบ block group ${p.value} แล้ว`);
+                        else toast.error(res.error ?? "ลบไม่สำเร็จ");
+                      }
+                }
+              />
             ) : (
               <div key={`h${i}`} dangerouslySetInnerHTML={{ __html: renderBody(p.value, data, { raw, pills: true }) }} />
             ),
