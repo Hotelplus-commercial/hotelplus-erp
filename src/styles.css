@@ -129,6 +129,31 @@
   --gradient-accent: linear-gradient(135deg, oklch(0.74 0.13 62), oklch(0.8 0.11 82));
   --shadow-card: 0 1px 2px oklch(0.3 0.04 250 / 0.06), 0 8px 24px -12px oklch(0.3 0.04 250 / 0.18);
   --shadow-pop: 0 12px 40px -12px oklch(0.28 0.05 250 / 0.28);
+
+  /* ===== A4 Canvas + CI branding (PS App v2.1) ===== */
+  --ci-yellow: #fdb515;
+  --ci-yellow-hover: #e6a312;
+  --ci-header-text: #ffffff;
+
+  --a4-width: 210mm;
+  --a4-height: 297mm;
+  --a4-margin: 25mm;
+  --a4-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --a4-bg: #ffffff;
+  --a4-canvas-bg: #e9e7e2;
+
+  --ci-header-height: 20mm;
+  --ci-footer-height: 15mm;
+
+  --pill-filled-bg: #deebfa;
+  --pill-filled-text: #0f4c8a;
+  --pill-empty-bg: #fcebbf;
+  --pill-empty-text: #854f0b;
+
+  --bg-chip-bg: rgba(112, 72, 163, 0.08);
+  --bg-chip-border: #7048a3;
+
+  --sig-line: #333333;
 }
 
 .dark {
