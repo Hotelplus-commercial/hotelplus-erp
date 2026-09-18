@@ -21,6 +21,10 @@ import { thb } from "@/lib/crm-rules";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/ps/contract-wizard/$dealId")({
+  /* v2.2 Fix 3 — quote preselected from the dashboard / BD quote detail */
+  validateSearch: (search: Record<string, unknown>) => ({
+    quote_id: typeof search['quote_id'] === "string" ? (search['quote_id'] as string) : "",
+  }),
   component: DealWizard,
 });
 
@@ -44,6 +48,7 @@ const requiredDocs = (type: CustomerType, hasOrm: boolean) => [
 
 function DealWizard() {
   const { dealId } = useParams({ from: "/ps/contract-wizard/$dealId" });
+  const { quote_id: preselectId } = Route.useSearch();
   const navigate = useNavigate();
   const { quotes, deals, hydrated, setWizardStep, cancelWizard, completeWizard, startWizard } = useBd();
   const { blockGroups, bankFor, isSystemAdmin, saveBank } = usePsBlockGroups();
@@ -54,8 +59,11 @@ function DealWizard() {
   );
 
   const [step, setStep] = useState(1);
+  const preselected = dealQuotes.find((q) => q.quote_id === preselectId);
   const [selected, setSelected] = useState<string[]>(
-    dealQuotes.filter((q) => q.status !== "contract_generated").map((q) => q.quote_id),
+    preselected
+      ? [preselected.quote_id]
+      : dealQuotes.filter((q) => q.status !== "contract_generated").map((q) => q.quote_id),
   );
   const [customerType, setCustomerType] = useState<CustomerType | null>(null);
   const [typeLocked, setTypeLocked] = useState(false);

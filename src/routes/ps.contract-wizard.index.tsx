@@ -53,7 +53,7 @@ function WizardLanding() {
                 </div>
                 {q.deal_id && (
                   <Button asChild size="sm" variant="outline">
-                    <Link to="/ps/contract-wizard/$dealId" params={{ dealId: q.deal_id }}>
+                    <Link to="/ps/contract-wizard/new" search={{ quote_id: q.quote_id }}>
                       เปิด Wizard ของดีลนี้
                     </Link>
                   </Button>

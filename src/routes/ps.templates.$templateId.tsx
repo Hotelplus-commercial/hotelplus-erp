@@ -27,6 +27,12 @@ import {
   type LockMode,
   type TemplateSection,
 } from "@/lib/ps-templates";
+import {
+  parseQuoteNodes,
+  serializeQuoteNodes,
+  type QuoteNode,
+} from "@/lib/quote-nodes";
+import { QuoteNodeCanvas, QuoteNodePanel } from "@/components/ps/quote-node-editor";
 import { quoteLineItemsFor, sampleDataFor, serviceLineOf, type PreviewCustomerType } from "@/lib/template-preview-sample-data";
 
 export const Route = createFileRoute("/ps/templates/$templateId")({
@@ -379,6 +385,9 @@ function TemplateEditor() {
   const [showCover, setShowCover] = useState(true);
   const [showCI, setShowCI] = useState(true);
   const [raw, setRaw] = useState(false);
+  /* v2.2 Fix 1 — quote body is a node list; kept in state so selection survives edits */
+  const [quoteNodes, setQuoteNodes] = useState<QuoteNode[]>(() => parseQuoteNodes(draft?.body ?? active?.body ?? ""));
+  const [selectedNode, setSelectedNode] = useState<string | null>(null);
   const areaRef = useRef<HTMLTextAreaElement>(null);
   const sectionRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -660,25 +669,18 @@ function TemplateEditor() {
                 />
               ))
             ) : (
-              <div className="space-y-2">
-                <div
-                  className="q-doc"
-                  dangerouslySetInnerHTML={{
-                    __html: renderBody(text, data, {
-                      raw,
-                      pills: true,
-                      lineItems: quoteLineItemsFor(tpl.service_line ?? line),
-                    }),
-                  }}
-                />
-                <Textarea
-                  ref={areaRef}
-                  value={text}
-                  onChange={(e) => setBody(e.target.value)}
-                  spellCheck={false}
-                  className="min-h-[320px] bg-white font-mono text-[10px] leading-relaxed"
-                />
-              </div>
+              <QuoteNodeCanvas
+                nodes={quoteNodes}
+                selectedId={selectedNode}
+                onSelect={setSelectedNode}
+                onChange={(next) => {
+                  setQuoteNodes(next);
+                  setBody(serializeQuoteNodes(next));
+                }}
+                data={data}
+                lineItems={quoteLineItemsFor(tpl.service_line ?? line)}
+                raw={raw}
+              />
             )}
           </A4Canvas>
 
@@ -696,6 +698,21 @@ function TemplateEditor() {
 
         {/* RIGHT · 3 subsections */}
         <div className="space-y-4">
+          {!hasSections && (
+            <Panel title="Quote nodes" subtitle="เพิ่ม · ย้าย · ลบ · ตั้งค่า node">
+              <QuoteNodePanel
+                nodes={quoteNodes}
+                selectedId={selectedNode}
+                onSelect={setSelectedNode}
+                onChange={(next) => {
+                  setQuoteNodes(next);
+                  setBody(serializeQuoteNodes(next));
+                }}
+              />
+            </Panel>
+          )}
+
+          {hasSections && (
           <Panel title="Insert" subtitle="คลิกเพื่อวางที่ตำแหน่ง cursor">
             <div className="mb-3 flex gap-1">
               {(
@@ -756,6 +773,7 @@ function TemplateEditor() {
               </div>
             )}
           </Panel>
+          )}
 
           <Panel title="Inspector" subtitle={(hasSections ? sel?.title : "Quote template") ?? "—"}>
             {hasSections && sel ? (
@@ -786,7 +804,10 @@ function TemplateEditor() {
                 </div>
               </div>
             ) : (
-              <p className="text-xs text-muted-foreground">Quote template ใช้ body เดียว · A4 canvas ไม่มี cover/CI ตามสเปก v2.1</p>
+              <div className="space-y-1 text-xs text-muted-foreground">
+                <p>Quote template ประกอบจาก {quoteNodes.length} node · ไม่มีช่อง HTML source (v2.2)</p>
+                <p>node atomic แก้ข้อความภายในไม่ได้ · ตั้งค่าได้เฉพาะ props ของ QuotePricingTable</p>
+              </div>
             )}
           </Panel>
 

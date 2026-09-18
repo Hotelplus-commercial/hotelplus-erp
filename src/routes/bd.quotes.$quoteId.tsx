@@ -77,7 +77,7 @@ function QuoteDetail() {
       return;
     }
     if (quote.status === "approved") startWizard(quote.quote_id);
-    navigate({ to: "/ps/contract-wizard/$dealId", params: { dealId: quote.deal_id } });
+    navigate({ to: "/ps/contract-wizard/new", search: { quote_id: quote.quote_id } });
   };
   const days = daysSince(quote.sent_at);
   const snap = quote.approved_snapshot;
