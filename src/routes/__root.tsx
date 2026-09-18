@@ -20,6 +20,7 @@ import { PsTemplateProvider } from "@/lib/ps-templates";
 import { MeetingMgmtProvider } from "@/lib/orm-meeting";
 import { PsRenewalProvider } from "@/lib/ps-renewal";
 import { PsBlockGroupProvider } from "@/lib/ps-block-groups";
+import { ContractLifecycleProvider } from "@/lib/contract-lifecycle";
 
 
 
@@ -142,6 +143,7 @@ function RootComponent() {
       <HotelStoreProvider>
         <CrmStoreProvider>
           <BdStoreProvider>
+          <ContractLifecycleProvider>
           <PsTemplateProvider>
             <PsBlockGroupProvider>
           <MeetingMgmtProvider>
@@ -155,6 +157,7 @@ function RootComponent() {
           </MeetingMgmtProvider>
           </PsBlockGroupProvider>
           </PsTemplateProvider>
+          </ContractLifecycleProvider>
 
         </BdStoreProvider>
           </CrmStoreProvider>

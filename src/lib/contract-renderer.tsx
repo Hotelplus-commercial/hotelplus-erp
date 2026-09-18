@@ -6,6 +6,7 @@
  *
  * Note: pagination + PDF are produced in the browser (CSS page boxes + print),
  * not Puppeteer/Paged.js — the hosting runtime has no headless Chrome. */
+import { expandQuoteNodes } from "@/lib/quote-nodes";
 import type { ReactNode } from "react";
 
 import heroMarcom from "@/assets/cover-hero-marcom.jpg";
@@ -197,7 +198,8 @@ export function renderBody(
   data: Record<string, string>,
   opts: { raw?: boolean; pills?: boolean; lineItems?: QuoteLineItem[] } = {},
 ): string {
-  const withLoops = opts.raw ? content : expandLoops(content, opts.lineItems ?? []);
+  const expanded = expandQuoteNodes(content);
+  const withLoops = opts.raw ? expanded : expandLoops(expanded, opts.lineItems ?? []);
   const withSig = withLoops.replace(SIGNATURE_RE, () =>
     signatureBlockHtml(
       data["customer.signer_name"] ?? "…………………",
