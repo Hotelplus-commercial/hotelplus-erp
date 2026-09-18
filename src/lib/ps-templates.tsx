@@ -684,7 +684,7 @@ function seedTemplates(): Template[] {
       sections: ormSections,
       docs_generated: 59,
       active_version_id: "TPL-C-ORM@v3.0",
-      versions: [v("TPL-C-ORM", "v3.0", "active", sectionsToBody(ormSections), "Layer 2: 3-tier lock + conditional blocks", "2026-09-01T00:00:00+07:00")],
+      versions: [v("TPL-C-ORM", "v3.0", "active", sectionsToBody(ormSections), "3-tier lock + block groups", "2026-09-01T00:00:00+07:00")],
     }),
     t("TPL-C-MARCOM", "contract", "Marcom Service Contract (Full/Lite unified · no commission)", {
       description: "Layer 2 · 17 sections · ไม่มี §4.2 Commission",
@@ -693,7 +693,7 @@ function seedTemplates(): Template[] {
       sections: marcomSections,
       docs_generated: 23,
       active_version_id: "TPL-C-MARCOM@v1.0",
-      versions: [v("TPL-C-MARCOM", "v1.0", "active", sectionsToBody(marcomSections), "Layer 2 split จาก TPL-C-MARCOM-META", "2026-09-01T00:00:00+07:00")],
+      versions: [v("TPL-C-MARCOM", "v1.0", "active", sectionsToBody(marcomSections), "แยกเทมเพลต Marcom ด้วย block group", "2026-09-01T00:00:00+07:00")],
     }),
     /* v2.1 Path A · Phase 1.1 — TPL-C-ORM-FULL / TPL-C-ORM-LITE / TPL-C-MARCOM-META
      * hard-deleted. Issued contracts keep their own snapshot (template code +
