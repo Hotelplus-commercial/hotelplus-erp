@@ -112,6 +112,7 @@ export const QUOTE_LINE_ITEMS_SAMPLE: Record<"ORM" | "MARCOM", QuoteLineItem[]> 
 
 const QUOTE_SAMPLE_ORM: Record<string, string> = {
   "quote.quote_id": "Q-ORM-0287",
+  "quote.hotel_name": "โรงแรมตัวอย่างเพลส",
   "quote.issue_date": "18 กันยายน 2569",
   "quote.package_name": "ORM Full · Smart Package (A + B)",
   "quote.package_description": "บริหารรายได้ห้องพักครบวงจร · ดูแลราคาและช่องทางขายทุก OTA พร้อมรายงานรายเดือน",
@@ -123,6 +124,7 @@ const QUOTE_SAMPLE_ORM: Record<string, string> = {
 
 const QUOTE_SAMPLE_MARCOM: Record<string, string> = {
   "quote.quote_id": "Q-MKT-0142",
+  "quote.hotel_name": "โรงแรมตัวอย่างเพลส",
   "quote.issue_date": "18 กันยายน 2569",
   "quote.package_name": "Marcom Meta Full Package",
   "quote.package_description": "ดูแลคอนเทนต์และโฆษณาบน Facebook / Instagram 10 โพสต์ต่อเดือน พร้อมรายงานผลโฆษณา",
