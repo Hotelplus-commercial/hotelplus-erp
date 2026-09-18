@@ -27,7 +27,7 @@ import {
   type LockMode,
   type TemplateSection,
 } from "@/lib/ps-templates";
-import { sampleDataFor, serviceLineOf, type PreviewCustomerType } from "@/lib/template-preview-sample-data";
+import { quoteLineItemsFor, sampleDataFor, serviceLineOf, type PreviewCustomerType } from "@/lib/template-preview-sample-data";
 
 export const Route = createFileRoute("/ps/templates/$templateId")({
   head: () => ({
