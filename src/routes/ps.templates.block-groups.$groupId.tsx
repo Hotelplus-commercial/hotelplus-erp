@@ -137,21 +137,14 @@ function BlockGroupEditor() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
         <Link
-          to="/ps/templates/block-groups"
+          to={from ? "/ps/templates/$templateId" : "/ps/templates"}
+          {...(from ? { params: { templateId: from } } : {})}
           className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
         >
-          <ArrowLeft className="size-4" /> Block Groups
+          <ArrowLeft className="size-4" /> {from ? `กลับไปเทมเพลต ${from}` : "กลับไปหน้า Templates"}
         </Link>
-        {from && (
-          <Link
-            to="/ps/templates/$templateId"
-            params={{ templateId: from }}
-            className="text-sm text-muted-foreground hover:text-foreground"
-          >
-            ← กลับไปเทมเพลต {from}
-          </Link>
-        )}
       </div>
+
 
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>

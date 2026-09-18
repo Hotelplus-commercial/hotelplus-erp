@@ -73,7 +73,7 @@ function TemplateCard({ t }: { t: Template }) {
 
       {missing.length > 0 && (
         <p className="rounded-lg border border-amber-400/50 bg-amber-50 px-2 py-1 text-[11px] dark:bg-amber-950/20">
-          ⚠️ ยังขาดเนื้อหา conditional block {missing.length} รายการ
+          ⚠️ ยังขาดเนื้อหา block group {missing.length} รายการ
         </p>
       )}
 
@@ -117,11 +117,8 @@ function TemplatesDashboard() {
             {isLegalAdmin ? <ShieldCheck className="size-4" /> : <Shield className="size-4" />}
             {isLegalAdmin ? "Legal Admin" : "โหมด PS user"}
           </Button>
-          <Button asChild variant="outline" size="sm" className="gap-1.5">
-            <Link to="/ps/templates/layer2">
-              <ShieldCheck className="size-4" /> Layer 2 registry
-            </Link>
-          </Button>
+          {/* v2.1 Path A · Phase 2.1 — "Layer 2 registry" entry removed (dev terminology) */}
+
           <Button asChild variant="outline" size="sm" className="gap-1.5">
             <Link to="/ps/templates/auto-fields">
               <Layers className="size-4" /> Auto-field reference
