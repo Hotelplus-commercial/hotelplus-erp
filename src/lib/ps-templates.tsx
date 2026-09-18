@@ -151,6 +151,17 @@ export const AUTO_FIELDS: AutoField[] = [
   { field_path: "quote.created_at", source: "BD.quotes.created_at", type: "datetime", available_in: ["quote"], supported_filters: ["date_th", "date_en", "datetime"], example: "15 สิงหาคม 2569", group: "quote", sub_type: "2a" },
   { field_path: "quote.created_by.email", source: "Auth.users.email (join created_by)", type: "string", available_in: ["quote"], supported_filters: [], example: "somchai.n@hotelplus.asia", group: "quote", sub_type: "2a" },
 
+  /* v2.1 Path A · Phase 4 — one-page quote layout fields */
+  { field_path: "quote.issue_date", source: "BD.quotes.created_at (วันที่ออกเอกสาร)", type: "date", available_in: ["quote"], supported_filters: ["date_th", "date_en"], example: "18 กันยายน 2569", group: "quote", sub_type: "2a" },
+  { field_path: "quote.package_name", source: "calculator_output.selected_package.name", type: "string", available_in: ["quote"], supported_filters: [], example: "ORM Full · Smart Package", group: "quote", sub_type: "2a" },
+  { field_path: "quote.package_description", source: "calculator_output.selected_package.description", type: "string", available_in: ["quote"], supported_filters: [], example: "บริหารรายได้ห้องพักครบวงจร", group: "quote", sub_type: "2a" },
+  { field_path: "quote.first_month_total", source: "computed · MTH + SETUP + ADDON เดือนแรก", type: "number", available_in: ["quote"], supported_filters: ["thb", "number"], example: "฿9,100", group: "quote", sub_type: "2c", computed_when: "on_render" },
+  { field_path: "quote.recurring_total", source: "computed · ผลรวมรายการ MTH", type: "number", available_in: ["quote"], supported_filters: ["thb", "number"], example: "฿5,600", group: "quote", sub_type: "2c", computed_when: "on_render" },
+  { field_path: "quote.commission_rate", source: "calculator_output.commission_rate (ORM เท่านั้น)", type: "number", available_in: ["quote"], supported_filters: ["pct"], example: "10.00%", group: "quote", sub_type: "2a" },
+  { field_path: "quote.created_by_email", source: "Auth.users.email (join created_by)", type: "string", available_in: ["quote"], supported_filters: [], example: "somchai.n@hotelplus.asia", group: "quote", sub_type: "2a" },
+  { field_path: "line_item.product_name", source: "quote.line_items[i].product_name (ใช้ใน foreach)", type: "array_iterator", available_in: ["quote"], supported_filters: [], example: "ค่าบริการรายเดือน", group: "quote", sub_type: "2a" },
+  { field_path: "line_item.price", source: "quote.line_items[i].price (ใช้ใน foreach)", type: "array_iterator", available_in: ["quote"], supported_filters: ["thb_or_percent", "thb"], example: "฿5,600 / 10% / FREE / One Time Setup", group: "quote", sub_type: "2a" },
+
   { field_path: "package.name", source: "calculator_output.packages[i].name", type: "string", available_in: ["quote"], supported_filters: [], example: "Smart Package", group: "package", sub_type: "2a" },
   { field_path: "package.base_price", source: "calculator_output.packages[i].base_price", type: "number", available_in: ["quote"], supported_filters: ["thb", "number", "currency:en"], example: "฿5,600", group: "package", sub_type: "2a" },
   { field_path: "package.commission_rate", source: "calculator_output.packages[i].commission_rate", type: "number", available_in: ["quote"], supported_filters: ["pct"], example: "10.00%", group: "package", sub_type: "2a" },
@@ -556,23 +567,100 @@ const v = (
   created_by: PS_USER,
 });
 
-const QUOTE_ORM_BODY = `<h2>ใบเสนอราคา · {{quote.quote_id}}</h2>
-<p>{{company.legal_name}} · {{company.address}}<br/>โทร {{company.phone}} · {{company.email}}</p>
-<p><strong>เสนอราคาให้:</strong> {{quote.hotel_name}}<br/>วันที่ {{quote.created_at | date_th}}</p>
-<foreach items="quote.calculator_output.packages" as="package">
-  <h3>{{loop.index}}. {{package.name}}</h3>
-  <p>ค่าบริการ {{package.base_price | thb}} ต่อเดือน · คอมมิชชั่น {{package.commission_rate | pct}}</p>
-  <p>รวมเดือนแรก {{package.first_month_total | thb}} · ประกอบด้วย {{package.includes[*].name}}</p>
-</foreach>`;
+/* v2.1 Path A · Phase 4 — one-page quote layouts (ใบประเมินค่าบริการ) */
 
-const QUOTE_ORM_DRAFT = `${QUOTE_ORM_BODY}\n<p>ผู้เสนอราคา: {{quote.created_by.email}}</p>`;
+const QUOTE_HEADER = `<div class="q-ci-header">
+  <div class="q-brand"><span class="q-logo">H<sup>+</sup> HOTEL PLUS</span><span class="q-tagline">ผู้ช่วยโรงแรมมืออาชีพ บริหารรายได้ให้พลัส</span></div>
+  <div class="q-doc-label">ใบประเมินค่าบริการ</div>
+</div>`;
 
-const QUOTE_MARCOM_BODY = `<h2>ใบเสนอราคา Marcom · {{quote.quote_id}}</h2>
-<p>{{company.legal_name}} · {{company.email}}</p>
-<p><strong>โรงแรม:</strong> {{quote.hotel_name}} · วันที่ {{quote.created_at | date_th}}</p>
-<foreach items="quote.calculator_output.packages" as="package">
-  <p>{{loop.index}}. {{package.name}} — {{package.base_price | thb}}</p>
-</foreach>`;
+const QUOTE_INFO = `<div class="q-info">
+  <div class="q-info-col">
+    <p class="q-info-head">{{company.legal_name}}</p>
+    <p>{{company.address}}</p>
+    <p>โทร {{company.phone}} · {{company.email}}</p>
+  </div>
+  <div class="q-info-col q-info-col--doc">
+    <table class="q-doc-table">
+      <tr><td>เลขที่เอกสาร</td><td>{{quote.quote_id}}</td></tr>
+      <tr><td>วันที่ออกเอกสาร</td><td>{{quote.issue_date | date_th}}</td></tr>
+      <tr><td>เสนอราคาให้</td><td>{{quote.hotel_name}}</td></tr>
+    </table>
+  </div>
+</div>`;
+
+const QUOTE_PACKAGE_CARD = `<div class="q-pkg-card">
+  <p class="q-pkg-name">{{quote.package_name}}</p>
+  <p class="q-pkg-desc">{{quote.package_description}}</p>
+</div>`;
+
+const quoteFooter = (
+  extra: string,
+) => `<div class="q-footer">
+  <div class="q-footer-text">
+    <p>ผู้จัดทำ: {{quote.created_by_email}}</p>
+    <p>${extra}</p>
+  </div>
+  <span class="q-page-num">1 / 1</span>
+</div>`;
+
+const QUOTE_ORM_BODY = `${QUOTE_HEADER}
+${QUOTE_INFO}
+${QUOTE_PACKAGE_CARD}
+<table class="q-table">
+  <thead><tr><th>#</th><th>รายการค่าบริการเดือนแรก</th><th class="q-num">จำนวน</th></tr></thead>
+  <tbody>
+    <foreach items="quote.line_items" as="line_item" categories="MTH,SETUP,ADDON">
+      <tr><td>{{loop.index}}</td><td>{{line_item.product_name}}</td><td class="q-num">{{line_item.price | thb_or_percent}}</td></tr>
+    </foreach>
+  </tbody>
+  <tfoot>
+    <tr><td colspan="2">รวมชำระเดือนแรก (ไม่รวมภาษีมูลค่าเพิ่ม)</td><td class="q-num">{{quote.first_month_total | thb}}</td></tr>
+    <tr><td colspan="2">ค่าคอมมิชชั่นจากยอดขายห้องพัก</td><td class="q-num">{{quote.commission_rate | pct}}</td></tr>
+  </tfoot>
+</table>
+<table class="q-table">
+  <thead><tr><th>#</th><th>รายการค่าบริการรายเดือน (เดือนถัดไป)</th><th class="q-num">จำนวน</th></tr></thead>
+  <tbody>
+    <foreach items="quote.line_items" as="line_item" categories="MTH">
+      <tr><td>{{loop.index}}</td><td>{{line_item.product_name}}</td><td class="q-num">{{line_item.price | thb_or_percent}}</td></tr>
+    </foreach>
+  </tbody>
+  <tfoot>
+    <tr><td colspan="2">รวมค่าบริการรายเดือน (ไม่รวมภาษีมูลค่าเพิ่ม)</td><td class="q-num">{{quote.recurring_total | thb}}</td></tr>
+    <tr><td colspan="2">ค่าคอมมิชชั่นจากยอดขายห้องพัก</td><td class="q-num">{{quote.commission_rate | pct}}</td></tr>
+  </tfoot>
+</table>
+${quoteFooter("เอกสารนี้เป็นการประเมินค่าบริการเบื้องต้น มีผล 15 วันนับจากวันที่ออกเอกสาร")}`;
+
+const QUOTE_ORM_DRAFT = `${QUOTE_ORM_BODY}`;
+
+const QUOTE_MARCOM_BODY = `${QUOTE_HEADER}
+${QUOTE_INFO}
+${QUOTE_PACKAGE_CARD}
+<table class="q-table">
+  <thead><tr><th>#</th><th>รายการค่าบริการเดือนแรก</th><th class="q-num">จำนวน</th></tr></thead>
+  <tbody>
+    <foreach items="quote.line_items" as="line_item" categories="MTH,SETUP,ADDON">
+      <tr><td>{{loop.index}}</td><td>{{line_item.product_name}}</td><td class="q-num">{{line_item.price | thb_or_percent}}</td></tr>
+    </foreach>
+  </tbody>
+  <tfoot>
+    <tr><td colspan="2">รวมชำระเดือนแรก (ไม่รวมภาษีมูลค่าเพิ่ม)</td><td class="q-num">{{quote.first_month_total | thb}}</td></tr>
+  </tfoot>
+</table>
+<table class="q-table">
+  <thead><tr><th>#</th><th>รายการค่าบริการรายเดือน (เดือนถัดไป)</th><th class="q-num">จำนวน</th></tr></thead>
+  <tbody>
+    <foreach items="quote.line_items" as="line_item" categories="MTH">
+      <tr><td>{{loop.index}}</td><td>{{line_item.product_name}}</td><td class="q-num">{{line_item.price | thb_or_percent}}</td></tr>
+    </foreach>
+  </tbody>
+  <tfoot>
+    <tr><td colspan="2">รวมค่าบริการรายเดือน (ไม่รวมภาษีมูลค่าเพิ่ม)</td><td class="q-num">{{quote.recurring_total | thb}}</td></tr>
+  </tfoot>
+</table>
+${quoteFooter("เอกสารนี้เป็นการประเมินค่าบริการเบื้องต้น มีผล 15 วันนับจากวันที่ออกเอกสาร")}`;
 
 export const CONTRACT_SECTIONS = [
   "ผู้ทำสัญญา (Parties)",
@@ -786,7 +874,7 @@ function seedTemplates(): Template[] {
       docs_generated: 148,
       active_version_id: "TPL-Q-ORM@v3.1",
       versions: [
-        v("TPL-Q-ORM", "v3.2", "draft", QUOTE_ORM_DRAFT, "Added: {{quote.created_by.email}}"),
+        v("TPL-Q-ORM", "v3.2", "draft", QUOTE_ORM_DRAFT, "Phase 4: one-page layout + thb_or_percent pricing tables"),
         v("TPL-Q-ORM", "v3.1", "active", QUOTE_ORM_BODY, "Fixed: commission_rate formatting", "2026-07-15T00:00:00+07:00"),
         v("TPL-Q-ORM", "v3.0", "archived", QUOTE_ORM_BODY, "Major: 4-package comparison layout"),
       ],
@@ -835,7 +923,7 @@ export const DEMO_PACKAGE_CODES = [
 
 /* ---------------- store ---------------- */
 
-const KEY = "meridia.ps.templates.v2_1a3";
+const KEY = "meridia.ps.templates.v2_1a4";
 const ADMIN_KEY = "meridia.ps.templates.legal_admin";
 
 export type MissingBlock = { block_group: string; condition: string };

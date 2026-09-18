@@ -27,7 +27,7 @@ import {
   type LockMode,
   type TemplateSection,
 } from "@/lib/ps-templates";
-import { sampleDataFor, serviceLineOf, type PreviewCustomerType } from "@/lib/template-preview-sample-data";
+import { quoteLineItemsFor, sampleDataFor, serviceLineOf, type PreviewCustomerType } from "@/lib/template-preview-sample-data";
 
 export const Route = createFileRoute("/ps/templates/$templateId")({
   head: () => ({
@@ -661,7 +661,16 @@ function TemplateEditor() {
               ))
             ) : (
               <div className="space-y-2">
-                <div dangerouslySetInnerHTML={{ __html: renderBody(text, data, { raw, pills: true }) }} />
+                <div
+                  className="q-doc"
+                  dangerouslySetInnerHTML={{
+                    __html: renderBody(text, data, {
+                      raw,
+                      pills: true,
+                      lineItems: quoteLineItemsFor(tpl.service_line ?? line),
+                    }),
+                  }}
+                />
                 <Textarea
                   ref={areaRef}
                   value={text}
