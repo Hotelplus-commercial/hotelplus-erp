@@ -403,7 +403,20 @@ function TemplateEditor() {
   const data = sampleDataFor({ sku: activeSku, customerType, serviceLine: tpl.service_line ?? line });
 
   const fields = AUTO_FIELDS.filter((f) => f.available_in.includes(tpl.template_type));
-  const missing = missingConditionalBlocks(tpl);
+  /* v2.1 Path A — coverage is judged against the block-group registry, not the legacy Layer-2 seeds */
+  const missing = ((): { block_group: string; condition: string }[] => {
+    const ids = [...new Set(tpl.sections.flatMap((sec) => (sec.uses_conditional_block ? [sec.uses_conditional_block] : [])))];
+    const out: { block_group: string; condition: string }[] = [];
+    for (const id of ids) {
+      const g = blockGroups.find((b) => b.block_group_id === id);
+      if (!g) {
+        out.push({ block_group: id, condition: "ยังไม่มีใน registry" });
+        continue;
+      }
+      for (const s of coverageOf(g).missing) if (mappedSkus.includes(s)) out.push({ block_group: id, condition: s });
+    }
+    return out;
+  })();
   const sel = tpl.sections.find((s) => s.id === selectedSection) ?? tpl.sections[0];
 
   /* v2.1 Path A §3.6 — section numbering must be continuous up to template.max_section */
