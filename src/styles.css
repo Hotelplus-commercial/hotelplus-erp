@@ -433,6 +433,25 @@
   font-size: 9pt;
 }
 
+/* Contract header · 2-column layout (v2.1 Path A §3.2) */
+.ct-header {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8mm;
+  margin-bottom: 6pt;
+}
+
+.ct-header-left h2 {
+  font-size: 13pt;
+  font-weight: 700;
+  margin-bottom: 4pt;
+}
+
+.ct-header-right p {
+  font-size: 9pt;
+  line-height: 1.5;
+}
+
 /* Block group node · inline expanded, no heavy box (PS-3 · v2.1 Path A §2.4) */
 .bg-node {
   margin: 6pt 0;

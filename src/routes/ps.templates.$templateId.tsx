@@ -409,6 +409,21 @@ function TemplateEditor() {
   const missing = missingConditionalBlocks(tpl);
   const sel = tpl.sections.find((s) => s.id === selectedSection) ?? tpl.sections[0];
 
+  /* v2.1 Path A §3.6 — section numbering must be continuous up to template.max_section */
+  const numberingIssue = useMemo(() => {
+    const nums = tpl.sections
+      .map((s) => /^(\d+)\./.exec(s.title)?.[1])
+      .filter((n): n is string => !!n)
+      .map(Number);
+    if (nums.length === 0) return null;
+    const max = tpl.max_section ?? Math.max(...nums);
+    const gaps: number[] = [];
+    for (let i = 1; i <= max; i++) if (!nums.includes(i)) gaps.push(i);
+    const extra = nums.filter((n) => n > max);
+    if (gaps.length === 0 && extra.length === 0) return null;
+    return [...gaps, ...extra].sort((a, b) => a - b);
+  }, [tpl.sections, tpl.max_section]);
+
   /* coverage across every block-group zone used by this template */
   const usedGroups = useMemo(() => {
     const all = tpl.sections.map((s) => s.content).join(" ") + text;
@@ -528,6 +543,16 @@ function TemplateEditor() {
           <p>
             ⚠️ ยังขาดเนื้อหา block group:{" "}
             <span className="font-mono text-xs">{missing.map((m) => `${m.block_group}:${m.condition}`).join(", ")}</span>
+          </p>
+        </div>
+      )}
+
+      {numberingIssue && (
+        <div className="flex items-start gap-2 rounded-xl border border-amber-400/50 bg-amber-50 p-3 text-sm dark:bg-amber-950/20">
+          <AlertTriangle className="mt-0.5 size-4 text-amber-600" />
+          <p>
+            ⚠️ ตรวจพบการข้ามหมายเลขข้อ · แก้ไขให้เรียงต่อเนื่อง{" "}
+            <span className="font-mono text-xs">ข้อ {numberingIssue.join(", ")}</span>
           </p>
         </div>
       )}
