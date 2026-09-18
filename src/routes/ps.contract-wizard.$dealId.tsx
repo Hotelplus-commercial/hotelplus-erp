@@ -23,7 +23,7 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/ps/contract-wizard/$dealId")({
   /* v2.2 Fix 3 — quote preselected from the dashboard / BD quote detail */
   validateSearch: (search: Record<string, unknown>) => ({
-    quote_id: typeof search.quote_id === "string" ? search.quote_id : "",
+    quote_id: typeof search['quote_id'] === "string" ? (search['quote_id'] as string) : "",
   }),
   component: DealWizard,
 });

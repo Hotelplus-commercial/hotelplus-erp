@@ -8,7 +8,7 @@ import { useBd } from "@/lib/bd-store";
 
 export const Route = createFileRoute("/ps/contract-wizard/new")({
   validateSearch: (search: Record<string, unknown>) => ({
-    quote_id: typeof search.quote_id === "string" ? search.quote_id : "",
+    quote_id: typeof search['quote_id'] === "string" ? (search['quote_id'] as string) : "",
   }),
   component: WizardEntry,
 });
