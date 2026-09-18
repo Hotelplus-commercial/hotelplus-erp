@@ -138,6 +138,12 @@ export const AUTO_FIELDS: AutoField[] = [
   { field_path: "company.phone", source: "PS.config.company_phone", type: "string", available_in: ["quote", "contract"], supported_filters: [], example: "(+66)82 898 9369", group: "company", sub_type: "2a" },
   { field_path: "company.email", source: "PS.config.company_email", type: "string", available_in: ["quote", "contract"], supported_filters: [], example: "info@hotelplus.asia", group: "company", sub_type: "2a" },
 
+  /* v2.1 · branding fields for Cover Page / CI header / signature block */
+  { field_path: "service_line.label", source: "Computed: LOOKUP(sku.service_line) · CI header + cover", type: "string", available_in: ["contract"], supported_filters: [], example: "ONLINE REVENUE MANAGEMENT", group: "branding", sub_type: "2c", computed_when: "on_render" },
+  { field_path: "contract.code", source: "Computed ตอน Wizard Step 5 · Cover Page มุมซ้ายบน", type: "string", available_in: ["contract"], supported_filters: [], example: "CT-00001-ORM-690101-01", group: "branding", sub_type: "2c", computed_when: "on_generate" },
+  { field_path: "hotelplus.authorized_signatory", source: "PS.config.authorized_signatory", type: "string", available_in: ["contract"], supported_filters: [], example: "นาย ปราบ เอื้อพัชรพล", group: "branding", sub_type: "2a" },
+
+
   { field_path: "quote.quote_id", source: "BD.quotes.quote_id", type: "string", available_in: ["quote"], supported_filters: [], example: "Q-ORM-0287", group: "quote", sub_type: "2a" },
   { field_path: "quote.hotel_name", source: "BD.quotes.hotel_name (free text)", type: "string", available_in: ["quote"], supported_filters: [], example: "Sumator Resort", group: "quote", sub_type: "2a" },
   { field_path: "quote.created_at", source: "BD.quotes.created_at", type: "datetime", available_in: ["quote"], supported_filters: ["date_th", "date_en", "datetime"], example: "15 สิงหาคม 2569", group: "quote", sub_type: "2a" },
