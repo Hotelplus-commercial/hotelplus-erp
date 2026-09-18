@@ -161,13 +161,44 @@ export function signatureBlockHtml(customerSigner: string, hpSignatory: string, 
   )}</div>`;
 }
 
-/** Full body render: signature nodes + placeholder pills. */
+/* ---------------- quote pricing rows (v2.1 Path A · Phase 4) ---------------- */
+
+const thb = (n: number) => n.toLocaleString("en-US");
+
+/** §4.5 `thb_or_percent` — 4 cases: percent · free · one-time setup · baht. */
+export function thbOrPercent(item: QuoteLineItem): string {
+  if (item.unit === "%") return `${item.price}%`;
+  if (item.price === 0) return "FREE";
+  if (item.is_setup) return `One Time Setup ฿${thb(item.price)}`;
+  return `฿${thb(item.price)}`;
+}
+
+const LOOP_RE = /<foreach\s+items="([^"]+)"\s+as="([^"]+)"(?:\s+categories="([^"]+)")?\s*>([\s\S]*?)<\/foreach>/g;
+
+/** Expands `<foreach items="quote.line_items" as="line_item" categories="MTH,SETUP">…</foreach>`. */
+export function expandLoops(content: string, items: QuoteLineItem[]): string {
+  return content.replace(LOOP_RE, (_all, _items: string, alias: string, categories: string | undefined, inner: string) => {
+    const wanted = categories?.split(",").map((c) => c.trim());
+    const rows = wanted ? items.filter((i) => wanted.includes(i.category)) : items;
+    return rows
+      .map((row, idx) =>
+        inner
+          .replace(/\{\{\s*loop\.index\s*\}\}/g, String(idx + 1))
+          .replace(new RegExp(`\\{\\{\\s*${alias}\\.price\\s*(\\|[^}]*)?\\}\\}`, "g"), thbOrPercent(row))
+          .replace(new RegExp(`\\{\\{\\s*${alias}\\.product_name\\s*(\\|[^}]*)?\\}\\}`, "g"), esc(row.product_name)),
+      )
+      .join("");
+  });
+}
+
+/** Full body render: loops + signature nodes + placeholder pills. */
 export function renderBody(
   content: string,
   data: Record<string, string>,
-  opts: { raw?: boolean; pills?: boolean } = {},
+  opts: { raw?: boolean; pills?: boolean; lineItems?: QuoteLineItem[] } = {},
 ): string {
-  const withSig = content.replace(SIGNATURE_RE, () =>
+  const withLoops = opts.raw ? content : expandLoops(content, opts.lineItems ?? []);
+  const withSig = withLoops.replace(SIGNATURE_RE, () =>
     signatureBlockHtml(
       data["customer.signer_name"] ?? "…………………",
       data["hotelplus.authorized_signatory"] ?? "…………………",
