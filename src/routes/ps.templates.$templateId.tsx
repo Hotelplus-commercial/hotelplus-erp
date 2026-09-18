@@ -362,7 +362,6 @@ function TemplateEditor() {
     activateDraft,
     isLegalAdmin,
     setLegalAdmin,
-    missingConditionalBlocks,
   } = usePsTemplates();
   const { blockGroups } = usePsBlockGroups();
   const tpl = templates.find((t) => t.template_id === templateId);
