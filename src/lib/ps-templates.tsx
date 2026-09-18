@@ -835,7 +835,7 @@ export const DEMO_PACKAGE_CODES = [
 
 /* ---------------- store ---------------- */
 
-const KEY = "meridia.ps.templates.v2_1a";
+const KEY = "meridia.ps.templates.v2_1a3";
 const ADMIN_KEY = "meridia.ps.templates.legal_admin";
 
 export type MissingBlock = { block_group: string; condition: string };
