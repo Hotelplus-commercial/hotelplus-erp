@@ -400,17 +400,14 @@ function TemplateEditor() {
   const mappedSkus = tpl.mapped_skus.length > 0 ? tpl.mapped_skus : [...MONTHLY_SKUS];
   const activeSku = mappedSkus.includes(sku) ? sku : (mappedSkus[0] as string);
   const line = serviceLineOf(activeSku);
-  const data = useMemo(
-    () => sampleDataFor({ sku: activeSku, customerType, serviceLine: tpl.service_line ?? line }),
-    [activeSku, customerType, tpl.service_line, line],
-  );
+  const data = sampleDataFor({ sku: activeSku, customerType, serviceLine: tpl.service_line ?? line });
 
   const fields = AUTO_FIELDS.filter((f) => f.available_in.includes(tpl.template_type));
   const missing = missingConditionalBlocks(tpl);
   const sel = tpl.sections.find((s) => s.id === selectedSection) ?? tpl.sections[0];
 
   /* v2.1 Path A §3.6 — section numbering must be continuous up to template.max_section */
-  const numberingIssue = useMemo(() => {
+  const numberingIssue = ((): number[] | null => {
     const nums = tpl.sections
       .map((s) => /^(\d+)\./.exec(s.title)?.[1])
       .filter((n): n is string => !!n)
@@ -422,14 +419,12 @@ function TemplateEditor() {
     const extra = nums.filter((n) => n > max);
     if (gaps.length === 0 && extra.length === 0) return null;
     return [...gaps, ...extra].sort((a, b) => a - b);
-  }, [tpl.sections, tpl.max_section]);
+  })();
 
   /* coverage across every block-group zone used by this template */
-  const usedGroups = useMemo(() => {
-    const all = tpl.sections.map((s) => s.content).join(" ") + text;
-    return [...new Set([...all.matchAll(BLOCK_RE)].map((m) => m[1] ?? ""))];
-  }, [tpl.sections, text]);
-  const coverage = useMemo(() => {
+  const allBodies = tpl.sections.map((s) => s.content).join(" ") + text;
+  const usedGroups = [...new Set([...allBodies.matchAll(BLOCK_RE)].map((m) => m[1] ?? ""))];
+  const coverage = ((): { covered: number; total: number } | null => {
     const groups = usedGroups
       .map((id) => blockGroups.find((g) => g.block_group_id === id))
       .filter((g): g is NonNullable<typeof g> => !!g);
@@ -438,7 +433,7 @@ function TemplateEditor() {
     for (const g of groups) for (const s of coverageOf(g).missing) missingSkus.add(s);
     const covered = mappedSkus.filter((s) => !missingSkus.has(s)).length;
     return { covered, total: mappedSkus.length };
-  }, [usedGroups, blockGroups, mappedSkus]);
+  })();
 
   const insert = (token: string) => {
     const el = hasSections ? sectionRef.current : areaRef.current;
