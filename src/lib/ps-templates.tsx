@@ -9,6 +9,8 @@ import {
   type ReactNode,
 } from "react";
 
+import { QUOTE_BODY_MARCOM, QUOTE_BODY_ORM } from "@/lib/quote-nodes";
+
 export type TemplateType = "quote" | "contract";
 export type VersionStatus = "draft" | "active" | "archived";
 
