@@ -11,7 +11,7 @@ import { MONTHLY_SKUS, activeBlockVersion, usePsBlockGroups } from "@/lib/ps-blo
 import { usePsTemplates } from "@/lib/ps-templates";
 import { sampleDataFor, serviceLineOf, type PreviewCustomerType } from "@/lib/template-preview-sample-data";
 
-type Search = { sku?: string; customer_type?: PreviewCustomerType; show_cover?: boolean };
+type Search = { sku: string | undefined; customer_type: PreviewCustomerType; show_cover: boolean };
 
 export const Route = createFileRoute("/ps/templates/preview/$templateId")({
   validateSearch: (s: Record<string, unknown>): Search => ({
