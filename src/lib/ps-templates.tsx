@@ -79,6 +79,8 @@ export type Template = {
   quote_type: "ORM" | "MARCOM" | null;
   service_line: "ORM" | "MARCOM" | null;
   sections: TemplateSection[];
+  /** v2.1 Path A §3.6 — highest legitimate section number (ORM 9 · Marcom 7) */
+  max_section?: number;
   superseded: boolean;
   versions: TemplateVersion[];
   active_version_id: string;
@@ -562,7 +564,7 @@ const QUOTE_ORM_BODY = `<h2>ใบเสนอราคา · {{quote.quote_id}}
   <p>ค่าบริการ {{package.base_price | thb}} ต่อเดือน · คอมมิชชั่น {{package.commission_rate | pct}}</p>
   <p>รวมเดือนแรก {{package.first_month_total | thb}} · ประกอบด้วย {{package.includes[*].name}}</p>
 </foreach>
-<p>หน้า {{page.current}} / {{page.total}}</p>`;
+</foreach>`;
 
 const QUOTE_ORM_DRAFT = `${QUOTE_ORM_BODY}\n<p>ผู้เสนอราคา: {{quote.created_by.email}}</p>`;
 
@@ -775,8 +777,8 @@ function seedTemplates(): Template[] {
     ...opts,
   });
 
-  const ormSections = contractSections("ORM");
-  const marcomSections = contractSections("MARCOM");
+  const ormSections = ormContractSections();
+  const marcomSections = marcomContractSections();
 
   return [
     t("TPL-Q-ORM", "quote", "ORM Quote (4-package comparison)", {
@@ -803,18 +805,20 @@ function seedTemplates(): Template[] {
       mapped_skus: ["ORM-MTH-FULL", "ORM-MTH-LITE"],
       service_line: "ORM",
       sections: ormSections,
+      max_section: 9,
       docs_generated: 59,
-      active_version_id: "TPL-C-ORM@v3.0",
-      versions: [v("TPL-C-ORM", "v3.0", "active", sectionsToBody(ormSections), "3-tier lock + block groups", "2026-09-01T00:00:00+07:00")],
+      active_version_id: "TPL-C-ORM@v3.1",
+      versions: [v("TPL-C-ORM", "v3.1", "active", sectionsToBody(ormSections), "โครงสัญญาจริง §1-9 + ภาคผนวก ก/ข", "2026-09-18T00:00:00+07:00")],
     }),
     t("TPL-C-MARCOM", "contract", "Marcom Service Contract (Full/Lite unified · no commission)", {
-      description: "Layer 2 · 17 sections · ไม่มี §4.2 Commission",
+      description: "โครงสัญญาจริง §1-7 · ไม่มี §4.2 Commission",
       mapped_skus: ["MARCOM-MTH-META", "MARCOM-MTH-META-LITE", "MARCOM-MTH-TIKTOK", "MARCOM-MTH-TIKTOK-LITE", "MARCOM-MTH-GMB"],
       service_line: "MARCOM",
       sections: marcomSections,
+      max_section: 7,
       docs_generated: 23,
-      active_version_id: "TPL-C-MARCOM@v1.0",
-      versions: [v("TPL-C-MARCOM", "v1.0", "active", sectionsToBody(marcomSections), "แยกเทมเพลต Marcom ด้วย block group", "2026-09-01T00:00:00+07:00")],
+      active_version_id: "TPL-C-MARCOM@v1.1",
+      versions: [v("TPL-C-MARCOM", "v1.1", "active", sectionsToBody(marcomSections), "โครงสัญญาจริง §1-7 + ภาคผนวก ก/ข", "2026-09-18T00:00:00+07:00")],
     }),
     /* v2.1 Path A · Phase 1.1 — TPL-C-ORM-FULL / TPL-C-ORM-LITE / TPL-C-MARCOM-META
      * hard-deleted. Issued contracts keep their own snapshot (template code +
