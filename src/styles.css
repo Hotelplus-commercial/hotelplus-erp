@@ -129,6 +129,31 @@
   --gradient-accent: linear-gradient(135deg, oklch(0.74 0.13 62), oklch(0.8 0.11 82));
   --shadow-card: 0 1px 2px oklch(0.3 0.04 250 / 0.06), 0 8px 24px -12px oklch(0.3 0.04 250 / 0.18);
   --shadow-pop: 0 12px 40px -12px oklch(0.28 0.05 250 / 0.28);
+
+  /* ===== A4 Canvas + CI branding (PS App v2.1) ===== */
+  --ci-yellow: #fdb515;
+  --ci-yellow-hover: #e6a312;
+  --ci-header-text: #ffffff;
+
+  --a4-width: 210mm;
+  --a4-height: 297mm;
+  --a4-margin: 25mm;
+  --a4-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --a4-bg: #ffffff;
+  --a4-canvas-bg: #e9e7e2;
+
+  --ci-header-height: 20mm;
+  --ci-footer-height: 15mm;
+
+  --pill-filled-bg: #deebfa;
+  --pill-filled-text: #0f4c8a;
+  --pill-empty-bg: #fcebbf;
+  --pill-empty-text: #854f0b;
+
+  --bg-chip-bg: rgba(112, 72, 163, 0.08);
+  --bg-chip-border: #7048a3;
+
+  --sig-line: #333333;
 }
 
 .dark {
@@ -188,4 +213,275 @@
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+}
+
+/* ===== PS App v2.1 · A4 paper simulation (shared with contract-renderer) ===== */
+.a4-canvas {
+  background: var(--a4-canvas-bg);
+  padding: 16px;
+  border-radius: var(--radius-xl);
+  overflow-x: auto;
+}
+
+.a4-page {
+  position: relative;
+  width: var(--a4-width);
+  min-height: 120mm;
+  margin: 0 auto 16px;
+  background: var(--a4-bg);
+  box-shadow: var(--a4-shadow);
+  color: #2c2c2a;
+  font-family: "Kanit", var(--font-sans);
+  font-size: 10pt;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.a4-page--fixed {
+  height: var(--a4-height);
+}
+
+.a4-body {
+  flex: 1;
+  padding: var(--a4-margin);
+}
+
+.a4-block + .a4-block {
+  margin-top: 10pt;
+}
+
+.a4-block-title {
+  font-family: "Kanit", var(--font-display);
+  font-size: 11pt;
+  font-weight: 700;
+  margin-bottom: 4pt;
+}
+
+/* CI bars */
+.ci-bar {
+  background: var(--ci-yellow);
+  color: var(--ci-header-text);
+  display: flex;
+  align-items: center;
+  padding: 0 12mm;
+  flex-shrink: 0;
+}
+
+.ci-bar--header {
+  height: var(--ci-header-height);
+  justify-content: space-between;
+}
+
+.ci-bar--footer {
+  height: var(--ci-footer-height);
+  justify-content: space-between;
+  font-size: 6.5pt;
+  letter-spacing: 0.02em;
+}
+
+.ci-logo,
+.a4-cover-logo {
+  font-family: "Kanit", var(--font-display);
+  font-weight: 700;
+  font-size: 12pt;
+  letter-spacing: 0.04em;
+}
+
+.ci-logo-word {
+  font-size: 8pt;
+}
+
+.ci-header-title {
+  font-weight: 700;
+  font-size: 9pt;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ci-footer-text p {
+  margin: 0;
+}
+
+.ci-page-num {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* Cover page */
+.a4-cover {
+  height: var(--a4-height);
+  padding: 0;
+}
+
+.a4-cover-code {
+  position: absolute;
+  top: 12mm;
+  left: 15mm;
+  font-style: italic;
+  font-size: 8pt;
+  color: #8a8a85;
+}
+
+.a4-cover-hero {
+  width: 100%;
+  height: 40%;
+  object-fit: cover;
+  margin-top: 22mm;
+}
+
+.a4-cover-body {
+  padding: 18mm var(--a4-margin) var(--a4-margin);
+}
+
+.a4-cover-logo {
+  display: inline-block;
+  color: #1a1a18;
+  margin-bottom: 14mm;
+}
+
+.a4-cover-line {
+  font-weight: 700;
+  font-size: 14pt;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.a4-cover-hotel {
+  font-family: "Kanit", var(--font-display);
+  font-size: 36pt;
+  font-weight: 700;
+  line-height: 1.1;
+  margin-top: 6mm;
+}
+
+.a4-cover-rule {
+  width: 28mm;
+  border: 0;
+  border-top: 2px solid #2c2c2a;
+  margin: 8mm 0 4mm;
+}
+
+.a4-cover-terms {
+  font-family: "Kanit", var(--font-display);
+  font-size: 11pt;
+  letter-spacing: 0.06em;
+}
+
+.a4-readonly-badge {
+  position: absolute;
+  right: 10mm;
+  top: 10mm;
+  background: rgba(0, 0, 0, 0.06);
+  color: #6b6b66;
+  font-size: 7pt;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+/* Placeholder pills */
+.ph-pill {
+  border-radius: 4px;
+  padding: 0 4px;
+  font-size: 0.95em;
+}
+
+.ph-pill--filled {
+  background: var(--pill-filled-bg);
+  color: var(--pill-filled-text);
+}
+
+.ph-pill--empty {
+  background: var(--pill-empty-bg);
+  color: var(--pill-empty-text);
+}
+
+.ph-pill--raw {
+  background: var(--pill-empty-bg);
+  color: var(--pill-empty-text);
+  font-family: ui-monospace, monospace;
+}
+
+/* Signature block node */
+.sig-block {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8mm;
+  margin: 10mm 0;
+  text-align: center;
+}
+
+.sig-col .sig-line {
+  border-bottom: 1px dotted var(--sig-line);
+  width: 200px;
+  margin: 0 auto 4px;
+  text-align: left;
+}
+
+.sig-col .sig-role {
+  font-size: 8pt;
+  color: #6b6b66;
+}
+
+.sig-col .sig-name {
+  margin-top: 6mm;
+}
+
+.sig-col .sig-date {
+  margin-top: 4mm;
+  font-size: 9pt;
+}
+
+/* Block group node · inline expanded (PS-3) */
+.bg-node {
+  border: 1px solid var(--bg-chip-border);
+  background: var(--bg-chip-bg);
+  border-radius: 8px;
+  margin: 6pt 0;
+  overflow: hidden;
+}
+
+.bg-node-chip {
+  background: var(--bg-chip-border);
+  color: #fff;
+  font-size: 8pt;
+  padding: 3px 8px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.bg-node-content {
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .a4-print-root,
+  .a4-print-root * {
+    visibility: visible;
+  }
+
+  .a4-print-root {
+    position: absolute;
+    inset: 0;
+    background: #fff;
+    padding: 0;
+  }
+
+  .a4-page {
+    box-shadow: none;
+    margin: 0;
+    page-break-after: always;
+  }
+
+  @page {
+    size: A4;
+    margin: 0;
+  }
 }
