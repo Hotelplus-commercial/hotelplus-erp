@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { CIFooter, CIHeader, renderBody } from "@/lib/contract-renderer";
 import { activeBlockVersion, coverageOf, usePsBlockGroups, type ConditionalBlock } from "@/lib/ps-block-groups";
-import { findBadPlaceholderLiterals, repairHotelAddressText } from "@/lib/template-integrity";
 import { sampleDataFor, serviceLineOf } from "@/lib/template-preview-sample-data";
 
 export const Route = createFileRoute("/ps/templates/block-groups/$groupId")({
@@ -43,7 +42,6 @@ function VariantCard({
   const sku = variant.applies_to_skus[0] ?? "ORM-MTH-FULL-SMART";
   const data = sampleDataFor({ sku, serviceLine: serviceLineOf(sku) });
   const text = draft ?? variant.content;
-  const literalIssues = findBadPlaceholderLiterals(text);
 
   return (
     <section className="a4-page">
@@ -71,7 +69,6 @@ function VariantCard({
           >
             {edit ? "ดูผลลัพธ์" : "แก้ไขเนื้อหา"}
           </button>
-          {literalIssues.length > 0 && <Chip tone="danger">⚠ {literalIssues.length} placeholder ผิด</Chip>}
         </div>
 
         {edit ? (
@@ -80,42 +77,9 @@ function VariantCard({
               value={text}
               readOnly={readOnly}
               onChange={(e) => setDraft(e.target.value)}
-              onBlur={() => {
-                if (literalIssues.length) toast.warning(`พบ placeholder ผิด ${literalIssues.length} รายการ`);
-              }}
-              onPaste={(e) => {
-                window.setTimeout(() => {
-                  const nextIssues = findBadPlaceholderLiterals(e.currentTarget.value);
-                  if (nextIssues.length) toast.warning(`พบ placeholder ผิด ${nextIssues.length} รายการ`);
-                }, 0);
-              }}
               spellCheck={false}
-              className={`min-h-[200px] bg-white font-mono text-[10px] leading-relaxed ${literalIssues.length ? "border-destructive placeholder-literal-warning" : ""}`}
+              className="min-h-[200px] bg-white font-mono text-[10px] leading-relaxed"
             />
-            {literalIssues.length > 0 && (
-              <div className="mt-2 rounded-md border border-destructive/30 bg-destructive/10 p-2 text-[8pt] text-destructive">
-                <p className="font-medium">พบ placeholder ที่ยังเป็น literal text</p>
-                <div className="mt-1 flex flex-wrap gap-1">
-                  {literalIssues.slice(0, 4).map((issue, i) => (
-                    <code key={`${issue.index}-${i}`} className="placeholder-literal-chip rounded bg-background px-1.5 py-0.5 font-mono">
-                      {issue.match}
-                    </code>
-                  ))}
-                </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="mt-2 h-6 px-2 text-[8pt]"
-                  onClick={() => {
-                    const repaired = repairHotelAddressText(text);
-                    if (repaired.replacements > 0) setDraft(repaired.content);
-                    else toast.message("รายการนี้ต้องรีวิวก่อนแก้ไข");
-                  }}
-                >
-                  แก้ไขอัตโนมัติ →
-                </Button>
-              </div>
-            )}
             <div className="mt-2 flex items-center gap-2">
               {readOnly ? (
                 <p className="flex items-center gap-1 text-[8pt] text-muted-foreground">
@@ -128,11 +92,6 @@ function VariantCard({
                   className="h-7 px-2 text-[8pt]"
                   disabled={draft === null}
                   onClick={() => {
-                    if (literalIssues.length > 0 && !isSystemAdmin) {
-                      toast.error(`พบ placeholder ผิด ${literalIssues.length} รายการ · แก้ไขก่อน save`);
-                      return;
-                    }
-                    if (literalIssues.length > 0 && !window.confirm(`Override placeholder validator? (${literalIssues.length} รายการยังเป็น literal text)`)) return;
                     const ok = saveVariant(groupId, variant.block_id, text);
                     if (ok) {
                       setDraft(null);
@@ -219,23 +178,6 @@ function BlockGroupEditor() {
           <p className="text-sm text-muted-foreground">block group นี้แก้ไขได้เฉพาะ System Admin</p>
         </Panel>
       )}
-
-      <Panel title="Auto-fields" subtitle="Hotel address ใช้ field รวมเท่านั้นใน template content">
-        <Button
-          size="sm"
-          variant="outline"
-          className="font-mono text-xs"
-          onClick={() => {
-            void navigator.clipboard?.writeText("{{hotel.address_full}}");
-            toast.success("คัดลอก {{hotel.address_full}} แล้ว");
-          }}
-        >
-          {"{{hotel.address_full}}"}
-        </Button>
-        <p className="mt-2 text-xs text-muted-foreground">
-          address_number / street / subdistrict / district / province / postal_code ใช้เฉพาะใน Hotel record admin UI
-        </p>
-      </Panel>
 
       <div className="a4-canvas space-y-4">
         {version.variants.map((v) => (
