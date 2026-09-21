@@ -348,6 +348,7 @@ function normalizeBlockGroupsV23(groups: BlockGroup[]): BlockGroup[] {
     ...g,
     updated_at: now,
     versions: g.versions.map((version) => {
+      const needsSpecLite = ["definitions", "scope_of_work", "work_proposal"].includes(g.block_group_id);
       const retained = version.variants
         .filter((variant) => !variant.applies_to_skus.every(isPhantomOrmLiteSku))
         .map((variant) => {
@@ -357,7 +358,15 @@ function normalizeBlockGroupsV23(groups: BlockGroup[]): BlockGroup[] {
             applies_to_skus: [...new Set(variant.applies_to_skus.map(canonicalSkuCode))],
             content: repaired.content,
           };
-        });
+        })
+        .filter(
+          (variant) =>
+            !(
+              needsSpecLite &&
+              variant.applies_to_skus.length === 1 &&
+              variant.applies_to_skus[0] === CANONICAL_ORM_LITE_SKU
+            ),
+        );
       const coversLite = retained.some((variant) => variant.applies_to_skus.includes(CANONICAL_ORM_LITE_SKU));
       const inserted = coversLite ? null : legitimateOrmLiteVariant(g.block_group_id, retained.length + 1);
       return {
