@@ -13,7 +13,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { BlockGroupDrawer } from "@/components/ps/block-group-drawer";
 import { A4Canvas, SIGNATURE_MARKER, renderBody } from "@/lib/contract-renderer";
 import { MONTHLY_SKUS, activeBlockVersion, coverageOf, usePsBlockGroups } from "@/lib/ps-block-groups";
-import { HOTEL_ADDRESS_COMPONENT_FIELDS } from "@/lib/template-integrity";
 import {
   AUTO_FIELDS,
   COMPUTED_FIELDS,
@@ -50,7 +49,6 @@ export const Route = createFileRoute("/ps/templates/$templateId")({
 
 const LOCK_MODES: LockMode[] = ["locked", "structured", "free"];
 const BLOCK_RE = /<ConditionalBlockPlaceholder\s+group="([^"]+)"\s*\/?>/g;
-const HIDDEN_TEMPLATE_FIELDS = new Set<string>(HOTEL_ADDRESS_COMPONENT_FIELDS);
 
 /* ---------------- right panel ---------------- */
 
@@ -64,9 +62,7 @@ function FieldLibrary({
   serviceLine: "ORM" | "MARCOM" | null;
 }) {
   const [q, setQ] = useState("");
-  const list = fields.filter(
-    (f) => !HIDDEN_TEMPLATE_FIELDS.has(f.field_path) && `${f.field_path} ${f.source}`.toLowerCase().includes(q.toLowerCase()),
-  );
+  const list = fields.filter((f) => `${f.field_path} ${f.source}`.toLowerCase().includes(q.toLowerCase()));
   const groups = [...new Set(list.map((f) => f.group))];
 
   return (

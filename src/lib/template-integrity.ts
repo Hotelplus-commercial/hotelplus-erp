@@ -23,23 +23,10 @@ const addressGroupRe = new RegExp(`${addressTokenSource}(?:(?:\\s|,|，|、|·|-
 const addressTokenRe = new RegExp(addressTokenSource, "g");
 const fieldNameRe = new RegExp(addressFieldSource);
 
-const badLiteralPatterns = [
-  { kind: "unicode_angle", re: /⟨([a-z]+\.[a-z_]+)⟩/g },
-  { kind: "ascii_angle", re: /<([a-z]+\.[a-z_]+)>/g },
-  { kind: "single_brace", re: /(^|[^\{])\{([a-z]+\.[a-z_]+)\}(?!\})/g },
-] as const;
-
 export type PlaceholderRepairResult = {
   content: string;
   replacements: number;
   manualReviewFields: string[];
-};
-
-export type BadPlaceholderLiteral = {
-  kind: string;
-  field: string;
-  match: string;
-  index: number;
 };
 
 export function repairHotelAddressText(content: string): PlaceholderRepairResult {
@@ -52,18 +39,6 @@ export function repairHotelAddressText(content: string): PlaceholderRepairResult
     .map((m) => fieldNameRe.exec(m[0])?.[0])
     .filter((field): field is string => Boolean(field));
   return { content: fixed, replacements, manualReviewFields: [...new Set(manualReviewFields)] };
-}
-
-export function findBadPlaceholderLiterals(content: string): BadPlaceholderLiteral[] {
-  return badLiteralPatterns.flatMap(({ kind, re }) => {
-    re.lastIndex = 0;
-    return [...content.matchAll(re)].map((m) => ({
-      kind,
-      field: m[2] ?? m[1] ?? "unknown",
-      match: m[0].trim(),
-      index: m.index ?? 0,
-    }));
-  });
 }
 
 export function computeHotelAddressFull(data: Record<string, string | undefined>): string {
