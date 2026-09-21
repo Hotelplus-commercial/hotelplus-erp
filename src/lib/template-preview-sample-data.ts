@@ -24,6 +24,13 @@ export const TEMPLATE_PREVIEW_SAMPLE_DATA: Record<string, string> = {
   "hotel.name": "โรงแรมตัวอย่างเพลส",
   "hotel.name_en": "Sample Place Hotel",
   "hotel.address": "240/6 ถนนร่วมจิตร ตำบลชะอำ อำเภอชะอำ จังหวัดเพชรบุรี",
+  "hotel.address_number": "123",
+  "hotel.street": "ถนนตัวอย่าง",
+  "hotel.subdistrict": "ตำบลตัวอย่าง",
+  "hotel.district": "อำเภอตัวอย่าง",
+  "hotel.province": "จังหวัดตัวอย่าง",
+  "hotel.postal_code": "10000",
+  "hotel.address_full": "123 ถนนตัวอย่าง ตำบลตัวอย่าง อำเภอตัวอย่าง จังหวัดตัวอย่าง 10000",
   "hotel.room_key": "36",
 
   "customer.legal_name": "บริษัท โรงแรมตัวอย่าง จำกัด",

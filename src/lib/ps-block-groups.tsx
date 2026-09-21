@@ -10,6 +10,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { CANONICAL_ORM_LITE_SKU, canonicalSkuCode, isPhantomOrmLiteSku, repairHotelAddressText } from "@/lib/template-integrity";
 
 export type BlockLanguage = "th" | "en";
 export type BlockVersionStatus = "draft" | "active" | "archived";
@@ -57,13 +58,12 @@ export type CompanyBankAccount = {
   updated_by: string;
 };
 
-/* 10 monthly SKUs — coverage target for every block group (R7) */
+/* Monthly SKUs — coverage target for every block group (R7). ORM Lite is one canonical SKU. */
 export const MONTHLY_SKUS = [
   "ORM-MTH-FULL-SMART",
   "ORM-MTH-FULL-FIXED",
   "ORM-MTH-FULL-PERFORMANCE",
-  "ORM-MTH-LITE-SMART",
-  "ORM-MTH-LITE-FIXED",
+  CANONICAL_ORM_LITE_SKU,
   "MARCOM-MTH-META-FULL",
   "MARCOM-MTH-META-LITE",
   "MARCOM-MTH-TIKTOK-FULL",
@@ -102,11 +102,11 @@ function group(
     versions: [
       {
         version_id: `${id}-v1`,
-        version_label: "v1.0",
+        version_label: "v2.3",
         status: "active",
         variants,
         activated_at: now,
-        changelog: "Wave 2 seed content",
+        changelog: "v2.3 template integrity · ORM Lite canonical SKU + hotel address placeholder repair",
       },
     ],
     updated_at: now,
@@ -126,11 +126,11 @@ const seedGroups = (): BlockGroup[] => [
         '“บริการ ORM Full” หมายถึง การบริหารรายได้และช่องทางการขายออนไลน์ของ {{hotel.name}} แบบเต็มรูปแบบ ตามขอบเขตงานในภาคผนวก ข\n“ค่าคอมมิชชั่น” หมายถึง ค่าตอบแทนที่คำนวณจากรายได้ที่เกิดขึ้นจริงในอัตรา {{sku.commission_rate}}',
     }),
     block({
-      block_id: "DEF-V1-ORMLITE",
+      block_id: "DEF-V2-ORMLITE",
       block_group: "definitions",
       variant_seq: 2,
       variant_label: "ORM Lite",
-      applies_to_skus: ["ORM-MTH-LITE-SMART", "ORM-MTH-LITE-FIXED"],
+      applies_to_skus: [CANONICAL_ORM_LITE_SKU],
       content:
         '“บริการ ORM Lite” หมายถึง การดูแลช่องทางการขายออนไลน์เฉพาะรายการที่ระบุไว้ในภาคผนวก ข ของ {{hotel.name}}',
     }),
@@ -166,18 +166,28 @@ const seedGroups = (): BlockGroup[] => [
     "§4",
     false,
     MONTHLY_SKUS.map((sku, i) =>
-      block({
-        block_id: `SOW-V1-${sku}`,
-        block_group: "scope_of_work",
-        variant_seq: i + 1,
-        variant_label: sku.replace(/^(ORM|MARCOM)-MTH-/, ""),
-        applies_to_skus: [sku],
-        content: `ผู้ให้บริการจะดำเนินงานตามรายการของ {{sku.product_name}} ({{sku.channel}}) ให้แก่ {{hotel.name}} โดยเริ่มตั้งแต่วันที่ {{contract.start_date_display}} เป็นเวลา {{contract.duration_months}} เดือน\n${
-          sku.startsWith("ORM")
-            ? "ครอบคลุมการตั้งค่าช่องทางการขาย การปรับราคา และรายงานผลรายเดือน"
-            : "ครอบคลุมการผลิตคอนเทนต์ การบริหารงบโฆษณา และรายงานผลรายเดือน"
-        }`,
-      }),
+      sku === CANONICAL_ORM_LITE_SKU
+        ? block({
+            block_id: "SOW-V4-ORMLITE",
+            block_group: "scope_of_work",
+            variant_seq: i + 1,
+            variant_label: "ORM Lite",
+            applies_to_skus: [CANONICAL_ORM_LITE_SKU],
+            content:
+              "ผู้ให้บริการจะดูแลช่องทางการขายออนไลน์ของ {{hotel.name}} ตามรายการ ORM Lite ที่ระบุในใบเสนอราคา โดยเริ่มตั้งแต่วันที่ {{contract.start_date_display}} เป็นเวลา {{contract.duration_months}} เดือน\nครอบคลุมการตรวจสอบราคา การตั้งค่าพื้นฐาน และรายงานผลรายเดือนตามขอบเขตของแพ็กเกจ Lite",
+          })
+        : block({
+            block_id: `SOW-V1-${sku}`,
+            block_group: "scope_of_work",
+            variant_seq: i + 1,
+            variant_label: sku.replace(/^(ORM|MARCOM)-MTH-/, ""),
+            applies_to_skus: [sku],
+            content: `ผู้ให้บริการจะดำเนินงานตามรายการของ {{sku.product_name}} ({{sku.channel}}) ให้แก่ {{hotel.name}} โดยเริ่มตั้งแต่วันที่ {{contract.start_date_display}} เป็นเวลา {{contract.duration_months}} เดือน\n${
+              sku.startsWith("ORM")
+                ? "ครอบคลุมการตั้งค่าช่องทางการขาย การปรับราคา และรายงานผลรายเดือน"
+                : "ครอบคลุมการผลิตคอนเทนต์ การบริหารงบโฆษณา และรายงานผลรายเดือน"
+            }`,
+          }),
     ),
   ),
 
@@ -260,21 +270,32 @@ const seedGroups = (): BlockGroup[] => [
   ]),
 
   group("work_proposal", "Work Proposal + เงื่อนไขชำระเงิน (ภาคผนวก ข)", "appendix_b", false, [
-    ...MONTHLY_SKUS.slice(0, 8).map((sku, i) =>
-      block({
-        block_id: `WP-V1-${sku}`,
-        block_group: "work_proposal",
-        variant_seq: i + 1,
-        variant_label: sku.replace(/^(ORM|MARCOM)-MTH-/, ""),
-        applies_to_skus: [sku],
-        language: "en",
-        content: `Work proposal for {{sku.product_name}} — deliverables, KPIs and monthly reporting cadence for {{hotel.name_en}}.`,
-      }),
+    ...MONTHLY_SKUS.map((sku, i) =>
+      sku === CANONICAL_ORM_LITE_SKU
+        ? block({
+            block_id: "WP-V2-ORMLITE",
+            block_group: "work_proposal",
+            variant_seq: i + 1,
+            variant_label: "ORM Lite",
+            applies_to_skus: [CANONICAL_ORM_LITE_SKU],
+            language: "en",
+            content:
+              "Work proposal for ORM Lite — channel setup review, rate visibility checks, monthly summary and scoped online distribution support for {{hotel.name_en}}.",
+          })
+        : block({
+            block_id: `WP-V1-${sku}`,
+            block_group: "work_proposal",
+            variant_seq: i + 1,
+            variant_label: sku.replace(/^(ORM|MARCOM)-MTH-/, ""),
+            applies_to_skus: [sku],
+            language: "en",
+            content: `Work proposal for {{sku.product_name}} — deliverables, KPIs and monthly reporting cadence for {{hotel.name_en}}.`,
+          }),
     ),
     block({
       block_id: "WP-V1-PAYMENT-BOILERPLATE",
       block_group: "work_proposal",
-      variant_seq: 9,
+      variant_seq: MONTHLY_SKUS.length + 1,
       variant_label: "เงื่อนไขชำระเงิน (Locked)",
       applies_to_skus: [...MONTHLY_SKUS],
       locked: true,
@@ -283,6 +304,80 @@ const seedGroups = (): BlockGroup[] => [
     }),
   ]),
 ];
+
+function legitimateOrmLiteVariant(groupId: string, seq: number): ConditionalBlock | null {
+  switch (groupId) {
+    case "definitions":
+      return block({
+        block_id: "DEF-V2-ORMLITE",
+        block_group: groupId,
+        variant_seq: seq,
+        variant_label: "ORM Lite",
+        applies_to_skus: [CANONICAL_ORM_LITE_SKU],
+        content:
+          '“บริการ ORM Lite” หมายถึง การดูแลช่องทางการขายออนไลน์เฉพาะรายการที่ระบุไว้ในภาคผนวก ข ของ {{hotel.name}}',
+      });
+    case "scope_of_work":
+      return block({
+        block_id: "SOW-V4-ORMLITE",
+        block_group: groupId,
+        variant_seq: seq,
+        variant_label: "ORM Lite",
+        applies_to_skus: [CANONICAL_ORM_LITE_SKU],
+        content:
+          "ผู้ให้บริการจะดูแลช่องทางการขายออนไลน์ของ {{hotel.name}} ตามรายการ ORM Lite ที่ระบุในใบเสนอราคา โดยเริ่มตั้งแต่วันที่ {{contract.start_date_display}} เป็นเวลา {{contract.duration_months}} เดือน\nครอบคลุมการตรวจสอบราคา การตั้งค่าพื้นฐาน และรายงานผลรายเดือนตามขอบเขตของแพ็กเกจ Lite",
+      });
+    case "work_proposal":
+      return block({
+        block_id: "WP-V2-ORMLITE",
+        block_group: groupId,
+        variant_seq: seq,
+        variant_label: "ORM Lite",
+        applies_to_skus: [CANONICAL_ORM_LITE_SKU],
+        language: "en",
+        content:
+          "Work proposal for ORM Lite — channel setup review, rate visibility checks, monthly summary and scoped online distribution support for {{hotel.name_en}}.",
+      });
+    default:
+      return null;
+  }
+}
+
+function normalizeBlockGroupsV23(groups: BlockGroup[]): BlockGroup[] {
+  return groups.map((g) => ({
+    ...g,
+    updated_at: now,
+    versions: g.versions.map((version) => {
+      const needsSpecLite = ["definitions", "scope_of_work", "work_proposal"].includes(g.block_group_id);
+      const retained = version.variants
+        .filter((variant) => !variant.applies_to_skus.every(isPhantomOrmLiteSku))
+        .map((variant) => {
+          const repaired = repairHotelAddressText(variant.content);
+          return {
+            ...variant,
+            applies_to_skus: [...new Set(variant.applies_to_skus.map(canonicalSkuCode))],
+            content: repaired.content,
+          };
+        })
+        .filter(
+          (variant) =>
+            !(
+              needsSpecLite &&
+              variant.applies_to_skus.length === 1 &&
+              variant.applies_to_skus[0] === CANONICAL_ORM_LITE_SKU
+            ),
+        );
+      const coversLite = retained.some((variant) => variant.applies_to_skus.includes(CANONICAL_ORM_LITE_SKU));
+      const inserted = coversLite ? null : legitimateOrmLiteVariant(g.block_group_id, retained.length + 1);
+      return {
+        ...version,
+        version_label: "v2.3",
+        changelog: "v2.3 template integrity · phantom ORM Lite variants removed · hotel address placeholders normalized",
+        variants: inserted ? [...retained, inserted] : retained,
+      };
+    }),
+  }));
+}
 
 const seedBanks = (): CompanyBankAccount[] => [
   {
@@ -354,11 +449,11 @@ export function PsBlockGroupProvider({ children }: { children: ReactNode }) {
     try {
       const raw = localStorage.getItem(KEY);
       const parsed = raw ? (JSON.parse(raw) as { blockGroups: BlockGroup[]; banks: CompanyBankAccount[] }) : null;
-      setBlockGroups(parsed?.blockGroups?.length ? parsed.blockGroups : seedGroups());
+      setBlockGroups(normalizeBlockGroupsV23(parsed?.blockGroups?.length ? parsed.blockGroups : seedGroups()));
       setBanks(parsed?.banks?.length ? parsed.banks : seedBanks());
       setIsSystemAdmin(localStorage.getItem(ADMIN_KEY) === "1");
     } catch {
-      setBlockGroups(seedGroups());
+      setBlockGroups(normalizeBlockGroupsV23(seedGroups()));
       setBanks(seedBanks());
     }
     setHydrated(true);
@@ -425,7 +520,7 @@ export function PsBlockGroupProvider({ children }: { children: ReactNode }) {
   );
 
   const resetBlockGroups = useCallback(() => {
-    setBlockGroups(seedGroups());
+    setBlockGroups(normalizeBlockGroupsV23(seedGroups()));
     setBanks(seedBanks());
   }, []);
 
