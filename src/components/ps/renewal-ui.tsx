@@ -286,7 +286,7 @@ export function RenewalCardModal({
             </div>
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <Button size="sm" asChild>
-                <Link to="/ps/contract-wizard">Generate from สร้างสัญญา →</Link>
+                <Link to="/ps/contract-dashboard">Generate from Contract Dashboard →</Link>
               </Button>
               <span className="text-xs text-muted-foreground">Signed Contract:</span>
               {card.signedFile ? (
