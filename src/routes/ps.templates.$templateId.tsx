@@ -299,7 +299,7 @@ function TemplateEditor() {
             <Shield className="size-4" /> {isLegalAdmin ? "ออกจากโหมด System Admin" : "สลับเป็น System Admin"}
           </Button>
           <Button asChild variant="outline" size="sm" className="gap-1.5">
-            <Link to="/ps/templates/preview/$templateId" params={{ templateId: tpl.template_id }} search={{ sku: activeSku, customer_type: customerType, show_cover: showCover }} target="_blank">
+            <Link to="/ps/templates/preview/$templateId" params={{ templateId: tpl.template_id }} search={{ sku: activeSku, customer_type: customerType, show_cover: showCover, package_skus: [] }} target="_blank">
               <ExternalLink className="size-4" /> Full Preview →
             </Link>
           </Button>
