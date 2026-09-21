@@ -799,8 +799,10 @@ function seedTemplates(): Template[] {
     ...opts,
   });
 
-  const legacyOrmSections = flatContractSections(MONTHLY_CONTRACT_SKUS[0]);
-  const legacyMarcomSections = flatContractSections(MONTHLY_CONTRACT_SKUS[4]);
+  const legacyOrmSpec = contractSkuSpec("ORM-MTH-FULL-SMART") ?? MONTHLY_CONTRACT_SKUS.find((spec) => spec.service_line === "ORM");
+  const legacyMarcomSpec = contractSkuSpec("MARCOM-MTH-META") ?? MONTHLY_CONTRACT_SKUS.find((spec) => spec.service_line === "MARCOM");
+  const legacyOrmSections = legacyOrmSpec ? flatContractSections(legacyOrmSpec) : [];
+  const legacyMarcomSections = legacyMarcomSpec ? flatContractSections(legacyMarcomSpec) : [];
   const flatContracts = MONTHLY_CONTRACT_SKUS.map((spec) => {
     const sections = flatContractSections(spec);
     return t(spec.template_id, "contract", `${spec.label} Contract`, {

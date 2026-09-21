@@ -22,6 +22,8 @@ export const Route = createFileRoute("/ps/templates/")({
       { name: "description", content: "จัดการ quote templates และ contract templates แบบ 1 SKU ต่อ 1 สัญญา" },
       { property: "og:title", content: "Templates — Quote & Contract | PS App" },
       { property: "og:description", content: "จัดการ quote templates และ contract templates แบบ flat ต่อ SKU" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: TemplatesDashboard,

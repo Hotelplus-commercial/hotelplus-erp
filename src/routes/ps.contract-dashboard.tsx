@@ -16,6 +16,8 @@ export const Route = createFileRoute("/ps/contract-dashboard")({
       { name: "description", content: "Kanban 11 ขั้นตอน ติดตามสัญญาตั้งแต่ Quote Approved ถึงใบกำกับภาษี" },
       { property: "og:title", content: "Contract Dashboard — PS App" },
       { property: "og:description", content: "Kanban 11 ขั้นตอน ติดตามสัญญาแบบครบวงจร" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: ContractDashboard,

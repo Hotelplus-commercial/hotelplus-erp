@@ -19,7 +19,9 @@ import { useBd, type BdQuote } from "@/lib/bd-store";
 import { CIFooter, CIHeader, CoverPage, renderBody } from "@/lib/contract-renderer";
 import { useContractLifecycle } from "@/lib/contract-lifecycle";
 import { thb } from "@/lib/crm-rules";
-import { resolveVariants, usePsBlockGroups } from "@/lib/ps-block-groups";
+import { usePsBlockGroups } from "@/lib/ps-block-groups";
+import { findContractTemplateBySku, templateSku, usePsTemplates, type Template } from "@/lib/ps-templates";
+import { canonicalSkuCode } from "@/lib/template-integrity";
 import type { PreviewServiceLine } from "@/lib/template-preview-sample-data";
 import { cn } from "@/lib/utils";
 
@@ -44,7 +46,8 @@ const requiredDocs = (type: CustomerType, hasOrm: boolean) => [
 export function ContractWizard({ dealId, preselectQuoteId }: { dealId: string; preselectQuoteId: string }) {
   const navigate = useNavigate();
   const { quotes, deals, hydrated, setWizardStep, cancelWizard, completeWizard, startWizard } = useBd();
-  const { blockGroups, bankFor, isSystemAdmin, saveBank } = usePsBlockGroups();
+  const { bankFor, isSystemAdmin, saveBank } = usePsBlockGroups();
+  const { templates } = usePsTemplates();
   const { lifecycles, setStage } = useContractLifecycle();
 
   const deal = deals.find((d) => d.deal_id === dealId);
@@ -76,9 +79,14 @@ export function ContractWizard({ dealId, preselectQuoteId }: { dealId: string; p
   const [result, setResult] = useState<{ contract_code: string; package_code: string } | null>(null);
 
   const picked = dealQuotes.filter((q) => selected.includes(q.quote_id));
-  const skuCodes = useMemo(
-    () => [...new Set(picked.flatMap((q) => (q.approved_snapshot?.approved_skus ?? q.skus).map((s) => s.sku_code)))],
-    [picked],
+  const contractTargets = useMemo(
+    () =>
+      picked.flatMap((quote) =>
+        [...new Set((quote.approved_snapshot?.approved_skus ?? quote.skus).map((s) => canonicalSkuCode(s.sku_code)))]
+          .map((sku) => ({ quote, sku, template: findContractTemplateBySku(templates, sku) }))
+          .filter((target): target is { quote: BdQuote; sku: string; template: Template } => Boolean(target.template)),
+      ),
+    [picked, templates],
   );
   const hasOrm = picked.some((q) => q.type === "ORM");
   const needed = customerType ? requiredDocs(customerType, hasOrm) : [];
@@ -359,19 +367,20 @@ export function ContractWizard({ dealId, preselectQuoteId }: { dealId: string; p
               />
 
               <div className="space-y-6">
-                {picked.map((q, i) => (
-                  <div key={q.quote_id} className="space-y-3">
-                    {picked.length > 1 && (
+                {contractTargets.map((target, i) => (
+                  <div key={`${target.quote.quote_id}-${target.sku}`} className="space-y-3">
+                    {contractTargets.length > 1 && (
                       <div className="rounded-lg bg-muted py-4 text-center text-sm font-bold">
-                        ═══ Contract {i + 1} of {picked.length} · {skuLabel(q)} ═══
+                        ═══ Contract {i + 1} of {contractTargets.length} · {target.sku} ═══
                       </div>
                     )}
                     <ContractPaper
-                      quote={q}
-                      months={durations[q.quote_id] ?? 12}
+                      quote={target.quote}
+                      sku={target.sku}
+                      template={target.template}
+                      months={durations[target.quote.quote_id] ?? 12}
                       ocr={ocr}
                       customerType={customerType ?? "juristic"}
-                      sections={contractSections(blockGroups, skuCodes)}
                     />
                   </div>
                 ))}
@@ -459,76 +468,44 @@ const skuLabel = (q: BdQuote) =>
 
 const serviceLineOfQuote = (q: BdQuote): PreviewServiceLine => (q.type === "MARCOM" ? "MARCOM" : "ORM");
 
-type BlockGroups = ReturnType<typeof usePsBlockGroups>["blockGroups"];
-
-/** §1-9 + appendices in real contract order · block-group content where it exists. */
-function contractSections(groups: BlockGroups, skuCodes: string[]) {
-  const fromGroup = (id: string) => {
-    const g = groups.find((b) => b.block_group_id === id);
-    if (!g) return "";
-    return resolveVariants(g, skuCodes)
-      .map((v) => `<p>${v.content}</p>`)
-      .join("");
-  };
-
-  return [
-    { title: "๑. คำนิยาม", html: fromGroup("definitions") || "<p>คำนิยามตามที่ระบุในสัญญาฉบับนี้</p>" },
-    {
-      title: "๒. วันเริ่มต้น และระยะเวลาของสัญญา",
-      html:
-        "<p>สัญญาฉบับนี้มีผลบังคับใช้ตั้งแต่วันที่ {{contract.start_date}} และมีระยะเวลา {{contract.duration_months}} เดือน สิ้นสุดวันที่ {{contract.end_date}}</p>",
-    },
-    {
-      title: "๓. ค่าบริการ และเงื่อนไขการชำระเงิน",
-      html:
-        "<p>ค่าบริการรายเดือน {{contract.monthly_total}} บาท และค่าติดตั้งครั้งเดียว {{contract.onetime_total}} บาท ชำระเข้าบัญชี {{hotelplus.bank_account}}</p>",
-    },
-    { title: "๔. หน้าที่ของผู้ให้บริการ", html: "<p>ผู้ให้บริการจะดำเนินงานตามขอบเขตที่ระบุในภาคผนวก ข</p>" },
-    { title: "๕. หน้าที่ของเจ้าของโครงการ", html: "<p>เจ้าของโครงการจะให้ข้อมูลและสิทธิ์เข้าถึงระบบที่จำเป็นต่อการให้บริการ</p>" },
-    {
-      title: "๖. การสิ้นสุดสัญญา",
-      html:
-        [fromGroup("owner_asset_termination_notice"), fromGroup("owner_asset_termination_list")].filter(Boolean).join("") ||
-        "<p>คู่สัญญาฝ่ายใดฝ่ายหนึ่งอาจบอกเลิกสัญญาโดยแจ้งเป็นหนังสือล่วงหน้าไม่น้อยกว่า ๓๐ วัน</p>",
-    },
-    { title: "๗. การรักษาความลับ", html: "<p>คู่สัญญาตกลงรักษาความลับของข้อมูลที่ได้รับจากอีกฝ่ายหนึ่ง</p>" },
-    { title: "๘. เหตุสุดวิสัย", html: "<p>คู่สัญญาไม่ต้องรับผิดในความล่าช้าอันเกิดจากเหตุสุดวิสัย</p>" },
-    { title: "๙. ขอบเขตการรับผิดชอบ", html: "<p>ความรับผิดของผู้ให้บริการจำกัดไม่เกินค่าบริการที่ได้รับชำระแล้ว</p>" },
-    {
-      title: "ภาคผนวก ก · หนังสือมอบอำนาจ (Letter of Authorization)",
-      html: "<p>เจ้าของโครงการมอบอำนาจให้ผู้ให้บริการดำเนินการตามขอบเขตงาน</p><SignatureBlock />",
-    },
-    { title: "ภาคผนวก ข · ขอบเขตงาน (Work Proposal)", html: "<p>รายละเอียดขอบเขตงานตามใบเสนอราคาที่อนุมัติ {{quote.code}}</p>" },
-    { title: "เงื่อนไขการชำระเงิน (Payment Condition)", html: "<p>ชำระภายในวันที่ ๕ ของทุกเดือน · หักภาษี ณ ที่จ่าย ๓% สำหรับนิติบุคคล</p>" },
-    { title: "ข้อยกเว้นความรับผิดชอบ (Disclaimer)", html: "<p>ผลลัพธ์ของการให้บริการขึ้นอยู่กับปัจจัยภายนอกที่อยู่นอกเหนือการควบคุมของผู้ให้บริการ</p>" },
-  ];
-}
-
 function ContractPaper({
   quote,
+  sku,
+  template,
   months,
   ocr,
   customerType,
-  sections,
 }: {
   quote: BdQuote;
+  sku: string;
+  template: Template;
   months: number;
   ocr: { legal_name: string; tax_id: string; address: string; signer_name: string; signer_name_en: string };
   customerType: CustomerType;
-  sections: { title: string; html: string }[];
 }) {
-  const line = serviceLineOfQuote(quote);
+  const line = template.service_line ?? serviceLineOfQuote(quote);
   const code = quote.contract_codes?.[0] ?? `(ร่าง) ${quote.quote_id}`;
   const start = new Date();
   const end = new Date(start.getFullYear(), start.getMonth() + months, start.getDate());
   const fmt = (d: Date) => d.toLocaleDateString("th-TH", { day: "numeric", month: "long", year: "numeric" });
 
+  const approvedSkus = quote.approved_snapshot?.approved_skus ?? quote.skus;
+  const skuEntry = approvedSkus.find((item) => canonicalSkuCode(item.sku_code) === sku) ?? approvedSkus[0];
   const data: Record<string, string> = {
     "hotel.name": quote.hotel_name,
+    "hotel.name_en": quote.hotel_name,
+    "hotel.address_full": "99/9 ถนนริมน้ำ ตำบลช้างคลาน อำเภอเมือง จังหวัดเชียงใหม่ 50100",
+    "hotel.room_key": String(quote.calculator_input?.room_key ?? 42),
     "customer.legal_name": ocr.legal_name,
     "customer.tax_id": ocr.tax_id,
     "customer.address": ocr.address,
+    "customer.address_full": ocr.address,
     "customer.signer_name": ocr.signer_name,
+    "customer.signer_name_en": "Naphat Prasert",
+    "customer.registration_no": ocr.tax_id,
+    "customer.registered_address": ocr.address,
+    "customer.signer_title": "กรรมการผู้จัดการ",
+    "customer.id_number": ocr.tax_id,
     "customer.type": customerType === "juristic" ? "นิติบุคคล" : "บุคคลธรรมดา",
     "contract.code": code,
     "contract.duration_months": String(months),
@@ -536,18 +513,31 @@ function ContractPaper({
     "contract.end_date": fmt(end),
     "contract.monthly_total": thb(quote.approved_snapshot?.approved_monthly_total ?? 0),
     "contract.onetime_total": thb(quote.approved_snapshot?.approved_onetime_total ?? 0),
+    "contract.addon_lines_display": "ไม่มีค่าใช้จ่ายเพิ่มเติมนอกเหนือจากรายการที่ระบุในใบเสนอราคา",
+    "contract.late_penalty_amount": thb(500),
+    "contract.monthly_fee": thb(skuEntry?.monthly_price ?? quote.approved_snapshot?.approved_monthly_total ?? 0),
+    "contract.setup_fee": thb(skuEntry?.onetime_price ?? quote.approved_snapshot?.approved_onetime_total ?? 0),
+    "contract.commission_rate": skuEntry?.commission_rate ? `${Math.round(skuEntry.commission_rate * 100)}%` : "—",
+    "sku.product_name": skuEntry?.product_name ?? sku,
+    "sku.channel": sku.includes("META") ? "Meta" : sku.includes("TIKTOK") ? "TikTok" : sku.includes("GMB") ? "GMB / IBE" : "OTA",
+    "sku.monthly_fee": thb(skuEntry?.monthly_price ?? quote.approved_snapshot?.approved_monthly_total ?? 0),
+    "sku.setup_fee": thb(skuEntry?.onetime_price ?? quote.approved_snapshot?.approved_onetime_total ?? 0),
+    "sku.commission_rate": skuEntry?.commission_rate ? `${Math.round(skuEntry.commission_rate * 100)}%` : "—",
     "quote.code": quote.quote_id,
     "hotelplus.authorized_signatory": "คุณณภัทร พ.",
     "hotelplus.bank_account": "ธนาคารกสิกรไทย · 123-4-56789-0",
+    "payment.bank_account_name": "บริษัท พักดีพลัส จำกัด",
+    "payment.bank_name": "กสิกรไทย",
+    "payment.bank_account_no": "123-4-56789-0",
   };
 
-  const html = sections
-    .map((s) => `<section class="a4-block"><h3 class="a4-block-title">${s.title}</h3>${s.html}</section>`)
+  const html = template.sections
+    .map((section) => `<section class="a4-block"><h3 class="a4-block-title">${section.title}</h3>${section.content}</section>`)
     .join("");
 
   return (
     <div className="a4-canvas">
-      <CoverPage serviceLine={line} contractCode={code} hotelName={quote.hotel_name} />
+      <CoverPage serviceLine={line} contractCode={`${code} · ${templateSku(template) ?? sku}`} hotelName={quote.hotel_name} />
       <section className="a4-page a4-page--flow">
         <CIHeader serviceLine={line} />
         <div className="a4-body" dangerouslySetInnerHTML={{ __html: renderBody(html, data, { pills: false }) }} />

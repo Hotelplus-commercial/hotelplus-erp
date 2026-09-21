@@ -318,12 +318,27 @@ export function ormSkus(
   return out;
 }
 
+const marcomSkuCode = (item: LineItem) => {
+  const name = item.package_name.toLowerCase();
+  if (item.billing !== "monthly") {
+    return `MKT-${item.category.toUpperCase().slice(0, 4)}-${item.package_name.replace(/[^A-Za-z0-9]+/g, "").toUpperCase().slice(0, 10)}`;
+  }
+  if (item.category === "meta") {
+    if (name.includes("lite") && name.includes("ads")) return "MARCOM-MTH-META-LITE-ADS";
+    if (name.includes("lite") || name.includes("content")) return "MARCOM-MTH-META-LITE-CONTENT";
+    return "MARCOM-MTH-META";
+  }
+  if (item.category === "tiktok") {
+    if (name.includes("lite") || name.includes("basic") || name.includes("kol basic")) return "MARCOM-MTH-TIKTOK-LITE-BASIC";
+    return "MARCOM-MTH-TIKTOK";
+  }
+  if (item.category === "google") return "MARCOM-MTH-GMB-IBE";
+  return `MKT-${item.category.toUpperCase().slice(0, 4)}-${item.package_name.replace(/[^A-Za-z0-9]+/g, "").toUpperCase().slice(0, 10)}`;
+};
+
 export function marcomSkus(items: LineItem[]): SKUEntry[] {
   return items.map((i) => ({
-    sku_code: `MKT-${i.category.toUpperCase().slice(0, 4)}-${i.package_name
-      .replace(/[^A-Za-z0-9]+/g, "")
-      .toUpperCase()
-      .slice(0, 10)}`,
+    sku_code: canonicalSkuCode(marcomSkuCode(i)),
     product_name: i.package_name,
     billing_summary: i.billing === "monthly" ? `${money(i.amount)}/mo` : `${money(i.amount)} one-time`,
     billing_type: i.billing === "monthly" ? ("monthly" as const) : ("one_time" as const),

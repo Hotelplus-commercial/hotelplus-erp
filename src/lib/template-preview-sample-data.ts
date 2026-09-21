@@ -1,4 +1,4 @@
-/* PS App v2.1 — Template preview sample data seed (field-registry v2.1 §8)
+/* PS App v3.0 — Template preview sample data seed.
  * Used ONLY for editor/preview rendering. Never used at contract generation. */
 
 export type PreviewCustomerType = "juristic" | "individual";
@@ -40,6 +40,7 @@ export const TEMPLATE_PREVIEW_SAMPLE_DATA: Record<string, string> = {
   "customer.type": "juristic",
   "customer.tax_id": "0105558123456",
   "customer.registration_no": "0105558123456",
+  "customer.address_full": "92/5 อาคารสาธรธานี ชั้น 2 กรุงเทพฯ 10500",
   "customer.registered_address": "92/5 อาคารสาธรธานี ชั้น 2 กรุงเทพฯ",
 
   "contract.code": "CT-00001-ORM-690101-01",
@@ -51,10 +52,14 @@ export const TEMPLATE_PREVIEW_SAMPLE_DATA: Record<string, string> = {
   "contract.setup_fee": "฿3,500",
   "contract.commission_rate": "10.00%",
   "contract.package_code": "E024/ORM-MTH-FULL-SMART/12M/2026-09-18/00003",
+  "contract.addon_lines_display": "ไม่มีค่าใช้จ่ายเพิ่มเติมนอกเหนือจากรายการที่ระบุในใบเสนอราคา",
+  "contract.late_penalty_amount": "500",
 
   "payment.bank_name": "ธนาคารกสิกรไทย",
   "payment.account_name": "บริษัท โฮเทลพลัส เอเชีย จำกัด",
   "payment.account_no": "123-4-56789-0",
+  "payment.bank_account_name": "บริษัท โฮเทลพลัส เอเชีย จำกัด",
+  "payment.bank_account_no": "123-4-56789-0",
   "payment.guarantee": "เงินประกัน 1 เดือน",
 
   "sku.channel": "Google My Business",
@@ -70,15 +75,29 @@ const serviceLineOfSku = (sku: string): PreviewServiceLine =>
   sku.startsWith("MARCOM") ? "MARCOM" : sku.startsWith("PROD") ? "PROD" : sku.startsWith("PP") ? "PP" : "ORM";
 
 const channelOfSku = (sku: string) =>
-  sku.includes("META") ? "Meta (Facebook / Instagram)" : sku.includes("TIKTOK") ? "TikTok" : sku.includes("GOOGLE") ? "Google Ads" : "Google My Business";
+  sku.includes("META")
+    ? "Meta (Facebook / Instagram)"
+    : sku.includes("TIKTOK")
+      ? "TikTok"
+      : sku.includes("GMB") || sku.includes("IBE")
+        ? "GMB / IBE"
+        : sku.includes("GOOGLE")
+          ? "Google Ads"
+          : "OTA";
 
 const JURISTIC = {
   "customer.type": "juristic",
   "customer.legal_name": "บริษัท โรงแรมตัวอย่าง จำกัด",
   "customer.signer_name": "นาย สมชาย ตัวอย่าง",
+  "customer.address_full": "92/5 อาคารสาธรธานี ชั้น 2 กรุงเทพฯ 10500",
+  "customer.registration_no": "0105558123456",
+  "customer.registered_address": "92/5 อาคารสาธรธานี ชั้น 2 กรุงเทพฯ",
+  "customer.signer_title": "กรรมการผู้จัดการ",
   "payment.bank_name": "ธนาคารกสิกรไทย",
   "payment.account_name": "บริษัท โฮเทลพลัส เอเชีย จำกัด",
   "payment.account_no": "123-4-56789-0",
+  "payment.bank_account_name": "บริษัท โฮเทลพลัส เอเชีย จำกัด",
+  "payment.bank_account_no": "123-4-56789-0",
 } satisfies Record<string, string>;
 
 const INDIVIDUAL = {
@@ -90,6 +109,8 @@ const INDIVIDUAL = {
   "payment.bank_name": "ธนาคารไทยพาณิชย์",
   "payment.account_name": "นาย ปราบ เอื้อพัชรพล",
   "payment.account_no": "987-6-54321-0",
+  "payment.bank_account_name": "นาย ปราบ เอื้อพัชรพล",
+  "payment.bank_account_no": "987-6-54321-0",
 } satisfies Record<string, string>;
 
 /* §2.8 Quote fields (v2.1 Path A · Phase 4) */

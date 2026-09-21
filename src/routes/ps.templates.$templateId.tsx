@@ -35,6 +35,8 @@ export const Route = createFileRoute("/ps/templates/$templateId")({
       { name: "description", content: "แก้ไข quote templates และ contract templates แบบ flat ต่อ SKU บนกระดาษ A4" },
       { property: "og:title", content: "Template editor · A4 canvas | PS App" },
       { property: "og:description", content: "แก้ไขเทมเพลตบนกระดาษ A4 พร้อม Cover Page, CI header/footer และ signature block" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: TemplateEditor,
@@ -299,7 +301,7 @@ function TemplateEditor() {
             <Shield className="size-4" /> {isLegalAdmin ? "ออกจากโหมด System Admin" : "สลับเป็น System Admin"}
           </Button>
           <Button asChild variant="outline" size="sm" className="gap-1.5">
-            <Link to="/ps/templates/preview/$templateId" params={{ templateId: tpl.template_id }} search={{ sku: activeSku, customer_type: customerType, show_cover: showCover }} target="_blank">
+            <Link to="/ps/templates/preview/$templateId" params={{ templateId: tpl.template_id }} search={{ sku: activeSku, customer_type: customerType, show_cover: showCover, package_skus: [] }} target="_blank">
               <ExternalLink className="size-4" /> Full Preview →
             </Link>
           </Button>

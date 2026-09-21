@@ -16,6 +16,7 @@ import {
 import { quoteLineItemsFor, sampleDataFor, serviceLineOf, type PreviewCustomerType } from "@/lib/template-preview-sample-data";
 
 const CHARS_PER_PAGE = 1700;
+const DEFAULT_CONTRACT_SKU = "ORM-MTH-FULL-SMART";
 
 type Search = {
   sku: string | undefined;
@@ -43,6 +44,8 @@ export const Route = createFileRoute("/ps/templates/preview/$templateId")({
       { name: "description", content: "พรีวิวเอกสารทั้งฉบับแบบ flat contract template ต่อ SKU พร้อม Cover Page และ CI header/footer" },
       { property: "og:title", content: "Full render preview | PS App Templates" },
       { property: "og:description", content: "พรีวิวเอกสารทั้งฉบับแบบ flat contract template ต่อ SKU" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: FullPreview,
@@ -54,8 +57,9 @@ function FullPreview() {
   const { templates, activeVersion, hydrated } = usePsTemplates();
   const tpl = templates.find((t) => t.template_id === templateId);
   const contractTemplates = activeContractTemplates(templates);
-  const initialSku = search.sku ?? templateSku(tpl ?? contractTemplates[0]) ?? CONTRACT_SKU_CODES[0];
-  const [sku, setSku] = useState(CONTRACT_SKU_CODES.includes(initialSku) ? initialSku : CONTRACT_SKU_CODES[0]);
+  const firstContractTemplate = contractTemplates[0];
+  const initialSku = search.sku ?? (firstContractTemplate ? templateSku(firstContractTemplate) : null) ?? DEFAULT_CONTRACT_SKU;
+  const [sku, setSku] = useState(CONTRACT_SKU_CODES.includes(initialSku) ? initialSku : DEFAULT_CONTRACT_SKU);
   const [customerType, setCustomerType] = useState<PreviewCustomerType>(search.customer_type ?? "juristic");
   const [showCover, setShowCover] = useState(search.show_cover !== false);
   const [multiSku, setMultiSku] = useState(search.package_skus.length > 1);
@@ -74,7 +78,7 @@ function FullPreview() {
 
   const pages = useMemo(() => {
     return renderTargets.flatMap((target, contractIndex) => {
-      const targetSku = templateSku(target) ?? sku;
+      const targetSku = templateSku(target) ?? sku ?? DEFAULT_CONTRACT_SKU;
       const line = target.service_line ?? serviceLineOf(targetSku);
       const data = sampleDataFor({ sku: targetSku, customerType, serviceLine: line });
       const bodyBlocks = target.sections.length
