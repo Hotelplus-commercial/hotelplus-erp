@@ -493,10 +493,15 @@ function ContractPaper({
   const skuEntry = approvedSkus.find((item) => canonicalSkuCode(item.sku_code) === sku) ?? approvedSkus[0];
   const data: Record<string, string> = {
     "hotel.name": quote.hotel_name,
+    "hotel.name_en": quote.hotel_name,
+    "hotel.address_full": "99/9 ถนนริมน้ำ ตำบลช้างคลาน อำเภอเมือง จังหวัดเชียงใหม่ 50100",
+    "hotel.room_key": String(quote.calculator_input?.room_key ?? 42),
     "customer.legal_name": ocr.legal_name,
     "customer.tax_id": ocr.tax_id,
     "customer.address": ocr.address,
+    "customer.address_full": ocr.address,
     "customer.signer_name": ocr.signer_name,
+    "customer.signer_name_en": "Naphat Prasert",
     "customer.type": customerType === "juristic" ? "นิติบุคคล" : "บุคคลธรรมดา",
     "contract.code": code,
     "contract.duration_months": String(months),
@@ -515,6 +520,9 @@ function ContractPaper({
     "quote.code": quote.quote_id,
     "hotelplus.authorized_signatory": "คุณณภัทร พ.",
     "hotelplus.bank_account": "ธนาคารกสิกรไทย · 123-4-56789-0",
+    "payment.bank_account_name": "บริษัท พักดีพลัส จำกัด",
+    "payment.bank_name": "กสิกรไทย",
+    "payment.bank_account_no": "123-4-56789-0",
   };
 
   const html = template.sections
