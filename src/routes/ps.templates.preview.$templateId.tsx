@@ -44,6 +44,8 @@ export const Route = createFileRoute("/ps/templates/preview/$templateId")({
       { name: "description", content: "พรีวิวเอกสารทั้งฉบับแบบ flat contract template ต่อ SKU พร้อม Cover Page และ CI header/footer" },
       { property: "og:title", content: "Full render preview | PS App Templates" },
       { property: "og:description", content: "พรีวิวเอกสารทั้งฉบับแบบ flat contract template ต่อ SKU" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: FullPreview,

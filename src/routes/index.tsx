@@ -20,6 +20,8 @@ export const Route = createFileRoute("/")({
         content:
           "Portfolio-wide hotel management ERP: revenue, occupancy, reputation, workforce and automation health in one executive view.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Executive,

@@ -8,6 +8,16 @@ export const Route = createFileRoute("/ps/contract-wizard/new")({
   validateSearch: (search: Record<string, unknown>) => ({
     quote_id: typeof search['quote_id'] === "string" ? (search['quote_id'] as string) : "",
   }),
+  head: () => ({
+    meta: [
+      { title: "Contract Wizard — PS App | Meridia Hotel ERP" },
+      { name: "description", content: "สร้างสัญญาจากใบเสนอราคาที่อนุมัติแล้ว พร้อม KYC, OCR และ A4 preview" },
+      { property: "og:title", content: "Contract Wizard — PS App" },
+      { property: "og:description", content: "สร้างสัญญาจากใบเสนอราคาที่อนุมัติแล้ว พร้อม KYC, OCR และ A4 preview" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
   component: WizardEntry,
 });
 

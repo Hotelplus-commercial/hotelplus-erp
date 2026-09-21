@@ -11,6 +11,8 @@ export const Route = createFileRoute("/ps/templates/block-groups/$groupId")({
       { name: "description", content: "Block Group editing has been retired in favor of flat contract templates per SKU." },
       { property: "og:title", content: "Block Groups retired | PS App Templates" },
       { property: "og:description", content: "Legacy Block Group links return to the flat Templates dashboard." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
 });
