@@ -337,7 +337,6 @@ export function marcomSkus(items: LineItem[]): SKUEntry[] {
 
 /* legacy/partial rows loaded from storage may miss the new SKU fields */
 const normalizeSku = (s: Partial<SKUEntry> & { sku_code: string; product_name: string }): SKUEntry => ({
-  sku_code: canonicalSkuCode(s.sku_code),
   billing_summary: "",
   billing_type: "one_time",
   monthly_price: null,
