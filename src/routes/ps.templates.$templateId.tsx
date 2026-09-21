@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { BlockGroupDrawer } from "@/components/ps/block-group-drawer";
 import { A4Canvas, SIGNATURE_MARKER, renderBody } from "@/lib/contract-renderer";
 import { MONTHLY_SKUS, activeBlockVersion, coverageOf, usePsBlockGroups } from "@/lib/ps-block-groups";
+import { HOTEL_ADDRESS_COMPONENT_FIELDS, findBadPlaceholderLiterals, repairHotelAddressText } from "@/lib/template-integrity";
 import {
   AUTO_FIELDS,
   COMPUTED_FIELDS,
@@ -49,6 +50,7 @@ export const Route = createFileRoute("/ps/templates/$templateId")({
 
 const LOCK_MODES: LockMode[] = ["locked", "structured", "free"];
 const BLOCK_RE = /<ConditionalBlockPlaceholder\s+group="([^"]+)"\s*\/?>/g;
+const HIDDEN_TEMPLATE_FIELDS = new Set<string>(HOTEL_ADDRESS_COMPONENT_FIELDS);
 
 /* ---------------- right panel ---------------- */
 
@@ -62,7 +64,9 @@ function FieldLibrary({
   serviceLine: "ORM" | "MARCOM" | null;
 }) {
   const [q, setQ] = useState("");
-  const list = fields.filter((f) => `${f.field_path} ${f.source}`.toLowerCase().includes(q.toLowerCase()));
+  const list = fields.filter(
+    (f) => !HIDDEN_TEMPLATE_FIELDS.has(f.field_path) && `${f.field_path} ${f.source}`.toLowerCase().includes(q.toLowerCase()),
+  );
   const groups = [...new Set(list.map((f) => f.group))];
 
   return (
@@ -227,6 +231,7 @@ function SectionOnPaper({
   const meta = lockMeta[section.lock_mode];
   const readOnly = section.lock_mode === "locked" && !isLegalAdmin;
   const text = draft ?? section.content;
+  const literalIssues = useMemo(() => findBadPlaceholderLiterals(text), [text]);
 
   /* split content around block-group zones so each renders inline expanded */
   const parts = useMemo(() => {
@@ -271,6 +276,11 @@ function SectionOnPaper({
                 {lockMeta[m].icon}
               </button>
             ))}
+          {literalIssues.length > 0 && (
+            <Button size="sm" variant="outline" className="h-6 border-destructive/40 px-2 text-[8pt] text-destructive" onClick={() => cursorRef.current?.focus()}>
+              ⚠ {literalIssues.length} placeholder ผิด
+            </Button>
+          )}
         </div>
       </div>
 
@@ -283,9 +293,42 @@ function SectionOnPaper({
             value={text}
             readOnly={readOnly}
             onChange={(e) => setDraft(e.target.value)}
+            onBlur={() => {
+              if (literalIssues.length) toast.warning(`พบ placeholder ผิด ${literalIssues.length} รายการ`);
+            }}
+            onPaste={(e) => {
+              window.setTimeout(() => {
+                const nextIssues = findBadPlaceholderLiterals(e.currentTarget.value);
+                if (nextIssues.length) toast.warning(`พบ placeholder ผิด ${nextIssues.length} รายการ`);
+              }, 0);
+            }}
             spellCheck={false}
-            className="min-h-[110px] bg-white font-mono text-[10px] leading-relaxed"
+            className={`min-h-[110px] bg-white font-mono text-[10px] leading-relaxed ${literalIssues.length ? "border-destructive placeholder-literal-warning" : ""}`}
           />
+          {literalIssues.length > 0 && (
+            <div className="mt-2 rounded-md border border-destructive/30 bg-destructive/10 p-2 text-[8pt] text-destructive">
+              <p className="font-medium">พบ placeholder ที่ยังเป็น literal text</p>
+              <div className="mt-1 flex flex-wrap gap-1">
+                {literalIssues.slice(0, 4).map((issue, i) => (
+                  <code key={`${issue.index}-${i}`} className="placeholder-literal-chip rounded bg-background px-1.5 py-0.5 font-mono">
+                    {issue.match}
+                  </code>
+                ))}
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="mt-2 h-6 px-2 text-[8pt]"
+                onClick={() => {
+                  const repaired = repairHotelAddressText(text);
+                  if (repaired.replacements > 0) setDraft(repaired.content);
+                  else toast.message("รายการนี้ต้องรีวิวก่อนแก้ไข");
+                }}
+              >
+                แก้ไขอัตโนมัติ →
+              </Button>
+            </div>
+          )}
           <div className="mt-1 flex items-center gap-2">
             {readOnly ? (
               <p className="flex items-center gap-1 text-[8pt] text-muted-foreground">
@@ -298,6 +341,11 @@ function SectionOnPaper({
                 className="h-6 px-2 text-[8pt]"
                 disabled={draft === null}
                 onClick={() => {
+                  if (literalIssues.length > 0 && !isLegalAdmin) {
+                    toast.error(`พบ placeholder ผิด ${literalIssues.length} รายการ · แก้ไขก่อน save`);
+                    return;
+                  }
+                  if (literalIssues.length > 0 && !window.confirm(`Override placeholder validator? (${literalIssues.length} รายการยังเป็น literal text)`)) return;
                   const res = saveSection(templateId, section.id, text);
                   if (res.ok) {
                     setDraft(null);

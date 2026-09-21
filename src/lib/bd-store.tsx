@@ -8,6 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { CANONICAL_ORM_LITE_SKU, canonicalSkuCode } from "@/lib/template-integrity";
 
 export type BdQuoteType = "ORM" | "MARCOM";
 
@@ -286,8 +287,9 @@ export function ormSkus(
     const parts: string[] = [];
     if (pkg.base_price) parts.push(`${money(pkg.base_price)}/mo`);
     if (pkg.commission) parts.push(`${Math.round(pkg.commission * 100)}%`);
+    const skuCode = key === "lite" ? CANONICAL_ORM_LITE_SKU : `ORM-MTH-FULL-${key.toUpperCase()}`;
     out.push({
-      sku_code: `ORM-MTH-FULL-${key.toUpperCase()}`,
+      sku_code: skuCode,
       product_name: `${key.charAt(0).toUpperCase()}${key.slice(1)} Package`,
       billing_summary: parts.join(" + ") || "TBD",
       billing_type: pkg.base_price ? "monthly" : "commission_only",
@@ -335,6 +337,7 @@ export function marcomSkus(items: LineItem[]): SKUEntry[] {
 
 /* legacy/partial rows loaded from storage may miss the new SKU fields */
 const normalizeSku = (s: Partial<SKUEntry> & { sku_code: string; product_name: string }): SKUEntry => ({
+  sku_code: canonicalSkuCode(s.sku_code),
   billing_summary: "",
   billing_type: "one_time",
   monthly_price: null,
@@ -343,7 +346,17 @@ const normalizeSku = (s: Partial<SKUEntry> & { sku_code: string; product_name: s
   pricing_option_group: null,
   is_pricing_option: false,
   ...s,
+  sku_code: canonicalSkuCode(s.sku_code),
 });
+
+const normalizeSnapshot = (snapshot: ApprovedSnapshot | null): ApprovedSnapshot | null =>
+  snapshot
+    ? {
+        ...snapshot,
+        approved_skus: snapshot.approved_skus.map(normalizeSku),
+        rejected_skus: snapshot.rejected_skus.map(normalizeSku),
+      }
+    : null;
 
 export const withSkus = (q: BdQuote): BdQuote => {
   const skus = q.skus?.length
@@ -357,7 +370,7 @@ export const withSkus = (q: BdQuote): BdQuote => {
   return {
     ...q,
     skus,
-    approved_snapshot: q.approved_snapshot ?? null,
+    approved_snapshot: normalizeSnapshot(q.approved_snapshot ?? null),
     note: q.note ?? null,
     note_mentions: q.note_mentions ?? [],
     note_updated_at: q.note_updated_at ?? null,

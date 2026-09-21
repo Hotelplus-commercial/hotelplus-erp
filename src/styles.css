@@ -259,6 +259,19 @@
   margin-bottom: 4pt;
 }
 
+.placeholder-literal-warning {
+  text-decoration-line: underline;
+  text-decoration-style: wavy;
+  text-decoration-color: var(--destructive);
+  text-decoration-thickness: 1px;
+}
+
+.placeholder-literal-chip {
+  text-decoration-line: underline;
+  text-decoration-style: wavy;
+  text-decoration-color: var(--destructive);
+}
+
 /* CI bars */
 .ci-bar {
   background: var(--ci-yellow);

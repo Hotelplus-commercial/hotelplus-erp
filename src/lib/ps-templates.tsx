@@ -10,6 +10,7 @@ import {
 } from "react";
 
 import { QUOTE_BODY_MARCOM, QUOTE_BODY_ORM } from "@/lib/quote-nodes";
+import { CANONICAL_ORM_LITE_SKU, canonicalSkuCode, repairHotelAddressText } from "@/lib/template-integrity";
 
 export type TemplateType = "quote" | "contract";
 export type VersionStatus = "draft" | "active" | "archived";
@@ -173,11 +174,13 @@ export const AUTO_FIELDS: AutoField[] = [
   { field_path: "hotel.name", source: "AC.hotels.name", type: "string", available_in: ["contract"], supported_filters: [], example: "Sumator Resort", group: "hotel", sub_type: "2a" },
   { field_path: "hotel.address", source: "AC.hotels.address", type: "string", available_in: ["contract"], supported_filters: [], example: "123 ถนนสุขุมวิท กรุงเทพฯ", group: "hotel", sub_type: "2a" },
   { field_path: "hotel.room_key", source: "AC.hotels.room_key", type: "number", available_in: ["contract"], supported_filters: ["number"], example: "9", group: "hotel", sub_type: "2a" },
-  { field_path: "hotel.address_number", source: "AC.hotels.address_number (OCR ทะเบียนบ้านโรงแรม)", type: "string", available_in: ["contract"], supported_filters: [], example: "240/6", group: "hotel", sub_type: "2a" },
-  { field_path: "hotel.street", source: "AC.hotels.street", type: "string", available_in: ["contract"], supported_filters: [], example: "ถนนร่วมจิตร", group: "hotel", sub_type: "2a" },
-  { field_path: "hotel.subdistrict", source: "AC.hotels.subdistrict", type: "string", available_in: ["contract"], supported_filters: [], example: "ตำบลชะอำ", group: "hotel", sub_type: "2a" },
-  { field_path: "hotel.district", source: "AC.hotels.district", type: "string", available_in: ["contract"], supported_filters: [], example: "อำเภอชะอำ", group: "hotel", sub_type: "2a" },
-  { field_path: "hotel.province", source: "AC.hotels.province", type: "string", available_in: ["contract"], supported_filters: [], example: "จังหวัดเพชรบุรี", group: "hotel", sub_type: "2a" },
+  { field_path: "hotel.address_full", source: "Computed: address_number + street + subdistrict + district + province + postal_code", type: "string", available_in: ["contract"], supported_filters: [], example: "123 ถนนตัวอย่าง ตำบลตัวอย่าง อำเภอตัวอย่าง จังหวัดตัวอย่าง 10000", group: "hotel", sub_type: "2c", computed_when: "on_render" },
+  { field_path: "hotel.address_number", source: "⚠ ใช้เฉพาะ Hotel record admin UI · use {{hotel.address_full}} in templates", type: "string", available_in: ["contract"], supported_filters: [], example: "240/6", group: "hotel", sub_type: "2a" },
+  { field_path: "hotel.street", source: "⚠ ใช้เฉพาะ Hotel record admin UI · use {{hotel.address_full}} in templates", type: "string", available_in: ["contract"], supported_filters: [], example: "ถนนร่วมจิตร", group: "hotel", sub_type: "2a" },
+  { field_path: "hotel.subdistrict", source: "⚠ ใช้เฉพาะ Hotel record admin UI · use {{hotel.address_full}} in templates", type: "string", available_in: ["contract"], supported_filters: [], example: "ตำบลชะอำ", group: "hotel", sub_type: "2a" },
+  { field_path: "hotel.district", source: "⚠ ใช้เฉพาะ Hotel record admin UI · use {{hotel.address_full}} in templates", type: "string", available_in: ["contract"], supported_filters: [], example: "อำเภอชะอำ", group: "hotel", sub_type: "2a" },
+  { field_path: "hotel.province", source: "⚠ ใช้เฉพาะ Hotel record admin UI · use {{hotel.address_full}} in templates", type: "string", available_in: ["contract"], supported_filters: [], example: "จังหวัดเพชรบุรี", group: "hotel", sub_type: "2a" },
+  { field_path: "hotel.postal_code", source: "⚠ ใช้เฉพาะ Hotel record admin UI · use {{hotel.address_full}} in templates", type: "string", available_in: ["contract"], supported_filters: [], example: "10000", group: "hotel", sub_type: "2a" },
 
   { field_path: "customer.legal_name", source: "AC.customers.legal_name (OCR ภพ.20 / บัตรประชาชน)", type: "string", available_in: ["contract"], supported_filters: [], example: "บริษัท ชะอำเพิ่มสุข จำกัด", group: "customer", sub_type: "2a" },
   { field_path: "customer.tax_id", source: "AC.customers.tax_id", type: "string", available_in: ["contract"], supported_filters: [], example: "0105558123456", group: "customer", sub_type: "2a" },
@@ -258,6 +261,16 @@ export const GUARDRAIL_RULES: GuardrailRule[] = [
 /* ---------------- §NEW-D Computed fields ---------------- */
 
 export const COMPUTED_FIELDS: ComputedField[] = [
+  {
+    field_path: "hotel.address_full",
+    display_label: "ที่อยู่โรงแรมรวม 1 บรรทัด",
+    formula_type: "concat",
+    formula_config: { fields: ["hotel.address_number", "hotel.street", "hotel.subdistrict", "hotel.district", "hotel.province", "hotel.postal_code"], separator: " ", skip_null: true },
+    editable_in_wizard: false,
+    computed_when: "on_render",
+    category: "hotel",
+    applies_to_service_line: "ALL",
+  },
   {
     field_path: "contract.package_code",
     display_label: "รหัสสัญญา (Cover Package Code)",
@@ -461,12 +474,13 @@ export type ComputeContext = BlockContext & {
   generated_at?: string;
   daily_sequence?: number;
   setup_products?: string[];
+  field_values?: Record<string, string | undefined>;
 };
 
 export const evaluateComputed = (fieldPath: string, ctx: ComputeContext): string => {
   const def = COMPUTED_FIELDS.find((c) => c.field_path === fieldPath);
   if (!def) return "—";
-  const cfg = def.formula_config as Record<string, never> & Record<string, unknown>;
+  const cfg = def.formula_config;
 
   switch (def.formula_type) {
     case "multiply": {
@@ -481,6 +495,10 @@ export const evaluateComputed = (fieldPath: string, ctx: ComputeContext): string
     }
     case "sku_setup_join":
       return (ctx.setup_products ?? []).join(String(cfg["join"] ?? " และ ")) || "—";
+    case "concat": {
+      const values = (cfg["fields"] as string[] | undefined) ?? [];
+      return values.map((field) => ctx.field_values?.[field]?.trim()).filter(Boolean).join(String(cfg["separator"] ?? " ")) || "—";
+    }
     case "lookup": {
       const key = String(cfg["lookup_key"] ?? "");
       if (key === "regex_test") {
@@ -801,7 +819,7 @@ function seedTemplates(): Template[] {
     }),
     t("TPL-C-ORM", "contract", "ORM Service Contract (Full/Lite unified)", {
       description: "Layer 2 · 17 sections · commission section included",
-      mapped_skus: ["ORM-MTH-FULL-SMART", "ORM-MTH-FULL-FIXED", "ORM-MTH-FULL-PERFORMANCE", "ORM-MTH-LITE-SMART", "ORM-MTH-LITE-FIXED"],
+      mapped_skus: ["ORM-MTH-FULL-SMART", "ORM-MTH-FULL-FIXED", "ORM-MTH-FULL-PERFORMANCE", CANONICAL_ORM_LITE_SKU],
       service_line: "ORM",
       sections: ormSections,
       max_section: 9,
@@ -865,6 +883,23 @@ type Ctx = {
   resetTemplates: () => void;
 };
 
+function normalizeTemplatesV23(templates: Template[]): Template[] {
+  return templates.map((template) => {
+    const shouldRepairBody = template.template_type === "contract";
+    const sections = shouldRepairBody
+      ? template.sections.map((section) => ({ ...section, content: repairHotelAddressText(section.content).content }))
+      : template.sections;
+    const versions = template.versions.map((version) => {
+      const body = shouldRepairBody ? repairHotelAddressText(version.body).content : version.body;
+      return { ...version, body, auto_fields_used: parsePlaceholders(body) };
+    });
+    const mapped_skus = template.template_id === "TPL-C-ORM"
+      ? [...new Set(template.mapped_skus.map(canonicalSkuCode))]
+      : template.mapped_skus;
+    return { ...template, sections, versions, mapped_skus };
+  });
+}
+
 const PsTplCtx = createContext<Ctx | null>(null);
 
 const nextLabel = (labels: string[]) => {
@@ -885,9 +920,9 @@ export function PsTemplateProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(KEY);
-      setTemplates(raw ? (JSON.parse(raw) as Template[]) : seedTemplates());
+      setTemplates(normalizeTemplatesV23(raw ? (JSON.parse(raw) as Template[]) : seedTemplates()));
     } catch {
-      setTemplates(seedTemplates());
+      setTemplates(normalizeTemplatesV23(seedTemplates()));
     }
     setIsLegalAdmin(localStorage.getItem(ADMIN_KEY) === "1");
     setCounter(readCounter());
@@ -1048,7 +1083,7 @@ export function PsTemplateProvider({ children }: { children: ReactNode }) {
     [],
   );
 
-  const resetTemplates = useCallback(() => setTemplates(seedTemplates()), []);
+  const resetTemplates = useCallback(() => setTemplates(normalizeTemplatesV23(seedTemplates())), []);
 
   const value = useMemo(
     () => ({

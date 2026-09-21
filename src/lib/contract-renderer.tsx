@@ -14,6 +14,7 @@ import heroOrm from "@/assets/cover-hero-orm.jpg";
 import heroPp from "@/assets/cover-hero-pp.jpg";
 import heroProd from "@/assets/cover-hero-prod.jpg";
 import { SERVICE_LINE_LABEL, type PreviewServiceLine, type QuoteLineItem } from "@/lib/template-preview-sample-data";
+import { withComputedHotelAddress } from "@/lib/template-integrity";
 
 export const HERO_BY_SERVICE_LINE: Record<PreviewServiceLine, string> = {
   ORM: heroOrm,
@@ -39,11 +40,12 @@ export function resolvePlaceholders(
   data: Record<string, string>,
   opts: { raw?: boolean; pills?: boolean } = {},
 ): string {
+  const resolvedData = withComputedHotelAddress(data);
   return content.replace(/\{\{\s*([^}|]+?)\s*(\|\s*[a-z_:]+\s*)?\}\}/g, (all, path: string) => {
     const key = path.trim();
     if (opts.raw) return `<span class="ph-pill ph-pill--raw">${esc(all)}</span>`;
     if (key.startsWith("loop.")) return key === "loop.index" ? "1" : "4";
-    const value = data[key];
+    const value = resolvedData[key];
     if (!opts.pills) return value ?? `⟨${esc(key)}⟩`;
     return value
       ? `<span class="ph-pill ph-pill--filled">${esc(value)}</span>`
@@ -198,16 +200,17 @@ export function renderBody(
   data: Record<string, string>,
   opts: { raw?: boolean; pills?: boolean; lineItems?: QuoteLineItem[] } = {},
 ): string {
+  const resolvedData = withComputedHotelAddress(data);
   const expanded = expandQuoteNodes(content);
   const withLoops = opts.raw ? expanded : expandLoops(expanded, opts.lineItems ?? []);
   const withSig = withLoops.replace(SIGNATURE_RE, () =>
     signatureBlockHtml(
-      data["customer.signer_name"] ?? "…………………",
-      data["hotelplus.authorized_signatory"] ?? "…………………",
-      opts.raw ? null : (data["contract.signed_date"] ?? null),
+      resolvedData["customer.signer_name"] ?? "…………………",
+      resolvedData["hotelplus.authorized_signatory"] ?? "…………………",
+      opts.raw ? null : (resolvedData["contract.signed_date"] ?? null),
     ),
   );
-  return resolvePlaceholders(withSig, data, opts);
+  return resolvePlaceholders(withSig, resolvedData, opts);
 }
 
 /* ---------------- A4 canvas ---------------- */

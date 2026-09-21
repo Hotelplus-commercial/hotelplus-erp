@@ -4,7 +4,10 @@ import { useState } from "react";
 
 import { Chip, Panel } from "@/components/crm/crm-ui";
 import { Input } from "@/components/ui/input";
+import { HOTEL_ADDRESS_COMPONENT_FIELDS } from "@/lib/template-integrity";
 import { AUTO_FIELDS, fieldGroupLabel } from "@/lib/ps-templates";
+
+const ADMIN_ONLY_FIELDS = new Set<string>(HOTEL_ADDRESS_COMPONENT_FIELDS);
 
 export const Route = createFileRoute("/ps/templates/auto-fields")({
   head: () => ({
@@ -63,6 +66,8 @@ function AutoFieldsPage() {
                     <tr key={r.field_path} className="border-b last:border-0 align-top">
                       <td className="py-2 pr-3">
                         <code className="font-mono text-xs">{`{{${r.field_path}}}`}</code>
+                        {r.field_path === "hotel.address_full" && <Chip tone="success">ใช้ใน template content</Chip>}
+                        {ADMIN_ONLY_FIELDS.has(r.field_path) && <Chip tone="warn">ใช้เฉพาะ Hotel record admin UI</Chip>}
                       </td>
                       <td className="py-2 pr-3 text-xs text-muted-foreground">{r.source}</td>
                       <td className="py-2 pr-3 text-xs">{r.type}</td>
