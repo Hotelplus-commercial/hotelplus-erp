@@ -1,4 +1,4 @@
-/* PS App v1.1 — Template Management + Layer 2 patch (prototype store, localStorage) */
+/* PS App v3.0 — Flat Contract Template architecture (prototype store, localStorage) */
 import {
   createContext,
   useCallback,
@@ -79,6 +79,7 @@ export type Template = {
   name: string;
   description: string | null;
   mapped_skus: string[];
+  applies_to_sku: string | null;
   quote_type: "ORM" | "MARCOM" | null;
   service_line: "ORM" | "MARCOM" | null;
   sections: TemplateSection[];
@@ -593,6 +594,49 @@ const QUOTE_ORM_BODY = QUOTE_BODY_ORM;
 const QUOTE_ORM_DRAFT = QUOTE_BODY_ORM;
 const QUOTE_MARCOM_BODY = QUOTE_BODY_MARCOM;
 
+
+export type ContractSkuSpec = {
+  sku: string;
+  template_id: string;
+  service_line: "ORM" | "MARCOM";
+  tier: "Full" | "Lite";
+  channel: string;
+  label: string;
+  docs_generated: number;
+};
+
+export const MONTHLY_CONTRACT_SKUS: ContractSkuSpec[] = [
+  { sku: "ORM-MTH-FULL-SMART", template_id: "TPL-C-ORM-FULL-SMART", service_line: "ORM", tier: "Full", channel: "OTA", label: "ORM Full · Smart", docs_generated: 18 },
+  { sku: "ORM-MTH-FULL-FIXED", template_id: "TPL-C-ORM-FULL-FIXED", service_line: "ORM", tier: "Full", channel: "OTA", label: "ORM Full · Fixed", docs_generated: 14 },
+  { sku: "ORM-MTH-FULL-PERFORMANCE", template_id: "TPL-C-ORM-FULL-PERFORMANCE", service_line: "ORM", tier: "Full", channel: "OTA", label: "ORM Full · Performance", docs_generated: 9 },
+  { sku: CANONICAL_ORM_LITE_SKU, template_id: "TPL-C-ORM-LITE", service_line: "ORM", tier: "Lite", channel: "OTA", label: "ORM Lite", docs_generated: 12 },
+  { sku: "MARCOM-MTH-META", template_id: "TPL-C-MARCOM-META", service_line: "MARCOM", tier: "Full", channel: "Meta", label: "Marcom Meta", docs_generated: 7 },
+  { sku: "MARCOM-MTH-META-LITE-CONTENT", template_id: "TPL-C-MARCOM-META-LITE-CONTENT", service_line: "MARCOM", tier: "Lite", channel: "Meta Content", label: "Meta Lite · Content", docs_generated: 5 },
+  { sku: "MARCOM-MTH-META-LITE-ADS", template_id: "TPL-C-MARCOM-META-LITE-ADS", service_line: "MARCOM", tier: "Lite", channel: "Meta Ads", label: "Meta Lite · Ads", docs_generated: 4 },
+  { sku: "MARCOM-MTH-TIKTOK", template_id: "TPL-C-MARCOM-TIKTOK", service_line: "MARCOM", tier: "Full", channel: "TikTok", label: "Marcom TikTok", docs_generated: 6 },
+  { sku: "MARCOM-MTH-TIKTOK-LITE-BASIC", template_id: "TPL-C-MARCOM-TIKTOK-LITE-BASIC", service_line: "MARCOM", tier: "Lite", channel: "TikTok Lite", label: "TikTok Lite · Basic", docs_generated: 3 },
+  { sku: "MARCOM-MTH-GMB-IBE", template_id: "TPL-C-MARCOM-GMB-IBE", service_line: "MARCOM", tier: "Full", channel: "GMB / IBE", label: "GMB + IBE", docs_generated: 2 },
+];
+
+export const CONTRACT_SKU_CODES = MONTHLY_CONTRACT_SKUS.map((s) => s.sku);
+export const CONTRACT_TEMPLATE_IDS = MONTHLY_CONTRACT_SKUS.map((s) => s.template_id);
+
+export const contractSkuSpec = (sku: string | null | undefined) => {
+  const code = canonicalSkuCode(sku ?? "");
+  return MONTHLY_CONTRACT_SKUS.find((s) => s.sku === code) ?? null;
+};
+
+export const templateSku = (template: Pick<Template, "applies_to_sku" | "mapped_skus">) =>
+  template.applies_to_sku ?? template.mapped_skus[0] ?? null;
+
+export const activeContractTemplates = (templates: Template[]) =>
+  templates.filter((t) => t.template_type === "contract" && !t.superseded && !!t.applies_to_sku);
+
+export const findContractTemplateBySku = (templates: Template[], sku: string | null | undefined) => {
+  const code = canonicalSkuCode(sku ?? "");
+  return activeContractTemplates(templates).find((t) => t.applies_to_sku === code) ?? null;
+};
+
 export const CONTRACT_SECTIONS = [
   "ผู้ทำสัญญา (Parties)",
   "ขอบเขตการให้บริการ (Service Scope)",
@@ -644,128 +688,88 @@ const LIABILITY_EXCLUSION = `<p>เอกสารสัญญาฉบับน
 
 const TERMINATION_EFFECT = `<p>การสิ้นสุดหรือสัญญาที่หมดอายุ จะไม่มีผลกระทบต่อสิทธิ์ การแก้ไขปัญหา หรือความรับผิดชอบในหนี้สินของคู่สัญญาที่เกิดขึ้น และยังรวมถึงสิทธิ์ในการเรียกร้องค่าเสียหายจากการฝ่าฝืนข้อตกลงที่มีอยู่ในสัญญา</p>`;
 
-const ormContractSections = (): TemplateSection[] => [
-  s("header_parties", "หัวสัญญา + คู่สัญญา", "locked", HEADER_AND_PARTIES("สัญญาบริหารกิจการห้องพักรายเดือน")),
-  s("definitions", "1. คำนิยาม", "structured", `<ConditionalBlockPlaceholder group="definitions" />`, "definitions"),
-  s("duration", "2. วันเริ่มต้น และระยะเวลา", "locked", DURATION_CLAUSES),
-  s(
-    "duties",
-    "3. หน้าที่ของคู่สัญญา",
-    "structured",
-    `<ConditionalBlockPlaceholder group="scope_of_work" />\n<SignatureBlock />`,
-    "scope_of_work",
-  ),
-  s(
-    "fees",
-    "4. ค่าบริการ, การชำระ, และระยะเวลา",
-    "structured",
-    `<p>4.1 ค่า One Time Service เป็นจำนวนเงิน {{sku.setup_fee | thb}} บาท ({{sku.setup_fee | thb_thai_words}}) โดยเจ้าของโครงการต้องชำระเงินภายใน 3 วันนับจากวันที่ลงนามในสัญญา</p>
+const blockCopy = (content: string) => `<p>${content.replace(/\n/g, "</p><p>")}</p>`;
+
+const definitionFor = (spec: ContractSkuSpec) => {
+  if (spec.service_line === "ORM" && spec.tier === "Lite") {
+    return '“บริการ ORM Lite” หมายถึง การดูแลช่องทางการขายออนไลน์เฉพาะรายการที่ระบุไว้ในภาคผนวก ข ของ {{hotel.name}}';
+  }
+  if (spec.service_line === "ORM") {
+    return '“บริการ ORM Full” หมายถึง การบริหารรายได้และช่องทางการขายออนไลน์ของ {{hotel.name}} แบบเต็มรูปแบบ ตามขอบเขตงานในภาคผนวก ข\n“ค่าคอมมิชชั่น” หมายถึง ค่าตอบแทนที่คำนวณจากรายได้ที่เกิดขึ้นจริงในอัตรา {{sku.commission_rate | pct}}';
+  }
+  if (spec.channel.startsWith("Meta")) return '“บริการ Meta” หมายถึง การผลิตคอนเทนต์และบริหารโฆษณาบนแพลตฟอร์ม Meta ให้แก่ {{hotel.name}}';
+  if (spec.channel.startsWith("TikTok")) return '“บริการ TikTok” หมายถึง การผลิตวิดีโอสั้นและบริหารโฆษณาบน TikTok ให้แก่ {{hotel.name}}';
+  return '“บริการ GMB + IBE” หมายถึง การบริหาร Google Business Profile และแคมเปญที่เชื่อมกับช่องทางจองตรงของ {{hotel.name}}';
+};
+
+const scopeFor = (spec: ContractSkuSpec) => {
+  if (spec.sku === CANONICAL_ORM_LITE_SKU) {
+    return "ผู้ให้บริการจะดูแลช่องทางการขายออนไลน์ของ {{hotel.name}} ตามรายการ ORM Lite ที่ระบุในใบเสนอราคา โดยเริ่มตั้งแต่วันที่ {{contract.start_date}} เป็นเวลา {{contract.duration_months}} เดือน\nครอบคลุมการตรวจสอบราคา การตั้งค่าพื้นฐาน และรายงานผลรายเดือนตามขอบเขตของแพ็กเกจ Lite";
+  }
+  if (spec.service_line === "ORM") {
+    return `ผู้ให้บริการจะดำเนินงาน ${spec.label} ให้แก่ {{hotel.name}} โดยเริ่มตั้งแต่วันที่ {{contract.start_date}} เป็นเวลา {{contract.duration_months}} เดือน\nครอบคลุมการตั้งค่าช่องทางการขาย การปรับราคา การติดตามยอดจอง และรายงานผลรายเดือน`;
+  }
+  if (spec.sku === "MARCOM-MTH-META-LITE-CONTENT") return "ผู้ให้บริการจะวางแผนและผลิตคอนเทนต์ Meta Lite ให้แก่ {{hotel.name}} ตามจำนวนโพสต์ที่ระบุในใบเสนอราคา พร้อมสรุปผลงานรายเดือน";
+  if (spec.sku === "MARCOM-MTH-META-LITE-ADS") return "ผู้ให้บริการจะดูแลการตั้งค่าและบริหารโฆษณา Meta Lite Ads ให้แก่ {{hotel.name}} ตามงบประมาณและ KPI ที่ตกลงในใบเสนอราคา";
+  if (spec.sku === "MARCOM-MTH-TIKTOK-LITE-BASIC") return "ผู้ให้บริการจะผลิตและบริหารคอนเทนต์ TikTok Lite Basic ให้แก่ {{hotel.name}} พร้อมรายงานผลรายเดือนตามขอบเขตแพ็กเกจ";
+  if (spec.sku === "MARCOM-MTH-GMB-IBE") return "ผู้ให้บริการจะบริหาร Google Business Profile และ IBE visibility ให้แก่ {{hotel.name}} พร้อมปรับข้อมูลธุรกิจ แคมเปญ และรายงานผลรายเดือน";
+  return `ผู้ให้บริการจะดำเนินงาน ${spec.label} (${spec.channel}) ให้แก่ {{hotel.name}} ครอบคลุมการผลิตคอนเทนต์ การบริหารงบโฆษณา และรายงานผลรายเดือน`;
+};
+
+const terminationAssetsFor = (spec: ContractSkuSpec) => {
+  if (spec.service_line === "ORM") return "บัญชี Extranet ของทุก OTA · Channel Manager · รายงานราคาย้อนหลัง · บัญชี Google Business Profile";
+  if (spec.channel.startsWith("Meta")) return "Facebook Page · Instagram Account · Meta Business Manager · ไฟล์คอนเทนต์ต้นฉบับ";
+  if (spec.channel.startsWith("TikTok")) return "TikTok Business Account · ไฟล์วิดีโอต้นฉบับ · TikTok Ads Manager";
+  return "Google Ads Account · Google Business Profile · Google Analytics property · รายการเชื่อมต่อ IBE";
+};
+
+const loaFor = (spec: ContractSkuSpec) =>
+  spec.service_line === "ORM"
+    ? "We, {{customer.legal_name}}, hereby authorize Hotel Plus Co., Ltd. to act on our behalf in managing online distribution channels of {{hotel.name_en}}. Signed by {{customer.signer_name_en}}."
+    : "We, {{customer.legal_name}}, hereby authorize Hotel Plus Co., Ltd. to manage social media, advertising, and digital visibility accounts of {{hotel.name_en}}. Signed by {{customer.signer_name_en}}.";
+
+const workProposalFor = (spec: ContractSkuSpec) =>
+  spec.sku === CANONICAL_ORM_LITE_SKU
+    ? "Work proposal for ORM Lite — channel setup review, rate visibility checks, monthly summary and scoped online distribution support for {{hotel.name_en}}."
+    : `Work proposal for ${spec.label} — deliverables, KPIs and monthly reporting cadence for {{hotel.name_en}}.`;
+
+const ormFeeBody = `<p>4.1 ค่า One Time Service เป็นจำนวนเงิน {{sku.setup_fee | thb}} บาท ({{sku.setup_fee | thb_thai_words}}) โดยเจ้าของโครงการต้องชำระเงินภายใน 3 วันนับจากวันที่ลงนามในสัญญา</p>
 <p>4.2 ค่าบริการจัดการห้องพักรายเดือน เป็นจำนวนเงิน {{sku.monthly_fee | thb}} บาท ({{sku.monthly_fee | thb_thai_words}}) ต่อเดือน + ค่าคอมมิชชั่นจากยอดขาย {{sku.commission_rate | pct}} จากยอดจองห้องพักที่เกิดขึ้นจริงในแต่ละเดือน</p>
 <p>{{contract.addon_lines_display}}</p>
 <p>4.3 เจ้าของโครงการมีหน้าที่ในการชำระค่าบริการที่ระบุในข้อ 4.2 ให้แก่ฝ่ายบริหารจัดการภายในทุกวันที่ 15 ของเดือนถัดไปโดยการโอนเข้าบัญชีเลขที่ {{payment.bank_account_no}} ธนาคาร{{payment.bank_name}} ชื่อบัญชี {{payment.bank_account_name}}</p>
 <p>4.4 การรายงานยอดขายและใบแจ้งหนี้ : ฝ่ายบริหารจัดการจะจัดส่งรายงานยอดขายรายเดือน พร้อมใบแจ้งหนี้ให้แก่เจ้าของโครงการ ภายในวันที่ 5 ของเดือนถัดไป โดยส่งผ่านทางอีเมลของเจ้าของโครงการที่ระบุไว้ในสัญญาฉบับนี้ เจ้าของโครงการมีหน้าที่ตรวจสอบใบแจ้งหนี้และแจ้งข้อโต้แย้ง (หากมี) เป็นลายลักษณ์อักษรภายใน 5 วันทำการนับจากวันที่ได้รับใบแจ้งหนี้ หากไม่มีการโต้แย้งภายในระยะเวลาดังกล่าว ถือว่าเจ้าของโครงการยอมรับความถูกต้องของใบแจ้งหนี้</p>
-<p>4.5 ในกรณีที่เจ้าของโครงการชำระค่าบริการล่าช้ากว่ากำหนดในข้อ 4.3 เจ้าของโครงการยินยอมชำระเบี้ยปรับให้แก่ฝ่ายบริหารจัดการในอัตรา {{contract.late_penalty_amount | thb}} บาท ({{contract.late_penalty_amount | thb_thai_words}}) ต่อวัน จนกว่าจะชำระเสร็จสิ้น</p>`,
-  ),
-  s(
-    "termination",
-    "5. การสิ้นสุดของสัญญา",
-    "structured",
-    `<ConditionalBlockPlaceholder group="owner_asset_termination_notice" />\n<ConditionalBlockPlaceholder group="owner_asset_termination_list" />`,
-    "owner_asset_termination_list",
-  ),
-  s("termination_effect", "6. ผลของการสิ้นสุด", "locked", TERMINATION_EFFECT),
-  s(
-    "default",
-    "7. การผิดนัดชำระ, การยกเลิกสัญญาก่อนครบกำหนด",
-    "locked",
-    `<p>ในกรณีเจ้าของโครงการกระทำการยกเลิกสัญญาก่อนครบกำหนดอายุจะมีการเรียกค่าปรับจำนวน {{sku.monthly_fee | thb}} บาท ({{sku.monthly_fee | thb_thai_words}}) หรือในกรณีที่เจ้าของโครงการผิดนัดชำระค่าบริการตามที่ระบุในสัญญาฉบับนี้ ทางบริษัทจะดำเนินการอย่างใดอย่างหนึ่ง หรือ มากกว่า ตามข้อกำหนดที่ระบุไว้ ดังนี้</p>\n${DEFAULT_CLAUSES}`,
-  ),
-  s(
-    "start_calc",
-    "8. วันที่เริ่มคำนวนค่าบริการ",
-    "locked",
-    `<p>การคำนวณค่าบริการจะเริ่มต้นในวันที่ฝ่ายบริหารจัดการดำเนินการติดตั้งระบบและเริ่มให้บริการ ตามที่ระบุในข้อ 1.5 ของสัญญานี้</p>\n<SignatureBlock />`,
-  ),
-  s(
-    "liability",
-    "9. ขอบเขตการรับผิดชอบ",
-    "locked",
-    `<p>9.1 ฝ่ายบริหารจัดการรับผิดชอบเฉพาะการดำเนินการภายใต้ขอบเขตของบริการที่ระบุในสัญญาฉบับนี้เท่านั้น</p>
+<p>4.5 ในกรณีที่เจ้าของโครงการชำระค่าบริการล่าช้ากว่ากำหนดในข้อ 4.3 เจ้าของโครงการยินยอมชำระเบี้ยปรับให้แก่ฝ่ายบริหารจัดการในอัตรา {{contract.late_penalty_amount | thb}} บาท ({{contract.late_penalty_amount | thb_thai_words}}) ต่อวัน จนกว่าจะชำระเสร็จสิ้น</p>`;
+
+const marcomFeeBody = `<p>4.1 ค่าบริการจัดการด้านการตลาดออนไลน์จำนวน {{hotel.room_key}} ห้อง เป็นจำนวนเงิน {{sku.monthly_fee | thb}} บาท ({{sku.monthly_fee | thb_thai_words}}) ต่อเดือน</p>
+<p>4.1.1 บริหารจัดการด้านการตลาดออนไลน์ Package Content ({{sku.channel}}) ตามขอบเขตงานในภาคผนวก ข</p>
+<p>4.1.2 บริหารจัดการโฆษณาและรายงานผลตาม KPI ที่ฝ่ายบริหารจัดการกำหนด</p>
+<p>4.1.3 ค่าบริหารจัดการที่ระบุในข้อที่ 4.1 ฝ่ายบริหารจัดการจะจัดส่งใบแจ้งหนี้ตามที่ระบุในข้อที่ 4.2</p>
+<p>4.2 เจ้าของโครงการมีหน้าที่ชำระค่าบริการ ที่ระบุในข้อที่ 4.1 ภายในทุกวันที่ 15 ของเดือนโดยนำเข้าบัญชีเลขที่ {{payment.bank_account_no}} ธนาคาร{{payment.bank_name}} โดยฝ่ายบริหารจัดการจะจัดส่งใบแจ้งหนี้ให้เจ้าของโครงการทุกวันที่ 5 ของเดือน</p>`;
+
+const flatContractSections = (spec: ContractSkuSpec): TemplateSection[] => {
+  const isOrm = spec.service_line === "ORM";
+  return [
+    s("header_parties", "หัวสัญญา + คู่สัญญา", "locked", HEADER_AND_PARTIES(isOrm ? "สัญญาบริหารกิจการห้องพักรายเดือน" : "สัญญาว่าจ้างบริหารจัดการตลาดผ่านสื่อสังคมออนไลน์")),
+    s("definitions", "1. คำนิยาม", "structured", blockCopy(definitionFor(spec))),
+    s("duration", "2. วันเริ่มต้น และระยะเวลา", "locked", DURATION_CLAUSES),
+    s("duties", "3. หน้าที่ของคู่สัญญา", "structured", `${blockCopy(scopeFor(spec))}\n<SignatureBlock />`),
+    s("fees", "4. ค่าบริการ, การชำระ, และระยะเวลา", "structured", isOrm ? ormFeeBody : marcomFeeBody),
+    s("termination", "5. การสิ้นสุดของสัญญา", "structured", `<p>คู่สัญญาฝ่ายใดฝ่ายหนึ่งมีสิทธิบอกเลิกสัญญาโดยแจ้งเป็นหนังสือล่วงหน้าไม่น้อยกว่า 30 วัน และผู้ว่าจ้างจะได้รับคืนสิทธิในทรัพย์สินดิจิทัลตามรายการที่ระบุไว้ในสัญญานี้</p>\n<p>${terminationAssetsFor(spec)}</p>`),
+    s("termination_effect", "6. ผลของการสิ้นสุด", "locked", TERMINATION_EFFECT),
+    s("default", "7. การผิดนัดชำระ, การยกเลิกสัญญาก่อนครบกำหนด", "locked", `<p>ในกรณีเจ้าของโครงการกระทำการยกเลิกสัญญาก่อนครบกำหนดอายุจะมีการเรียกค่าปรับจำนวน {{sku.monthly_fee | thb}} บาท ({{sku.monthly_fee | thb_thai_words}}) หรือในกรณีที่เจ้าของโครงการผิดนัดชำระค่าบริการตามที่ระบุในสัญญาฉบับนี้ ทางบริษัทจะดำเนินการอย่างใดอย่างหนึ่ง หรือ มากกว่า ตามข้อกำหนดที่ระบุไว้ ดังนี้</p>\n${DEFAULT_CLAUSES}${isOrm ? "" : "\n<SignatureBlock />"}`),
+    ...(isOrm
+      ? [
+          s("start_calc", "8. วันที่เริ่มคำนวนค่าบริการ", "locked", `<p>การคำนวณค่าบริการจะเริ่มต้นในวันที่ฝ่ายบริหารจัดการดำเนินการติดตั้งระบบและเริ่มให้บริการ ตามที่ระบุในข้อ 1.5 ของสัญญานี้</p>\n<SignatureBlock />`),
+          s("liability", "9. ขอบเขตการรับผิดชอบ", "locked", `<p>9.1 ฝ่ายบริหารจัดการรับผิดชอบเฉพาะการดำเนินการภายใต้ขอบเขตของบริการที่ระบุในสัญญาฉบับนี้เท่านั้น</p>
 <p>9.2 ฝ่ายบริหารจัดการไม่รับผิดชอบต่อความเสียหายทางอ้อม ความเสียหายที่เกิดจากเหตุสุดวิสัย ความเสียหายจากการกระทำหรือการละเว้นการกระทำของบุคคลที่สาม รวมถึงความเสียหายที่เกิดจากระบบ Online Travel Agent, ระบบชำระเงิน, ระบบธนาคาร, หรือระบบเทคโนโลยีอื่นๆที่อยู่นอกเหนือการควบคุมของฝ่ายบริหารจัดการ</p>
-<p>9.3 ความรับผิดสูงสุดของฝ่ายบริหารจัดการต่อเจ้าของโครงการภายใต้สัญญานี้จะไม่เกินมูลค่าค่าบริการรวม 3 เดือนล่าสุดที่เจ้าของโครงการชำระให้แก่ฝ่ายบริหารจัดการ</p>`,
-  ),
-  s(
-    "appendix_a",
-    "APPENDIX A · Letter of Authorization",
-    "structured",
-    `<ConditionalBlockPlaceholder group="letter_of_authorization" />`,
-    "letter_of_authorization",
-  ),
-  s(
-    "appendix_b",
-    "APPENDIX B · Work Proposal + Payment Condition",
-    "structured",
-    `<ConditionalBlockPlaceholder group="work_proposal" />\n${PAYMENT_CONDITION}\n<SignatureBlock />`,
-    "work_proposal",
-  ),
-  s("exclusion", "ข้อยกเว้นความรับผิด", "locked", LIABILITY_EXCLUSION),
-];
-
-const marcomContractSections = (): TemplateSection[] => [
-  s("header_parties", "หัวสัญญา + คู่สัญญา", "locked", HEADER_AND_PARTIES("สัญญาว่าจ้างบริหารจัดการตลาดผ่านสื่อสังคมออนไลน์")),
-  s("definitions", "1. คำนิยาม", "structured", `<ConditionalBlockPlaceholder group="definitions" />`, "definitions"),
-  s("duration", "2. วันเริ่มต้น และระยะเวลา", "locked", DURATION_CLAUSES),
-  s(
-    "duties",
-    "3. หน้าที่ของคู่สัญญา",
-    "structured",
-    `<ConditionalBlockPlaceholder group="scope_of_work" />\n<SignatureBlock />`,
-    "scope_of_work",
-  ),
-  s(
-    "fees",
-    "4. ค่าบริการ, การชำระ, และระยะเวลา",
-    "structured",
-    `<p>4.1 ค่าบริการจัดการด้านการตลาดออนไลน์จำนวน {{hotel.room_key}} ห้อง เป็นจำนวนเงิน {{sku.monthly_fee | thb}} บาท ({{sku.monthly_fee | thb_thai_words}}) ต่อเดือน</p>
-<p>4.1.1 บริหารจัดการด้านการตลาดออนไลน์ Package Content ({{sku.channel}}) จำนวน 10 โพสต์ (Single or Album) ต่อเดือน</p>
-<p>4.1.2 บริหารจัดการโฆษณา Package Ads Management ({{sku.channel}})</p>
-<p>4.1.3 รวมค่าแพ็คเกจโฆษณาที่ใช้ตั้งขึ้นบนโซเชียลมีเดีย ({{sku.channel}}) แล้ว ตาม Ads KPIs ที่ฝ่ายบริหารจัดการกำหนด</p>
-<p>4.1.4 รวม 1 วิดีโอ และ 1 สไลด์โชว์ จาก 1 KOL สำหรับการโพสต์เท่านั้น (จำนวนไม่หมด 2 โพสต์) ต่อเดือน แต่ยังไม่รวมค่าเดินทางและค่าที่พักของ KOL</p>
-<p>4.1.5 ค่าบริหารจัดการที่ระบุในข้อที่ 4.1 ฝ่ายบริหารจัดการจะจัดส่งใบแจ้งหนี้ตามที่ระบุในข้อที่ 4.2</p>
-<p>4.2 เจ้าของโครงการมีหน้าที่ชำระค่าบริการ ที่ระบุในข้อที่ 4.1 ภายในทุกวันที่ 15 ของเดือนโดยนำเข้าบัญชีเลขที่ {{payment.bank_account_no}} ธนาคาร{{payment.bank_name}} โดยฝ่ายบริหารจัดการจะจัดส่งใบแจ้งหนี้ให้เจ้าของโครงการทุกวันที่ 5 ของเดือน</p>`,
-  ),
-  s(
-    "termination",
-    "5. การสิ้นสุดของสัญญา",
-    "locked",
-    `<p>เมื่อครบกำหนดตามอายุสัญญานี้แล้ว และหลังจากนั้นจะมีผลใช้ต่อไปจนกระทั่งผู้ทำสัญญาฝ่ายใดฝ่ายหนึ่งบอกเลิก โดยให้มีการแจ้งให้ทราบล่วงหน้าอย่างน้อย 30 วัน เป็นลายลักษณ์อักษรเท่านั้น เพื่อเป็นหลักฐานความประสงค์สำหรับการบอกเลิกสัญญา พร้อมระบุวันที่ต้องการสิ้นสุดสัญญา โดยฝ่ายบริหารจัดการจะขอสงวนสิทธิ์ในการคิดค่าบริการ และนำออก H+ Asset ทั้งหมด ภายใน 48 ชั่วโมง หลังวันสิ้นสุดสัญญา</p>
-<p>เมื่อสิ้นสุดสัญญา ฝ่ายบริหารจัดการ จะส่งมอบ Owner Asset อันได้แก่ อีเมลของเจ้าของโครงการ บัญชีผู้ใช้งาน รหัสผ่านเพจ Facebook, Instagram หลักของโรงแรม คืนให้แก่เจ้าของโครงการภายใน 48 ชั่วโมง หลังจากได้รับชำระ ค่าบริการ ค่าธรรมเนียมการขาย ค่าปรับ หรือค่าใช้จ่ายอื่นๆทั้งหมด จากทางเจ้าของโครงการเรียบร้อยแล้ว</p>`,
-  ),
-  s("termination_effect", "6. ผลของการสิ้นสุด", "locked", TERMINATION_EFFECT),
-  s(
-    "default",
-    "7. การผิดนัดชำระ, การยกเลิกสัญญาก่อนครบกำหนด",
-    "locked",
-    `<p>ในกรณีเจ้าของโครงการกระทำการยกเลิกสัญญาก่อนครบกำหนดอายุจะมีการเรียกค่าปรับจำนวน {{sku.monthly_fee | thb}} บาท</p>
-<p>หรือในกรณีที่เจ้าของโครงการผิดนัดชำระค่าบริการตามที่ระบุในสัญญาฉบับนี้ ทางบริษัทจะดำเนินการอย่างใดอย่างหนึ่ง หรือ มากกว่า ตามข้อกำหนดที่ระบุไว้ ดังนี้</p>\n${DEFAULT_CLAUSES}\n<SignatureBlock />`,
-  ),
-  s(
-    "appendix_a",
-    "APPENDIX A · Letter of Authorization",
-    "structured",
-    `<ConditionalBlockPlaceholder group="letter_of_authorization" />`,
-    "letter_of_authorization",
-  ),
-  s(
-    "appendix_b",
-    "APPENDIX B · Work Proposal + Payment Condition",
-    "structured",
-    `<ConditionalBlockPlaceholder group="work_proposal" />\n${PAYMENT_CONDITION}\n<SignatureBlock />`,
-    "work_proposal",
-  ),
-  s("exclusion", "ข้อยกเว้นความรับผิด", "locked", LIABILITY_EXCLUSION),
-];
-
+<p>9.3 ความรับผิดสูงสุดของฝ่ายบริหารจัดการต่อเจ้าของโครงการภายใต้สัญญานี้จะไม่เกินมูลค่าค่าบริการรวม 3 เดือนล่าสุดที่เจ้าของโครงการชำระให้แก่ฝ่ายบริหารจัดการ</p>`),
+        ]
+      : []),
+    s("appendix_a", "APPENDIX A · Letter of Authorization", "structured", `<p>${loaFor(spec)}</p>`),
+    s("appendix_b", "APPENDIX B · Work Proposal + Payment Condition", "structured", `<p>${workProposalFor(spec)}</p>\n${PAYMENT_CONDITION}\n<SignatureBlock />`),
+    s("exclusion", "ข้อยกเว้นความรับผิด", "locked", LIABILITY_EXCLUSION),
+  ];
+};
 
 const sectionsToBody = (sections: TemplateSection[]) =>
   sections
@@ -784,6 +788,7 @@ function seedTemplates(): Template[] {
     name,
     description: null,
     mapped_skus: [],
+    applies_to_sku: null,
     quote_type: null,
     service_line: null,
     sections: [],
@@ -794,8 +799,22 @@ function seedTemplates(): Template[] {
     ...opts,
   });
 
-  const ormSections = ormContractSections();
-  const marcomSections = marcomContractSections();
+  const legacyOrmSections = flatContractSections(MONTHLY_CONTRACT_SKUS[0]);
+  const legacyMarcomSections = flatContractSections(MONTHLY_CONTRACT_SKUS[4]);
+  const flatContracts = MONTHLY_CONTRACT_SKUS.map((spec) => {
+    const sections = flatContractSections(spec);
+    return t(spec.template_id, "contract", `${spec.label} Contract`, {
+      description: `Flat v3.0 · 1 contract template for ${spec.sku}`,
+      mapped_skus: [spec.sku],
+      applies_to_sku: spec.sku,
+      service_line: spec.service_line,
+      sections,
+      max_section: spec.service_line === "ORM" ? 9 : 7,
+      docs_generated: spec.docs_generated,
+      active_version_id: `${spec.template_id}@v3.0`,
+      versions: [v(spec.template_id, "v3.0", "active", sectionsToBody(sections), "v3.0 flat template · no block groups", "2026-09-21T00:00:00+07:00")],
+    });
+  });
 
   return [
     t("TPL-Q-ORM", "quote", "ORM Quote (4-package comparison)", {
@@ -817,25 +836,30 @@ function seedTemplates(): Template[] {
       active_version_id: "TPL-Q-MARCOM@v2.4",
       versions: [v("TPL-Q-MARCOM", "v2.4", "active", QUOTE_MARCOM_BODY, "Line item summary layout", "2026-06-20T00:00:00+07:00")],
     }),
-    t("TPL-C-ORM", "contract", "ORM Service Contract (Full/Lite unified)", {
-      description: "Layer 2 · 17 sections · commission section included",
+    ...flatContracts,
+    t("TPL-C-ORM", "contract", "Deprecated · ORM Service Contract (unified rollback)", {
+      description: "Retained for 90-day rollback only · replaced by flat SKU templates",
       mapped_skus: ["ORM-MTH-FULL-SMART", "ORM-MTH-FULL-FIXED", "ORM-MTH-FULL-PERFORMANCE", CANONICAL_ORM_LITE_SKU],
+      applies_to_sku: null,
       service_line: "ORM",
-      sections: ormSections,
+      sections: legacyOrmSections,
       max_section: 9,
+      superseded: true,
       docs_generated: 59,
-      active_version_id: "TPL-C-ORM@v3.1",
-      versions: [v("TPL-C-ORM", "v3.1", "active", sectionsToBody(ormSections), "โครงสัญญาจริง §1-9 + ภาคผนวก ก/ข", "2026-09-18T00:00:00+07:00")],
+      active_version_id: "TPL-C-ORM@v2.3-archived",
+      versions: [v("TPL-C-ORM", "v2.3-archived", "archived", sectionsToBody(legacyOrmSections), "Deprecated by v3.0 flat templates", "2026-09-18T00:00:00+07:00")],
     }),
-    t("TPL-C-MARCOM", "contract", "Marcom Service Contract (Full/Lite unified · no commission)", {
-      description: "โครงสัญญาจริง §1-7 · ไม่มี §4.2 Commission",
-      mapped_skus: ["MARCOM-MTH-META-FULL", "MARCOM-MTH-META-LITE", "MARCOM-MTH-TIKTOK-FULL", "MARCOM-MTH-TIKTOK-LITE", "MARCOM-MTH-GOOGLE-FULL"],
+    t("TPL-C-MARCOM", "contract", "Deprecated · Marcom Service Contract (unified rollback)", {
+      description: "Retained for 90-day rollback only · replaced by flat SKU templates",
+      mapped_skus: ["MARCOM-MTH-META", "MARCOM-MTH-META-LITE-CONTENT", "MARCOM-MTH-META-LITE-ADS", "MARCOM-MTH-TIKTOK", "MARCOM-MTH-TIKTOK-LITE-BASIC", "MARCOM-MTH-GMB-IBE"],
+      applies_to_sku: null,
       service_line: "MARCOM",
-      sections: marcomSections,
+      sections: legacyMarcomSections,
       max_section: 7,
+      superseded: true,
       docs_generated: 23,
-      active_version_id: "TPL-C-MARCOM@v1.1",
-      versions: [v("TPL-C-MARCOM", "v1.1", "active", sectionsToBody(marcomSections), "โครงสัญญาจริง §1-7 + ภาคผนวก ก/ข", "2026-09-18T00:00:00+07:00")],
+      active_version_id: "TPL-C-MARCOM@v2.3-archived",
+      versions: [v("TPL-C-MARCOM", "v2.3-archived", "archived", sectionsToBody(legacyMarcomSections), "Deprecated by v3.0 flat templates", "2026-09-18T00:00:00+07:00")],
     }),
     /* v2.1 Path A · Phase 1.1 — TPL-C-ORM-FULL / TPL-C-ORM-LITE / TPL-C-MARCOM-META
      * hard-deleted. Issued contracts keep their own snapshot (template code +
@@ -854,7 +878,7 @@ export const DEMO_PACKAGE_CODES = [
 
 /* ---------------- store ---------------- */
 
-const KEY = "meridia.ps.templates.v2_1a4";
+const KEY = "meridia.ps.templates.v3_flat";
 const ADMIN_KEY = "meridia.ps.templates.legal_admin";
 
 export type MissingBlock = { block_group: string; condition: string };
@@ -883,20 +907,44 @@ type Ctx = {
   resetTemplates: () => void;
 };
 
-function normalizeTemplatesV23(templates: Template[]): Template[] {
-  return templates.map((template) => {
-    const shouldRepairBody = template.template_type === "contract";
-    const sections = shouldRepairBody
-      ? template.sections.map((section) => ({ ...section, content: repairHotelAddressText(section.content).content }))
-      : template.sections;
-    const versions = template.versions.map((version) => {
-      const body = shouldRepairBody ? repairHotelAddressText(version.body).content : version.body;
-      return { ...version, body, auto_fields_used: parsePlaceholders(body) };
-    });
-    const mapped_skus = template.template_id === "TPL-C-ORM"
-      ? [...new Set(template.mapped_skus.map(canonicalSkuCode))]
-      : template.mapped_skus;
-    return { ...template, sections, versions, mapped_skus };
+function normalizeTemplateShape(template: Template): Template {
+  const shouldRepairBody = template.template_type === "contract";
+  const sections = shouldRepairBody
+    ? template.sections.map((section) => ({
+        ...section,
+        uses_conditional_block: null,
+        content: repairHotelAddressText(section.content).content.replace(/<ConditionalBlockPlaceholder\s+group="[^"]+"\s*\/?>/g, ""),
+      }))
+    : template.sections;
+  const versions = template.versions.map((version) => {
+    const repaired = shouldRepairBody ? repairHotelAddressText(version.body).content : version.body;
+    const body = shouldRepairBody ? repaired.replace(/<ConditionalBlockPlaceholder\s+group="[^"]+"\s*\/?>/g, "") : repaired;
+    return { ...version, body, auto_fields_used: parsePlaceholders(body) };
+  });
+  const mapped_skus = [...new Set((template.mapped_skus ?? []).map(canonicalSkuCode))];
+  const applies_to_sku = template.applies_to_sku ? canonicalSkuCode(template.applies_to_sku) : mapped_skus.length === 1 ? mapped_skus[0] ?? null : null;
+  return { ...template, applies_to_sku, sections, versions, mapped_skus };
+}
+
+function normalizeTemplatesV30(templates: Template[]): Template[] {
+  const seeded = seedTemplates();
+  const byId = new Map(seeded.map((template) => [template.template_id, template]));
+  const preservedQuotes = templates
+    .filter((template) => template.template_type === "quote" && byId.has(template.template_id))
+    .map(normalizeTemplateShape);
+  for (const quote of preservedQuotes) byId.set(quote.template_id, { ...byId.get(quote.template_id), ...quote, applies_to_sku: null });
+  for (const template of templates) {
+    if (template.template_type !== "contract") continue;
+    if (CONTRACT_TEMPLATE_IDS.includes(template.template_id)) {
+      byId.set(template.template_id, normalizeTemplateShape({ ...byId.get(template.template_id), ...template, superseded: false } as Template));
+    }
+  }
+  return [...byId.values()].map(normalizeTemplateShape).sort((a, b) => {
+    if (a.template_type !== b.template_type) return a.template_type === "quote" ? -1 : 1;
+    const ai = CONTRACT_TEMPLATE_IDS.indexOf(a.template_id);
+    const bi = CONTRACT_TEMPLATE_IDS.indexOf(b.template_id);
+    if (ai !== -1 || bi !== -1) return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+    return a.template_id.localeCompare(b.template_id);
   });
 }
 
@@ -920,9 +968,9 @@ export function PsTemplateProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(KEY);
-      setTemplates(normalizeTemplatesV23(raw ? (JSON.parse(raw) as Template[]) : seedTemplates()));
+      setTemplates(normalizeTemplatesV30(raw ? (JSON.parse(raw) as Template[]) : seedTemplates()));
     } catch {
-      setTemplates(normalizeTemplatesV23(seedTemplates()));
+      setTemplates(normalizeTemplatesV30(seedTemplates()));
     }
     setIsLegalAdmin(localStorage.getItem(ADMIN_KEY) === "1");
     setCounter(readCounter());
@@ -1013,8 +1061,10 @@ export function PsTemplateProvider({ children }: { children: ReactNode }) {
       const tpl = templates.find((t) => t.template_id === templateId);
       const sec = tpl?.sections.find((x) => x.id === sectionId);
       if (!tpl || !sec) return { ok: false, error: "ไม่พบ section" };
+      if (tpl.template_type === "contract" && !isLegalAdmin)
+        return { ok: false, error: "Contract templates แก้ไขได้เฉพาะ System Admin" };
       if (sec.lock_mode === "locked" && !isLegalAdmin)
-        return { ok: false, error: "Section is locked · request Legal Admin" };
+        return { ok: false, error: "Section is locked · request System Admin" };
       setTemplates((prev) =>
         prev.map((t) =>
           t.template_id !== templateId
@@ -1043,6 +1093,7 @@ export function PsTemplateProvider({ children }: { children: ReactNode }) {
   );
 
   const missingConditionalBlocks = useCallback((t: Template): MissingBlock[] => {
+    if (t.template_type === "contract" && t.applies_to_sku) return [];
     const out: MissingBlock[] = [];
     const groups = [...new Set(t.sections.flatMap((sec) => (sec.uses_conditional_block ? [sec.uses_conditional_block] : [])))];
     for (const g of groups) {
@@ -1083,7 +1134,7 @@ export function PsTemplateProvider({ children }: { children: ReactNode }) {
     [],
   );
 
-  const resetTemplates = useCallback(() => setTemplates(normalizeTemplatesV23(seedTemplates())), []);
+  const resetTemplates = useCallback(() => setTemplates(normalizeTemplatesV30(seedTemplates())), []);
 
   const value = useMemo(
     () => ({
