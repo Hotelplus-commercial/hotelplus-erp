@@ -65,7 +65,6 @@ const moduleChildren: Record<string, { title: string; url: string; icon: typeof 
   ps: [
     { title: "PS Dashboard", url: "/ps", icon: LayoutDashboard },
     { title: "สัญญา & บริการ", url: "/ps/contracts", icon: FileSignature },
-    { title: "สร้างสัญญา (Wizard)", url: "/ps/contract-wizard", icon: FileSignature },
     { title: "Contract Dashboard", url: "/ps/contract-dashboard", icon: LayoutDashboard },
     { title: "Production Report", url: "/ps/production", icon: BarChart3 },
     { title: "Templates", url: "/ps/templates", icon: FileText },
