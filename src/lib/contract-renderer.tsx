@@ -1,8 +1,6 @@
-/* PS App v2.1 — shared contract renderer
- * Single source of truth for A4 paper simulation used by:
- *   PS-2 (quote editor) · PS-3 (contract editor) · PS-6 (block group editor) · PS-10 (full preview)
- * Wave 4 (AC App Live Link) imports the same module so admin preview, wizard
- * preview and the customer-facing contract never drift.
+/* PS App v3.0 — shared document renderer.
+ * Single source of truth for A4 paper simulation used by quote editor,
+ * flat contract templates, wizard preview, admin preview, and Live Link.
  *
  * Note: pagination + PDF are produced in the browser (CSS page boxes + print),
  * not Puppeteer/Paged.js — the hosting runtime has no headless Chrome. */

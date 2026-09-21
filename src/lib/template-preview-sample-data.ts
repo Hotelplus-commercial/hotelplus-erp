@@ -1,4 +1,4 @@
-/* PS App v2.1 — Template preview sample data seed (field-registry v2.1 §8)
+/* PS App v3.0 — Template preview sample data seed.
  * Used ONLY for editor/preview rendering. Never used at contract generation. */
 
 export type PreviewCustomerType = "juristic" | "individual";
@@ -70,7 +70,15 @@ const serviceLineOfSku = (sku: string): PreviewServiceLine =>
   sku.startsWith("MARCOM") ? "MARCOM" : sku.startsWith("PROD") ? "PROD" : sku.startsWith("PP") ? "PP" : "ORM";
 
 const channelOfSku = (sku: string) =>
-  sku.includes("META") ? "Meta (Facebook / Instagram)" : sku.includes("TIKTOK") ? "TikTok" : sku.includes("GOOGLE") ? "Google Ads" : "Google My Business";
+  sku.includes("META")
+    ? "Meta (Facebook / Instagram)"
+    : sku.includes("TIKTOK")
+      ? "TikTok"
+      : sku.includes("GMB") || sku.includes("IBE")
+        ? "GMB / IBE"
+        : sku.includes("GOOGLE")
+          ? "Google Ads"
+          : "OTA";
 
 const JURISTIC = {
   "customer.type": "juristic",
