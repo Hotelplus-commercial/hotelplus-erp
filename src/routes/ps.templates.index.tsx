@@ -1,19 +1,27 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { FileSignature, FileText, Layers, PencilLine, RotateCcw, Shield, ShieldCheck } from "lucide-react";
-import { useState } from "react";
+import { FileSignature, FileText, PencilLine, RotateCcw, Shield, ShieldCheck } from "lucide-react";
+import { useMemo, useState } from "react";
 
 import { Chip, Kpi, Panel, fmtDate } from "@/components/crm/crm-ui";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { lockMeta, usePsTemplates, type Template, type TemplateType } from "@/lib/ps-templates";
+import {
+  activeContractTemplates,
+  contractSkuSpec,
+  lockMeta,
+  templateSku,
+  usePsTemplates,
+  type Template,
+  type TemplateType,
+} from "@/lib/ps-templates";
 
 export const Route = createFileRoute("/ps/templates/")({
   head: () => ({
     meta: [
       { title: "Templates — Quote & Contract | PS App" },
-      { name: "description", content: "จัดการเทมเพลตใบเสนอราคาและสัญญา พร้อมระบบเวอร์ชันและ auto-field" },
+      { name: "description", content: "จัดการ quote templates และ contract templates แบบ 1 SKU ต่อ 1 สัญญา" },
       { property: "og:title", content: "Templates — Quote & Contract | PS App" },
-      { property: "og:description", content: "จัดการเทมเพลตใบเสนอราคาและสัญญา พร้อมระบบเวอร์ชันและ auto-field" },
+      { property: "og:description", content: "จัดการ quote templates และ contract templates แบบ flat ต่อ SKU" },
     ],
   }),
   component: TemplatesDashboard,
@@ -21,11 +29,15 @@ export const Route = createFileRoute("/ps/templates/")({
 
 const statusTone = (s: string): "success" | "warn" | "muted" => (s === "active" ? "success" : s === "draft" ? "warn" : "muted");
 
+type ServiceFilter = "all" | "ORM" | "MARCOM";
+type TierFilter = "all" | "Full" | "Lite";
+
 function TemplateCard({ t }: { t: Template }) {
-  const { activeVersion, draftVersion, missingConditionalBlocks } = usePsTemplates();
+  const { activeVersion, draftVersion } = usePsTemplates();
   const active = activeVersion(t);
   const draft = draftVersion(t);
-  const missing = t.sections.length > 0 ? missingConditionalBlocks(t) : [];
+  const sku = templateSku(t);
+  const spec = contractSkuSpec(sku);
   const counts = {
     locked: t.sections.filter((s) => s.lock_mode === "locked").length,
     structured: t.sections.filter((s) => s.lock_mode === "structured").length,
@@ -40,7 +52,7 @@ function TemplateCard({ t }: { t: Template }) {
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px]">{t.template_id}</code>
             <Chip tone={statusTone(active?.status ?? "muted")}>{active?.version_label ?? "—"} active</Chip>
             {draft && <Chip tone="warn">{draft.version_label} draft</Chip>}
-            {t.superseded && <Chip tone="danger">superseded</Chip>}
+            {t.superseded && <Chip tone="danger">rollback only</Chip>}
             {t.sections.length > 0 && (
               <Chip tone="info">
                 {lockMeta.locked.icon} {counts.locked} · {lockMeta.structured.icon} {counts.structured} · {lockMeta.free.icon} {counts.free}
@@ -51,7 +63,7 @@ function TemplateCard({ t }: { t: Template }) {
           <p className="text-xs text-muted-foreground">
             {t.template_type === "quote"
               ? `Quote type: ${t.quote_type} · ${active?.auto_fields_used.length ?? 0} auto-fields`
-              : `${t.mapped_skus.length} SKU mapped · ${active?.auto_fields_used.length ?? 0} auto-fields`}
+              : `${t.service_line} · ${spec?.tier ?? "—"} · ${active?.auto_fields_used.length ?? 0} auto-fields`}
           </p>
         </div>
         <Button asChild size="sm" variant="outline" className="gap-1.5">
@@ -61,20 +73,12 @@ function TemplateCard({ t }: { t: Template }) {
         </Button>
       </div>
 
-      {t.mapped_skus.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {t.mapped_skus.map((s) => (
-            <code key={s} className="rounded bg-surface px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
-              {s}
-            </code>
-          ))}
+      {sku && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-[11px] text-muted-foreground">Applies to:</span>
+          <code className="rounded bg-surface px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">{sku}</code>
+          {spec && <Chip tone="muted">{spec.channel}</Chip>}
         </div>
-      )}
-
-      {missing.length > 0 && (
-        <p className="rounded-lg border border-amber-400/50 bg-amber-50 px-2 py-1 text-[11px] dark:bg-amber-950/20">
-          ⚠️ ยังขาดเนื้อหา block group {missing.length} รายการ
-        </p>
       )}
 
       <div className="flex flex-wrap gap-x-4 gap-y-1 border-t pt-2 text-[11px] text-muted-foreground">
@@ -90,13 +94,22 @@ function TemplatesDashboard() {
   const { templates, hydrated, resetTemplates, isLegalAdmin, setLegalAdmin } = usePsTemplates();
   const [tab, setTab] = useState<TemplateType>("quote");
   const [q, setQ] = useState("");
+  const [service, setService] = useState<ServiceFilter>("all");
+  const [tier, setTier] = useState<TierFilter>("all");
 
+  const contractTemplates = useMemo(() => activeContractTemplates(templates), [templates]);
   const list = templates
-    .filter((t) => t.template_type === tab)
-    .filter((t) => `${t.template_id} ${t.name} ${t.mapped_skus.join(" ")}`.toLowerCase().includes(q.toLowerCase()));
+    .filter((t) => (tab === "contract" ? contractTemplates.some((c) => c.template_id === t.template_id) : t.template_type === "quote"))
+    .filter((t) => {
+      const spec = contractSkuSpec(templateSku(t));
+      if (tab === "contract" && service !== "all" && spec?.service_line !== service) return false;
+      if (tab === "contract" && tier !== "all" && spec?.tier !== tier) return false;
+      return `${t.template_id} ${t.name} ${templateSku(t) ?? ""}`.toLowerCase().includes(q.toLowerCase());
+    });
 
   const drafts = templates.filter((t) => t.versions.some((v) => v.status === "draft")).length;
   const docs = templates.reduce((s, t) => s + t.docs_generated, 0);
+  const activeContractCount = contractTemplates.filter((t) => t.versions.some((v) => v.status === "active")).length;
 
   return (
     <div className="space-y-5">
@@ -104,7 +117,7 @@ function TemplatesDashboard() {
         <div>
           <h1 className="font-display text-2xl font-bold tracking-tight">Templates</h1>
           <p className="text-sm text-muted-foreground">
-            เทมเพลตเอกสารกลาง — BD และ AC ใช้เวอร์ชัน active ตอนสร้างเอกสาร แล้ว snapshot ล็อกไว้ถาวร
+            เทมเพลตเอกสารกลาง — Contract ใช้โครงสร้าง flat แบบ 1 SKU ต่อ 1 template และ snapshot ล็อกตอนสร้างเอกสาร
           </p>
         </div>
         <div className="flex gap-2">
@@ -115,13 +128,11 @@ function TemplatesDashboard() {
             onClick={() => setLegalAdmin(!isLegalAdmin)}
           >
             {isLegalAdmin ? <ShieldCheck className="size-4" /> : <Shield className="size-4" />}
-            {isLegalAdmin ? "Legal Admin" : "โหมด PS user"}
+            {isLegalAdmin ? "System Admin" : "โหมด PS user"}
           </Button>
-          {/* v2.1 Path A · Phase 2.1 — "Layer 2 registry" entry removed (dev terminology) */}
-
           <Button asChild variant="outline" size="sm" className="gap-1.5">
             <Link to="/ps/templates/auto-fields">
-              <Layers className="size-4" /> Auto-field reference
+              <FileText className="size-4" /> Auto-field reference
             </Link>
           </Button>
           <Button variant="ghost" size="sm" className="gap-1.5" onClick={resetTemplates}>
@@ -132,7 +143,7 @@ function TemplatesDashboard() {
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Kpi label="Quote templates" value={templates.filter((t) => t.template_type === "quote").length} />
-        <Kpi label="Contract templates" value={templates.filter((t) => t.template_type === "contract").length} />
+        <Kpi label="Contract templates" value={`${contractTemplates.length} · Active ${activeContractCount}`} />
         <Kpi label="Draft รอ activate" value={drafts} />
         <Kpi label="เอกสารที่ออกแล้ว" value={docs} />
       </div>
@@ -150,6 +161,20 @@ function TemplatesDashboard() {
           placeholder="ค้นหา template หรือ SKU…"
           className="h-9 w-full sm:w-64"
         />
+        {tab === "contract" && (
+          <>
+            <select value={service} onChange={(e) => setService(e.target.value as ServiceFilter)} className="h-9 rounded-md border bg-background px-2 text-sm">
+              <option value="all">ทุก service line</option>
+              <option value="ORM">ORM</option>
+              <option value="MARCOM">Marcom</option>
+            </select>
+            <select value={tier} onChange={(e) => setTier(e.target.value as TierFilter)} className="h-9 rounded-md border bg-background px-2 text-sm">
+              <option value="all">ทุก tier</option>
+              <option value="Full">Full</option>
+              <option value="Lite">Lite</option>
+            </select>
+          </>
+        )}
       </div>
 
       <div className="grid gap-3 lg:grid-cols-2">
