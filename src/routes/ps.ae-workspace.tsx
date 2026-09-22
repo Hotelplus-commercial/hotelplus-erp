@@ -44,6 +44,12 @@ const allTabs: { label: string; to: string; roles: MmRole[] }[] = [
     roles: ["AE", "Partner Manager", "ORM"],
   },
   {
+    label: "My Tasks",
+    to: "/ps/ae-workspace/my-tasks",
+    roles: ["AE", "Partner Manager"],
+  },
+  {
+
     label: "Property Info",
     to: "/ps/ae-workspace/property-info",
     roles: ["AE", "Partner Manager", "On-boarding Specialist"],

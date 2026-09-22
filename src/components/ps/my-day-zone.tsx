@@ -162,10 +162,11 @@ export function MyDayZone() {
             </div>
           )}
           {todos.length > 0 && (
-            <Button variant="link" size="sm" className="mt-2 h-auto p-0" onClick={() => setTaskModal(true)}>
-              View all ({todos.length}) →
+            <Button variant="link" size="sm" className="mt-2 h-auto p-0" asChild>
+              <Link to="/ps/ae-workspace/my-tasks">View all ({todos.length}) →</Link>
             </Button>
           )}
+
         </div>
       </div>
 
@@ -191,48 +192,8 @@ export function MyDayZone() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={taskModal} onOpenChange={setTaskModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>View all tasks by type:</DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col gap-2">
-            {taskGroups.map((g) => {
-              const count = todos.filter((t) => t.type === g.type).length;
-              const route = taskRoutes[g.type];
-              return (
-                <Button
-                  key={g.type}
-                  variant="outline"
-                  className="justify-between"
-                  disabled={count === 0}
-                  asChild={count > 0}
-                  onClick={() => setTaskModal(false)}
-                >
-                  {count > 0 ? (
-                    <Link to={route.to} {...(route.hash ? { hash: route.hash } : {})}>
-                      <span>
-                        {g.icon} {route.label} ({count})
-                      </span>
-                      <ArrowRight className="size-4" />
-                    </Link>
-                  ) : (
-                    <span>
-                      {g.icon} {route.label} (0)
-                    </span>
-                  )}
-                </Button>
-              );
-            })}
-          </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setTaskModal(false)}>
-              Cancel
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </Panel>
+
   );
 }
 

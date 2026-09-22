@@ -63,6 +63,7 @@ import { Route as PsAeWorkspaceCalendarRouteImport } from './routes/ps.ae-worksp
 import { Route as PsAeWorkspaceCoachingRouteImport } from './routes/ps.ae-workspace.coaching'
 import { Route as PsAeWorkspaceDashboardRouteImport } from './routes/ps.ae-workspace.dashboard'
 import { Route as PsAeWorkspaceMeetingsRouteImport } from './routes/ps.ae-workspace.meetings'
+import { Route as PsAeWorkspaceMyTasksRouteImport } from './routes/ps.ae-workspace.my-tasks'
 import { Route as PsAeWorkspacePropertyInfoRouteImport } from './routes/ps.ae-workspace.property-info'
 import { Route as PsAeWorkspaceSurveysRouteImport } from './routes/ps.ae-workspace.surveys'
 import { Route as PsContractWizardIndexRouteImport } from './routes/ps.contract-wizard.index'
@@ -345,6 +346,11 @@ const PsAeWorkspaceMeetingsRoute = PsAeWorkspaceMeetingsRouteImport.update({
   path: '/meetings',
   getParentRoute: () => PsAeWorkspaceRoute,
 } as any)
+const PsAeWorkspaceMyTasksRoute = PsAeWorkspaceMyTasksRouteImport.update({
+  id: '/my-tasks',
+  path: '/my-tasks',
+  getParentRoute: () => PsAeWorkspaceRoute,
+} as any)
 const PsAeWorkspacePropertyInfoRoute =
   PsAeWorkspacePropertyInfoRouteImport.update({
     id: '/property-info',
@@ -455,6 +461,7 @@ export interface FileRoutesByFullPath {
   '/ps/ae-workspace/coaching': typeof PsAeWorkspaceCoachingRoute
   '/ps/ae-workspace/dashboard': typeof PsAeWorkspaceDashboardRoute
   '/ps/ae-workspace/meetings': typeof PsAeWorkspaceMeetingsRoute
+  '/ps/ae-workspace/my-tasks': typeof PsAeWorkspaceMyTasksRoute
   '/ps/ae-workspace/property-info': typeof PsAeWorkspacePropertyInfoRoute
   '/ps/ae-workspace/surveys': typeof PsAeWorkspaceSurveysRoute
   '/ps/contract-wizard/$dealId': typeof PsContractWizardDealIdRoute
@@ -512,6 +519,7 @@ export interface FileRoutesByTo {
   '/ps/ae-workspace/coaching': typeof PsAeWorkspaceCoachingRoute
   '/ps/ae-workspace/dashboard': typeof PsAeWorkspaceDashboardRoute
   '/ps/ae-workspace/meetings': typeof PsAeWorkspaceMeetingsRoute
+  '/ps/ae-workspace/my-tasks': typeof PsAeWorkspaceMyTasksRoute
   '/ps/ae-workspace/property-info': typeof PsAeWorkspacePropertyInfoRoute
   '/ps/ae-workspace/surveys': typeof PsAeWorkspaceSurveysRoute
   '/ps/contract-wizard/$dealId': typeof PsContractWizardDealIdRoute
@@ -580,6 +588,7 @@ export interface FileRoutesById {
   '/ps/ae-workspace/coaching': typeof PsAeWorkspaceCoachingRoute
   '/ps/ae-workspace/dashboard': typeof PsAeWorkspaceDashboardRoute
   '/ps/ae-workspace/meetings': typeof PsAeWorkspaceMeetingsRoute
+  '/ps/ae-workspace/my-tasks': typeof PsAeWorkspaceMyTasksRoute
   '/ps/ae-workspace/property-info': typeof PsAeWorkspacePropertyInfoRoute
   '/ps/ae-workspace/surveys': typeof PsAeWorkspaceSurveysRoute
   '/ps/contract-wizard/$dealId': typeof PsContractWizardDealIdRoute
@@ -649,6 +658,7 @@ export interface FileRouteTypes {
     | '/ps/ae-workspace/coaching'
     | '/ps/ae-workspace/dashboard'
     | '/ps/ae-workspace/meetings'
+    | '/ps/ae-workspace/my-tasks'
     | '/ps/ae-workspace/property-info'
     | '/ps/ae-workspace/surveys'
     | '/ps/contract-wizard/$dealId'
@@ -706,6 +716,7 @@ export interface FileRouteTypes {
     | '/ps/ae-workspace/coaching'
     | '/ps/ae-workspace/dashboard'
     | '/ps/ae-workspace/meetings'
+    | '/ps/ae-workspace/my-tasks'
     | '/ps/ae-workspace/property-info'
     | '/ps/ae-workspace/surveys'
     | '/ps/contract-wizard/$dealId'
@@ -773,6 +784,7 @@ export interface FileRouteTypes {
     | '/ps/ae-workspace/coaching'
     | '/ps/ae-workspace/dashboard'
     | '/ps/ae-workspace/meetings'
+    | '/ps/ae-workspace/my-tasks'
     | '/ps/ae-workspace/property-info'
     | '/ps/ae-workspace/surveys'
     | '/ps/contract-wizard/$dealId'
@@ -1186,6 +1198,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PsAeWorkspaceMeetingsRouteImport
       parentRoute: typeof PsAeWorkspaceRoute
     }
+    '/ps/ae-workspace/my-tasks': {
+      id: '/ps/ae-workspace/my-tasks'
+      path: '/my-tasks'
+      fullPath: '/ps/ae-workspace/my-tasks'
+      preLoaderRoute: typeof PsAeWorkspaceMyTasksRouteImport
+      parentRoute: typeof PsAeWorkspaceRoute
+    }
     '/ps/ae-workspace/property-info': {
       id: '/ps/ae-workspace/property-info'
       path: '/property-info'
@@ -1387,6 +1406,7 @@ interface PsAeWorkspaceRouteChildren {
   PsAeWorkspaceCoachingRoute: typeof PsAeWorkspaceCoachingRoute
   PsAeWorkspaceDashboardRoute: typeof PsAeWorkspaceDashboardRoute
   PsAeWorkspaceMeetingsRoute: typeof PsAeWorkspaceMeetingsRoute
+  PsAeWorkspaceMyTasksRoute: typeof PsAeWorkspaceMyTasksRoute
   PsAeWorkspacePropertyInfoRoute: typeof PsAeWorkspacePropertyInfoRoute
   PsAeWorkspaceSurveysRoute: typeof PsAeWorkspaceSurveysRoute
   PsAeWorkspaceIndexRoute: typeof PsAeWorkspaceIndexRoute
@@ -1397,6 +1417,7 @@ const PsAeWorkspaceRouteChildren: PsAeWorkspaceRouteChildren = {
   PsAeWorkspaceCoachingRoute: PsAeWorkspaceCoachingRoute,
   PsAeWorkspaceDashboardRoute: PsAeWorkspaceDashboardRoute,
   PsAeWorkspaceMeetingsRoute: PsAeWorkspaceMeetingsRoute,
+  PsAeWorkspaceMyTasksRoute: PsAeWorkspaceMyTasksRoute,
   PsAeWorkspacePropertyInfoRoute: PsAeWorkspacePropertyInfoRoute,
   PsAeWorkspaceSurveysRoute: PsAeWorkspaceSurveysRoute,
   PsAeWorkspaceIndexRoute: PsAeWorkspaceIndexRoute,
