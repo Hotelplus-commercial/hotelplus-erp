@@ -1,7 +1,8 @@
 /* PS App v4.1 · Zone 0 "My Day" — own-only hero zone (Scheduled + To Do). */
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { useMemo, useState } from "react";
+
 import { toast } from "sonner";
 
 import { Panel } from "@/components/crm/crm-ui";
@@ -24,24 +25,16 @@ import {
   todoText,
   type MyDayRange,
   type ScheduledItem,
-  type TaskType,
-  type TodoItem,
 } from "@/lib/ps-my-day";
+
 
 const ORM_TINT = "#DBEAFE";
 const MARCOM_TINT = "#F3E8FF";
 
-const taskRoutes: Record<TaskType, { to: string; hash?: string; label: string }> = {
-  renewal: { to: "/ps/ae-workspace/dashboard", hash: "zone1-renewals", label: "Renewals" },
-  onboarding: { to: "/ps/ae-workspace/property-info", label: "Onboarding" },
-  coaching: { to: "/ps/ae-workspace/coaching", label: "Coaching" },
-  survey: { to: "/ps/ae-workspace/surveys", label: "Surveys" },
-};
-
 export function MyDayZone() {
   const [range, setRange] = useState<MyDayRange>("today");
   const [meeting, setMeeting] = useState<ScheduledItem | null>(null);
-  const [taskModal, setTaskModal] = useState(false);
+
 
   const scheduled = useMemo(() => {
     return scheduledItems
