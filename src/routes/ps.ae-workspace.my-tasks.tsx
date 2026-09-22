@@ -103,7 +103,7 @@ function MyTasksPage() {
           </Button>
         }
       >
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           <div className="flex flex-col gap-2">
             <Label className="text-xs text-muted-foreground">Type</Label>
             <div className="flex flex-wrap gap-3">
@@ -148,8 +148,9 @@ function MyTasksPage() {
             </div>
           </div>
 
-          <div className="flex flex-col gap-2">
-            <Label className="text-xs text-muted-foreground">Search</Label>
+          <div className="flex flex-col gap-2 md:col-span-2 xl:col-span-3">
+            <Label className="text-xs text-muted-foreground">Search / Sort</Label>
+
             <div className="flex items-center gap-2">
               <div className="relative flex-1">
                 <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
