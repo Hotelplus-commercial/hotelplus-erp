@@ -1,5 +1,6 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { CalendarPlus, ClipboardList, Link2, ListChecks } from "lucide-react";
+import { CalendarPlus, ListChecks } from "lucide-react";
+
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -13,8 +14,10 @@ import {
   v4Color,
 } from "@/lib/ps-v4";
 import { PageHeader } from "@/components/erp-ui";
-import { JourneyBar, TierBadge } from "@/components/ps/meeting-ui";
+import { JourneyBar } from "@/components/ps/meeting-ui";
+import { MyDayZone } from "@/components/ps/my-day-zone";
 import { RenewalActivityCards } from "@/components/ps/renewal-ui";
+
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -45,11 +48,10 @@ import {
   propertyCards,
   teamPerformance,
   tierAPipeline,
-  todayMeetings,
   upcomingSummary,
-  upcomingTeam,
   useMeetingMgmt,
 } from "@/lib/orm-meeting";
+
 
 const pct = (n: number, total: number) => (total ? Math.round((n / total) * 100) : 0);
 
@@ -87,7 +89,7 @@ function DashboardTab() {
       <PageHeader
         eyebrow="PS App · AE Workspace · Dashboard"
         title={isPm ? "Team Dashboard" : "AE Dashboard"}
-        description="Zone 1 Portfolio · Zone 2 Performance · Zone 3 Property Pipeline · Zone 4 Upcoming & Flags"
+        description="Zone 0 My Day · Zone 1 Portfolio · Zone 2 Performance · Zone 3 Property Pipeline"
         actions={
           <Select value={month} onValueChange={setMonth}>
             <SelectTrigger className="h-9 w-[170px]">
@@ -104,9 +106,15 @@ function DashboardTab() {
         }
       />
 
+      {/* Zone 0 — My Day (v4.1) */}
+      <MyDayZone />
+
       {/* Zone 1 — Portfolio Overview (v3.1) */}
+      <div id="zone1-renewals" className="scroll-mt-20" />
       <Panel
         title="Zone 1 · Portfolio Overview"
+
+
         subtitle="ภาพรวมพอร์ตโรงแรม + กิจกรรมการต่อสัญญา"
         right={
           <div className="flex items-center gap-1 rounded-lg border bg-card p-1">
@@ -419,81 +427,6 @@ function DashboardTab() {
         </div>
       </Panel>
 
-
-      {/* Zone 4 — Upcoming + Flags */}
-      <Panel
-        title={`Zone 4 · Upcoming Meetings — ${isPm ? `ทีม ${upcomingSummary.team} นัด` : `ของฉัน ${upcomingSummary.mine} นัด`}`}
-        subtitle="นัดหมายวันนี้ (7 Sep 2026)"
-      >
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Time</TableHead>
-                <TableHead>Hotel</TableHead>
-                <TableHead>Tier</TableHead>
-                <TableHead>Multi</TableHead>
-                <TableHead>ORM</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {todayMeetings.map((m) => (
-                <TableRow key={m.id}>
-                  <TableCell className="font-medium">{m.time}</TableCell>
-                  <TableCell>
-                    {m.hotel}
-                    {m.hotel2 && ` + ${m.hotel2}`}
-                  </TableCell>
-                  <TableCell>
-                    <TierBadge tier={m.tier} />
-                  </TableCell>
-                  <TableCell>
-                    {m.hotel2 ? (
-                      <Chip tone="info">
-                        <Link2 className="mr-1 size-3" /> 2 hotels
-                      </Chip>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </TableCell>
-                  <TableCell>{m.orm}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button size="sm" onClick={() => toast.success(`เข้าห้องประชุม ${m.hotel}`)}>
-                        Join
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => toast.info("ส่งคำขอเลื่อนนัดแล้ว")}
-                      >
-                        Reschedule
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-
-        {isPm && (
-          <ul className="mt-3 flex flex-col gap-1.5 text-sm">
-            {upcomingTeam.map((u) => (
-              <li key={u.time + u.hotel} className="flex items-center justify-between gap-2">
-                <span className="truncate">
-                  {u.time} · {u.hotel}
-                </span>
-                <div className="flex items-center gap-2">
-                  <TierBadge tier={u.tier} />
-                  <Chip tone={u.mine ? "info" : "muted"}>{u.mine ? "ทีมฉัน" : "ทีมอื่น"}</Chip>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Panel>
 
       <Panel title="Recent Flags" subtitle="Flag ล่าสุดที่เกี่ยวข้องกับคุณ">
         <ul className="flex flex-col gap-2">
