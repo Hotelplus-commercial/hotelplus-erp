@@ -40,7 +40,7 @@ export const Route = createFileRoute("/ps/ae-workspace/my-tasks")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: MyTasksPage;
+  component: MyTasksPage,
 });
 
 const actionRoutes: Record<TaskType, { to: string; hash?: string; label: string }> = {
