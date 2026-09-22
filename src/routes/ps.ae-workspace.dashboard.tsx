@@ -1,5 +1,5 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { CalendarPlus, ClipboardList, ListChecks } from "lucide-react";
+import { CalendarPlus, ListChecks } from "lucide-react";
 
 import { useState } from "react";
 import { toast } from "sonner";
@@ -89,7 +89,7 @@ function DashboardTab() {
       <PageHeader
         eyebrow="PS App · AE Workspace · Dashboard"
         title={isPm ? "Team Dashboard" : "AE Dashboard"}
-        description="Zone 1 Portfolio · Zone 2 Performance · Zone 3 Property Pipeline · Zone 4 Upcoming & Flags"
+        description="Zone 0 My Day · Zone 1 Portfolio · Zone 2 Performance · Zone 3 Property Pipeline"
         actions={
           <Select value={month} onValueChange={setMonth}>
             <SelectTrigger className="h-9 w-[170px]">
@@ -110,9 +110,10 @@ function DashboardTab() {
       <MyDayZone />
 
       {/* Zone 1 — Portfolio Overview (v3.1) */}
+      <div id="zone1-renewals" className="scroll-mt-20" />
       <Panel
-        id="zone1-renewals"
         title="Zone 1 · Portfolio Overview"
+
 
         subtitle="ภาพรวมพอร์ตโรงแรม + กิจกรรมการต่อสัญญา"
         right={
