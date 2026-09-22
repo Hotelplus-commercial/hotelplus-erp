@@ -84,7 +84,48 @@ export const todoItems: TodoItem[] = [
   { id: "t005", type: "coaching", action: "Coach", target: "AE002-Fern", reference: "Q7 flag", due_date: "2026-09-23" },
   { id: "t006", type: "survey", hotel_name: "Grand Palace", days_remaining: 1, display: "d-1", due_date: "2026-09-23" },
   { id: "t007", type: "survey", hotel_name: "Sunset Villa", days_remaining: 2, display: "d-2", due_date: "2026-09-24" },
+  { id: "t008", type: "renewal", hotel_name: "Grand Palace BKK", due_date: "2026-09-24", due_relative: "due in 2 days" },
+  { id: "t009", type: "renewal", hotel_name: "Green Valley", due_date: "2026-09-28", due_relative: "due in 6 days" },
+  { id: "t010", type: "renewal", hotel_name: "Riverside Loft", due_date: "2026-10-02", due_relative: "due in 10 days" },
+  {
+    id: "t011",
+    type: "onboarding",
+    hotel_name: "Sunrise Boutique",
+    task_name: "Kick-off Meeting",
+    due_date: "2026-09-25",
+    due_relative: "due in 3 days",
+  },
+  {
+    id: "t012",
+    type: "onboarding",
+    hotel_name: "Ocean View",
+    task_name: "Collect CI Assets",
+    due_date: "2026-09-29",
+    due_relative: "due in 7 days",
+  },
+  {
+    id: "t013",
+    type: "onboarding",
+    hotel_name: "Blue Lagoon",
+    task_name: "Stage 8 Checklist",
+    due_date: "2026-10-05",
+    due_relative: "due in 13 days",
+  },
+  { id: "t014", type: "coaching", action: "Coach", target: "AE003-Ploy", reference: "Q2 flag", due_date: "2026-09-26" },
+  { id: "t015", type: "coaching", action: "Follow up", target: "AE002-Fern", reference: "Q5 flag", due_date: "2026-10-01" },
+  { id: "t016", type: "survey", hotel_name: "Ocean View", days_remaining: 5, display: "d-5", due_date: "2026-09-27" },
+  { id: "t017", type: "survey", hotel_name: "Green Valley", days_remaining: 8, display: "d-8", due_date: "2026-09-30" },
+  { id: "t018", type: "survey", hotel_name: "Riverside Loft", days_remaining: 12, display: "d-12", due_date: "2026-10-04" },
 ];
+
+/** Label used for hotel/person filtering and search. */
+export const todoSubject = (t: TodoItem) => t.hotel_name ?? t.target ?? "—";
+
+export const todoSearchText = (t: TodoItem) =>
+  [t.hotel_name, t.task_name, t.action, t.target, t.reference, t.display].filter(Boolean).join(" ").toLowerCase();
+
+export const todoDueLabel = (t: TodoItem) => t.due_relative ?? t.display ?? t.due_date;
+
 
 const dayDiff = (iso: string) =>
   Math.round((new Date(`${iso}T00:00:00Z`).getTime() - new Date(`${MY_DAY_TODAY}T00:00:00Z`).getTime()) / 86_400_000);
