@@ -210,7 +210,7 @@ export function MyDayZone() {
                   onClick={() => setTaskModal(false)}
                 >
                   {count > 0 ? (
-                    <Link to={route.to} hash={route.hash}>
+                    <Link to={route.to} {...(route.hash ? { hash: route.hash } : {})}>
                       <span>
                         {g.icon} {route.label} ({count})
                       </span>
