@@ -1,5 +1,6 @@
 import { createFileRoute, useRouterState } from "@tanstack/react-router";
 import { ArrowUpDown, Download, Search } from "lucide-react";
+import { useContractLifecycle } from "@/lib/contract-lifecycle";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -73,10 +74,11 @@ export const Route = createFileRoute("/ps/onboarding-process")({
   component: OnboardingProcessPage,
 });
 
-const allCards = [...propertyCards, ...servicingCards];
 
 function OnboardingProcessPage() {
   const { role, month, setMonth } = useMeetingMgmt();
+  const { onboardingCards } = useContractLifecycle();
+  const allCards = [...onboardingCards, ...propertyCards, ...servicingCards];
   const hash = useRouterState({ select: (r) => r.location.hash });
 
   const [scope, setScope] = useState<"all" | "my">("all");

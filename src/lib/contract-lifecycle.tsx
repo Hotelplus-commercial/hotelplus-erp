@@ -4,6 +4,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
 import { useBd, type BdQuote } from "@/lib/bd-store";
+import type { PropertyCard } from "@/lib/orm-meeting";
 
 export const STAGES = [
   { n: 1, key: "QUOTE_APPROVED", label: "Quote Approved", owner: "PS" },
@@ -43,6 +44,9 @@ export type ContractLifecycle = {
   live_link_token: string | null;
   live_link_sent_at: string | null;
   sent_to_ac_at: string | null;
+  /** Hand-off guard: set once the On-boarding "New Property" card exists. */
+  handed_off_to_onboarding?: boolean;
+  handed_off_at?: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -99,6 +103,7 @@ type Ctx = {
   resendLiveLink: (id: string) => void;
   liveLinkUrl: (l: ContractLifecycle) => string;
   historyOf: (id: string) => StageHistory[];
+  onboardingCards: PropertyCard[];
 };
 
 const C = createContext<Ctx | null>(null);
@@ -175,6 +180,26 @@ export function ContractLifecycleProvider({ children }: { children: ReactNode })
       hydrated,
       lifecycles,
       history,
+      onboardingCards: lifecycles
+        .filter((l) => l.handed_off_to_onboarding)
+        .map<PropertyCard>((l) => ({
+          id: `OB-${l.quote_id}`,
+          hotel: l.hotel_name,
+          stage: "new",
+          daysInStage: Math.floor((Date.now() - new Date(l.handed_off_at ?? l.updated_at).getTime()) / DAY),
+          slaDays: 1,
+          overdue: false,
+          owner: "On-boarding Specialist",
+          action: "รับเรื่องโรงแรมใหม่",
+          note: `จาก Contract Dashboard · ${l.quote_id}${l.contract_id ? ` · ${l.contract_id}` : ""}`,
+          journeyStep: 2,
+          signedDaysAgo: 0,
+          rooms: 0,
+          location: "—",
+          roomTypes: "—",
+          otas: "—",
+          history: [{ at: (l.handed_off_at ?? l.updated_at).slice(0, 10), text: `Auto-created จากสัญญา ${l.quote_id} (Prop Info)` }],
+        })),
       historyOf: (id) => history.filter((h) => h.lifecycle_id === id),
       liveLinkUrl: (l) => `${typeof window === "undefined" ? "" : window.location.origin}/l/${l.live_link_token ?? l.quote_id}`,
       setStage: (id, to, opts) =>
@@ -188,6 +213,10 @@ export function ContractLifecycleProvider({ children }: { children: ReactNode })
               updated_at: new Date().toISOString(),
               live_link_token: to >= 7 ? (l.live_link_token ?? rid()) : l.live_link_token,
               live_link_sent_at: to === 7 ? new Date().toISOString() : l.live_link_sent_at,
+              /* Prop Info (11) → hand off once to On-boarding "New Property" */
+              ...(to === 11 && !l.handed_off_to_onboarding
+                ? { handed_off_to_onboarding: true, handed_off_at: new Date().toISOString() }
+                : {}),
             };
           }),
         ),
