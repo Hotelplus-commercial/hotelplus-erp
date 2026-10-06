@@ -1,3 +1,4 @@
+import { useContractLifecycle } from "@/lib/contract-lifecycle";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -62,7 +63,8 @@ function PropertyInfoTab() {
   const [q, setQ] = useState("");
   const [detail, setDetail] = useState<PropertyCard | null>(null);
 
-  const allCards = [...propertyCards, ...servicingCards];
+  const { onboardingCards } = useContractLifecycle();
+  const allCards = [...onboardingCards, ...propertyCards, ...servicingCards];
   const stages = isSpecialist
     ? specialistStages
     : view === "pre"

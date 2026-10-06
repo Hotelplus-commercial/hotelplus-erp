@@ -163,6 +163,11 @@ function Card({ l }: { l: ContractLifecycle }) {
             <StepRow done label="Tax/Receipt ออกแล้ว" owner="AC" />
           </ul>
           <WonBadge />
+          {l.handed_off_to_onboarding && (
+            <span className="inline-flex rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
+              ➡ Sent to On-boarding
+            </span>
+          )}
         </>
       )}
     </div>
