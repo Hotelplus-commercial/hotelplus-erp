@@ -4,7 +4,7 @@ import { Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { Kpi } from "@/components/crm/crm-ui";
-import { KanbanBoard } from "@/components/ps/contract-kanban";
+import { KanbanBoard5 } from "@/components/ps/contract-kanban-5";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { isExpired, useContractLifecycle } from "@/lib/contract-lifecycle";
@@ -13,9 +13,9 @@ export const Route = createFileRoute("/ps/contract-dashboard")({
   head: () => ({
     meta: [
       { title: "Contract Dashboard — PS App | Meridia Hotel ERP" },
-      { name: "description", content: "Kanban 11 ขั้นตอน ติดตามสัญญาตั้งแต่ Quote Approved ถึงใบกำกับภาษี" },
+      { name: "description", content: "Kanban 5 ขั้น (Approved QT → Prop Info) ติดตามสัญญาจนถึง Won" },
       { property: "og:title", content: "Contract Dashboard — PS App" },
-      { property: "og:description", content: "Kanban 11 ขั้นตอน ติดตามสัญญาแบบครบวงจร" },
+      { property: "og:description", content: "Kanban 5 ขั้น contract-to-Won" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -55,10 +55,10 @@ function ContractDashboard() {
 
   const stats = {
     total: rows.length,
-    awaiting: rows.filter((l) => l.current_stage === 1).length,
-    inProgress: rows.filter((l) => l.current_stage >= 2 && l.current_stage <= 7).length,
-    signed: rows.filter((l) => l.current_stage >= 8).length,
-    expired: rows.filter(isExpired).length,
+    awaiting: rows.filter((l) => l.current_stage <= 6).length,
+    inProgress: rows.filter((l) => l.current_stage === 7).length,
+    signed: rows.filter((l) => l.current_stage >= 8 && l.current_stage <= 10).length,
+    expired: rows.filter((l) => l.current_stage === 11).length,
   };
 
   return (
@@ -66,10 +66,10 @@ function ContractDashboard() {
       <div className="sticky top-0 z-30 space-y-3 bg-background/95 py-2 backdrop-blur">
         <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-5">
           <Kpi label="ทั้งหมด" value={stats.total} />
-          <Kpi label="Awaiting" value={stats.awaiting} hint="stage 1" />
-          <Kpi label="In progress" value={stats.inProgress} hint="stage 2-7" />
-          <Kpi label="Signed" value={stats.signed} hint="stage 8-11" />
-          <Kpi label="Expired" value={stats.expired} />
+          <Kpi label="Approved QT" value={stats.awaiting} hint="stage 6" />
+          <Kpi label="รอลูกค้าเซ็น" value={stats.inProgress} hint="stage 7" />
+          <Kpi label="Signed · รอปิด" value={stats.signed} hint="stage 8-9" />
+          <Kpi label="WON" value={stats.expired} hint="stage 10" />
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -123,7 +123,7 @@ function ContractDashboard() {
           </div>
           <label className="flex items-center gap-1.5 text-xs">
             <input type="checkbox" checked={showSigned} onChange={(e) => setShowSigned(e.target.checked)} /> Show signed
-            (stage 8-11)
+            (stage 8-10)
           </label>
           <label className="flex items-center gap-1.5 text-xs">
             <input type="checkbox" checked={showExpired} onChange={(e) => setShowExpired(e.target.checked)} /> Show expired
@@ -139,7 +139,7 @@ function ContractDashboard() {
           ยังไม่มีสัญญาในระบบ · อนุมัติใบเสนอราคาใน BD App แล้วรายการจะขึ้นที่นี่อัตโนมัติ
         </p>
       ) : (
-        <KanbanBoard rows={rows} />
+        <KanbanBoard5 rows={rows} />
       )}
     </div>
   );
