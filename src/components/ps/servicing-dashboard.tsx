@@ -280,7 +280,7 @@ function DetailSheet({ id, onClose }: { id: string | null; onClose: () => void }
 
   const nxt = nextStage(card.service_line, card.current_stage);
   const gate = s.canAdvance(card.id);
-  const missing = [...(gate.reasons ?? []), ...(nxt === "completed" && !/^https?:\/\//.test(meetUrl.trim()) ? ["Specialist: ใส่ลิงก์ Meeting record (http/https)"] : [])];
+  const missing = [...(nxt ? gate.reasons ?? [] : []), ...(nxt === "completed" && !/^https?:\/\//.test(meetUrl.trim()) ? ["Specialist: ใส่ลิงก์ Meeting record (http/https)"] : [])];
   const sequence = fullSequence(card.service_line);
   const future = sequence.slice(sequence.indexOf(card.current_stage === "property_pending" ? "collect_data" : card.current_stage) + 1);
   const finals = s.finalChecks.filter((f) => f.card_id === card.id);
