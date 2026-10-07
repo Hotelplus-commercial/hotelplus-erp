@@ -523,7 +523,7 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
           finalChecks: s.finalChecks.map((f) =>
             f.id === itemId ? { ...f, checked: !f.checked, checked_at: f.checked ? null : new Date().toISOString() } : f,
           ),
-        })),
+        }));
       },
       toggleHandover: (itemId, col) => {
         if (col === "specialist" ? !["specialist", "pm"].includes(role) : !["service", "pm"].includes(role)) return;
@@ -536,7 +536,7 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
               ? { ...h, specialist_checked: !h.specialist_checked, specialist_checked_at: h.specialist_checked ? null : now }
               : { ...h, verifier_checked: !h.verifier_checked, verifier_checked_at: h.verifier_checked ? null : now };
           }),
-        })),
+        }));
       },
       addHandover: (cardId, label) =>
         setState((s) => ({
@@ -557,7 +557,7 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
           handoverSurveys: s.handoverSurveys.map((h) =>
             h.id === id ? { ...h, score, comment, submitted_at: new Date().toISOString(), status: "submitted" } : h,
           ),
-        })),
+        }));
       },
       submitCustomerSurvey: (id, patch) =>
         setState((s) => ({
