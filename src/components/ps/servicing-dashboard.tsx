@@ -141,7 +141,7 @@ function ServicingMonitor() {
         <TabsContent value="pipeline"><CondensedPipeline cards={filtered} /></TabsContent>
         <TabsContent value="tracking"><TrackingView cards={filtered} onCompare={setCompare} /></TabsContent>
         <TabsContent value="disparity"><div className="divide-y rounded-lg border px-4">{siblings.map((cards) => <div key={cards[0]?.property_id} className="flex flex-wrap items-center justify-between gap-2 py-3"><span className="text-sm font-medium">{cards[0]?.property_name}</span><div className="flex items-center gap-2"><DisparityBadge cards={cards} /><Button size="sm" variant="ghost" onClick={() => { const id = cards[0]?.property_id; if (id) setCompare(id); }}>Compare</Button></div></div>)}{!siblings.length && <p className="py-8 text-center text-sm text-muted-foreground">ไม่มีโรงแรมหลายบริการในผลลัพธ์นี้</p>}</div></TabsContent>
-        <TabsContent value="kpi"><KpiView onOpen={() => undefined} /></TabsContent>
+        <TabsContent value="kpi"><KpiView onOpen={() => undefined} cards={filtered} /></TabsContent>
       </Tabs>
       <CompareDialog propertyId={compare} onClose={() => setCompare(null)} />
     </section>
@@ -164,10 +164,10 @@ function TrackingView({ cards, onCompare }: { cards: OnboardingCard[]; onCompare
   return <div className="divide-y rounded-lg border">{groups.map(({ id, cards: group }) => <div key={id} className="p-4"><div className="flex flex-wrap items-center justify-between gap-2"><p className="font-semibold">{group[0]?.property_name}</p><div className="flex items-center gap-2"><DisparityBadge cards={group} />{group.length > 1 && <Button size="sm" variant="ghost" onClick={() => onCompare(id)}>Compare</Button>}</div></div><div className="mt-2 divide-y">{group.map((card) => <div key={card.id} className="flex flex-wrap items-center gap-3 py-2 text-sm"><Chip tone={card.service_line === "ORM" ? "info" : "muted"}>{card.service_line}</Chip><span className="flex-1">{STAGE_LABEL[card.current_stage]}</span><span className="font-mono text-xs text-muted-foreground">Day {currentDay(card)}</span><WorkLink card={card} /></div>)}</div></div>)}{!groups.length && <p className="p-8 text-center text-sm text-muted-foreground">ไม่พบการ์ด</p>}</div>;
 }
 
-function trackForStage(card: OnboardingCard, stage: string): OwnerTrack {
+function trackForStage(_card: OnboardingCard, stage: string): OwnerTrack {
   if (AE_TRACK_STAGES.has(stage)) return "AE";
   if (stage === "approved" || stage === "completed") return "SPECIALIST";
-  return card.go_live_at && stage === "go_live" ? "SERVICE" : "SERVICE";
+  return "SERVICE";
 }
 
 function FullPipeline({ onOpen }: { onOpen: (id: string) => void }) {
@@ -196,92 +196,6 @@ function DisparityBadge({ cards }: { cards: OnboardingCard[] }) {
     <Chip tone="info">⟳ exposure {dp.days} วัน (live)</Chip>
   ) : (
     <Chip>Go-Live gap {dp.days} วัน (final)</Chip>
-  );
-}
-
-/* ---------------- overview (§5.7) ---------------- */
-
-function Overview({ onOpen, onCompare }: { onOpen: (id: string) => void; onCompare: (pid: string) => void }) {
-  const s = useServicing();
-  const [q, setQ] = useState("");
-  const [line, setLine] = useState("all");
-  const [status, setStatus] = useState("all");
-
-  const groups = useMemo(() => {
-    const filtered = s.cards.filter((c) => {
-      if (line !== "all" && c.service_line !== line) return false;
-      const st = c.go_live_at ? "live" : ["new_property", "introduction_sent_form", "collect_data", "property_pending", "final_check"].includes(c.current_stage) ? "ae" : "servicing";
-      if (status !== "all" && st !== status) return false;
-      return c.property_name.toLowerCase().includes(q.toLowerCase());
-    });
-    const map = new Map<string, OnboardingCard[]>();
-    filtered.forEach((c) => map.set(c.property_id, [...(map.get(c.property_id) ?? []), c]));
-    return [...map.entries()];
-  }, [s.cards, q, line, status]);
-
-  const live = s.cards.filter((c) => c.go_live_at).length;
-  return (
-    <div className="space-y-4">
-      <div className="grid gap-3 sm:grid-cols-4">
-        <Kpi label="Cards" value={s.cards.length} />
-        <Kpi label="Hotels" value={new Set(s.cards.map((c) => c.property_id)).size} />
-        <Kpi label="Go Live" value={live} />
-        <Kpi label="In progress" value={s.cards.length - live} />
-      </div>
-      <div className="flex flex-wrap gap-2">
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-2 top-2.5 size-4 text-muted-foreground" />
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="ค้นหาโรงแรม" className="h-9 w-64 pl-8" />
-        </div>
-        <Select value={line} onValueChange={setLine}>
-          <SelectTrigger className="h-9 w-40"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">ทุก service line</SelectItem>
-            <SelectItem value="ORM">ORM</SelectItem>
-            <SelectItem value="MARCOM">Marcom</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={status} onValueChange={setStatus}>
-          <SelectTrigger className="h-9 w-44"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">ทุกสถานะ</SelectItem>
-            <SelectItem value="ae">AE track</SelectItem>
-            <SelectItem value="servicing">Servicing</SelectItem>
-            <SelectItem value="live">Go Live</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="space-y-3">
-        {!groups.length && <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">ไม่พบการ์ด</p>}
-        {groups.map(([pid, cards]) => {
-          const all = s.cards.filter((c) => c.property_id === pid);
-          return (
-            <div key={pid} className="card-elevated p-3">
-              <div className="flex flex-wrap items-center justify-between gap-2 px-1">
-                <p className="font-display font-semibold">{cards[0]?.property_name}</p>
-                <div className="flex items-center gap-2">
-                  <DisparityBadge cards={all} />
-                  {all.length >= 2 && (
-                    <Button size="sm" variant="ghost" onClick={() => onCompare(pid)}>Compare</Button>
-                  )}
-                </div>
-              </div>
-              <div className="mt-2 divide-y rounded-lg border">
-                {cards.map((c) => (
-                  <Button variant="ghost" key={c.id} aria-label={`เปิด ${c.property_name} ${c.service_line}`} onClick={() => onOpen(c.id)} className="flex h-auto min-h-11 w-full flex-wrap justify-start gap-3 rounded-none px-3 py-2 text-left text-sm">
-                    <Chip tone={c.service_line === "ORM" ? "info" : "muted"}>{c.service_line}</Chip>
-                    <span className="text-xs text-muted-foreground">{c.contract_ref}</span>
-                    <span className="flex-1">{STAGE_LABEL[c.current_stage]}</span>
-                    {c.billing_start_at && <Star className="size-3.5 text-muted-foreground" />}
-                    <span className="font-mono text-xs tabular-nums">{c.go_live_at ? `Live · D${currentDay(c)}` : `Day ${currentDay(c)}`}</span>
-                  </Button>
-                ))}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
   );
 }
 
@@ -605,10 +519,10 @@ function CompareDialog({ propertyId, onClose }: { propertyId: string | null; onC
 
 /* ---------------- KPI #4 (§5.9) ---------------- */
 
-function KpiView({ onOpen }: { onOpen: (id: string) => void }) {
+function KpiView({ onOpen, cards }: { onOpen: (id: string) => void; cards?: OnboardingCard[] }) {
   const s = useServicing();
   const [line, setLine] = useState<ServiceLine>("ORM");
-  const rows = s.cards
+  const rows = (cards ?? s.cards)
     .filter((c) => c.service_line === line && c.go_live_at)
     .map((c) => {
       const v = sums(c, eventsOf(s, c.id));

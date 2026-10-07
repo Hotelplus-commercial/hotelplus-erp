@@ -6,6 +6,7 @@ import { Chip, Panel } from "@/components/crm/crm-ui";
 import { PageHeader } from "@/components/erp-ui";
 import { PsDashboard } from "@/components/hotel/ps-dashboard";
 import { PsDashboardFilters } from "@/components/ps/ps-dashboard-filters";
+import { ServicingDashboardView } from "@/components/ps/servicing-dashboard";
 import { NewContractUpdates } from "@/components/ps/renewal-ui";
 import { ActivityFeedList, useAutoRefresh } from "@/components/ps/v4-ui";
 import { Button } from "@/components/ui/button";
@@ -56,6 +57,7 @@ function PsDashboardPage() {
         </>
       )}
       <PsDashboard assignment={filter} />
+      <ServicingDashboardView />
     </div>
   );
 }
