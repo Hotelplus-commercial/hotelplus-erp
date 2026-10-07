@@ -1,6 +1,5 @@
-/* PS App v5.0 · Phase 1 — Servicing re-design: cumulative day-count timeline.
- * Prototype store (localStorage). Tables mirror spec §2; ORM/Marcom sync is mocked
- * via editable timestamps. No deadline semantics anywhere. */
+/* Servicing Revision 2: native stage actions with append-only timestamps.
+ * Browser-local workflow prototype; role flags are not production authorization. */
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
 export type ServiceLine = "ORM" | "MARCOM";
@@ -85,6 +84,28 @@ export const STAGE_LABEL: Record<string, string> = {
   first_sync_up_meeting: "First Sync-up Meeting",
   go_live: "Go Live",
 };
+export const STAGE_GUIDANCE: Record<string, string> = {
+  new_property: "AE: ติดต่อโรงแรมและส่งแบบฟอร์มเตรียมข้อมูล แล้วบันทึกการส่ง",
+  introduction_sent_form: "AE: ติดตามแบบฟอร์มและเริ่มรวบรวมข้อมูลของโรงแรม",
+  collect_data: "AE: รวบรวมข้อมูลให้ครบและตั้งสถานะฟอร์มเป็น complete ก่อนส่ง Final Check; หากรอโรงแรมให้พักที่ Property Pending",
+  property_pending: "AE: ติดตามข้อมูลที่ยังขาดจากโรงแรม ตั้งสถานะฟอร์ม complete แล้วส่ง Final Check",
+  final_check: "AE: ตรวจรายการทั้ง 4 ข้อให้ครบ จากนั้น Specialist หรือ PM อนุมัติ",
+  approved: "Specialist: เตรียมส่งมอบงาน; Service ตรวจรับทุกรายการ แล้ว Specialist ใส่ลิงก์บันทึกการประชุมเพื่อยืนยัน Completed",
+  completed: "Service: เริ่มงานบริการและบันทึกการเข้าสู่ขั้นแรก; แบบประเมินส่งมอบเป็นทางเลือก",
+  rate_structure_meeting: "ORM: จัดประชุมโครงสร้างราคาและเตรียมส่งสรุปให้โรงแรม",
+  send_summary: "ORM: ส่งสรุปที่ตกลงกับโรงแรม แล้วดำเนินการโหลด BAR Rate",
+  load_bar_rate: "ORM: โหลดและตรวจสอบ BAR Rate ให้ครบก่อนเริ่ม Mapping",
+  mapping: "ORM: จับคู่ประเภทห้องและราคา ตรวจสอบให้ครบก่อนขอ Forward Booking",
+  request_forward_booking: "ORM: ขอและตรวจรายการจองล่วงหน้าก่อนนัดลงทะเบียนและฝึกอบรม",
+  register_training: "ORM: ลงทะเบียนและฝึกอบรมให้ครบ ตรวจความพร้อมก่อนยืนยัน Go Live",
+  brand_dna_wall: "Marcom: จัดทำและยืนยัน Brand DNA Wall ก่อนกำหนดกลุ่มเป้าหมายและข้อความหลัก",
+  audience_key_message: "Marcom: ยืนยันกลุ่มเป้าหมายและ Key Message ก่อนจัดทำแผนเนื้อหา",
+  content_plan_52w: "Marcom: จัดทำแผนเนื้อหา 52 สัปดาห์ให้ครบก่อนวางแผนโฆษณา",
+  ads_planning: "Marcom: จัดทำแผนโฆษณาแล้วนัด First Sync-up Meeting",
+  first_sync_up_meeting: "Marcom: ประชุม Sync-up ครั้งแรกและตรวจความพร้อมก่อนยืนยัน Go Live",
+  go_live: "เปิดให้บริการแล้ว · วันที่ Go Live และจำนวนวันรวมถูกบันทึกเรียบร้อย",
+};
+
 export const AE_TRACK = ["new_property", "introduction_sent_form", "collect_data", "final_check", "approved"];
 export const SERVICE_TRACK: Record<ServiceLine, string[]> = {
   ORM: ["rate_structure_meeting", "send_summary", "load_bar_rate", "mapping", "request_forward_booking", "register_training", "go_live"],
@@ -105,7 +126,7 @@ export const nextStage = (line: ServiceLine, current: string) => {
   if (current === "property_pending") return "final_check";
   const seq = fullSequence(line);
   const i = seq.indexOf(current);
-  return i >= 0 && i < seq.length - 1 ? seq[i + 1]! : null;
+  return i >= 0 && i < seq.length - 1 ? seq[i + 1] ?? null : null;
 };
 
 const FINAL_CHECK_ITEMS = [
@@ -162,7 +183,7 @@ function buildCard(
   const reached = seq.slice(0, opts.gaps.length + 1);
   let cursor = 0;
   const events: StageEvent[] = reached.map((stage, i) => {
-    if (i > 0) cursor += opts.gaps[i - 1]!;
+    if (i > 0) cursor += (opts.gaps[i - 1] ?? 0);
     return { id: rid(), card_id: opts.id, stage_key: stage, entered_at: isoAt(created, Math.min(cursor, opts.createdDaysAgo)), owner_track: trackOf(stage) };
   });
   const at = (k: string) => events.find((e) => e.stage_key === k)?.entered_at ?? null;
@@ -174,7 +195,7 @@ function buildCard(
     service_line: opts.line,
     contract_ref: opts.ref,
     created_at: new Date(created).toISOString(),
-    current_stage: reached[reached.length - 1]!,
+    current_stage: reached[reached.length - 1] ?? "new_property",
     assigned_ae_id: "AE · Ploy",
     assigned_specialist_id: "Specialist · Mint",
     assigned_service_owner_id: opts.line === "ORM" ? "ORM · Boss" : "Marcom · Fah",
@@ -278,7 +299,7 @@ export const bottleneck = (s: ReturnType<typeof sums>): OwnerTrack | null => {
   ];
   const valid = opts.filter((o): o is [OwnerTrack, number] => o[1] !== null);
   if (!valid.length) return null;
-  return valid.sort((a, b) => b[1] - a[1])[0]![0];
+  return valid.sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
 };
 export const surveyStatus = (h: HandoverSurvey): HandoverSurvey["status"] =>
   h.status === "pending" && Date.now() > new Date(h.window_expires_at).getTime() ? "expired" : h.status;
@@ -288,7 +309,7 @@ export function quantile(sorted: number[], q: number) {
   const pos = (sorted.length - 1) * q;
   const lo = Math.floor(pos);
   const hi = Math.ceil(pos);
-  return sorted[lo]! + (sorted[hi]! - sorted[lo]!) * (pos - lo);
+  return (sorted[lo] ?? 0) + ((sorted[hi] ?? 0) - (sorted[lo] ?? 0)) * (pos - lo);
 }
 
 /* ---------------- provider ---------------- */
@@ -299,8 +320,7 @@ type Ctx = State & {
   setRole: (r: Role) => void;
   createCard: (input: { property_name: string; service_line: ServiceLine }) => string;
   advance: (cardId: string, opts?: { to?: string; meetingUrl?: string }) => { ok: boolean; error?: string };
-  canAdvance: (cardId: string) => { ok: boolean; reason?: string };
-  setEventDate: (eventId: string, iso: string) => void;
+  canAdvance: (cardId: string) => { ok: boolean; reason?: string; reasons?: string[] };
   toggleFinalCheck: (itemId: string) => void;
   toggleHandover: (itemId: string, col: "specialist" | "verifier") => void;
   addHandover: (cardId: string, label: string) => void;
@@ -345,19 +365,31 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
   }, [hydrated]);
 
   const value = useMemo<Ctx>(() => {
-    const gate = (s: State, cardId: string): { ok: boolean; reason?: string } => {
-      const card = s.cards.find((c) => c.id === cardId);
-      if (!card) return { ok: false, reason: "ไม่พบการ์ด" };
+    const gate = (s: State, cardId: string): { ok: boolean; reason?: string; reasons: string[] } => {
+      const card = s.cards.find(c => c.id === cardId);
+      if (!card) return { ok: false, reason: "ไม่พบการ์ด", reasons: ["ไม่พบการ์ด"] };
       const nxt = nextStage(card.service_line, card.current_stage);
-      if (!nxt) return { ok: false, reason: "Go Live แล้ว" };
-      if (nxt === "approved") {
-        if (s.finalChecks.some((f) => f.card_id === cardId && !f.checked)) return { ok: false, reason: "ติ๊ก Final Check ให้ครบก่อน" };
-        if (role !== "specialist" && role !== "pm") return { ok: false, reason: "Approve ได้เฉพาะ Specialist / PM" };
-      }
-      if (nxt === "completed" && s.handover.some((h) => h.card_id === cardId && !(h.specialist_checked && h.verifier_checked)))
-        return { ok: false, reason: "Handover checklist ต้องติ๊กครบทั้ง 2 ฝั่ง" };
-      if (nxt === "completed" && role !== "specialist" && role !== "pm") return { ok: false, reason: "Specialist เป็นผู้กด Completed" };
-      return { ok: true };
+      const reasons: string[] = [];
+      if (!nxt) reasons.push("Go Live แล้ว");
+      else if (nxt === "approved") {
+        const checks = s.finalChecks.filter(f => f.card_id === cardId);
+        if (!checks.length) reasons.push("AE: เพิ่มรายการ Final Check ก่อนอนุมัติ");
+        checks.filter(f => !f.checked).forEach(f => reasons.push(`AE: ตรวจ ${f.item_label}`));
+        if (!["specialist", "pm"].includes(role)) reasons.push("Specialist / PM: เป็นผู้กด Approve หลัง AE ตรวจครบ");
+      } else if (nxt === "completed") {
+        const items = s.handover.filter(h => h.card_id === cardId);
+        if (!items.length) reasons.push("Specialist: เพิ่มรายการส่งมอบอย่างน้อยหนึ่งข้อ");
+        items.forEach(h => {
+          if (!h.specialist_checked) reasons.push(`Specialist: ส่งมอบ ${h.item_label}`);
+          if (!h.verifier_checked) reasons.push(`Service: ตรวจรับ ${h.item_label}`);
+          if (!h.item_label.trim()) reasons.push("Specialist: ระบุชื่อรายการส่งมอบ");
+        });
+        if (!["specialist", "pm"].includes(role)) reasons.push("Specialist / PM: เป็นผู้กด Completed");
+      } else if (["new_property", "introduction_sent_form", "collect_data", "property_pending"].includes(card.current_stage)) {
+        if (!["ae", "pm"].includes(role)) reasons.push("AE / PM: เป็นผู้ดำเนินขั้นตอนข้อมูลโรงแรม");
+        if (nxt === "final_check" && card.form_completion_status !== "complete") reasons.push("AE: รวบรวมข้อมูลและตั้งสถานะฟอร์มเป็น complete");
+      } else if (!["service", "pm"].includes(role)) reasons.push("Service / PM: เป็นผู้ทำและยืนยันขั้นตอนบริการนี้");
+      return { ok: reasons.length === 0, ...(reasons[0] ? { reason: reasons[0] } : {}), reasons };
     };
     return {
       ...state,
@@ -366,7 +398,7 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
       setRole,
       canAdvance: (id) => gate(state, id),
       createCard: ({ property_name, service_line }) => {
-        const id = `OB-${Date.now().toString().slice(-5)}`;
+        const id = `OB-${rid()}-${Date.now()}`;
         const now = new Date().toISOString();
         setState((s) => {
           const sibling = s.cards.find((c) => c.property_name.trim().toLowerCase() === property_name.trim().toLowerCase());
@@ -412,14 +444,23 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
         return id;
       },
       advance: (cardId, opts) => {
+        const card = state.cards.find(c => c.id === cardId);
+        if (!card) return { ok: false, error: "ไม่พบการ์ด" };
         const g = gate(state, cardId);
-        const card = state.cards.find((c) => c.id === cardId)!;
-        const to = opts?.to ?? (card ? nextStage(card.service_line, card.current_stage) : null);
-        if (!opts?.to && !g.ok) return { ok: false, ...(g.reason ? { error: g.reason } : {}) };
+        const nxt = nextStage(card.service_line, card.current_stage);
+        const to = opts?.to ?? nxt;
+        const pending = to === "property_pending" && card.current_stage === "collect_data" && ["ae", "pm"].includes(role);
+        if (!pending && to !== nxt) return { ok: false, error: "ดำเนินการได้เฉพาะขั้นถัดไป" };
+        if (!pending && !g.ok) return { ok: false, error: g.reasons.join(" · ") };
         if (!to) return { ok: false, error: "ไม่มีขั้นถัดไป" };
-        if (to === "completed" && !opts?.meetingUrl?.trim()) return { ok: false, error: "ต้องใส่ลิงก์ Meeting record" };
+        if (to === "completed") {
+          try { const url = new URL(opts?.meetingUrl?.trim() ?? ""); if (!["http:", "https:"].includes(url.protocol)) throw new Error(); }
+          catch { return { ok: false, error: "Specialist: ใส่ลิงก์ Meeting record (http/https)" }; }
+        }
         const now = new Date().toISOString();
         setState((s) => {
+          const current = s.cards.find(c => c.id === cardId);
+          if (current?.current_stage !== card.current_stage || s.events.some(e => e.card_id === cardId && e.stage_key === to)) return s;
           const ev: StageEvent = { id: rid(), card_id: cardId, stage_key: to, entered_at: now, owner_track: trackOf(to) };
           const isAnchor = to === card.billing_anchor_stage;
           return {
@@ -475,30 +516,17 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
         });
         return { ok: true };
       },
-      setEventDate: (eventId, iso) =>
-        setState((s) => {
-          const ev = s.events.find((e) => e.id === eventId);
-          if (!ev) return s;
-          return {
-            ...s,
-            events: s.events.map((e) => (e.id === eventId ? { ...e, entered_at: iso } : e)),
-            cards: s.cards.map((c) => {
-              if (c.id !== ev.card_id) return c;
-              if (ev.stage_key === "new_property") return { ...c, created_at: iso };
-              if (ev.stage_key === "go_live") return { ...c, go_live_at: iso };
-              if (ev.stage_key === c.billing_anchor_stage) return { ...c, billing_start_at: iso };
-              return c;
-            }),
-          };
-        }),
-      toggleFinalCheck: (itemId) =>
+      toggleFinalCheck: (itemId) => {
+        if (!["ae", "pm"].includes(role)) return;
         setState((s) => ({
           ...s,
           finalChecks: s.finalChecks.map((f) =>
             f.id === itemId ? { ...f, checked: !f.checked, checked_at: f.checked ? null : new Date().toISOString() } : f,
           ),
-        })),
-      toggleHandover: (itemId, col) =>
+        }));
+      },
+      toggleHandover: (itemId, col) => {
+        if (col === "specialist" ? !["specialist", "pm"].includes(role) : !["service", "pm"].includes(role)) return;
         setState((s) => ({
           ...s,
           handover: s.handover.map((h) => {
@@ -508,7 +536,8 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
               ? { ...h, specialist_checked: !h.specialist_checked, specialist_checked_at: h.specialist_checked ? null : now }
               : { ...h, verifier_checked: !h.verifier_checked, verifier_checked_at: h.verifier_checked ? null : now };
           }),
-        })),
+        }));
+      },
       addHandover: (cardId, label) =>
         setState((s) => ({
           ...s,
@@ -520,20 +549,25 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
       editHandover: (itemId, label) =>
         setState((s) => ({ ...s, handover: s.handover.map((h) => (h.id === itemId ? { ...h, item_label: label } : h)) })),
       deleteHandover: (itemId) => setState((s) => ({ ...s, handover: s.handover.filter((h) => h.id !== itemId) })),
-      submitHandoverSurvey: (id, score, comment) =>
+      submitHandoverSurvey: (id, score, comment) => {
+        const survey = state.handoverSurveys.find(h => h.id === id);
+        if (!survey || surveyStatus(survey) !== "pending" || !["service", "pm"].includes(role) || score < 1 || score > 5) return;
         setState((s) => ({
           ...s,
           handoverSurveys: s.handoverSurveys.map((h) =>
             h.id === id ? { ...h, score, comment, submitted_at: new Date().toISOString(), status: "submitted" } : h,
           ),
-        })),
+        }));
+      },
       submitCustomerSurvey: (id, patch) =>
         setState((s) => ({
           ...s,
           customerSurveys: s.customerSurveys.map((c) => (c.id === id ? { ...c, ...patch, responded_at: new Date().toISOString() } : c)),
         })),
-      setFormStatus: (cardId, st) =>
-        setState((s) => ({ ...s, cards: s.cards.map((c) => (c.id === cardId ? { ...c, form_completion_status: st } : c)) })),
+      setFormStatus: (cardId, st) => {
+        if (!["ae", "pm"].includes(role)) return;
+        setState((s) => ({ ...s, cards: s.cards.map((c) => (c.id === cardId ? { ...c, form_completion_status: st } : c)) }));
+      },
       reset: () => setState(seed()),
     };
   }, [state, hydrated, role]);

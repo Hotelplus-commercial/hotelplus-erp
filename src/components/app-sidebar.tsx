@@ -70,7 +70,6 @@ const moduleChildren: Record<string, { title: string; url: string; icon: typeof 
     { title: "Templates", url: "/ps/templates", icon: FileText },
     { title: "AE Workspace", url: "/ps/ae-workspace/dashboard", icon: CalendarCheck },
     { title: "On-boarding Process", url: "/ps/onboarding-process", icon: ClipboardCheck },
-    { title: "Servicing Timeline", url: "/ps/servicing-timeline", icon: BarChart3 },
   ],
 
 };
@@ -91,7 +90,6 @@ export function AppSidebar() {
   if (role === "On-boarding Specialist" || role === "ORM" || role === "GRM") {
     hiddenUrls.add("/ps/ae-workspace/dashboard");
   }
-  if (role === "ORM" || role === "GRM") hiddenUrls.add("/ps/onboarding-process");
 
   return (
     <Sidebar collapsible="icon" className="border-sidebar-border">

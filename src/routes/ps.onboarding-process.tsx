@@ -4,10 +4,11 @@ import { useContractLifecycle } from "@/lib/contract-lifecycle";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import { ServicingDashboard } from "@/components/ps/servicing-dashboard";
 import { Chip, Panel } from "@/components/crm/crm-ui";
 import { PageHeader } from "@/components/erp-ui";
-import { EmptyState, JourneyBar, SlaBadge } from "@/components/ps/meeting-ui";
-import { OwnerLabel, Stage8Checklist, Stage8SlaBadge } from "@/components/ps/onboarding-ui";
+import { EmptyState, JourneyBar } from "@/components/ps/meeting-ui";
+import { OwnerLabel, Stage8Checklist } from "@/components/ps/onboarding-ui";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -85,7 +86,6 @@ function OnboardingProcessPage() {
   const [q, setQ] = useState("");
   const [slaFilter, setSlaFilter] = useState("All");
   const [ownerFilter, setOwnerFilter] = useState("All");
-  const [view, setView] = useState<"pre" | "servicing">("servicing");
   const [highlight, setHighlight] = useState<string | null>(null);
   const [detail, setDetail] = useState<PropertyCard | null>(null);
   const [reviewFor, setReviewFor] = useState<PropertyCard | null>(null);
@@ -110,20 +110,7 @@ function OnboardingProcessPage() {
     return () => clearTimeout(t);
   }, [hash]);
 
-  if (role === "ORM" || role === "GRM") {
-    return (
-      <div className="flex flex-col gap-4">
-        <PageHeader
-          eyebrow="PS App · On-boarding Process"
-          title="On-boarding Process"
-          description="เมนูนี้สำหรับทีม Partner Success"
-        />
-        <EmptyState text="ORM / GRM ใช้ ORM App สำหรับงาน servicing และ Stage 8 checklist" />
-      </div>
-    );
-  }
-
-  const stages = isSpecialist ? specialistStages : view === "pre" ? preStages : servicingStages;
+  const stages = (isSpecialist ? specialistStages : preStages).filter(stage => stage.key !== "processing" && stage.key !== "completed" && stage.key !== "live");
 
   const visible = allCards.filter((c) => {
     if (scope === "my" && isAe && c.owner !== me) return false;
@@ -175,7 +162,7 @@ function OnboardingProcessPage() {
       <PageHeader
         eyebrow="PS App · On-boarding Process"
         title="On-boarding Process"
-        description="จัดการ property onboarding ตลอด lifecycle — Dashboard · Pipeline · History"
+        description=""
         actions={
           <div className="flex items-center gap-2">
             <Select value={month} onValueChange={setMonth}>
@@ -207,89 +194,7 @@ function OnboardingProcessPage() {
         }
       />
 
-      {/* SECTION B1 — Dashboard */}
-      <section className="flex flex-col gap-3">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="font-display text-lg font-semibold">Dashboard</h2>
-          <span className="text-xs text-muted-foreground">Last updated: 2 min ago</span>
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {opMetrics.map((m) => (
-            <button
-              key={m.label}
-              type="button"
-              onClick={() => {
-                document.getElementById("op-pipeline")?.scrollIntoView({ behavior: "smooth" });
-                toast.info(`กรอง Pipeline: ${m.label}`);
-              }}
-              className="card-elevated p-4 text-left transition-colors hover:bg-muted/50"
-            >
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                {m.label}
-              </p>
-              <p className="mt-1 font-display text-3xl font-bold leading-none">{m.value}</p>
-              <Chip tone={m.tone}>{m.sub}</Chip>
-            </button>
-          ))}
-        </div>
-
-        <div className="grid gap-3 md:grid-cols-2">
-          <Panel title="Team Specialists" subtitle="จำนวน property ที่ยังเปิดอยู่">
-            <ul className="flex flex-col gap-2">
-              {specialistTeam.map((s) => (
-                <li key={s.name} className="flex items-center justify-between gap-2 text-sm">
-                  <span className="font-medium">{s.name}</span>
-                  <Chip tone={s.open >= 8 ? "warn" : "muted"}>{s.open} open properties</Chip>
-                </li>
-              ))}
-            </ul>
-            <Button
-              variant="link"
-              size="sm"
-              className="mt-2 px-0"
-              onClick={() => toast.info("เปิดรายงานผลงานทีม Specialist")}
-            >
-              View Full Performance →
-            </Button>
-          </Panel>
-
-          <Panel title="Avg Processing Time" subtitle="approved → go lived">
-            <p className="font-display text-4xl font-bold leading-none">
-              {avgProcessing.days} days
-            </p>
-            <Chip tone="success">Trend: {avgProcessing.trend}</Chip>
-          </Panel>
-        </div>
-
-        <Panel title="Recently Approved" subtitle="อนุมัติภายใน 7 วันที่ผ่านมา">
-          <ul className="flex flex-col gap-2">
-            {recentlyApproved.map((r) => (
-              <li key={r.id}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setHighlight(r.id);
-                    document
-                      .getElementById(`hotel-${r.id}`)
-                      ?.scrollIntoView({ behavior: "smooth", block: "center" });
-                    setTimeout(() => setHighlight(null), 2400);
-                  }}
-                  className="flex w-full flex-wrap items-center justify-between gap-3 rounded-xl border p-3 text-left transition-colors hover:bg-muted/60"
-                >
-                  <span className="text-sm font-medium">{r.hotel}</span>
-                  <span className="text-xs text-muted-foreground">{r.approved}</span>
-                  <Chip tone="info">{r.stage}</Chip>
-                  <span className="flex w-28 items-center gap-2">
-                    <Progress value={r.progress} className="h-1.5 flex-1" />
-                    <span className="text-[11px]">{r.progress}%</span>
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      </section>
+      <ServicingDashboard />
 
       {/* SECTION B2 — Pipeline */}
       <section id="op-pipeline" className="flex flex-col gap-3">
@@ -327,30 +232,7 @@ function OnboardingProcessPage() {
               ))}
             </SelectContent>
           </Select>
-          {!isSpecialist && (
-            <div className="flex gap-1 rounded-lg border p-1">
-              {(
-                [
-                  { key: "pre", label: "Pre-Services (6)" },
-                  { key: "servicing", label: "Servicing (4)" },
-                ] as const
-              ).map((t) => (
-                <button
-                  key={t.key}
-                  type="button"
-                  onClick={() => setView(t.key)}
-                  className={cn(
-                    "rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
-                    view === t.key
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:bg-muted",
-                  )}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
-          )}
+
         </div>
 
         <div className="overflow-x-auto pb-2">
@@ -363,7 +245,7 @@ function OnboardingProcessPage() {
                     <p className="text-sm font-semibold">{s.title}</p>
                     <Chip tone="muted">{cards.length}</Chip>
                   </div>
-                  <p className="mt-0.5 text-[11px] text-muted-foreground">SLA {s.sla}</p>
+                  
 
                   <div className="mt-3 flex flex-col gap-2">
                     {cards.length === 0 ? (
@@ -379,20 +261,13 @@ function OnboardingProcessPage() {
                             id={`hotel-${c.id}`}
                             className={cn(
                               "rounded-lg border p-3 transition-colors",
-                              highlight === c.id && "border-warning bg-warning/15",
+                              highlight === c.id && "border-primary bg-muted",
                             )}
                           >
                             <p className="truncate text-sm font-medium">{c.hotel}</p>
                             <OwnerLabel owner={c.owner} lastActionBy={c.lastActionBy} />
                             <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                              {c.stage === "processing" ? (
-                                <Stage8SlaBadge days={c.daysInStage} slaDays={c.slaDays} />
-                              ) : (
-                                <SlaBadge
-                                  overdue={c.overdue}
-                                  days={c.daysInStage - c.slaDays}
-                                />
-                              )}
+                              <Chip tone="muted">Day {c.daysInStage}</Chip>
                               {c.score && <Chip tone="success">{c.score}</Chip>}
                             </div>
                             {c.stage === "processing" && (
@@ -500,17 +375,7 @@ function OnboardingProcessPage() {
                       <TableCell>{r.goLived}</TableCell>
                       <TableCell>{r.duration}</TableCell>
                       <TableCell>
-                        <Chip
-                          tone={
-                            r.status === "Live"
-                              ? "success"
-                              : r.status === "SLA"
-                                ? "danger"
-                                : "warn"
-                          }
-                        >
-                          {r.statusText}
-                        </Chip>
+                        <Chip tone="muted">{r.status === "Live" ? "Live" : "In progress"}</Chip>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -595,8 +460,8 @@ function OnboardingProcessPage() {
                   <li className="rounded-lg border p-2.5">🎫 Ticket to ORM App — brief + property data</li>
                   <li className="rounded-lg border p-2.5">🎫 Ticket to Marcom App — brief + property data</li>
                 </ul>
-                <p className="rounded-lg border border-warning/40 bg-warning/10 p-2.5 text-xs">
-                  ⚠️ การ approve จะเริ่มนับ Stage 8 SLA 7 วัน และส่ง ticket ให้ทีม ORM + Marcom ทันที
+                <p className="rounded-lg border bg-muted/40 p-2.5 text-xs">
+                  การส่งมอบและงานบริการดำเนินการจาก Onboarding overview ด้านบน
                 </p>
               </div>
               <DialogFooter className="flex-wrap gap-2">
@@ -606,7 +471,7 @@ function OnboardingProcessPage() {
                 <Button
                   onClick={() => {
                     toast.success(
-                      `อนุมัติ ${approveFor.hotel} — เริ่ม Stage 8 SLA และส่ง ticket แล้ว`,
+                      `อนุมัติ ${approveFor.hotel}`,
                     );
                     setApproveFor(null);
                   }}
@@ -638,7 +503,7 @@ function OnboardingProcessPage() {
                   <Info label="OTA ที่เชื่อมต่อ" value={detail.otas} />
                   <Info
                     label="อยู่ในขั้นนี้"
-                    value={`${detail.daysInStage} วัน (SLA ${detail.slaDays} วัน)`}
+                    value={`${detail.daysInStage} วัน`}
                   />
                   <Info label="Specialist / ORM" value={`${detail.specialist ?? "—"} / ${detail.orm ?? "—"}`} />
                 </div>
