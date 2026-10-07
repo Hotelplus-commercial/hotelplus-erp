@@ -12,3 +12,4 @@
 - Servicing is a reusable dashboard section mounted on the existing On-boarding Process page; retain the former URL only as a redirect to avoid duplicate workflow surfaces.
 - Servicing stage events are append-only and created by gated in-app actions; historical demo data remains separate from live action timestamps.
 - Servicing role flags are workflow simulation only, not authentication or authorization; do not treat them as production security.
+- Servicing remains a browser-local prototype until authenticated shared persistence is explicitly scoped; Cloud activation alone does not migrate workflow data.
