@@ -141,7 +141,7 @@ function ServicingMonitor() {
         <TabsContent value="pipeline"><CondensedPipeline cards={filtered} /></TabsContent>
         <TabsContent value="tracking"><TrackingView cards={filtered} onCompare={setCompare} /></TabsContent>
         <TabsContent value="disparity"><div className="divide-y rounded-lg border px-4">{siblings.map((cards) => <div key={cards[0]?.property_id} className="flex flex-wrap items-center justify-between gap-2 py-3"><span className="text-sm font-medium">{cards[0]?.property_name}</span><div className="flex items-center gap-2"><DisparityBadge cards={cards} /><Button size="sm" variant="ghost" onClick={() => { const id = cards[0]?.property_id; if (id) setCompare(id); }}>Compare</Button></div></div>)}{!siblings.length && <p className="py-8 text-center text-sm text-muted-foreground">ไม่มีโรงแรมหลายบริการในผลลัพธ์นี้</p>}</div></TabsContent>
-        <TabsContent value="kpi"><KpiView onOpen={() => undefined} cards={filtered} /></TabsContent>
+        <TabsContent value="kpi"><KpiView cards={filtered} /></TabsContent>
       </Tabs>
       <CompareDialog propertyId={compare} onClose={() => setCompare(null)} />
     </section>
@@ -519,7 +519,7 @@ function CompareDialog({ propertyId, onClose }: { propertyId: string | null; onC
 
 /* ---------------- KPI #4 (§5.9) ---------------- */
 
-function KpiView({ onOpen, cards }: { onOpen: (id: string) => void; cards?: OnboardingCard[] }) {
+function KpiView({ cards }: { cards?: OnboardingCard[] }) {
   const s = useServicing();
   const [line, setLine] = useState<ServiceLine>("ORM");
   const rows = (cards ?? s.cards)
@@ -582,7 +582,6 @@ function KpiView({ onOpen, cards }: { onOpen: (id: string) => void; cards?: Onbo
                 />
                 <Scatter
                   data={data}
-                  onClick={(p: { card?: OnboardingCard }) => p.card && onOpen(p.card.id)}
                   shape={(props: { cx?: number; cy?: number; payload?: (typeof data)[number] }) => {
                     const { cx = 0, cy = 0, payload } = props;
                     const color = payload?.bottleneck ? TRACK_COLOR[payload.bottleneck] : "var(--color-muted-foreground)";
@@ -613,12 +612,12 @@ function KpiView({ onOpen, cards }: { onOpen: (id: string) => void; cards?: Onbo
           <table className="w-full text-sm">
             <thead className="text-left text-[11px] uppercase text-muted-foreground">
               <tr>
-                <th className="py-1">Hotel</th><th>Service</th><th>Σ AE</th><th>Σ Specialist</th><th>Σ Service</th><th>Overall</th><th>Bottleneck</th><th>Status</th>
+                <th className="py-1">Hotel</th><th>Service</th><th>Σ AE</th><th>Σ Specialist</th><th>Σ Service</th><th>Overall</th><th>Bottleneck</th><th>Status</th><th />
               </tr>
             </thead>
             <tbody>
               {sorted.map((r) => (
-                <tr key={r.card.id} className={cn("cursor-pointer border-t hover:bg-muted/50", r.outlier && "bg-muted/60 font-semibold")} onClick={() => onOpen(r.card.id)}>
+                <tr key={r.card.id} className={cn("border-t", r.outlier && "bg-muted/60 font-semibold")}>
                   <td className="py-1.5">{r.card.property_name}</td>
                   <td>{r.card.service_line}</td>
                   <td className="tabular-nums">{d(r.ae)}</td>
@@ -627,6 +626,7 @@ function KpiView({ onOpen, cards }: { onOpen: (id: string) => void; cards?: Onbo
                   <td className="tabular-nums">{d(r.overall)}</td>
                   <td>{r.bottleneck ? TRACK_LABEL[r.bottleneck] : "—"}</td>
                   <td>{r.outlier ? "✕ Outlier" : "In range"}</td>
+                  <td><WorkLink card={r.card} /></td>
                 </tr>
               ))}
             </tbody>
