@@ -235,7 +235,6 @@ function buildCard(
 
 function seed(): State {
   const s: State = { cards: [], events: [], finalChecks: [], handover: [], handoverSurveys: [], customerSurveys: [] };
-  const orm = (n: number) => Array(n).fill(0);
   // full ORM path = 4 AE gaps + approved→completed + 7 service = 12 gaps; Marcom = 11 gaps
   const live = (aeGaps: number[], spec: number, svc: number[]) => [...aeGaps, spec, ...svc];
   buildCard(s, { id: "OB-101", property_id: "P-01", name: "Hotel Aurora BKK", line: "ORM", ref: "#1", createdDaysAgo: 120, gaps: live([2, 5, 6, 3], 4, [3, 2, 4, 5, 3, 4, 6]) });
@@ -250,7 +249,6 @@ function seed(): State {
   buildCard(s, { id: "OB-110", property_id: "P-07", name: "Pattaya Skyline", line: "ORM", ref: "#1", createdDaysAgo: 40, gaps: [2, 6, 7, 3, 2, 3] });
   buildCard(s, { id: "OB-111", property_id: "P-08", name: "Krabi Cliff Villas", line: "MARCOM", ref: "#1", createdDaysAgo: 12, gaps: [2, 6] });
   buildCard(s, { id: "OB-112", property_id: "P-04", name: "Chiang Mai Lanna Hill", line: "MARCOM", ref: "#2", createdDaysAgo: 3, gaps: [] });
-  void orm;
   return s;
 }
 

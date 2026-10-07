@@ -70,6 +70,7 @@ const moduleChildren: Record<string, { title: string; url: string; icon: typeof 
     { title: "Templates", url: "/ps/templates", icon: FileText },
     { title: "AE Workspace", url: "/ps/ae-workspace/dashboard", icon: CalendarCheck },
     { title: "On-boarding Process", url: "/ps/onboarding-process", icon: ClipboardCheck },
+    { title: "Servicing Timeline", url: "/ps/servicing-timeline", icon: BarChart3 },
   ],
 
 };
