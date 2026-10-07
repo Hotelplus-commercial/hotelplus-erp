@@ -13,7 +13,6 @@ export const psTabs = [
   { label: "Templates", to: "/ps/templates" },
   { label: "AE Workspace", to: "/ps/ae-workspace/dashboard" },
   { label: "On-boarding Process", to: "/ps/onboarding-process" },
-  { label: "Servicing Timeline", to: "/ps/servicing-timeline" },
 ];
 
 
