@@ -43,6 +43,7 @@ import { Route as PsContractWizardRouteImport } from './routes/ps.contract-wizar
 import { Route as PsContractsRouteImport } from './routes/ps.contracts'
 import { Route as PsOnboardingProcessRouteImport } from './routes/ps.onboarding-process'
 import { Route as PsProductionRouteImport } from './routes/ps.production'
+import { Route as PsServicingTimelineRouteImport } from './routes/ps.servicing-timeline'
 import { Route as PsSystemCostRouteImport } from './routes/ps.system-cost'
 import { Route as TheOfficeAppIndexRouteImport } from './routes/the-office-app.index'
 import { Route as TheOfficeAppOrmBonusRouteImport } from './routes/the-office-app.orm-bonus'
@@ -246,6 +247,11 @@ const PsProductionRoute = PsProductionRouteImport.update({
   path: '/production',
   getParentRoute: () => PsRoute,
 } as any)
+const PsServicingTimelineRoute = PsServicingTimelineRouteImport.update({
+  id: '/servicing-timeline',
+  path: '/servicing-timeline',
+  getParentRoute: () => PsRoute,
+} as any)
 const PsSystemCostRoute = PsSystemCostRouteImport.update({
   id: '/system-cost',
   path: '/system-cost',
@@ -441,6 +447,7 @@ export interface FileRoutesByFullPath {
   '/ps/contracts': typeof PsContractsRoute
   '/ps/onboarding-process': typeof PsOnboardingProcessRoute
   '/ps/production': typeof PsProductionRoute
+  '/ps/servicing-timeline': typeof PsServicingTimelineRoute
   '/ps/system-cost': typeof PsSystemCostRoute
   '/the-office-app/orm-bonus': typeof TheOfficeAppOrmBonusRoute
   '/ac/': typeof AcIndexRoute
@@ -499,6 +506,7 @@ export interface FileRoutesByTo {
   '/ps/contracts': typeof PsContractsRoute
   '/ps/onboarding-process': typeof PsOnboardingProcessRoute
   '/ps/production': typeof PsProductionRoute
+  '/ps/servicing-timeline': typeof PsServicingTimelineRoute
   '/ps/system-cost': typeof PsSystemCostRoute
   '/the-office-app/orm-bonus': typeof TheOfficeAppOrmBonusRoute
   '/ac': typeof AcIndexRoute
@@ -568,6 +576,7 @@ export interface FileRoutesById {
   '/ps/contracts': typeof PsContractsRoute
   '/ps/onboarding-process': typeof PsOnboardingProcessRoute
   '/ps/production': typeof PsProductionRoute
+  '/ps/servicing-timeline': typeof PsServicingTimelineRoute
   '/ps/system-cost': typeof PsSystemCostRoute
   '/the-office-app/orm-bonus': typeof TheOfficeAppOrmBonusRoute
   '/ac/': typeof AcIndexRoute
@@ -638,6 +647,7 @@ export interface FileRouteTypes {
     | '/ps/contracts'
     | '/ps/onboarding-process'
     | '/ps/production'
+    | '/ps/servicing-timeline'
     | '/ps/system-cost'
     | '/the-office-app/orm-bonus'
     | '/ac/'
@@ -696,6 +706,7 @@ export interface FileRouteTypes {
     | '/ps/contracts'
     | '/ps/onboarding-process'
     | '/ps/production'
+    | '/ps/servicing-timeline'
     | '/ps/system-cost'
     | '/the-office-app/orm-bonus'
     | '/ac'
@@ -764,6 +775,7 @@ export interface FileRouteTypes {
     | '/ps/contracts'
     | '/ps/onboarding-process'
     | '/ps/production'
+    | '/ps/servicing-timeline'
     | '/ps/system-cost'
     | '/the-office-app/orm-bonus'
     | '/ac/'
@@ -1056,6 +1068,13 @@ declare module '@tanstack/react-router' {
       path: '/production'
       fullPath: '/ps/production'
       preLoaderRoute: typeof PsProductionRouteImport
+      parentRoute: typeof PsRoute
+    }
+    '/ps/servicing-timeline': {
+      id: '/ps/servicing-timeline'
+      path: '/servicing-timeline'
+      fullPath: '/ps/servicing-timeline'
+      preLoaderRoute: typeof PsServicingTimelineRouteImport
       parentRoute: typeof PsRoute
     }
     '/ps/system-cost': {
@@ -1451,6 +1470,7 @@ interface PsRouteChildren {
   PsContractsRoute: typeof PsContractsRoute
   PsOnboardingProcessRoute: typeof PsOnboardingProcessRoute
   PsProductionRoute: typeof PsProductionRoute
+  PsServicingTimelineRoute: typeof PsServicingTimelineRoute
   PsSystemCostRoute: typeof PsSystemCostRoute
   PsIndexRoute: typeof PsIndexRoute
   PsTemplatesTemplateIdRoute: typeof PsTemplatesTemplateIdRoute
@@ -1467,6 +1487,7 @@ const PsRouteChildren: PsRouteChildren = {
   PsContractsRoute: PsContractsRoute,
   PsOnboardingProcessRoute: PsOnboardingProcessRoute,
   PsProductionRoute: PsProductionRoute,
+  PsServicingTimelineRoute: PsServicingTimelineRoute,
   PsSystemCostRoute: PsSystemCostRoute,
   PsIndexRoute: PsIndexRoute,
   PsTemplatesTemplateIdRoute: PsTemplatesTemplateIdRoute,

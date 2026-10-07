@@ -82,6 +82,7 @@ function ServicingPage() {
   return (
     <div className="space-y-4">
       <PageHeader
+        eyebrow="PS App · v5.0"
         title="Servicing Timeline"
         description="นับวันสะสมจากวันสร้างการ์ด (Day 0) · ไม่มี deadline · 1 service line = 1 การ์ด"
         actions={
