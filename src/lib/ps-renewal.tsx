@@ -110,16 +110,6 @@ export const meetingQuantity = {
 
 export const surveyCollection = { filled: 27, meetings: 30 };
 
-export const tierAPipeline7 = [
-  { label: "Not Assign", value: 4 },
-  { label: "Draft", value: 6 },
-  { label: "Confirm", value: 7 },
-  { label: "Reject", value: 1 },
-  { label: "Completed", value: 3 },
-  { label: "No-show", value: 1 },
-  { label: "Postpone", value: 2 },
-];
-
 /* --- Renewal rate mock --- */
 
 export const renewalRate = {
