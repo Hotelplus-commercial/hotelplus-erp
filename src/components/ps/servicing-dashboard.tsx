@@ -45,6 +45,9 @@ import {
   type OwnerTrack,
   type Role,
   type ServiceLine,
+  type ServiceVariant,
+  lineSequence,
+  deptBadge,
 } from "@/lib/ps-servicing";
 import { cn } from "@/lib/utils";
 
@@ -417,12 +420,10 @@ export function ServicingCardDrawer({ id, onClose, readOnly = false }: { id: str
             {nxt && <p className="rounded-md bg-muted/50 px-3 py-2 text-xs"><span className="font-medium">{readOnly ? "อ่านอย่างเดียว · " : !canAct ? "ไม่ใช่ขั้นของคุณ · " : ""}</span>{waitMsg}</p>}
             {nxt && <Button className="w-full sm:w-auto" disabled={!canAct || missing.length > 0} onClick={() => doAdvance()}>{nxt === "approved" ? "Approve" : nxt === "completed" ? "Completed" : nxt.endsWith("go_live") ? "ยืนยัน Go Live" : `ทำขั้นนี้เสร็จ → ${STAGE_LABEL[nxt]}`}</Button>}
             <ExternalAppButton card={card} />
-          </section>
-          <ChecklistSection card={card} readOnly={readOnly} />
-          <section className="hidden">
             {missing.length > 0 && <div className="border-l-2 pl-3 text-sm text-muted-foreground"><p className="font-medium text-foreground">สิ่งที่ต้องทำก่อนดำเนินการต่อ</p><ul className="mt-1 space-y-1">{missing.map(reason => <li key={reason}>{reason}</li>)}</ul></div>}
             {card.current_stage === "collect_data" && <Button variant="outline" disabled={!canAct} onClick={() => doAdvance("property_pending")}>Mark Property Pending</Button>}
           </section>
+          <ChecklistSection card={card} readOnly={readOnly} />
           <SumChips card={card} />
           <fieldset disabled={readOnly} className="m-0 min-w-0 space-y-5 border-0 p-0">
 
