@@ -613,11 +613,21 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
     try {
       const raw = localStorage.getItem(KEY);
       const loaded = raw ? (JSON.parse(raw) as State) : seed();
-      setState({ ...loaded, cards: loaded.cards.map((card) => ({
-        ...card,
-        external_app: card.external_app ?? externalAppFor(card.service_line),
-        external_ref_url: card.external_ref_url ?? null,
-      })) });
+      const templates = loaded.checklistTemplates ?? CHECKLIST_TEMPLATE_SEED;
+      const items = [...(loaded.checklistItems ?? [])];
+      const cards = loaded.cards.map((card) => {
+        const service_variant: ServiceVariant = card.service_variant ?? (card.service_line === "ORM" ? "ORM" : "MARCOM_META_TIKTOK");
+        if (!items.some((i) => i.card_id === card.id)) items.push(...instantiateChecklist(card.id, service_variant, templates));
+        return {
+          ...card,
+          service_variant,
+          current_stage: migrateStageKey(card.current_stage, service_variant),
+          billing_anchor_stage: BILLING_ANCHOR_VARIANT[service_variant],
+          external_app: card.external_app ?? externalAppFor(card.service_line),
+          external_ref_url: card.external_ref_url ?? null,
+        };
+      });
+      setState({ ...loaded, cards, checklistTemplates: templates, checklistItems: items });
     } catch {
       setState(seed());
     }
