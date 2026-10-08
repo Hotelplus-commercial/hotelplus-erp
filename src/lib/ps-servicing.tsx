@@ -1,6 +1,6 @@
 /* Servicing Revision 2: native stage actions with append-only timestamps.
  * Browser-local workflow prototype; role flags are not production authorization. */
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, useRef, useCallback, type ReactNode } from "react";
 
 export type ServiceLine = "ORM" | "MARCOM";
 export type ExternalApp = "ORM_APP" | "MARCOM_APP";
@@ -279,6 +279,55 @@ function seed(): State {
   return s;
 }
 
+
+type CardInput = { property_name: string; service_line: ServiceLine; property_id?: string; contract_ref?: string; assigned_ae_id?: string | undefined };
+
+/** One initializer for manual and contract-created cards, including checklist and first event. */
+function insertNewCard(s: State, input: CardInput, id: string, now: string): State {
+  const { property_name, service_line } = input;
+  const sibling = s.cards.find((c) => c.property_name.trim().toLowerCase() === property_name.trim().toLowerCase());
+  const property_id = input.property_id ?? sibling?.property_id ?? `P-${rid()}`;
+  const count = s.cards.filter((c) => c.property_id === property_id).length;
+  const card: OnboardingCard = {
+            id,
+            property_id,
+            property_name,
+            service_line,
+            external_app: externalAppFor(service_line),
+            external_ref_url: null,
+            contract_ref: input.contract_ref ?? `#${count + 1}`,
+            created_at: now,
+            current_stage: "new_property",
+            assigned_ae_id: input.assigned_ae_id ?? "AE · Ploy",
+            assigned_specialist_id: "Specialist · Mint",
+            assigned_service_owner_id: service_line === "ORM" ? "ORM · Boss" : "Marcom · Fah",
+            billing_start_at: null,
+            billing_anchor_stage: BILLING_ANCHOR[service_line],
+            go_live_at: null,
+            meeting_record_url: null,
+            pre_service_form_ref: null,
+            form_completion_status: "not_started",
+          };
+          return {
+            ...s,
+            cards: [card, ...s.cards],
+            events: [...s.events, { id: rid(), card_id: id, stage_key: "new_property", entered_at: now, owner_track: "AE" }],
+            finalChecks: [...s.finalChecks, ...FINAL_CHECK_ITEMS.map((l) => ({ id: rid(), card_id: id, item_label: l, checked: false, checked_at: null }))],
+            handover: [
+              ...s.handover,
+              ...HANDOVER_SEED[service_line].map((l) => ({
+                id: rid(),
+                card_id: id,
+                item_label: l,
+                specialist_checked: false,
+                specialist_checked_at: null,
+                verifier_checked: false,
+                verifier_checked_at: null,
+              })),
+            ],
+          };
+}
+
 /* ---------------- computed helpers ---------------- */
 
 export const eventsOf = (s: Pick<State, "events">, id: string) =>
@@ -324,6 +373,7 @@ type Ctx = State & {
   hydrated: boolean;
   role: Role;
   setRole: (r: Role) => void;
+  createFromContract: (input: { deal_id: string; contract_id: string | null; contract_service_line: "ORM" | "MARCOM" | "BOTH" | null; hotel_id: string | null; property_name: string; assigned_ae_id?: string }) => { ok: boolean; created: string[] } ;
   createCard: (input: { property_name: string; service_line: ServiceLine }) => string;
   advance: (cardId: string, opts?: { to?: string; meetingUrl?: string }) => { ok: boolean; error?: string };
   canAdvance: (cardId: string) => { ok: boolean; reason?: string; reasons?: string[] };
@@ -341,6 +391,8 @@ const C = createContext<Ctx | null>(null);
 
 export function ServicingProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<State>(() => ({ cards: [], events: [], finalChecks: [], handover: [], handoverSurveys: [], customerSurveys: [] }));
+  const stateRef = useRef(state);
+  stateRef.current = state;
   const [role, setRole] = useState<Role>("specialist");
   const [hydrated, setHydrated] = useState(false);
 
@@ -375,6 +427,26 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(t);
   }, [hydrated]);
 
+  const createFromContract = useCallback<Ctx["createFromContract"]>((input) => {
+    if (!input.contract_service_line || !input.hotel_id) return { ok: false, created: [] };
+    const lines: ServiceLine[] = input.contract_service_line === "BOTH" ? ["ORM", "MARCOM"] : [input.contract_service_line];
+    const ref = input.contract_id || input.deal_id;
+    let next = stateRef.current;
+    const created: string[] = [];
+    const now = new Date().toISOString();
+    for (const line of lines) {
+      if (next.cards.some((card) => card.contract_ref === ref && card.service_line === line)) continue;
+      const id = `OB-${rid()}-${Date.now()}`;
+      next = insertNewCard(next, { property_name: input.property_name, service_line: line, property_id: input.hotel_id, contract_ref: ref, assigned_ae_id: input.assigned_ae_id }, id, now);
+      created.push(id);
+    }
+    if (created.length) {
+      stateRef.current = next;
+      setState(next);
+    }
+    return { ok: true, created };
+  }, []);
+
   const value = useMemo<Ctx>(() => {
     const gate = (s: State, cardId: string): { ok: boolean; reason?: string; reasons: string[] } => {
       const card = s.cards.find(c => c.id === cardId);
@@ -407,53 +479,13 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
       hydrated,
       role,
       setRole,
+      createFromContract,
       canAdvance: (id) => gate(state, id),
       createCard: ({ property_name, service_line }) => {
         const id = `OB-${rid()}-${Date.now()}`;
-        const now = new Date().toISOString();
-        setState((s) => {
-          const sibling = s.cards.find((c) => c.property_name.trim().toLowerCase() === property_name.trim().toLowerCase());
-          const property_id = sibling?.property_id ?? `P-${rid()}`;
-          const count = s.cards.filter((c) => c.property_id === property_id).length;
-          const card: OnboardingCard = {
-            id,
-            property_id,
-            property_name,
-            service_line,
-            external_app: externalAppFor(service_line),
-            external_ref_url: null,
-            contract_ref: `#${count + 1}`,
-            created_at: now,
-            current_stage: "new_property",
-            assigned_ae_id: "AE · Ploy",
-            assigned_specialist_id: "Specialist · Mint",
-            assigned_service_owner_id: service_line === "ORM" ? "ORM · Boss" : "Marcom · Fah",
-            billing_start_at: null,
-            billing_anchor_stage: BILLING_ANCHOR[service_line],
-            go_live_at: null,
-            meeting_record_url: null,
-            pre_service_form_ref: null,
-            form_completion_status: "not_started",
-          };
-          return {
-            ...s,
-            cards: [card, ...s.cards],
-            events: [...s.events, { id: rid(), card_id: id, stage_key: "new_property", entered_at: now, owner_track: "AE" }],
-            finalChecks: [...s.finalChecks, ...FINAL_CHECK_ITEMS.map((l) => ({ id: rid(), card_id: id, item_label: l, checked: false, checked_at: null }))],
-            handover: [
-              ...s.handover,
-              ...HANDOVER_SEED[service_line].map((l) => ({
-                id: rid(),
-                card_id: id,
-                item_label: l,
-                specialist_checked: false,
-                specialist_checked_at: null,
-                verifier_checked: false,
-                verifier_checked_at: null,
-              })),
-            ],
-          };
-        });
+        const next = insertNewCard(stateRef.current, { property_name, service_line }, id, new Date().toISOString());
+        stateRef.current = next;
+        setState(next);
         return id;
       },
       advance: (cardId, opts) => {
@@ -583,7 +615,7 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
       },
       reset: () => setState(seed()),
     };
-  }, [state, hydrated, role]);
+  }, [state, hydrated, role, createFromContract]);
 
   return <C.Provider value={value}>{children}</C.Provider>;
 }
