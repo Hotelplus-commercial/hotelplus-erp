@@ -280,7 +280,7 @@ function seed(): State {
 }
 
 
-type CardInput = { property_name: string; service_line: ServiceLine; property_id?: string; contract_ref?: string; assigned_ae_id?: string };
+type CardInput = { property_name: string; service_line: ServiceLine; property_id?: string; contract_ref?: string; assigned_ae_id?: string | undefined };
 
 /** One initializer for manual and contract-created cards, including checklist and first event. */
 function insertNewCard(s: State, input: CardInput, id: string, now: string): State {
