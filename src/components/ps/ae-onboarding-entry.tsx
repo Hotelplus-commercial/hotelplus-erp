@@ -1,9 +1,9 @@
 /* v5.3 · AE Workspace Zone 3 — per-hotel AE entry into the shared guided drawer (own-only). */
 import { ChevronDown, Search } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 
 import { Chip, Panel } from "@/components/crm/crm-ui";
-import { ServicingCardDrawer } from "@/components/ps/servicing-dashboard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -14,7 +14,7 @@ export function AeOnboardingEntry() {
   const [q, setQ] = useState("");
   const [line, setLine] = useState("all");
   const [showHanded, setShowHanded] = useState(false);
-  const [open, setOpen] = useState<{ id: string; readOnly: boolean } | null>(null);
+  const navigate = useNavigate();
 
   const mine = useMemo(
     () =>
@@ -30,8 +30,9 @@ export function AeOnboardingEntry() {
   const handed = mine.filter((c) => !AE_STAGES.has(c.current_stage));
 
   const openCard = (c: OnboardingCard, readOnly: boolean) => {
+    // v5.4: Zone 3 is a doorway — land on PS Dashboard › Pipeline, which opens the shared drawer.
     if (!readOnly) s.setRole("ae");
-    setOpen({ id: c.id, readOnly });
+    void navigate({ to: "/ps", hash: `${readOnly ? "z3-view" : "z3-work"}-${c.id}` });
   };
 
   return (
@@ -73,7 +74,6 @@ export function AeOnboardingEntry() {
           {!handed.length && <li className="p-4 text-center text-sm text-muted-foreground">ยังไม่มีการ์ดที่ส่งต่อ</li>}
         </ul>
       )}
-      <ServicingCardDrawer key={open?.id ?? "closed"} id={open?.id ?? null} readOnly={open?.readOnly ?? false} onClose={() => setOpen(null)} />
     </Panel>
   );
 }

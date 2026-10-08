@@ -48,8 +48,6 @@ import {
   monthOptions,
   propertyCards,
   teamPerformance,
-  tierAPipeline,
-  upcomingSummary,
   useMeetingMgmt,
 } from "@/lib/orm-meeting";
 
@@ -350,29 +348,6 @@ function DashboardTab() {
 
       {/* Zone 3 — v5.3 AE entry (per-hotel, shared guided drawer) */}
       <AeOnboardingEntry />
-
-      <Panel title="Tier A Meeting Pipeline" subtitle="ภาพรวมการประชุม Tier A">
-        <div>
-          <div className="rounded-xl border p-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Tier A Meeting Pipeline
-            </p>
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              {tierAPipeline.map((s) => (
-                <div key={s.label} className="rounded-lg border p-2.5">
-                  <p className="font-display text-2xl font-bold leading-none">{s.value}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{s.label}</p>
-                </div>
-              ))}
-            </div>
-            <p className="mt-3 text-sm">
-              🔜 Upcoming (ทั้งทีม): {upcomingSummary.team} โรงแรม · ของฉัน {upcomingSummary.mine}{" "}
-              โรงแรม
-            </p>
-          </div>
-        </div>
-      </Panel>
-
 
       <Panel title="Recent Flags" subtitle="Flag ล่าสุดที่เกี่ยวข้องกับคุณ">
         <ul className="flex flex-col gap-2">
