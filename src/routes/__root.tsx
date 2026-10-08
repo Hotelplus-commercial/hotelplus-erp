@@ -160,6 +160,7 @@ function RootComponent() {
           </PsBlockGroupProvider>
           </PsTemplateProvider>
           </ContractLifecycleProvider>
+          </ServicingProvider>
 
         </BdStoreProvider>
           </CrmStoreProvider>
