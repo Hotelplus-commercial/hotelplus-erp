@@ -220,10 +220,6 @@ const FINAL_CHECK_ITEMS = [
   "รูปภาพครบและตรงกับห้องพัก",
   "ข้อมูลสำหรับเปิดระบบครบถ้วน",
 ];
-const HANDOVER_SEED: Record<ServiceLine, string[]> = {
-  ORM: ["BAR rate sheet handed over", "OTA access confirmed", "Property data pack complete"],
-  MARCOM: ["Brand assets handed over", "Meta / TikTok access confirmed", "Property data pack complete"],
-};
 
 /* ---------------- v6.0 Phase 2 · ORM Handover OTA template (2-tick, PM-managed) ---------------- */
 const OTA_HANDOVER: Record<string, Record<string, string[]>> = {

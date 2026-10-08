@@ -212,7 +212,7 @@ function ChecklistSection({ card, readOnly }: { card: OnboardingCard; readOnly: 
   const [label, setLabel] = useState("");
   const owner = (stage: string) => (stage === "collect_data" ? "ae" : "service");
   const blocks = stages.map((stage) => ({ stage, items: s.checklistItems.filter((i) => i.card_id === card.id && i.stage_key === stage) })).filter((b) => b.items.length);
-  const templates = s.checklistTemplates.filter((t) => t.service_variant === card.service_variant);
+  const templates = s.checklistTemplates.filter((t) => t.service_variant === card.service_variant && !t.has_two_tick);
   return <section className="space-y-3 border-b pb-4" aria-label="Checklist">
     <p className="text-sm font-semibold">Checklist <span className="text-xs font-normal text-muted-foreground">· ไม่ล็อกการเลื่อนขั้น</span></p>
     {blocks.map(({ stage, items }) => {
@@ -229,6 +229,79 @@ function ChecklistSection({ card, readOnly }: { card: OnboardingCard; readOnly: 
       <div className="mt-2 flex flex-wrap gap-2"><Input value={stageKey} onChange={(e) => setStageKey(e.target.value)} placeholder="stage_key" className="h-8 w-36 text-xs" /><Input value={group} onChange={(e) => setGroup(e.target.value)} placeholder="กลุ่ม" className="h-8 w-28 text-xs" /><Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="รายการใหม่" className="h-8 flex-1 text-xs" /><Button size="sm" disabled={!stageKey.trim() || !label.trim()} onClick={() => { s.addTemplateItem(stageKey.trim(), card.service_variant, group.trim(), label.trim()); setLabel(""); }}>เพิ่ม</Button></div>
     </details>}
   </section>;
+}
+
+function OrmHandover({ card }: { card: OnboardingCard }) {
+  const s = useServicing();
+  const [ota, setOta] = useState<string>(OTA_CHANNELS[0]);
+  const [room, setRoom] = useState("");
+  const [tGroup, setTGroup] = useState("");
+  const [tLabel, setTLabel] = useState("");
+  const items = s.handover.filter((h) => h.card_id === card.id);
+  const creds = s.credentials.filter((c) => c.card_id === card.id);
+  const rooms = s.roomMappings.filter((m) => m.card_id === card.id);
+  const roomNames = [...new Set(rooms.map((m) => m.original_room_name))];
+  const isSpec = s.role === "specialist";
+  const otaItems = items.filter((h) => (h.ota_channel ?? "อื่นๆ") === ota);
+  const groups = [...new Set(otaItems.map((h) => h.group_label ?? ""))];
+  const doneOf = (o: string) => { const l = items.filter((h) => (h.ota_channel ?? "อื่นๆ") === o); return `${l.filter((h) => h.specialist_checked && h.verifier_checked).length}/${l.length}`; };
+  const allTicked = items.length > 0 && items.every((h) => h.specialist_checked && h.verifier_checked);
+  const credsDone = creds.length > 0 && creds.every(credentialComplete);
+  const roomsDone = rooms.length > 0 && rooms.every((m) => m.ota_room_name.trim());
+  const tmpl = s.checklistTemplates.filter((t) => t.has_two_tick && t.ota_channel === ota);
+  return <div className="space-y-4">
+    <div>
+      <h3 className="text-sm font-semibold">ORM Handover · ต้องครบ 3 ส่วนก่อน Completed</h3>
+      <div className="mt-1 flex flex-wrap gap-1.5 text-[11px]">
+        <Chip tone={allTicked ? "info" : "muted"}>{allTicked ? "✓" : "○"} OTA checklist</Chip>
+        <Chip tone={credsDone ? "info" : "muted"}>{credsDone ? "✓" : "○"} OTA Log-in</Chip>
+        <Chip tone={roomsDone ? "info" : "muted"}>{roomsDone ? "✓" : "○"} Room schema</Chip>
+      </div>
+    </div>
+    <div className="space-y-2" aria-label="OTA checklist">
+      <p className="text-xs font-medium">1 · OTA checklist · Specialist ติ๊ก แล้ว ORM ตรวจรับ</p>
+      <div className="flex flex-wrap gap-1">{OTA_CHANNELS.map((o) => <Button key={o} type="button" size="sm" variant={o === ota ? "default" : "outline"} className="h-7 text-xs" onClick={() => setOta(o)}>{o} · {doneOf(o)}</Button>)}</div>
+      <table className="w-full text-sm">
+        <thead className="text-[11px] text-muted-foreground"><tr><th className="text-left">รายการ</th><th className="w-20">Specialist</th><th className="w-20">ORM</th></tr></thead>
+        <tbody>{groups.map((g) => [
+          <tr key={`g-${g}`}><td colSpan={3} className="pt-2 text-[11px] uppercase tracking-wide text-muted-foreground">{g}</td></tr>,
+          ...otaItems.filter((h) => (h.group_label ?? "") === g).map((h) => <tr key={h.id} className="border-t">
+            <td className="py-1 text-xs">{h.item_label}</td>
+            <td className="text-center"><Checkbox aria-label={`Specialist: ${ota} ${h.item_label}`} checked={h.specialist_checked} disabled={!isSpec} onCheckedChange={() => s.toggleHandover(h.id, "specialist")} /></td>
+            <td className="text-center"><Checkbox aria-label={`ORM: ${ota} ${h.item_label}`} checked={h.verifier_checked} disabled={s.role !== "service" || !h.specialist_checked} onCheckedChange={() => s.toggleHandover(h.id, "verifier")} /></td>
+          </tr>),
+        ])}</tbody>
+      </table>
+      {s.role === "pm" && <details className="rounded-md border p-2 text-xs"><summary className="cursor-pointer font-medium">แก้แม่แบบ Handover {ota} (PM) · มีผลกับการ์ดใหม่เท่านั้น</summary>
+        <div className="mt-2 max-h-48 space-y-1 overflow-y-auto">{tmpl.map((t) => <div key={t.id} className="flex items-center gap-2"><span className="w-24 shrink-0 truncate text-muted-foreground">{t.group_label}</span><Input defaultValue={t.item_label} className="h-7 text-xs" onBlur={(e) => e.target.value.trim() && e.target.value !== t.item_label && s.renameTemplateItem(t.id, e.target.value.trim())} /><Button size="sm" variant="ghost" onClick={() => s.removeTemplateItem(t.id)}>ลบ</Button></div>)}</div>
+        <div className="mt-2 flex gap-2"><Input value={tGroup} onChange={(e) => setTGroup(e.target.value)} placeholder="กลุ่ม" className="h-7 w-28 text-xs" /><Input value={tLabel} onChange={(e) => setTLabel(e.target.value)} placeholder="รายการใหม่" className="h-7 flex-1 text-xs" /><Button size="sm" disabled={!tGroup.trim() || !tLabel.trim()} onClick={() => { s.addHandoverTemplate(ota, tGroup.trim(), tLabel.trim()); setTLabel(""); }}>เพิ่ม</Button></div>
+      </details>}
+    </div>
+    <div className="space-y-2" aria-label="OTA Log-in">
+      <p className="text-xs font-medium">2 · Provide OTA Log-in (Specialist กรอก)</p>
+      <p className="text-[11px] text-muted-foreground">{card.property_name} · Hotel ID {card.property_id}</p>
+      <div className="space-y-1">{creds.map((c) => <div key={c.id} className="grid grid-cols-[88px_1fr_1fr_64px] items-center gap-1.5">
+        <span className="text-xs">{c.ota_channel}</span>
+        <Input aria-label={`${c.ota_channel} username`} disabled={!isSpec} className="h-7 text-xs" placeholder="username" value={c.username} onChange={(e) => s.setCredential(c.id, { username: e.target.value })} />
+        <Input aria-label={`${c.ota_channel} password`} disabled={!isSpec} type="password" className="h-7 text-xs" placeholder="password" value={c.password} onChange={(e) => s.setCredential(c.id, { password: e.target.value })} />
+        <Input aria-label={`${c.ota_channel} commission`} disabled={!isSpec} className="h-7 text-xs" placeholder="%" value={c.commission} onChange={(e) => s.setCredential(c.id, { commission: e.target.value })} />
+      </div>)}</div>
+      <p className="text-[11px] text-muted-foreground">ต้นแบบเท่านั้น · ข้อมูลเก็บในเบราว์เซอร์นี้ ห้ามใส่รหัสผ่านจริง</p>
+    </div>
+    <div className="space-y-2" aria-label="Room schema">
+      <p className="text-xs font-medium">3 · Room schema · จับคู่ชื่อห้องกับ 6 OTA</p>
+      <div className="overflow-x-auto"><table className="w-full min-w-[560px] text-xs">
+        <thead className="text-[11px] text-muted-foreground"><tr><th className="text-left">ห้องเดิม</th>{OTA_CHANNELS.map((o) => <th key={o} className="text-left">{o}</th>)}<th /></tr></thead>
+        <tbody>{roomNames.map((n) => <tr key={n} className="border-t">
+          <td className="py-1 pr-1 font-medium">{n}</td>
+          {OTA_CHANNELS.map((o) => { const m = rooms.find((r) => r.original_room_name === n && r.ota_channel === o); return <td key={o} className="pr-1">{m && <Input aria-label={`${n} บน ${o}`} disabled={!isSpec} className="h-7 text-xs" value={m.ota_room_name} onChange={(e) => s.setRoomMapping(m.id, e.target.value)} />}</td>; })}
+          <td><Button aria-label={`ลบห้อง ${n}`} size="icon" variant="ghost" className="size-7" disabled={!isSpec} onClick={() => s.removeRoom(card.id, n)}><Trash2 className="size-3.5" /></Button></td>
+        </tr>)}</tbody>
+      </table></div>
+      {!roomNames.length && <p className="text-[11px] text-muted-foreground">ยังไม่มีประเภทห้อง</p>}
+      <div className="flex gap-2"><Input aria-label="ชื่อห้องเดิม" className="h-8 text-xs" value={room} onChange={(e) => setRoom(e.target.value)} placeholder="ชื่อห้องเดิม เช่น Deluxe Double" /><Button size="sm" variant="outline" disabled={!isSpec || !room.trim()} onClick={() => { s.addRoom(card.id, room); setRoom(""); }}>เพิ่มห้อง</Button></div>
+    </div>
+  </div>;
 }
 
 function ExternalAppButton({ card }: { card: OnboardingCard }) {
@@ -465,28 +538,9 @@ export function ServicingCardDrawer({ id, onClose, readOnly = false }: { id: str
           )}
 
           {card.current_stage === "approved" && (
-            <section className="rounded-lg border p-3">
-              <h3 className="text-sm font-semibold">Handover checklist · 2-tick</h3>
-              <table className="mt-2 w-full text-sm">
-                <thead className="text-[11px] text-muted-foreground">
-                  <tr><th className="text-left">Item</th><th>Specialist</th><th>Service</th><th /></tr>
-                </thead>
-                <tbody>
-                  {hand.map((h) => (
-                    <tr key={h.id} className="border-t">
-                      <td className="py-1"><Input disabled={s.role === "management"} aria-label={`รายการ ${h.item_label}`} className="h-7 text-xs" value={h.item_label} onChange={(e) => s.editHandover(h.id, e.target.value)} /></td>
-                      <td className="text-center"><Checkbox aria-label={`Specialist: ${h.item_label}`} checked={h.specialist_checked} disabled={s.role !== "specialist"} onCheckedChange={() => s.toggleHandover(h.id, "specialist")} /></td>
-                      <td className="text-center"><Checkbox aria-label={`Service: ${h.item_label}`} checked={h.verifier_checked} disabled={s.role !== "service"} onCheckedChange={() => s.toggleHandover(h.id, "verifier")} /></td>
-                      <td><Button disabled={s.role === "management"} aria-label="ลบรายการ Handover" title="ลบรายการ Handover" size="icon" variant="ghost" className="size-7" onClick={() => s.deleteHandover(h.id)}><Trash2 className="size-3.5" /></Button></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <div className="mt-2 flex gap-2">
-                <Input className="h-8 text-xs" value={newItem} onChange={(e) => setNewItem(e.target.value)} placeholder="เพิ่มรายการ" />
-                <Button size="sm" variant="outline" disabled={!newItem.trim() || s.role === "management"} onClick={() => { s.addHandover(card.id, newItem.trim()); setNewItem(""); }}>เพิ่ม</Button>
-              </div>
-              <Input aria-label="Meeting record URL" className="mt-3 h-8 text-xs" value={meetUrl} onChange={(e) => setMeetUrl(e.target.value)} placeholder="Meeting record URL (จำเป็นตอน Completed)" />
+            <section className="space-y-3 rounded-lg border p-3">
+              {card.service_variant === "ORM" ? <OrmHandover card={card} /> : <p className="text-xs text-muted-foreground">Marcom ไม่มีขั้น Handover · Specialist กด Completed พร้อมแนบลิงก์ประชุม</p>}
+              <Input aria-label="Meeting record URL" className="h-8 text-xs" value={meetUrl} onChange={(e) => setMeetUrl(e.target.value)} placeholder="Meeting record URL (จำเป็นตอน Completed)" />
             </section>
           )}
 
