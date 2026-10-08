@@ -17,3 +17,4 @@
 - Servicing cross-app links share one service-stage-only control, hydrate missing scaffold fields without replacing local data, and allow only HTTP(S) destinations; this keeps native work intact and prevents unsafe navigation.
 
 - Contract Prop Info (display stage 10, lifecycle step 11) uses the root ServicingProvider and the manual-card initializer; deduplicate by contract reference/service line before recording handoff so menu 8 reads the same cards and no legacy shadow write can double-create.
+- Service checklists are instantiated per card from PM-managed templates by service variant and never gate stage advance; keeps the two hard gates the only blockers.
