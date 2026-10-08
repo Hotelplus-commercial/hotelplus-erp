@@ -4,6 +4,8 @@
 import { Check, Circle, Lock } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useContractLifecycle, type ContractLifecycle } from "@/lib/contract-lifecycle";
@@ -42,7 +44,7 @@ function OwnerBadge({ o }: { o: Owner }) {
 function StepRow({ done, label, owner }: { done: boolean; label: string; owner: Owner }) {
   return (
     <li className="flex items-center gap-1.5 text-[11px]">
-      {done ? <Check className="size-3.5 text-success" /> : <Circle className="size-3.5 text-warning" />}
+      {done ? <Check className="size-3.5 text-success" /> : <Circle className="size-3.5 text-muted-foreground" />}
       <span className={cn("flex-1", done ? "text-foreground" : "text-muted-foreground")}>{label}</span>
       <span className="text-[10px] text-muted-foreground">{OWNER_LABEL[owner]}</span>
     </li>
@@ -78,11 +80,22 @@ function WonBadge() {
 function Card({ l }: { l: ContractLifecycle }) {
   const { setStage } = useContractLifecycle();
   const s = l.current_stage;
-  // stages 2–3 are system-automatic
-  useEffect(() => {
-    if (s < 3) setStage(l.id, 3, { notes: "Auto: Draft Contract + Request Invoice" });
-  }, [s, l.id, setStage]);
-  const go = (to: number, note: string) => setStage(l.id, to, { notes: `Test trigger: ${note}` });
+  const [line, setLine] = useState<"ORM" | "MARCOM" | "BOTH" | "">(l.contract_service_line ?? "");
+  const [identityId, setIdentityId] = useState("");
+  const [contractId, setContractId] = useState(l.contract_id ?? "");
+  const draftReady = Boolean(l.contract_id && l.contract_service_line);
+  const step = SUBSTEPS[s];
+  const go = (to: number, note: string, identity?: Parameters<typeof setStage>[2]) => setStage(l.id, to, { ...identity, notes: `Test trigger: ${note}` });
+  const suffix = l.id.replace(/^lc-/, "");
+  const captureStep = () => {
+    if (!step) return;
+    const entered = identityId.trim();
+    const identity = s === 3 ? { customer_id: entered || `CU-${suffix}` }
+      : s === 4 ? { hotel_id: entered || `H-${suffix}`, property_name: l.hotel_name }
+      : s === 5 ? { invoice_number: entered || `INV-${suffix}` } : {};
+    go(s + 1, step.label, { identity });
+    setIdentityId("");
+  };
 
   return (
     <div className="space-y-2 rounded-xl border bg-card p-3 shadow-sm">
@@ -90,22 +103,42 @@ function Card({ l }: { l: ContractLifecycle }) {
         <div className="min-w-0">
           <p className="truncate text-sm font-bold">{l.hotel_name}</p>
           <p className="font-mono text-[11px] text-muted-foreground">{l.quote_id}</p>
+          <dl className="mt-1 space-y-1 break-words text-[11px]">
+            {l.contract_id && <div><dt className="inline text-muted-foreground">Contract ID: </dt><dd className="inline font-mono">{l.contract_id}</dd><span className="ml-1 rounded bg-muted px-1 font-semibold">{l.contract_service_line ?? "—"}</span></div>}
+            {l.customer_id && <div><dt className="inline text-muted-foreground">Customer ID: </dt><dd className="inline font-mono">{l.customer_id}</dd></div>}
+            {l.hotel_id && <div><dt className="inline text-muted-foreground">Hotel ID: </dt><dd className="inline font-mono">{l.hotel_id}</dd><span className="block">{l.property_name || l.hotel_name}</span></div>}
+            {l.invoice_number && <div><dt className="inline text-muted-foreground">Invoice no.: </dt><dd className="inline font-mono">{l.invoice_number}</dd></div>}
+          </dl>
         </div>
         <OwnerBadge o={s <= 6 ? (s < 3 ? "BD" : "AC") : s === 8 ? "BD" : "AC"} />
       </div>
 
+      {!draftReady && (
+        <div className="space-y-2 border-t pt-2">
+          <Input aria-label="Contract ID" value={contractId} onChange={(e) => setContractId(e.target.value)} placeholder="Contract ID (อัตโนมัติถ้าว่าง)" className="h-8 text-xs" />
+          <Select value={line} onValueChange={(value) => { if (value === "ORM" || value === "MARCOM" || value === "BOTH") setLine(value); }}>
+            <SelectTrigger aria-label="Contract service line" className="h-8 w-full"><SelectValue placeholder="เลือกบริการของสัญญา" /></SelectTrigger>
+            <SelectContent><SelectItem value="ORM">ORM</SelectItem><SelectItem value="MARCOM">MARCOM</SelectItem><SelectItem value="BOTH">BOTH</SelectItem></SelectContent>
+          </Select>
+          <Button size="sm" variant="outline" className="w-full" disabled={!line} onClick={() => {
+            if (!line) return;
+            go(Math.max(s, 3), "Draft Contract + Request Invoice", { identity: { contract_id: contractId.trim() || `CT-${line}-${suffix}`, contract_service_line: line } });
+          }}>Draft Contract</Button>
+        </div>
+      )}
       {s <= 6 && (
         <>
           <p className="text-[11px] font-semibold text-muted-foreground">Progress {Math.max(s, 3)}/7</p>
           <ul className="space-y-1">
             {SUBSTEPS.map((st, i) => (
-              <StepRow key={st.label} done={i + 1 <= Math.max(s, 3)} label={st.label} owner={st.owner} />
+              <StepRow key={st.label} done={i === 1 ? draftReady : i + 1 <= s} label={st.label} owner={st.owner} />
             ))}
           </ul>
-          {s >= 3 && s < 6 && (
-            <Button size="sm" variant="outline" className="w-full" onClick={() => go(s + 1, SUBSTEPS[s]!.label)}>
-              {SUBSTEPS[s]!.btn}
-            </Button>
+          {s >= 3 && s < 6 && step && (
+            <div className="space-y-2">
+              <Input key={s} aria-label={s === 3 ? "Customer ID" : s === 4 ? "Hotel ID" : "Invoice number"} value={identityId} onChange={(e) => setIdentityId(e.target.value)} placeholder={`${s === 3 ? "Customer ID" : s === 4 ? "Hotel ID" : "Invoice no."} (อัตโนมัติถ้าว่าง)`} className="h-8 text-xs" />
+              <Button size="sm" variant="outline" className="w-full" disabled={!draftReady} onClick={captureStep}>{step.btn}</Button>
+            </div>
           )}
           {s === 6 ? (
             <Button size="sm" className="w-full" onClick={() => go(7, "Live Link Sent")}>ส่ง Live Link</Button>
@@ -121,7 +154,7 @@ function Card({ l }: { l: ContractLifecycle }) {
 
       {s === 7 && (
         <>
-          <p className="text-xs text-warning-foreground">รอลูกค้าเซ็น</p>
+          <p className="text-xs text-muted-foreground">รอลูกค้าเซ็น</p>
           <Button size="sm" className="w-full" onClick={() => go(8, "Contract Signed")}>ยืนยันลูกค้าเซ็น (Contract Signed)</Button>
         </>
       )}
@@ -129,7 +162,7 @@ function Card({ l }: { l: ContractLifecycle }) {
       {s === 8 && (
         <>
           <p className="text-xs">เซ็นแล้ว · รอชำระเงิน</p>
-          <p className="rounded bg-warning/20 px-2 py-1 text-[11px] font-semibold text-warning-foreground">⚠ เซ็นแล้ว ≠ Won</p>
+          <p className="rounded bg-muted px-2 py-1 text-[11px] font-semibold text-muted-foreground">⚠ เซ็นแล้ว ≠ Won</p>
           <Button size="sm" className="w-full" onClick={() => go(9, "Payment Complete")}>Payment Complete</Button>
         </>
       )}

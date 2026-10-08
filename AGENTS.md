@@ -14,3 +14,5 @@
 - Servicing role flags are workflow simulation only, not authentication or authorization; do not treat them as production security.
 - Servicing remains a browser-local prototype until authenticated shared persistence is explicitly scoped; Cloud activation alone does not migrate workflow data.
 - Servicing cross-app links share one service-stage-only control, hydrate missing scaffold fields without replacing local data, and allow only HTTP(S) destinations; this keeps native work intact and prevents unsafe navigation.
+
+- Contract Prop Info (display stage 10, lifecycle step 11) uses the root ServicingProvider and the manual-card initializer; deduplicate by contract reference/service line before recording handoff so menu 8 reads the same cards and no legacy shadow write can double-create.
