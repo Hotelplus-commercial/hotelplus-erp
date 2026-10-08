@@ -13,6 +13,6 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [x] Verify fallback navigation, new-tab destination links and unchanged native work.
 
 # Contract Dashboard Fix 01
-- [ ] Capture and display contract/service, customer, hotel and invoice identities in existing sub-process.
-- [ ] Replace dormant handoff with idempotent Prop Info creation in the menu-8 store using manual-create defaults.
-- [ ] Verify ORM, Marcom, BOTH, missing-input guard, persistence and normal guided work.
+- [x] Capture and display contract/service, customer, hotel and invoice identities in existing sub-process.
+- [x] Replace dormant handoff with idempotent Prop Info creation in the menu-8 store using manual-create defaults.
+- [x] Verify ORM, Marcom, BOTH, missing-input guard, persistence and normal guided work.
