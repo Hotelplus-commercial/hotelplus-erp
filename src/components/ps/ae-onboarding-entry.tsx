@@ -1,6 +1,6 @@
 /* v5.3 · AE Workspace Zone 3 — per-hotel AE entry into the shared guided drawer (own-only). */
 import { ChevronDown, Search } from "lucide-react";
-import { useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 
 import { Chip, Panel } from "@/components/crm/crm-ui";
@@ -14,7 +14,6 @@ export function AeOnboardingEntry() {
   const [q, setQ] = useState("");
   const [line, setLine] = useState("all");
   const [showHanded, setShowHanded] = useState(false);
-  const navigate = useNavigate();
 
   const mine = useMemo(
     () =>
@@ -29,10 +28,9 @@ export function AeOnboardingEntry() {
   const actionable = mine.filter((c) => AE_STAGES.has(c.current_stage));
   const handed = mine.filter((c) => !AE_STAGES.has(c.current_stage));
 
-  const openCard = (c: OnboardingCard, readOnly: boolean) => {
-    // v5.4: Zone 3 is a doorway — land on PS Dashboard › Pipeline, which opens the shared drawer.
+  const openCard = (readOnly: boolean) => {
+    // Zone 3 lands on menu 8's existing Pipeline; only the shared drawer advances stages.
     if (!readOnly) s.setRole("ae");
-    void navigate({ to: "/ps", hash: `${readOnly ? "z3-view" : "z3-work"}-${c.id}` });
   };
 
   return (
@@ -58,7 +56,7 @@ export function AeOnboardingEntry() {
     >
       <ul className="divide-y rounded-lg border">
         {actionable.map((c) => (
-          <Row key={c.id} card={c} filled={false} cta="ทำต่อ →" onClick={() => openCard(c, false)} />
+          <Row key={c.id} card={c} filled={false} cta="ทำต่อ →" onClick={() => openCard(false)} />
         ))}
         {!actionable.length && <li className="p-4 text-center text-sm text-muted-foreground">ไม่มีโรงแรมที่รอ AE ดำเนินการ</li>}
       </ul>
@@ -69,7 +67,7 @@ export function AeOnboardingEntry() {
       {showHanded && (
         <ul className="mt-2 divide-y rounded-lg border">
           {handed.map((c) => (
-            <Row key={c.id} card={c} filled cta="ดูสถานะ" onClick={() => openCard(c, true)} />
+            <Row key={c.id} card={c} filled cta="ดูสถานะ" onClick={() => openCard(true)} />
           ))}
           {!handed.length && <li className="p-4 text-center text-sm text-muted-foreground">ยังไม่มีการ์ดที่ส่งต่อ</li>}
         </ul>
@@ -84,7 +82,7 @@ function Row({ card, filled, cta, onClick }: { card: OnboardingCard; filled: boo
       <span className="min-w-[10rem] flex-1 font-medium">🏨 {card.property_name}</span>
       <Chip tone={card.service_line === "ORM" ? "info" : "muted"}>{card.service_line === "ORM" ? "ORM" : "Marcom"}</Chip>
       <span className="min-w-[11rem] text-muted-foreground">{filled ? "●" : "○"} {STAGE_LABEL[card.current_stage]} · Day {currentDay(card)}</span>
-      <Button size="sm" variant={filled ? "ghost" : "outline"} onClick={onClick}>{cta}</Button>
+      <Button asChild size="sm" variant={filled ? "ghost" : "outline"}><Link to="/ps/onboarding-process" hash={`${filled ? "z3-view" : "z3-work"}-${card.id}`} onClick={onClick}>{cta}</Link></Button>
     </li>
   );
 }
