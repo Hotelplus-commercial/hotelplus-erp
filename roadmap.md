@@ -30,4 +30,4 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 
 ## v6.0 Servicing (variants + checklists)
 - [x] Phase 1: service variants, new service stages, checklist templates/items (non-gating, PM edits), ORM|Marcom toggle, dept badges, AE Collect-Data checklist
-- [ ] Phase 2: ORM Handover OTA 2-tick + credentials + room schema gate — waiting on Head of Commercial approval
+- [x] Phase 2: ORM Handover OTA 2-tick + credentials + room schema gate — waiting on Head of Commercial approval
