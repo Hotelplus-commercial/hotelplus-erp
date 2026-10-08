@@ -1,7 +1,11 @@
 /* PS App v2.2 · Fix 2 — Contract Lifecycle (11 stages) + audit trail.
  * Rows are auto-created from approved BD quotes; AC App and Live Link stages are
  * mocked until those integrations land, so users advance them via testing mode. */
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, useRef, type ReactNode } from "react";
+
+import { toast } from "sonner";
+import { useNavigate } from "@tanstack/react-router";
+import { useServicing } from "@/lib/ps-servicing";
 
 import { useBd, type BdQuote } from "@/lib/bd-store";
 import type { PropertyCard } from "@/lib/orm-meeting";
@@ -35,7 +39,11 @@ export type ContractLifecycle = {
   id: string;
   quote_id: string;
   contract_id: string | null;
-  hotel_id: string;
+  contract_service_line: "ORM" | "MARCOM" | "BOTH" | null;
+  customer_id: string | null;
+  invoice_number: string | null;
+  property_name: string | null;
+  hotel_id: string | null;
   hotel_name: string;
   customer_legal_name: string;
   service_line: "ORM" | "MARCOM" | "PROD" | "PP";
@@ -79,8 +87,12 @@ const rid = () => Math.random().toString(36).slice(2, 10);
 const fromQuote = (q: BdQuote, stage: number, extra: Partial<ContractLifecycle> = {}): ContractLifecycle => ({
   id: `lc-${q.quote_id}`,
   quote_id: q.quote_id,
-  contract_id: q.contract_codes?.[0] ?? null,
-  hotel_id: `H-${q.quote_id.slice(-4)}`,
+  contract_id: null,
+  contract_service_line: null,
+  customer_id: null,
+  invoice_number: null,
+  hotel_id: null,
+  property_name: null,
   hotel_name: q.hotel_name,
   customer_legal_name: `บริษัท ${q.hotel_name} จำกัด`,
   service_line: q.type === "MARCOM" ? "MARCOM" : "ORM",
@@ -98,7 +110,7 @@ type Ctx = {
   hydrated: boolean;
   lifecycles: ContractLifecycle[];
   history: StageHistory[];
-  setStage: (id: string, to: number, opts?: { manual?: boolean; notes?: string }) => void;
+  setStage: (id: string, to: number, opts?: { manual?: boolean; notes?: string; identity?: Partial<Pick<ContractLifecycle, "contract_id" | "contract_service_line" | "customer_id" | "hotel_id" | "property_name" | "invoice_number">> }) => void;
   sendToAc: (id: string) => void;
   resendLiveLink: (id: string) => void;
   liveLinkUrl: (l: ContractLifecycle) => string;
@@ -110,6 +122,9 @@ const C = createContext<Ctx | null>(null);
 
 export function ContractLifecycleProvider({ children }: { children: ReactNode }) {
   const { quotes, hydrated: bdHydrated } = useBd();
+  const servicing = useServicing();
+  const navigate = useNavigate();
+  const attempted = useRef(new Set<string>());
   const [lifecycles, setLifecycles] = useState<ContractLifecycle[]>([]);
   const [history, setHistory] = useState<StageHistory[]>([]);
   const [hydrated, setHydrated] = useState(false);
@@ -119,7 +134,14 @@ export function ContractLifecycleProvider({ children }: { children: ReactNode })
       const raw = localStorage.getItem(KEY);
       if (raw) {
         const p = JSON.parse(raw) as { lifecycles: ContractLifecycle[]; history: StageHistory[] };
-        setLifecycles(p.lifecycles ?? []);
+        setLifecycles((p.lifecycles ?? []).map((l) => ({
+          ...l,
+          contract_service_line: l.contract_service_line ?? null,
+          customer_id: l.customer_id ?? null,
+          invoice_number: l.invoice_number ?? null,
+          property_name: l.property_name ?? null,
+          hotel_id: l.hotel_id ?? null,
+        })));
         setHistory(p.history ?? []);
       }
     } catch {
@@ -175,6 +197,34 @@ export function ContractLifecycleProvider({ children }: { children: ReactNode })
     console.info("[StageHistory]", entry);
   };
 
+  const handoff = (l: ContractLifecycle) => {
+    const result = servicing.createFromContract({
+      deal_id: l.id, contract_id: l.contract_id, contract_service_line: l.contract_service_line,
+      hotel_id: l.hotel_id, property_name: l.property_name || l.hotel_name, assigned_ae_id: l.bd_owner_id,
+    });
+    if (!result.ok) {
+      toast("ยังสร้างการ์ด On-boarding ไม่ได้ — ขาด Contract ID / service line หรือ Hotel ID (ตั้งค่าในขั้น sub-process ก่อน)");
+      return false;
+    }
+    if (result.created.length) {
+      toast.success(`สร้างการ์ด On-boarding แล้ว: ${l.contract_service_line === "BOTH" ? "ORM และ Marcom" : l.contract_service_line === "MARCOM" ? "Marcom" : "ORM"} — ${l.property_name || l.hotel_name}`, {
+        action: { label: "On-boarding Process", onClick: () => { void navigate({ to: "/ps/onboarding-process", hash: `servicing-card-${result.created[0]}` }); } },
+      });
+    }
+    return true;
+  };
+
+  // Catch Prop Info entry from population/restoration as well as setStage, without parallel legacy writes.
+  useEffect(() => {
+    if (!hydrated || !servicing.hydrated) return;
+    for (const l of lifecycles) {
+      if (l.current_stage !== 11 || attempted.current.has(l.id)) continue;
+      attempted.current.add(l.id);
+      const ok = handoff(l);
+      setLifecycles((prev) => prev.map((row) => row.id === l.id ? { ...row, handed_off_to_onboarding: ok, ...(ok ? { handed_off_at: row.handed_off_at ?? new Date().toISOString() } : {}) } : row));
+    }
+  }, [hydrated, servicing.hydrated, lifecycles]);
+
   const value = useMemo<Ctx>(
     () => ({
       hydrated,
@@ -202,24 +252,24 @@ export function ContractLifecycleProvider({ children }: { children: ReactNode })
         })),
       historyOf: (id) => history.filter((h) => h.lifecycle_id === id),
       liveLinkUrl: (l) => `${typeof window === "undefined" ? "" : window.location.origin}/l/${l.live_link_token ?? l.quote_id}`,
-      setStage: (id, to, opts) =>
-        setLifecycles((prev) =>
-          prev.map((l) => {
-            if (l.id !== id) return l;
-            log(l, to, opts?.manual ?? false, opts?.notes ?? null);
-            return {
-              ...l,
-              current_stage: to,
-              updated_at: new Date().toISOString(),
-              live_link_token: to >= 7 ? (l.live_link_token ?? rid()) : l.live_link_token,
-              live_link_sent_at: to === 7 ? new Date().toISOString() : l.live_link_sent_at,
-              /* Prop Info (11) → hand off once to On-boarding "New Property" */
-              ...(to === 11 && !l.handed_off_to_onboarding
-                ? { handed_off_to_onboarding: true, handed_off_at: new Date().toISOString() }
-                : {}),
-            };
-          }),
-        ),
+      setStage: (id, to, opts) => {
+        const current = lifecycles.find((l) => l.id === id);
+        if (!current) return;
+        const l = { ...current, ...opts?.identity };
+        const now = new Date().toISOString();
+        // Visible Stage 10 Prop Info maps to lifecycle step 11; do not renumber the matrix.
+        const enteringPropInfo = to === 11;
+        const handedOff = enteringPropInfo ? handoff(l) : l.handed_off_to_onboarding;
+        if (enteringPropInfo) attempted.current.add(id);
+        log(current, to, opts?.manual ?? false, opts?.notes ?? null);
+        setLifecycles((prev) => prev.map((row) => row.id !== id ? row : {
+          ...row, ...opts?.identity,
+          current_stage: to, updated_at: now,
+          live_link_token: to >= 7 ? (row.live_link_token ?? rid()) : row.live_link_token,
+          live_link_sent_at: to === 7 ? now : row.live_link_sent_at,
+          ...(enteringPropInfo ? { handed_off_to_onboarding: handedOff, ...(handedOff ? { handed_off_at: row.handed_off_at ?? now } : {}) } : {}),
+        }));
+      },
       sendToAc: (id) =>
         setLifecycles((prev) =>
           prev.map((l) => {
@@ -237,7 +287,7 @@ export function ContractLifecycleProvider({ children }: { children: ReactNode })
           }),
         ),
     }),
-    [hydrated, lifecycles, history],
+    [hydrated, lifecycles, history, servicing.createFromContract, navigate],
   );
 
   return <C.Provider value={value}>{children}</C.Provider>;
