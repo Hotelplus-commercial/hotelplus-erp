@@ -487,11 +487,12 @@ function seed(): State {
 }
 
 
-type CardInput = { property_name: string; service_line: ServiceLine; property_id?: string; contract_ref?: string; assigned_ae_id?: string | undefined };
+type CardInput = { property_name: string; service_line: ServiceLine; service_variant?: ServiceVariant; property_id?: string; contract_ref?: string; assigned_ae_id?: string | undefined };
 
 /** One initializer for manual and contract-created cards, including checklist and first event. */
 function insertNewCard(s: State, input: CardInput, id: string, now: string): State {
   const { property_name, service_line } = input;
+  const service_variant: ServiceVariant = input.service_variant ?? (service_line === "ORM" ? "ORM" : "MARCOM_META_TIKTOK");
   const sibling = s.cards.find((c) => c.property_name.trim().toLowerCase() === property_name.trim().toLowerCase());
   const property_id = input.property_id ?? sibling?.property_id ?? `P-${rid()}`;
   const count = s.cards.filter((c) => c.property_id === property_id).length;
@@ -500,6 +501,7 @@ function insertNewCard(s: State, input: CardInput, id: string, now: string): Sta
             property_id,
             property_name,
             service_line,
+            service_variant,
             external_app: externalAppFor(service_line),
             external_ref_url: null,
             contract_ref: input.contract_ref ?? `#${count + 1}`,
@@ -509,7 +511,7 @@ function insertNewCard(s: State, input: CardInput, id: string, now: string): Sta
             assigned_specialist_id: "Specialist · Mint",
             assigned_service_owner_id: service_line === "ORM" ? "ORM · Boss" : "Marcom · Fah",
             billing_start_at: null,
-            billing_anchor_stage: BILLING_ANCHOR[service_line],
+            billing_anchor_stage: BILLING_ANCHOR_VARIANT[service_variant],
             go_live_at: null,
             meeting_record_url: null,
             pre_service_form_ref: null,
@@ -518,6 +520,7 @@ function insertNewCard(s: State, input: CardInput, id: string, now: string): Sta
           return {
             ...s,
             cards: [card, ...s.cards],
+            checklistItems: [...s.checklistItems, ...instantiateChecklist(id, service_variant, s.checklistTemplates)],
             events: [...s.events, { id: rid(), card_id: id, stage_key: "new_property", entered_at: now, owner_track: "AE" }],
             finalChecks: [...s.finalChecks, ...FINAL_CHECK_ITEMS.map((l) => ({ id: rid(), card_id: id, item_label: l, checked: false, checked_at: null }))],
             handover: [
@@ -600,7 +603,7 @@ type Ctx = State & {
 const C = createContext<Ctx | null>(null);
 
 export function ServicingProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<State>(() => ({ cards: [], events: [], finalChecks: [], handover: [], handoverSurveys: [], customerSurveys: [] }));
+  const [state, setState] = useState<State>(() => ({ cards: [], events: [], finalChecks: [], handover: [], handoverSurveys: [], customerSurveys: [], checklistTemplates: CHECKLIST_TEMPLATE_SEED, checklistItems: [] }));
   const stateRef = useRef(state);
   stateRef.current = state;
   const [role, setRole] = useState<Role>("specialist");
@@ -661,7 +664,7 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
     const gate = (s: State, cardId: string): { ok: boolean; reason?: string; reasons: string[] } => {
       const card = s.cards.find(c => c.id === cardId);
       if (!card) return { ok: false, reason: "ไม่พบการ์ด", reasons: ["ไม่พบการ์ด"] };
-      const nxt = nextStage(card.service_line, card.current_stage);
+      const nxt = nextStage(card.service_variant, card.current_stage);
       const reasons: string[] = [];
       if (!nxt) reasons.push("Go Live แล้ว");
       else if (nxt === "approved") {
@@ -702,7 +705,7 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
         const card = state.cards.find(c => c.id === cardId);
         if (!card) return { ok: false, error: "ไม่พบการ์ด" };
         const g = gate(state, cardId);
-        const nxt = nextStage(card.service_line, card.current_stage);
+        const nxt = nextStage(card.service_variant, card.current_stage);
         const to = opts?.to ?? nxt;
         const pending = to === "property_pending" && card.current_stage === "collect_data" && role === "ae";
         if (!pending && to !== nxt) return { ok: false, error: "ดำเนินการได้เฉพาะขั้นถัดไป" };

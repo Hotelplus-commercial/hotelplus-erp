@@ -172,7 +172,7 @@ function WorkLink({ card, onOpen, label = "ดูรายละเอียด�
 /** View-only board: never advances a stage — advancing happens only inside ServicingCardDrawer. */
 function CondensedPipeline({ cards, onOpen }: { cards: OnboardingCard[]; onOpen: (id: string) => void }) {
   const [expanded, setExpanded] = useState<string | null>(null);
-  const stages = [...new Set([...fullSequence("ORM"), ...fullSequence("MARCOM")])];
+  const stages = [...new Set([...fullSequence("ORM"), ...fullSequence("MARCOM_META_TIKTOK")])];
   return <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{stages.map((stage) => {
     const stageCards = cards.filter((card) => card.current_stage === stage);
     const sample = stageCards[0];
@@ -235,7 +235,7 @@ function FullPipeline({ onOpen, focusStage, landingKey }: { onOpen: (id: string)
     });
     return () => cancelAnimationFrame(frame);
   }, [focusStage, landingKey]);
-  const sequence = [...new Set(s.cards.flatMap((card) => fullSequence(card.service_line)))];
+  const sequence = [...new Set(s.cards.flatMap((card) => fullSequence(card.service_variant)))];
   const cards = s.cards.filter((card) => (!q || `${card.property_name} ${card.contract_ref}`.toLowerCase().includes(q.toLowerCase())) && (line === "all" || card.service_line === line) && (!mineOnly || card.assigned_ae_id === CURRENT_AE));
   return <div className="space-y-3"><div className="flex flex-wrap gap-2"><div className="relative min-w-[14rem] flex-1"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input value={q} onChange={(event) => setQ(event.target.value)} placeholder="ค้นหาการ์ดบริการ" className="pl-9" /></div><Select value={line} onValueChange={setLine}><SelectTrigger className="w-40"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">ทุกบริการ</SelectItem><SelectItem value="ORM">ORM</SelectItem><SelectItem value="MARCOM">Marcom</SelectItem></SelectContent></Select><Button size="sm" variant={mineOnly ? "default" : "outline"} className="h-9 rounded-full" aria-pressed={mineOnly} onClick={() => setMineOnly((value) => !value)}>ของฉัน</Button></div><div className="overflow-x-auto pb-2"><div className="flex min-w-max gap-3">{sequence.map((stage) => { const stageCards = cards.filter((card) => card.current_stage === stage); return <div key={stage} id={`servicing-stage-${stage}`} data-focused={focusStage === stage} className="w-[280px] shrink-0 rounded-lg border bg-card p-3"><div className="flex items-center justify-between gap-2"><p className="text-sm font-semibold">{STAGE_LABEL[stage]}</p><Chip tone="muted">{stageCards.length}</Chip></div><p className="mt-1 text-xs text-muted-foreground">Owner: {stageCards[0] ? TRACK_LABEL[trackForStage(stageCards[0], stage)] : "—"}</p><div className="mt-3 space-y-2">{stageCards.map((card) => <Button key={card.id} variant="ghost" onClick={() => onOpen(card.id)} className="h-auto min-h-16 w-full justify-start rounded-md border px-3 py-2 text-left"><span className="min-w-0"><span className="block truncate text-sm font-medium">{card.property_name}</span><span className="mt-1 block text-xs text-muted-foreground">{card.service_line} · Day {currentDay(card)}</span></span></Button>)}{!stageCards.length && <p className="rounded-md border border-dashed p-4 text-center text-xs text-muted-foreground">ว่าง</p>}</div></div>; })}</div></div><div className="rounded-lg border"><div className="border-b px-4 py-3"><p className="text-sm font-semibold">History</p><p className="text-xs text-muted-foreground">เหตุการณ์ล่าสุดจากการทำงานในระบบ</p></div><div className="divide-y">{[...s.events].sort((a, b) => b.entered_at.localeCompare(a.entered_at)).slice(0, 12).map((event) => { const card = s.cards.find((item) => item.id === event.card_id); return <div key={event.id} className="flex flex-wrap items-center gap-3 px-4 py-2 text-sm"><span className="min-w-[10rem] font-medium">{card?.property_name}</span><Chip tone="muted">{card?.service_line}</Chip><span className="flex-1">{STAGE_LABEL[event.stage_key]}</span><span className="font-mono text-xs text-muted-foreground">{fmtDayMon(event.entered_at)} · Day {card ? daysBetween(card.created_at, event.entered_at) : "—"}</span></div>; })}</div></div></div>;
 }
@@ -339,10 +339,10 @@ export function ServicingCardDrawer({ id, onClose, readOnly = false }: { id: str
   const [showHistory, setShowHistory] = useState(false);
   if (!card) return null;
 
-  const nxt = nextStage(card.service_line, card.current_stage);
+  const nxt = nextStage(card.service_variant, card.current_stage);
   const gate = s.canAdvance(card.id);
   const missing = [...(nxt ? gate.reasons ?? [] : []), ...(nxt === "completed" && !/^https?:\/\//.test(meetUrl.trim()) ? ["Specialist: ใส่ลิงก์ Meeting record (http/https)"] : [])];
-  const sequence = fullSequence(card.service_line);
+  const sequence = fullSequence(card.service_variant);
   const future = sequence.slice(sequence.indexOf(card.current_stage === "property_pending" ? "collect_data" : card.current_stage) + 1);
   const finals = s.finalChecks.filter((f) => f.card_id === card.id);
   const hand = s.handover.filter((h) => h.card_id === card.id);
