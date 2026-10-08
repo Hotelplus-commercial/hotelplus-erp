@@ -23,6 +23,7 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [x] PS Dashboard pipeline spans new_property→go_live; drill-down opens drawer read-only.
 
 # Servicing v5.4 Phase 1 — AE Workspace surface patch
-- [x] PS Dashboard Pipeline accepts Zone 3 card deep-link (auto-expand stage, auto-open drawer, role-aware actionable) + ของฉัน chip (default off).
-- [x] Zone 3 ทำต่อ/ดูสถานะ navigate to PS Dashboard Pipeline; back-link ← กลับงานของฉัน (Zone 3).
+- [ ] Menu 8 Pipeline accepts Zone 3 card deep-link, reveals current stage and opens shared drawer; ของฉัน default off and contextual back-link.
+- [ ] Zone 3 ทำต่อ/ดูสถานะ navigate to menu 8; restore PS Dashboard v5.3 read-only monitoring.
 - [x] Tier A Meeting Pipeline card + mock removed.
+- [ ] Verify actionable/read-only arrivals, close/stage focus, mine filter, normal sidebar entry, AE reachability and unchanged My Day.
