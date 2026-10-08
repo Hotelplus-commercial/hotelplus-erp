@@ -16,3 +16,8 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [x] Capture and display contract/service, customer, hotel and invoice identities in existing sub-process.
 - [x] Replace dormant handoff with idempotent Prop Info creation in the menu-8 store using manual-create defaults.
 - [x] Verify ORM, Marcom, BOTH, missing-input guard, persistence and normal guided work.
+# Servicing v5.3 Phase 1 — Surface Consolidation
+- [x] One role-aware guided drawer shared by every entry point (owner role unlocks CTA; PM fallback for Approve only).
+- [x] Zone 3 → per-hotel AE entry (own-only; ส่งต่อแล้ว read-only group); Zone 3 menu-8 link removed.
+- [x] Property Info tab → status chips + เปิดการ์ด On-boarding (board removed); My Tasks onboarding opens drawer.
+- [x] PS Dashboard pipeline spans new_property→go_live; drill-down opens drawer read-only.

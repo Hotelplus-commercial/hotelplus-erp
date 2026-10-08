@@ -9,7 +9,7 @@
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
 
-- Servicing uses two existing surfaces: PS Dashboard is view-only monitoring after Contract Overview, while On-boarding Process owns creation and guided work; this prevents duplicate actions.
+- Servicing has one data store and one role-aware guided drawer (ServicingCardDrawer); every surface (AE Zone 3, Property Info, My Tasks, menu 8, PS Dashboard read-only) opens that drawer instead of its own board, so work is never duplicated.
 - Servicing stage events are append-only and created by gated in-app actions; historical demo data remains separate from live action timestamps.
 - Servicing role flags are workflow simulation only, not authentication or authorization; do not treat them as production security.
 - Servicing remains a browser-local prototype until authenticated shared persistence is explicitly scoped; Cloud activation alone does not migrate workflow data.

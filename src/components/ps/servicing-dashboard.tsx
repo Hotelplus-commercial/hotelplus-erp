@@ -89,7 +89,7 @@ function ServicingWorkSurface() {
           </div>
         </div>
         {!s.hydrated ? <p className="py-6 text-muted-foreground">กำลังโหลด…</p> : <FullPipeline onOpen={setOpenCard} />}
-      <DetailSheet key={openCard ?? "closed"} id={openCard} onClose={() => setOpenCard(null)} />
+      <ServicingCardDrawer key={openCard ?? "closed"} id={openCard} onClose={() => setOpenCard(null)} />
       <CreateDialog open={creating} onClose={() => setCreating(false)} onCreated={setOpenCard} />
     </section>
   );
@@ -102,6 +102,7 @@ function ServicingMonitor() {
   const [line, setLine] = useState("all");
   const [status, setStatus] = useState("all");
   const [compare, setCompare] = useState<string | null>(null);
+  const [openCard, setOpenCard] = useState<string | null>(null);
   const filtered = useMemo(() => s.cards.filter((card) => {
     const term = q.trim().toLowerCase();
     const bucket = card.go_live_at ? "live" : AE_TRACK_STAGES.has(card.current_stage) ? "ae" : "servicing";
@@ -138,25 +139,26 @@ function ServicingMonitor() {
         <TabsList className="grid h-auto w-full grid-cols-2 sm:w-fit sm:grid-cols-4">
           <TabsTrigger value="pipeline">Pipeline</TabsTrigger><TabsTrigger value="tracking">Tracking</TabsTrigger><TabsTrigger value="disparity">Disparity</TabsTrigger><TabsTrigger value="kpi">KPI #4</TabsTrigger>
         </TabsList>
-        <TabsContent value="pipeline"><CondensedPipeline cards={filtered} /></TabsContent>
-        <TabsContent value="tracking"><TrackingView cards={filtered} onCompare={setCompare} /></TabsContent>
+        <TabsContent value="pipeline"><CondensedPipeline cards={filtered} onOpen={setOpenCard} /></TabsContent>
+        <TabsContent value="tracking"><TrackingView cards={filtered} onCompare={setCompare} onOpen={setOpenCard} /></TabsContent>
         <TabsContent value="disparity"><div className="divide-y rounded-lg border px-4">{siblings.map((cards) => <div key={cards[0]?.property_id} className="flex flex-wrap items-center justify-between gap-2 py-3"><span className="text-sm font-medium">{cards[0]?.property_name}</span><div className="flex items-center gap-2"><DisparityBadge cards={cards} /><Button size="sm" variant="ghost" onClick={() => { const id = cards[0]?.property_id; if (id) setCompare(id); }}>Compare</Button></div></div>)}{!siblings.length && <p className="py-8 text-center text-sm text-muted-foreground">ไม่มีโรงแรมหลายบริการในผลลัพธ์นี้</p>}</div></TabsContent>
         <TabsContent value="kpi"><KpiView cards={filtered} /></TabsContent>
       </Tabs>
       <CompareDialog propertyId={compare} onClose={() => setCompare(null)} />
+      <ServicingCardDrawer key={openCard ?? "closed"} id={openCard} readOnly onClose={() => setOpenCard(null)} />
     </section>
   );
 }
 
 const AE_TRACK_STAGES = new Set(["new_property", "introduction_sent_form", "collect_data", "property_pending", "final_check"]);
 
-function WorkLink({ card, label = "View details" }: { card: OnboardingCard; label?: string }) {
-  return <Button asChild size="sm" variant="ghost"><Link to="/ps/onboarding-process" hash={`servicing-card-${card.id}`}>{label} <ArrowRight className="size-3.5" /></Link></Button>;
+function WorkLink({ card, onOpen, label = "ดูรายละเอียดเพิ่มเติม" }: { card: OnboardingCard; onOpen: (id: string) => void; label?: string }) {
+  return <Button size="sm" variant="ghost" onClick={() => onOpen(card.id)}>{label} <ArrowRight className="size-3.5" /></Button>;
 }
 
-function CondensedPipeline({ cards }: { cards: OnboardingCard[] }) {
+function CondensedPipeline({ cards, onOpen }: { cards: OnboardingCard[]; onOpen: (id: string) => void }) {
   const [expanded, setExpanded] = useState<string | null>(null);
-  const stages = [...new Set(cards.map((card) => card.current_stage))];
+  const stages = [...new Set([...fullSequence("ORM"), ...fullSequence("MARCOM")])];
   return <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{stages.map((stage) => {
     const stageCards = cards.filter((card) => card.current_stage === stage);
     const sample = stageCards[0];
@@ -168,10 +170,10 @@ function CondensedPipeline({ cards }: { cards: OnboardingCard[] }) {
       {expanded === stage ? <div className="mt-3 divide-y">{stageCards.map((card) => <div key={card.id} className="space-y-2 py-3">
         <p className="text-sm font-medium">{card.property_name} · {card.service_line}</p>
         <p className="text-xs text-muted-foreground">{STAGE_LABEL[card.current_stage]} · {trackForStage(card, stage) === "SERVICE" ? card.assigned_service_owner_id : TRACK_LABEL[trackForStage(card, stage)]}</p>
-        <div className="flex flex-wrap gap-2"><WorkLink card={card} /><ExternalAppButton card={card} /></div>
-      </div>)}</div> : sample && <div className="mt-3 flex justify-end"><WorkLink card={sample} /></div>}
+        <div className="flex flex-wrap gap-2"><WorkLink card={card} onOpen={onOpen} /><ExternalAppButton card={card} /></div>
+      </div>)}</div> : sample && <div className="mt-3 flex justify-end"><WorkLink card={sample} onOpen={onOpen} /></div>}
     </div>;
-  })}{!stages.length && <p className="col-span-full rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">ไม่พบการ์ด</p>}</div>;
+  })}{!cards.length && <p className="col-span-full rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">ไม่พบการ์ด</p>}</div>;
 }
 
 function ExternalAppButton({ card }: { card: OnboardingCard }) {
@@ -191,9 +193,9 @@ function ExternalAppButton({ card }: { card: OnboardingCard }) {
   }}>Open in {name} App <ExternalLink className="size-3.5" /></Button>;
 }
 
-function TrackingView({ cards, onCompare }: { cards: OnboardingCard[]; onCompare: (id: string) => void }) {
+function TrackingView({ cards, onCompare, onOpen }: { cards: OnboardingCard[]; onCompare: (id: string) => void; onOpen: (id: string) => void }) {
   const groups = [...new Set(cards.map((card) => card.property_id))].map((id) => ({ id, cards: cards.filter((card) => card.property_id === id) }));
-  return <div className="divide-y rounded-lg border">{groups.map(({ id, cards: group }) => <div key={id} className="p-4"><div className="flex flex-wrap items-center justify-between gap-2"><p className="font-semibold">{group[0]?.property_name}</p><div className="flex items-center gap-2"><DisparityBadge cards={group} />{group.length > 1 && <Button size="sm" variant="ghost" onClick={() => onCompare(id)}>Compare</Button>}</div></div><div className="mt-2 divide-y">{group.map((card) => <div key={card.id} className="flex flex-wrap items-center gap-3 py-2 text-sm"><Chip tone={card.service_line === "ORM" ? "info" : "muted"}>{card.service_line}</Chip><span className="flex-1">{STAGE_LABEL[card.current_stage]}</span><span className="font-mono text-xs text-muted-foreground">Day {currentDay(card)}</span><WorkLink card={card} /></div>)}</div></div>)}{!groups.length && <p className="p-8 text-center text-sm text-muted-foreground">ไม่พบการ์ด</p>}</div>;
+  return <div className="divide-y rounded-lg border">{groups.map(({ id, cards: group }) => <div key={id} className="p-4"><div className="flex flex-wrap items-center justify-between gap-2"><p className="font-semibold">{group[0]?.property_name}</p><div className="flex items-center gap-2"><DisparityBadge cards={group} />{group.length > 1 && <Button size="sm" variant="ghost" onClick={() => onCompare(id)}>Compare</Button>}</div></div><div className="mt-2 divide-y">{group.map((card) => <div key={card.id} className="flex flex-wrap items-center gap-3 py-2 text-sm"><Chip tone={card.service_line === "ORM" ? "info" : "muted"}>{card.service_line}</Chip><span className="flex-1">{STAGE_LABEL[card.current_stage]}</span><span className="font-mono text-xs text-muted-foreground">Day {currentDay(card)}</span><WorkLink card={card} onOpen={onOpen} /></div>)}</div></div>)}{!groups.length && <p className="p-8 text-center text-sm text-muted-foreground">ไม่พบการ์ด</p>}</div>;
 }
 
 function trackForStage(_card: OnboardingCard, stage: string): OwnerTrack {
@@ -299,7 +301,10 @@ function SumChips({ card }: { card: OnboardingCard }) {
 
 /* ---------------- detail sheet ---------------- */
 
-function DetailSheet({ id, onClose }: { id: string | null; onClose: () => void }) {
+const ACTOR_LABEL: Record<string, string> = { ae: "AE", specialist: "Specialist", service: "Service" };
+
+/** The single role-aware guided drawer shared by every Servicing entry point. */
+export function ServicingCardDrawer({ id, onClose, readOnly = false }: { id: string | null; onClose: () => void; readOnly?: boolean }) {
   const s = useServicing();
   const card = s.cards.find((c) => c.id === id);
   const [meetUrl, setMeetUrl] = useState("");
@@ -316,6 +321,13 @@ function DetailSheet({ id, onClose }: { id: string | null; onClose: () => void }
   const hand = s.handover.filter((h) => h.card_id === card.id);
   const hs = s.handoverSurveys.find((h) => h.card_id === card.id);
   const cs = s.customerSurveys.find((c) => c.card_id === card.id);
+  const finalsDone = finals.length > 0 && finals.every((f) => f.checked);
+  const actor: "ae" | "specialist" | "service" = nxt === "approved" ? (finalsDone ? "specialist" : "ae") : nxt === "completed" ? "specialist" : AE_TRACK_STAGES.has(card.current_stage) ? "ae" : "service";
+  const actorRoles: Role[] = nxt === "approved" && finalsDone ? ["specialist", "pm"] : [actor];
+  const canAct = !readOnly && actorRoles.includes(s.role);
+  const waitMsg = card.current_stage === "final_check"
+    ? (finalsDone ? "พร้อม Approve · อยู่ที่ Specialist (หรือ PM)" : "รอ AE ติ๊ก Final Check ให้ครบ")
+    : `ขั้นถัดไปโดย ${ACTOR_LABEL[actor]}`;
   const doAdvance = (to?: string) => {
     const r = s.advance(card.id, { ...(to ? { to } : {}), ...(meetUrl ? { meetingUrl: meetUrl } : {}) });
     if (r.ok) toast.success(`เข้าสู่ ${STAGE_LABEL[to ?? nxt ?? ""]}`);
@@ -336,16 +348,18 @@ function DetailSheet({ id, onClose }: { id: string | null; onClose: () => void }
             <h3 className="font-display text-xl font-semibold">{STAGE_LABEL[card.current_stage]}</h3>
             <p className="text-sm">{STAGE_GUIDANCE[card.current_stage]}</p>
             <p className="text-xs text-muted-foreground">ผู้รับผิดชอบ: {card.current_stage === "approved" || card.current_stage === "final_check" ? "AE / Specialist / Service" : ["new_property", "introduction_sent_form", "collect_data", "property_pending"].includes(card.current_stage) ? card.assigned_ae_id : card.assigned_service_owner_id}</p>
-            {nxt && <Button className="w-full sm:w-auto" disabled={missing.length > 0} onClick={() => doAdvance()}>{nxt === "approved" ? "Approve" : nxt === "completed" ? "Completed" : nxt === "go_live" ? "ยืนยัน Go Live" : `ทำขั้นนี้เสร็จ → ${STAGE_LABEL[nxt]}`}</Button>}
+            {nxt && <p className="rounded-md bg-muted/50 px-3 py-2 text-xs"><span className="font-medium">{readOnly ? "อ่านอย่างเดียว · " : !canAct ? "ไม่ใช่ขั้นของคุณ · " : ""}</span>{waitMsg}</p>}
+            {nxt && <Button className="w-full sm:w-auto" disabled={!canAct || missing.length > 0} onClick={() => doAdvance()}>{nxt === "approved" ? "Approve" : nxt === "completed" ? "Completed" : nxt === "go_live" ? "ยืนยัน Go Live" : `ทำขั้นนี้เสร็จ → ${STAGE_LABEL[nxt]}`}</Button>}
             <ExternalAppButton card={card} />
             {missing.length > 0 && <div className="border-l-2 pl-3 text-sm text-muted-foreground"><p className="font-medium text-foreground">สิ่งที่ต้องทำก่อนดำเนินการต่อ</p><ul className="mt-1 space-y-1">{missing.map(reason => <li key={reason}>{reason}</li>)}</ul></div>}
-            {card.current_stage === "collect_data" && <Button variant="outline" disabled={s.role !== "ae" && s.role !== "pm"} onClick={() => doAdvance("property_pending")}>Mark Property Pending</Button>}
+            {card.current_stage === "collect_data" && <Button variant="outline" disabled={!canAct} onClick={() => doAdvance("property_pending")}>Mark Property Pending</Button>}
           </section>
           <SumChips card={card} />
+          <fieldset disabled={readOnly} className="m-0 min-w-0 space-y-5 border-0 p-0">
 
           <div className="flex flex-wrap items-center gap-2 text-xs">
             <span className="text-muted-foreground">Form (WS-2):</span>
-            <Select disabled={!["ae", "pm"].includes(s.role)} value={card.form_completion_status} onValueChange={(v) => s.setFormStatus(card.id, v as typeof card.form_completion_status)}>
+            <Select disabled={s.role !== "ae"} value={card.form_completion_status} onValueChange={(v) => s.setFormStatus(card.id, v as typeof card.form_completion_status)}>
               <SelectTrigger className="h-7 w-36 text-xs"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="not_started">not_started</SelectItem>
@@ -355,12 +369,14 @@ function DetailSheet({ id, onClose }: { id: string | null; onClose: () => void }
             </Select>
           </div>
 
+          </fieldset>
           <section className="space-y-2">
             <Button variant="ghost" size="sm" onClick={() => setShowHistory(v => !v)}>{showHistory ? "ซ่อน" : "แสดง"}ขั้นตอนที่ผ่านมา · {eventsOf(s, card.id).length}</Button>
             {showHistory && <Timeline card={card} />}
             {future.length > 0 && <div className="border-l pl-4 text-xs text-muted-foreground"><p className="mb-2 font-medium">ขั้นตอนถัดไป</p><ol className="space-y-1.5">{future.map(stage => <li key={stage}>{MILESTONES.has(stage) ? "●" : "○"} {STAGE_LABEL[stage]}{stage === card.billing_anchor_stage ? " ★" : ""}</li>)}</ol></div>}
           </section>
 
+          <fieldset disabled={readOnly} className="m-0 min-w-0 space-y-5 border-0 p-0">
           {card.current_stage === "final_check" && (
             <section className="rounded-lg border p-3">
               <h3 className="text-sm font-semibold">Final Check (AE)</h3>
@@ -368,7 +384,7 @@ function DetailSheet({ id, onClose }: { id: string | null; onClose: () => void }
                 {finals.map((f) => (
                   <li key={f.id}>
                     <label className="flex items-center gap-2 text-sm">
-                      <Checkbox aria-label={f.item_label} checked={f.checked} disabled={s.role !== "ae" && s.role !== "pm"} onCheckedChange={() => s.toggleFinalCheck(f.id)} />
+                      <Checkbox aria-label={f.item_label} checked={f.checked} disabled={readOnly || s.role !== "ae"} onCheckedChange={() => s.toggleFinalCheck(f.id)} />
                       {f.item_label}
                     </label>
                   </li>
@@ -389,8 +405,8 @@ function DetailSheet({ id, onClose }: { id: string | null; onClose: () => void }
                   {hand.map((h) => (
                     <tr key={h.id} className="border-t">
                       <td className="py-1"><Input disabled={s.role === "management"} aria-label={`รายการ ${h.item_label}`} className="h-7 text-xs" value={h.item_label} onChange={(e) => s.editHandover(h.id, e.target.value)} /></td>
-                      <td className="text-center"><Checkbox aria-label={`Specialist: ${h.item_label}`} checked={h.specialist_checked} disabled={s.role !== "specialist" && s.role !== "pm"} onCheckedChange={() => s.toggleHandover(h.id, "specialist")} /></td>
-                      <td className="text-center"><Checkbox aria-label={`Service: ${h.item_label}`} checked={h.verifier_checked} disabled={s.role !== "service" && s.role !== "pm"} onCheckedChange={() => s.toggleHandover(h.id, "verifier")} /></td>
+                      <td className="text-center"><Checkbox aria-label={`Specialist: ${h.item_label}`} checked={h.specialist_checked} disabled={s.role !== "specialist"} onCheckedChange={() => s.toggleHandover(h.id, "specialist")} /></td>
+                      <td className="text-center"><Checkbox aria-label={`Service: ${h.item_label}`} checked={h.verifier_checked} disabled={s.role !== "service"} onCheckedChange={() => s.toggleHandover(h.id, "verifier")} /></td>
                       <td><Button disabled={s.role === "management"} aria-label="ลบรายการ Handover" title="ลบรายการ Handover" size="icon" variant="ghost" className="size-7" onClick={() => s.deleteHandover(h.id)}><Trash2 className="size-3.5" /></Button></td>
                     </tr>
                   ))}
@@ -407,6 +423,7 @@ function DetailSheet({ id, onClose }: { id: string | null; onClose: () => void }
 
           {hs && <HandoverSurveyForm key={hs.id} id={hs.id} status={surveyStatus(hs)} score={hs.score} />}
           {cs && <CustomerSurveyForm key={cs.id} id={cs.id} responded={!!cs.responded_at} />}
+          </fieldset>
         </div>
       </SheetContent>
     </Sheet>
@@ -428,7 +445,7 @@ function HandoverSurveyForm({ id, status, score }: { id: string; status: string;
         <div className="mt-2 space-y-2">
           <ScorePicker value={v} onChange={setV} max={5} />
           <Textarea value={c} onChange={(e) => setC(e.target.value)} placeholder="ความคิดเห็น (ไม่บังคับ)" />
-          <Button variant="outline" size="sm" disabled={s.role !== "service" && s.role !== "pm"} onClick={() => { s.submitHandoverSurvey(id, v, c); toast.success("ส่ง Survey #1 แล้ว"); }}>
+          <Button variant="outline" size="sm" disabled={s.role !== "service"} onClick={() => { s.submitHandoverSurvey(id, v, c); toast.success("ส่ง Survey #1 แล้ว"); }}>
             ส่งคะแนน (Service)
           </Button>
         </div>
@@ -554,6 +571,7 @@ function CompareDialog({ propertyId, onClose }: { propertyId: string | null; onC
 
 function KpiView({ cards }: { cards?: OnboardingCard[] }) {
   const s = useServicing();
+  const [kpiOpen, setKpiOpen] = useState<string | null>(null);
   const [line, setLine] = useState<ServiceLine>("ORM");
   const rows = (cards ?? s.cards)
     .filter((c) => c.service_line === line && c.go_live_at)
@@ -659,12 +677,13 @@ function KpiView({ cards }: { cards?: OnboardingCard[] }) {
                   <td className="tabular-nums">{d(r.overall)}</td>
                   <td>{r.bottleneck ? TRACK_LABEL[r.bottleneck] : "—"}</td>
                   <td>{r.outlier ? "✕ Outlier" : "In range"}</td>
-                  <td><WorkLink card={r.card} /></td>
+                  <td><WorkLink card={r.card} onOpen={setKpiOpen} /></td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+        <ServicingCardDrawer key={kpiOpen ?? "closed"} id={kpiOpen} readOnly onClose={() => setKpiOpen(null)} />
       </Panel>
     </div>
   );
