@@ -13,3 +13,4 @@
 - Servicing stage events are append-only and created by gated in-app actions; historical demo data remains separate from live action timestamps.
 - Servicing role flags are workflow simulation only, not authentication or authorization; do not treat them as production security.
 - Servicing remains a browser-local prototype until authenticated shared persistence is explicitly scoped; Cloud activation alone does not migrate workflow data.
+- Servicing cross-app links share one service-stage-only control, hydrate missing scaffold fields without replacing local data, and allow only HTTP(S) destinations; this keeps native work intact and prevents unsafe navigation.
