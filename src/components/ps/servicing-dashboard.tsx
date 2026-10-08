@@ -120,7 +120,7 @@ function ServicingMonitor() {
     const term = q.trim().toLowerCase();
     const bucket = card.go_live_at ? "live" : AE_TRACK_STAGES.has(card.current_stage) ? "ae" : "servicing";
     return (!term || `${card.property_name} ${card.property_id} ${card.contract_ref}`.toLowerCase().includes(term))
-      && (line === "all" || card.service_line === line)
+      && card.service_line === line
       && (status === "all" || status === bucket);
   }), [s.cards, q, line, status]);
   const live = s.cards.filter((card) => card.go_live_at).length;
@@ -145,7 +145,7 @@ function ServicingMonitor() {
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input value={q} onChange={(event) => setQ(event.target.value)} placeholder="ค้นหาชื่อหรือรหัสโรงแรม" className="pl-9" />
         </div>
-        <Select value={line} onValueChange={setLine}><SelectTrigger className="w-40"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">ทุกบริการ</SelectItem><SelectItem value="ORM">ORM</SelectItem><SelectItem value="MARCOM">Marcom</SelectItem></SelectContent></Select>
+        <LineToggle value={line} onChange={setLine} />
         <Select value={status} onValueChange={setStatus}><SelectTrigger className="w-44"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">ทุกสถานะ</SelectItem><SelectItem value="ae">AE track</SelectItem><SelectItem value="servicing">Servicing</SelectItem><SelectItem value="live">Go Live</SelectItem></SelectContent></Select>
       </div>
       <Tabs value={view} onValueChange={setView}>
@@ -172,13 +172,16 @@ function WorkLink({ card, onOpen, label = "ดูรายละเอียด�
 /** View-only board: never advances a stage — advancing happens only inside ServicingCardDrawer. */
 function CondensedPipeline({ cards, onOpen }: { cards: OnboardingCard[]; onOpen: (id: string) => void }) {
   const [expanded, setExpanded] = useState<string | null>(null);
-  const stages = [...new Set([...fullSequence("ORM"), ...fullSequence("MARCOM_META_TIKTOK")])];
-  return <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{stages.map((stage) => {
+  const [line, setLine] = useState<ServiceLine>("ORM");
+  const stages = lineSequence(line);
+  const all = cards;
+  cards = all.filter((card) => card.service_line === line);
+  return <div className="space-y-3"><LineToggle value={line} onChange={setLine} /><div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{stages.map((stage) => {
     const stageCards = cards.filter((card) => card.current_stage === stage);
     const sample = stageCards[0];
     return <div key={stage} className="rounded-lg border p-4">
       <Button variant="ghost" className="h-auto w-full justify-between gap-3 px-0 text-left" aria-expanded={expanded === stage} onClick={() => setExpanded(expanded === stage ? null : stage)}>
-        <span><span className="block text-sm font-semibold">{STAGE_LABEL[stage]}</span><span className="mt-1 block text-xs text-muted-foreground">{sample ? TRACK_LABEL[trackForStage(sample, stage)] : "—"} · {stageCards.length} การ์ด</span></span>
+        <span><span className="flex flex-wrap items-center gap-2 text-sm font-semibold">{STAGE_LABEL[stage]}<DeptBadge stage={stage} line={line} /></span><span className="mt-1 block text-xs text-muted-foreground">{sample ? TRACK_LABEL[trackForStage(sample, stage)] : "—"} · {stageCards.length} การ์ด</span></span>
         <span className="font-display text-2xl font-bold tabular-nums">{stageCards.length}</span>
       </Button>
       {expanded === stage ? <div className="mt-3 divide-y">{stageCards.map((card) => <div key={card.id} className="space-y-2 py-3">
@@ -187,7 +190,42 @@ function CondensedPipeline({ cards, onOpen }: { cards: OnboardingCard[]; onOpen:
         <div className="flex flex-wrap gap-2"><WorkLink card={card} onOpen={onOpen} /><ExternalAppButton card={card} /></div>
       </div>)}</div> : sample && <div className="mt-3 flex justify-end"><WorkLink card={sample} onOpen={onOpen} /></div>}
     </div>;
-  })}{!cards.length && <p className="col-span-full rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">ไม่พบการ์ด</p>}</div>;
+  })}{!cards.length && <p className="col-span-full rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">ไม่พบการ์ด</p>}</div></div>;
+}
+
+function LineToggle({ value, onChange }: { value: ServiceLine; onChange: (v: ServiceLine) => void }) {
+  return <div role="group" aria-label="เลือกบริการ" className="inline-flex rounded-full border p-0.5">{(["ORM", "MARCOM"] as const).map((v) => <Button key={v} size="sm" variant={value === v ? "default" : "ghost"} className="h-8 rounded-full" aria-pressed={value === v} onClick={() => onChange(v)}>{v === "ORM" ? "ORM" : "Marcom"}</Button>)}</div>;
+}
+
+function DeptBadge({ stage, line, variant }: { stage: string; line?: ServiceLine; variant?: ServiceVariant }) {
+  return <Chip tone="muted">{deptBadge(stage, variant ?? (line === "MARCOM" ? "MARCOM_META_TIKTOK" : "ORM"))}</Chip>;
+}
+
+function ChecklistSection({ card, readOnly }: { card: OnboardingCard; readOnly: boolean }) {
+  const s = useServicing();
+  const stages = [...new Set(["collect_data", card.current_stage])];
+  const [stageKey, setStageKey] = useState("");
+  const [group, setGroup] = useState("");
+  const [label, setLabel] = useState("");
+  const owner = (stage: string) => (stage === "collect_data" ? "ae" : "service");
+  const blocks = stages.map((stage) => ({ stage, items: s.checklistItems.filter((i) => i.card_id === card.id && i.stage_key === stage) })).filter((b) => b.items.length);
+  const templates = s.checklistTemplates.filter((t) => t.service_variant === card.service_variant);
+  return <section className="space-y-3 border-b pb-4" aria-label="Checklist">
+    <p className="text-sm font-semibold">Checklist <span className="text-xs font-normal text-muted-foreground">· ไม่ล็อกการเลื่อนขั้น</span></p>
+    {blocks.map(({ stage, items }) => {
+      const can = !readOnly && (s.role === owner(stage) || s.role === "pm");
+      const groups = [...new Set(items.map((i) => i.group_label))];
+      return <div key={stage} className="space-y-2 rounded-md border p-3">
+        <p className="flex flex-wrap items-center gap-2 text-xs font-medium">{STAGE_LABEL[stage]}<DeptBadge stage={stage} variant={card.service_variant} />{stage === "collect_data" && card.service_variant === "ORM" && <span className="text-muted-foreground">· แบบฟอร์ม WS-2: {card.form_completion_status}</span>}</p>
+        {groups.map((g) => <div key={g} className="space-y-1">{g && <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{g}</p>}{items.filter((i) => i.group_label === g).map((i) => <label key={i.id} className="flex items-start gap-2 text-sm"><Checkbox className="mt-0.5" checked={i.checked} disabled={!can} onCheckedChange={() => s.toggleChecklistItem(i.id)} /><span>{i.label}{i.checked_at && <span className="block text-[11px] text-muted-foreground">✓ {fmtDayMon(i.checked_at)} {new Date(i.checked_at).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })}</span>}</span></label>)}</div>)}
+      </div>;
+    })}
+    {!blocks.length && <p className="text-xs text-muted-foreground">ขั้นนี้ไม่มี checklist (milestone)</p>}
+    {s.role === "pm" && <details className="rounded-md border p-3 text-sm"><summary className="cursor-pointer font-medium">แก้แม่แบบ Checklist (PM) · มีผลกับการ์ดใหม่เท่านั้น</summary>
+      <div className="mt-2 max-h-60 space-y-1 overflow-y-auto">{templates.map((t) => <div key={t.id} className="flex items-center gap-2"><span className="w-28 shrink-0 truncate text-[11px] text-muted-foreground">{STAGE_LABEL[t.stage_key]}</span><Input defaultValue={t.item_label} className="h-7 text-xs" onBlur={(e) => e.target.value.trim() && e.target.value !== t.item_label && s.renameTemplateItem(t.id, e.target.value.trim())} /><Button size="sm" variant="ghost" onClick={() => s.removeTemplateItem(t.id)}>ลบ</Button></div>)}</div>
+      <div className="mt-2 flex flex-wrap gap-2"><Input value={stageKey} onChange={(e) => setStageKey(e.target.value)} placeholder="stage_key" className="h-8 w-36 text-xs" /><Input value={group} onChange={(e) => setGroup(e.target.value)} placeholder="กลุ่ม" className="h-8 w-28 text-xs" /><Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="รายการใหม่" className="h-8 flex-1 text-xs" /><Button size="sm" disabled={!stageKey.trim() || !label.trim()} onClick={() => { s.addTemplateItem(stageKey.trim(), card.service_variant, group.trim(), label.trim()); setLabel(""); }}>เพิ่ม</Button></div>
+    </details>}
+  </section>;
 }
 
 function ExternalAppButton({ card }: { card: OnboardingCard }) {
@@ -222,11 +260,12 @@ function trackForStage(_card: OnboardingCard, stage: string): OwnerTrack {
 function FullPipeline({ onOpen, focusStage, landingKey }: { onOpen: (id: string) => void; focusStage: string | null; landingKey: string }) {
   const s = useServicing();
   const [q, setQ] = useState("");
-  const [line, setLine] = useState("all");
+  const [line, setLine] = useState<ServiceLine>("ORM");
   const [mineOnly, setMineOnly] = useState(false);
   useEffect(() => {
     if (!landingKey) return;
-    setQ(""); setLine("all"); setMineOnly(false);
+    const target = s.cards.find((c) => landingKey.includes(c.id));
+    setQ(""); setLine(target?.service_line ?? "ORM"); setMineOnly(false);
   }, [landingKey]);
   useEffect(() => {
     if (!focusStage) return;
@@ -235,9 +274,9 @@ function FullPipeline({ onOpen, focusStage, landingKey }: { onOpen: (id: string)
     });
     return () => cancelAnimationFrame(frame);
   }, [focusStage, landingKey]);
-  const sequence = [...new Set(s.cards.flatMap((card) => fullSequence(card.service_variant)))];
+  const sequence = lineSequence(line);
   const cards = s.cards.filter((card) => (!q || `${card.property_name} ${card.contract_ref}`.toLowerCase().includes(q.toLowerCase())) && (line === "all" || card.service_line === line) && (!mineOnly || card.assigned_ae_id === CURRENT_AE));
-  return <div className="space-y-3"><div className="flex flex-wrap gap-2"><div className="relative min-w-[14rem] flex-1"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input value={q} onChange={(event) => setQ(event.target.value)} placeholder="ค้นหาการ์ดบริการ" className="pl-9" /></div><Select value={line} onValueChange={setLine}><SelectTrigger className="w-40"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">ทุกบริการ</SelectItem><SelectItem value="ORM">ORM</SelectItem><SelectItem value="MARCOM">Marcom</SelectItem></SelectContent></Select><Button size="sm" variant={mineOnly ? "default" : "outline"} className="h-9 rounded-full" aria-pressed={mineOnly} onClick={() => setMineOnly((value) => !value)}>ของฉัน</Button></div><div className="overflow-x-auto pb-2"><div className="flex min-w-max gap-3">{sequence.map((stage) => { const stageCards = cards.filter((card) => card.current_stage === stage); return <div key={stage} id={`servicing-stage-${stage}`} data-focused={focusStage === stage} className="w-[280px] shrink-0 rounded-lg border bg-card p-3"><div className="flex items-center justify-between gap-2"><p className="text-sm font-semibold">{STAGE_LABEL[stage]}</p><Chip tone="muted">{stageCards.length}</Chip></div><p className="mt-1 text-xs text-muted-foreground">Owner: {stageCards[0] ? TRACK_LABEL[trackForStage(stageCards[0], stage)] : "—"}</p><div className="mt-3 space-y-2">{stageCards.map((card) => <Button key={card.id} variant="ghost" onClick={() => onOpen(card.id)} className="h-auto min-h-16 w-full justify-start rounded-md border px-3 py-2 text-left"><span className="min-w-0"><span className="block truncate text-sm font-medium">{card.property_name}</span><span className="mt-1 block text-xs text-muted-foreground">{card.service_line} · Day {currentDay(card)}</span></span></Button>)}{!stageCards.length && <p className="rounded-md border border-dashed p-4 text-center text-xs text-muted-foreground">ว่าง</p>}</div></div>; })}</div></div><div className="rounded-lg border"><div className="border-b px-4 py-3"><p className="text-sm font-semibold">History</p><p className="text-xs text-muted-foreground">เหตุการณ์ล่าสุดจากการทำงานในระบบ</p></div><div className="divide-y">{[...s.events].sort((a, b) => b.entered_at.localeCompare(a.entered_at)).slice(0, 12).map((event) => { const card = s.cards.find((item) => item.id === event.card_id); return <div key={event.id} className="flex flex-wrap items-center gap-3 px-4 py-2 text-sm"><span className="min-w-[10rem] font-medium">{card?.property_name}</span><Chip tone="muted">{card?.service_line}</Chip><span className="flex-1">{STAGE_LABEL[event.stage_key]}</span><span className="font-mono text-xs text-muted-foreground">{fmtDayMon(event.entered_at)} · Day {card ? daysBetween(card.created_at, event.entered_at) : "—"}</span></div>; })}</div></div></div>;
+  return <div className="space-y-3"><div className="flex flex-wrap gap-2"><div className="relative min-w-[14rem] flex-1"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input value={q} onChange={(event) => setQ(event.target.value)} placeholder="ค้นหาการ์ดบริการ" className="pl-9" /></div><Select value={line} onValueChange={setLine}><SelectTrigger className="w-40"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">ทุกบริการ</SelectItem><SelectItem value="ORM">ORM</SelectItem><SelectItem value="MARCOM">Marcom</SelectItem></SelectContent></Select><Button size="sm" variant={mineOnly ? "default" : "outline"} className="h-9 rounded-full" aria-pressed={mineOnly} onClick={() => setMineOnly((value) => !value)}>ของฉัน</Button></div><div className="overflow-x-auto pb-2"><div className="flex min-w-max gap-3">{sequence.map((stage) => { const stageCards = cards.filter((card) => card.current_stage === stage); return <div key={stage} id={`servicing-stage-${stage}`} data-focused={focusStage === stage} className="w-[280px] shrink-0 rounded-lg border bg-card p-3"><div className="flex items-center justify-between gap-2"><p className="flex flex-wrap items-center gap-2 text-sm font-semibold">{STAGE_LABEL[stage]}<DeptBadge stage={stage} line={line} /></p><Chip tone="muted">{stageCards.length}</Chip></div><p className="mt-1 text-xs text-muted-foreground">Owner: {stageCards[0] ? TRACK_LABEL[trackForStage(stageCards[0], stage)] : "—"}</p><div className="mt-3 space-y-2">{stageCards.map((card) => <Button key={card.id} variant="ghost" onClick={() => onOpen(card.id)} className="h-auto min-h-16 w-full justify-start rounded-md border px-3 py-2 text-left"><span className="min-w-0"><span className="block truncate text-sm font-medium">{card.property_name}</span><span className="mt-1 block text-xs text-muted-foreground">{card.service_line} · Day {currentDay(card)}</span></span></Button>)}{!stageCards.length && <p className="rounded-md border border-dashed p-4 text-center text-xs text-muted-foreground">ว่าง</p>}</div></div>; })}</div></div><div className="rounded-lg border"><div className="border-b px-4 py-3"><p className="text-sm font-semibold">History</p><p className="text-xs text-muted-foreground">เหตุการณ์ล่าสุดจากการทำงานในระบบ</p></div><div className="divide-y">{[...s.events].sort((a, b) => b.entered_at.localeCompare(a.entered_at)).slice(0, 12).map((event) => { const card = s.cards.find((item) => item.id === event.card_id); return <div key={event.id} className="flex flex-wrap items-center gap-3 px-4 py-2 text-sm"><span className="min-w-[10rem] font-medium">{card?.property_name}</span><Chip tone="muted">{card?.service_line}</Chip><span className="flex-1">{STAGE_LABEL[event.stage_key]}</span><span className="font-mono text-xs text-muted-foreground">{fmtDayMon(event.entered_at)} · Day {card ? daysBetween(card.created_at, event.entered_at) : "—"}</span></div>; })}</div></div></div>;
 }
 
 /* ---------------- disparity (§5.8) ---------------- */
@@ -372,12 +411,15 @@ export function ServicingCardDrawer({ id, onClose, readOnly = false }: { id: str
         <div className="mt-4 space-y-5 px-1 pb-8">
           <section className="space-y-3 border-b pb-4" aria-label="Current step">
             <p className="text-xs text-muted-foreground">ขั้นตอนปัจจุบัน · Day {currentDay(card)}</p>
-            <h3 className="font-display text-xl font-semibold">{STAGE_LABEL[card.current_stage]}</h3>
+            <h3 className="flex flex-wrap items-center gap-2 font-display text-xl font-semibold">{STAGE_LABEL[card.current_stage]}<DeptBadge stage={card.current_stage} variant={card.service_variant} /></h3>
             <p className="text-sm">{STAGE_GUIDANCE[card.current_stage]}</p>
             <p className="text-xs text-muted-foreground">ผู้รับผิดชอบ: {card.current_stage === "approved" || card.current_stage === "final_check" ? "AE / Specialist / Service" : ["new_property", "introduction_sent_form", "collect_data", "property_pending"].includes(card.current_stage) ? card.assigned_ae_id : card.assigned_service_owner_id}</p>
             {nxt && <p className="rounded-md bg-muted/50 px-3 py-2 text-xs"><span className="font-medium">{readOnly ? "อ่านอย่างเดียว · " : !canAct ? "ไม่ใช่ขั้นของคุณ · " : ""}</span>{waitMsg}</p>}
-            {nxt && <Button className="w-full sm:w-auto" disabled={!canAct || missing.length > 0} onClick={() => doAdvance()}>{nxt === "approved" ? "Approve" : nxt === "completed" ? "Completed" : nxt === "go_live" ? "ยืนยัน Go Live" : `ทำขั้นนี้เสร็จ → ${STAGE_LABEL[nxt]}`}</Button>}
+            {nxt && <Button className="w-full sm:w-auto" disabled={!canAct || missing.length > 0} onClick={() => doAdvance()}>{nxt === "approved" ? "Approve" : nxt === "completed" ? "Completed" : nxt.endsWith("go_live") ? "ยืนยัน Go Live" : `ทำขั้นนี้เสร็จ → ${STAGE_LABEL[nxt]}`}</Button>}
             <ExternalAppButton card={card} />
+          </section>
+          <ChecklistSection card={card} readOnly={readOnly} />
+          <section className="hidden">
             {missing.length > 0 && <div className="border-l-2 pl-3 text-sm text-muted-foreground"><p className="font-medium text-foreground">สิ่งที่ต้องทำก่อนดำเนินการต่อ</p><ul className="mt-1 space-y-1">{missing.map(reason => <li key={reason}>{reason}</li>)}</ul></div>}
             {card.current_stage === "collect_data" && <Button variant="outline" disabled={!canAct} onClick={() => doAdvance("property_pending")}>Mark Property Pending</Button>}
           </section>
