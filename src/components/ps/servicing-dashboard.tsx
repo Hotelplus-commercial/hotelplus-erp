@@ -48,6 +48,8 @@ import {
   type ServiceVariant,
   lineSequence,
   deptBadge,
+  OTA_CHANNELS,
+  credentialComplete,
 } from "@/lib/ps-servicing";
 import { cn } from "@/lib/utils";
 
@@ -450,7 +452,6 @@ export function ServicingCardDrawer({ id, onClose, readOnly = false }: { id: str
   const s = useServicing();
   const card = s.cards.find((c) => c.id === id);
   const [meetUrl, setMeetUrl] = useState("");
-  const [newItem, setNewItem] = useState("");
   const [showHistory, setShowHistory] = useState(false);
   if (!card) return null;
 
