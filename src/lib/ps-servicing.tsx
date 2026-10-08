@@ -50,7 +50,13 @@ export type HandoverItem = {
   specialist_checked_at: string | null;
   verifier_checked: boolean;
   verifier_checked_at: string | null;
+  /** v6.0 P2: ORM OTA handover rows (null on legacy free-form rows). */
+  ota_channel?: string | null;
+  group_label?: string;
 };
+export type HandoverCredential = { id: string; card_id: string; ota_channel: string; property_name: string; hotel_id: string; username: string; password: string; commission: string };
+export type RoomMapping = { id: string; card_id: string; original_room_name: string; ota_channel: string; ota_room_name: string };
+export const OTA_CHANNELS = ["Agoda", "Booking.com", "Expedia", "Trip.com", "Traveloka", "Tiket"] as const;
 export type HandoverSurvey = {
   id: string;
   card_id: string;
@@ -214,10 +220,30 @@ const FINAL_CHECK_ITEMS = [
   "รูปภาพครบและตรงกับห้องพัก",
   "ข้อมูลสำหรับเปิดระบบครบถ้วน",
 ];
-const HANDOVER_SEED: Record<ServiceLine, string[]> = {
-  ORM: ["BAR rate sheet handed over", "OTA access confirmed", "Property data pack complete"],
-  MARCOM: ["Brand assets handed over", "Meta / TikTok access confirmed", "Property data pack complete"],
+
+/* ---------------- v6.0 Phase 2 · ORM Handover OTA template (2-tick, PM-managed) ---------------- */
+const OTA_HANDOVER: Record<string, Record<string, string[]>> = {
+  Agoda: { Registration: ["OTA reg", "Add H+ group", "Set contact (Acct Existing Y/N)"], Contents: ["Room Type + Amenities", "Location", "Setting & details", "Facility (Content Score ≥85%)"], Finance: ["Payment method", "Tax", "Rate plan (deactivate)", "Cancellation = Non-Ref"], Connectivity: ["Connectivity"], "Hotel User": ["Create hotel user"] },
+  "Booking.com": { Registration: ["OTA reg", "Add H+ group", "Set contact"], Contents: ["Room Type + Amenities", "Location", "Property + Reservation policies", "Facility & service"], Finance: ["Finance Setting (bank no. → wait system)"], "Rate & Avail": ["Cancellation = Non-Ref"], Connectivity: ["Connectivity"], "Hotel User": ["Create hotel user"] },
+  Expedia: { Registration: ["OTA reg", "Add H+ group", "Sign Contract"], Contents: ["Room Type", "Address & location", "Property amenities", "Room amenities"], Finance: ["Payment Setting"], "Rate & Avail": ["Cancellation = Non-Ref"], Connectivity: ["Connectivity"], "Hotel User": ["Create hotel user"] },
+  "Trip.com": { Registration: ["OTA reg", "Add H+ group", "Set contact"], Contents: ["Room info", "General info", "Property policies", "Facility & service"], Finance: ["Bank accounts", "Financial Overview"], "Rate & Avail": ["Cancellation = Non-Ref"], Connectivity: ["Connectivity"], "Hotel User": ["Create hotel user"] },
+  Traveloka: { Registration: ["OTA reg", "Add H+ group", "Set hotel contact"], Contents: ["Room data", "Property data", "Policy setting", "Photo"], Finance: ["Bank accounts", "Payment Method", "Rate plan"], Connectivity: ["Request room mapping (Extranet)"], "Hotel User": ["Create hotel user"] },
+  Tiket: { Registration: ["OTA reg", "Add H+ group", "Manage User"], Contents: ["Room data", "Details", "General Info (Chain tag mail)", "Photo"], Finance: ["Bank accounts"], "Rate & Avail": ["Cancellation = Non-Ref"], Connectivity: ["Request room mapping (Extranet+MM)"], Other: ["Promotions: Close combine discount (Exclusive Private Deals)"] },
 };
+let _hoSeq = 0;
+export const HANDOVER_TEMPLATE_SEED: ChecklistTemplate[] = Object.entries(OTA_HANDOVER).flatMap(([ota, groups]) =>
+  Object.entries(groups).flatMap(([group_label, labels]) =>
+    labels.map((item_label) => ({ id: `ho-${++_hoSeq}`, stage_key: "handover", service_variant: "ORM" as ServiceVariant, ota_channel: ota, group_label, item_label, order: 1000 + _hoSeq, has_two_tick: true, field_type: "tick" as const })),
+  ),
+);
+const handoverFromTemplates = (cardId: string, variant: ServiceVariant, templates: ChecklistTemplate[]): HandoverItem[] =>
+  variant !== "ORM" ? [] : templates.filter((t) => t.has_two_tick && t.service_variant === "ORM").map((t) => ({
+    id: rid(), card_id: cardId, item_label: t.item_label, ota_channel: t.ota_channel, group_label: t.group_label,
+    specialist_checked: false, specialist_checked_at: null, verifier_checked: false, verifier_checked_at: null,
+  }));
+const credentialRows = (card: { id: string; property_name: string; property_id: string; service_variant: ServiceVariant }): HandoverCredential[] =>
+  card.service_variant !== "ORM" ? [] : OTA_CHANNELS.map((ota) => ({ id: rid(), card_id: card.id, ota_channel: ota, property_name: card.property_name, hotel_id: card.property_id, username: "", password: "", commission: "" }));
+export const credentialComplete = (c: HandoverCredential) => !!(c.username.trim() && c.password.trim() && c.commission.trim());
 
 /* ---------------- checklist template seed (§2.3 A–F) — PM-managed, patchable ---------------- */
 
@@ -301,7 +327,7 @@ export const CHECKLIST_TEMPLATE_SEED: ChecklistTemplate[] = [
 
 export const instantiateChecklist = (cardId: string, variant: ServiceVariant, templates: ChecklistTemplate[]): ChecklistItem[] =>
   templates
-    .filter((t) => t.service_variant === variant)
+    .filter((t) => t.service_variant === variant && !t.has_two_tick)
     .map((t) => ({ id: rid(), card_id: cardId, template_ref: t.id, label: t.item_label, group_label: t.group_label, stage_key: t.stage_key, checked: false, checked_at: null }));
 
 /** v5.0 → v6.0 stage-key migration map, applied per variant to a reached legacy stage key. */
@@ -355,6 +381,8 @@ type State = {
   customerSurveys: CustomerSurvey[];
   checklistTemplates: ChecklistTemplate[];
   checklistItems: ChecklistItem[];
+  credentials: HandoverCredential[];
+  roomMappings: RoomMapping[];
 };
 const KEY = "meridia.ps.servicing.v5_0";
 const rid = () => Math.random().toString(36).slice(2, 10);
@@ -424,17 +452,14 @@ function buildCard(
     s.finalChecks.push({ id: rid(), card_id: opts.id, item_label: label, checked: !!approvedAt, checked_at: approvedAt }),
   );
   const completedAt = at("completed");
-  HANDOVER_SEED[opts.line].forEach((label) =>
-    s.handover.push({
-      id: rid(),
-      card_id: opts.id,
-      item_label: label,
-      specialist_checked: !!completedAt,
-      specialist_checked_at: completedAt,
-      verifier_checked: !!completedAt,
-      verifier_checked_at: completedAt,
-    }),
+  handoverFromTemplates(opts.id, variant, s.checklistTemplates).forEach((h) =>
+    s.handover.push({ ...h, specialist_checked: !!completedAt, specialist_checked_at: completedAt, verifier_checked: !!completedAt, verifier_checked_at: completedAt }),
   );
+  credentialRows(card).forEach((c) =>
+    s.credentials.push(completedAt ? { ...c, username: `hplus.${opts.id.toLowerCase()}`, password: "••••••••", commission: "15%" } : c),
+  );
+  if (completedAt && variant === "ORM")
+    OTA_CHANNELS.forEach((ota) => s.roomMappings.push({ id: rid(), card_id: opts.id, original_room_name: "Deluxe Double", ota_channel: ota, ota_room_name: "Deluxe Double Room" }));
   if (completedAt) {
     const submitted = opts.createdDaysAgo % 2 === 0;
     s.handoverSurveys.push({
@@ -466,7 +491,7 @@ function buildCard(
 }
 
 function seed(): State {
-  const s: State = { cards: [], events: [], finalChecks: [], handover: [], handoverSurveys: [], customerSurveys: [], checklistTemplates: CHECKLIST_TEMPLATE_SEED, checklistItems: [] };
+  const s: State = { cards: [], events: [], finalChecks: [], handover: [], handoverSurveys: [], customerSurveys: [], checklistTemplates: [...CHECKLIST_TEMPLATE_SEED, ...HANDOVER_TEMPLATE_SEED], checklistItems: [], credentials: [], roomMappings: [] };
   // full ORM path = 4 AE gaps + approved→completed + 5 service = 10 gaps; Marcom MT = 7, GMB = 6
   const live = (aeGaps: number[], spec: number, svc: number[]) => [...aeGaps, spec, ...svc];
   const GMB: ServiceVariant = "MARCOM_GMB";
@@ -523,18 +548,8 @@ function insertNewCard(s: State, input: CardInput, id: string, now: string): Sta
             checklistItems: [...s.checklistItems, ...instantiateChecklist(id, service_variant, s.checklistTemplates)],
             events: [...s.events, { id: rid(), card_id: id, stage_key: "new_property", entered_at: now, owner_track: "AE" }],
             finalChecks: [...s.finalChecks, ...FINAL_CHECK_ITEMS.map((l) => ({ id: rid(), card_id: id, item_label: l, checked: false, checked_at: null }))],
-            handover: [
-              ...s.handover,
-              ...HANDOVER_SEED[service_line].map((l) => ({
-                id: rid(),
-                card_id: id,
-                item_label: l,
-                specialist_checked: false,
-                specialist_checked_at: null,
-                verifier_checked: false,
-                verifier_checked_at: null,
-              })),
-            ],
+            handover: [...s.handover, ...handoverFromTemplates(id, service_variant, s.checklistTemplates)],
+            credentials: [...(s.credentials ?? []), ...credentialRows(card)],
           };
 }
 
@@ -600,6 +615,11 @@ type Ctx = State & {
   editHandover: (itemId: string, label: string) => void;
   deleteHandover: (itemId: string) => void;
   submitHandoverSurvey: (id: string, score: number, comment: string) => void;
+  setCredential: (id: string, patch: Partial<Pick<HandoverCredential, "username" | "password" | "commission">>) => void;
+  addRoom: (cardId: string, name: string) => void;
+  removeRoom: (cardId: string, name: string) => void;
+  setRoomMapping: (id: string, ota_room_name: string) => void;
+  addHandoverTemplate: (ota_channel: string, group_label: string, item_label: string) => void;
   submitCustomerSurvey: (id: string, patch: Partial<CustomerSurvey>) => void;
   setFormStatus: (cardId: string, st: FormStatus) => void;
   reset: () => void;
@@ -607,7 +627,7 @@ type Ctx = State & {
 const C = createContext<Ctx | null>(null);
 
 export function ServicingProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<State>(() => ({ cards: [], events: [], finalChecks: [], handover: [], handoverSurveys: [], customerSurveys: [], checklistTemplates: CHECKLIST_TEMPLATE_SEED, checklistItems: [] }));
+  const [state, setState] = useState<State>(() => ({ cards: [], events: [], finalChecks: [], handover: [], handoverSurveys: [], customerSurveys: [], checklistTemplates: [...CHECKLIST_TEMPLATE_SEED, ...HANDOVER_TEMPLATE_SEED], checklistItems: [], credentials: [], roomMappings: [] }));
   const stateRef = useRef(state);
   stateRef.current = state;
   const [role, setRole] = useState<Role>("specialist");
@@ -617,7 +637,11 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
     try {
       const raw = localStorage.getItem(KEY);
       const loaded = raw ? (JSON.parse(raw) as State) : seed();
-      const templates = loaded.checklistTemplates ?? CHECKLIST_TEMPLATE_SEED;
+      const baseTemplates = loaded.checklistTemplates ?? CHECKLIST_TEMPLATE_SEED;
+      const templates = baseTemplates.some((t) => t.has_two_tick) ? baseTemplates : [...baseTemplates, ...HANDOVER_TEMPLATE_SEED];
+      let handover = [...(loaded.handover ?? [])];
+      const credentials = [...(loaded.credentials ?? [])];
+      const roomMappings = [...(loaded.roomMappings ?? [])];
       const items = [...(loaded.checklistItems ?? [])];
       const cards = loaded.cards.map((card) => {
         const service_variant: ServiceVariant = card.service_variant ?? (card.service_line === "ORM" ? "ORM" : "MARCOM_META_TIKTOK");
@@ -633,6 +657,12 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
           }
           items.push(...fresh);
         }
+        // v6.0 P2: ORM cards not yet Completed move to the OTA handover template; past cards keep their history.
+        const reachedCompleted = (loaded.events ?? []).some((e) => e.card_id === card.id && e.stage_key === "completed");
+        if (service_variant === "ORM" && !reachedCompleted && !handover.some((h) => h.card_id === card.id && h.ota_channel)) {
+          handover = [...handover.filter((h) => h.card_id !== card.id), ...handoverFromTemplates(card.id, service_variant, templates)];
+        }
+        if (service_variant === "ORM" && !credentials.some((c) => c.card_id === card.id)) credentials.push(...credentialRows({ ...card, service_variant }));
         return {
           ...card,
           service_variant,
@@ -642,7 +672,7 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
           external_ref_url: card.external_ref_url ?? null,
         };
       });
-      setState({ ...loaded, cards, checklistTemplates: templates, checklistItems: items });
+      setState({ ...loaded, cards, handover, credentials, roomMappings, checklistTemplates: templates, checklistItems: items });
     } catch {
       setState(seed());
     }
@@ -699,13 +729,20 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
         checks.filter(f => !f.checked).forEach(f => reasons.push(`AE: ตรวจ ${f.item_label}`));
         if (!["specialist", "pm"].includes(role)) reasons.push("Specialist / PM: เป็นผู้กด Approve หลัง AE ตรวจครบ");
       } else if (nxt === "completed") {
-        const items = s.handover.filter(h => h.card_id === cardId);
-        if (!items.length) reasons.push("Specialist: เพิ่มรายการส่งมอบอย่างน้อยหนึ่งข้อ");
-        items.forEach(h => {
-          if (!h.specialist_checked) reasons.push(`Specialist: ส่งมอบ ${h.item_label}`);
-          if (!h.verifier_checked) reasons.push(`Service: ตรวจรับ ${h.item_label}`);
-          if (!h.item_label.trim()) reasons.push("Specialist: ระบุชื่อรายการส่งมอบ");
-        });
+        if (card.service_variant === "ORM") {
+          const items = s.handover.filter(h => h.card_id === cardId);
+          const spec = items.filter(h => !h.specialist_checked).length;
+          const ver = items.filter(h => !h.verifier_checked).length;
+          if (!items.length) reasons.push("Specialist: ยังไม่มีรายการ Handover OTA");
+          if (spec) reasons.push(`Specialist: ติ๊ก Handover OTA อีก ${spec} รายการ`);
+          if (ver) reasons.push(`ORM: ตรวจรับ Handover OTA อีก ${ver} รายการ`);
+          const creds = (s.credentials ?? []).filter(c => c.card_id === cardId);
+          const credMissing = creds.filter(c => !credentialComplete(c)).map(c => c.ota_channel);
+          if (!creds.length || credMissing.length) reasons.push(`Specialist: กรอก OTA Log-in ให้ครบ${credMissing.length ? ` (${credMissing.join(", ")})` : ""}`);
+          const rooms = (s.roomMappings ?? []).filter(m => m.card_id === cardId);
+          if (!rooms.length) reasons.push("Specialist: เพิ่มประเภทห้องใน Room schema อย่างน้อย 1 ห้อง");
+          else if (rooms.some(m => !m.ota_room_name.trim())) reasons.push("Specialist: จับคู่ชื่อห้องกับทุก OTA ให้ครบ");
+        }
         if (role !== "specialist") reasons.push("Specialist: เป็นผู้กด Completed");
       } else if (["new_property", "introduction_sent_form", "collect_data", "property_pending"].includes(card.current_stage)) {
         if (role !== "ae") reasons.push("AE: เป็นผู้ดำเนินขั้นตอนข้อมูลโรงแรม");
@@ -881,6 +918,32 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
       removeTemplateItem: (templateId) => {
         if (role !== "pm") return;
         setState((s) => ({ ...s, checklistTemplates: s.checklistTemplates.filter((t) => t.id !== templateId) }));
+      },
+      setCredential: (id, patch) => {
+        if (role !== "specialist") return;
+        setState((s) => ({ ...s, credentials: s.credentials.map((c) => (c.id === id ? { ...c, ...patch } : c)) }));
+      },
+      addRoom: (cardId, name) => {
+        if (role !== "specialist" || !name.trim()) return;
+        setState((s) => s.roomMappings.some((m) => m.card_id === cardId && m.original_room_name.toLowerCase() === name.trim().toLowerCase()) ? s : ({
+          ...s,
+          roomMappings: [...s.roomMappings, ...OTA_CHANNELS.map((ota) => ({ id: rid(), card_id: cardId, original_room_name: name.trim(), ota_channel: ota, ota_room_name: "" }))],
+        }));
+      },
+      removeRoom: (cardId, name) => {
+        if (role !== "specialist") return;
+        setState((s) => ({ ...s, roomMappings: s.roomMappings.filter((m) => !(m.card_id === cardId && m.original_room_name === name)) }));
+      },
+      setRoomMapping: (id, ota_room_name) => {
+        if (role !== "specialist") return;
+        setState((s) => ({ ...s, roomMappings: s.roomMappings.map((m) => (m.id === id ? { ...m, ota_room_name } : m)) }));
+      },
+      addHandoverTemplate: (ota_channel, group_label, item_label) => {
+        if (role !== "pm") return;
+        setState((s) => ({
+          ...s,
+          checklistTemplates: [...s.checklistTemplates, { id: rid(), stage_key: "handover", service_variant: "ORM", ota_channel, group_label, item_label, order: s.checklistTemplates.length + 1000, has_two_tick: true, field_type: "tick" }],
+        }));
       },
       reset: () => setState(seed()),
     };
