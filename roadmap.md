@@ -11,3 +11,8 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [x] Add mapped external app and nullable destination fields, preserving existing local cards.
 - [x] Add service-only team-app links to the guided drawer and dashboard Pipeline details.
 - [x] Verify fallback navigation, new-tab destination links and unchanged native work.
+
+# Contract Dashboard Fix 01
+- [ ] Capture and display contract/service, customer, hotel and invoice identities in existing sub-process.
+- [ ] Replace dormant handoff with idempotent Prop Info creation in the menu-8 store using manual-create defaults.
+- [ ] Verify ORM, Marcom, BOTH, missing-input guard, persistence and normal guided work.
