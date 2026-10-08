@@ -487,7 +487,7 @@ function seed(): State {
 }
 
 
-type CardInput = { property_name: string; service_line: ServiceLine; service_variant?: ServiceVariant; property_id?: string; contract_ref?: string; assigned_ae_id?: string | undefined };
+type CardInput = { property_name: string; service_line: ServiceLine; service_variant?: ServiceVariant | undefined; property_id?: string; contract_ref?: string; assigned_ae_id?: string | undefined };
 
 /** One initializer for manual and contract-created cards, including checklist and first event. */
 function insertNewCard(s: State, input: CardInput, id: string, now: string): State {
@@ -586,8 +586,12 @@ type Ctx = State & {
   hydrated: boolean;
   role: Role;
   setRole: (r: Role) => void;
-  createFromContract: (input: { deal_id: string; contract_id: string | null; contract_service_line: "ORM" | "MARCOM" | "BOTH" | null; hotel_id: string | null; property_name: string; assigned_ae_id?: string }) => { ok: boolean; created: string[] } ;
-  createCard: (input: { property_name: string; service_line: ServiceLine }) => string;
+  createFromContract: (input: { deal_id: string; contract_id: string | null; contract_service_line: "ORM" | "MARCOM" | "BOTH" | null; hotel_id: string | null; property_name: string; assigned_ae_id?: string; service_variant?: ServiceVariant }) => { ok: boolean; created: string[] } ;
+  createCard: (input: { property_name: string; service_line: ServiceLine; service_variant?: ServiceVariant }) => string;
+  toggleChecklistItem: (itemId: string) => void;
+  addTemplateItem: (stage_key: string, service_variant: ServiceVariant, group_label: string, item_label: string) => void;
+  renameTemplateItem: (templateId: string, item_label: string) => void;
+  removeTemplateItem: (templateId: string) => void;
   advance: (cardId: string, opts?: { to?: string; meetingUrl?: string }) => { ok: boolean; error?: string };
   canAdvance: (cardId: string) => { ok: boolean; reason?: string; reasons?: string[] };
   toggleFinalCheck: (itemId: string) => void;
@@ -617,7 +621,18 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
       const items = [...(loaded.checklistItems ?? [])];
       const cards = loaded.cards.map((card) => {
         const service_variant: ServiceVariant = card.service_variant ?? (card.service_line === "ORM" ? "ORM" : "MARCOM_META_TIKTOK");
-        if (!items.some((i) => i.card_id === card.id)) items.push(...instantiateChecklist(card.id, service_variant, templates));
+        if (!items.some((i) => i.card_id === card.id)) {
+          const fresh = instantiateChecklist(card.id, service_variant, templates);
+          const reached = new Set((loaded.events ?? []).filter((e) => e.card_id === card.id).map((e) => migrateStageKey(e.stage_key, service_variant)));
+          const now = new Date().toISOString();
+          for (const it of fresh) {
+            if (reached.has(it.stage_key) && it.stage_key !== migrateStageKey(card.current_stage, service_variant)) {
+              it.checked = true;
+              it.checked_at = now;
+            }
+          }
+          items.push(...fresh);
+        }
         return {
           ...card,
           service_variant,
@@ -660,7 +675,8 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
     for (const line of lines) {
       if (next.cards.some((card) => card.contract_ref === ref && card.service_line === line)) continue;
       const id = `OB-${rid()}-${Date.now()}`;
-      next = insertNewCard(next, { property_name: input.property_name, service_line: line, property_id: input.hotel_id, contract_ref: ref, assigned_ae_id: input.assigned_ae_id }, id, now);
+      const variant = line === "ORM" ? undefined : input.service_variant;
+      next = insertNewCard(next, { property_name: input.property_name, service_line: line, service_variant: variant, property_id: input.hotel_id, contract_ref: ref, assigned_ae_id: input.assigned_ae_id }, id, now);
       created.push(id);
     }
     if (created.length) {
@@ -704,9 +720,9 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
       setRole,
       createFromContract,
       canAdvance: (id) => gate(state, id),
-      createCard: ({ property_name, service_line }) => {
+      createCard: ({ property_name, service_line, service_variant }) => {
         const id = `OB-${rid()}-${Date.now()}`;
-        const next = insertNewCard(stateRef.current, { property_name, service_line }, id, new Date().toISOString());
+        const next = insertNewCard(stateRef.current, { property_name, service_line, service_variant }, id, new Date().toISOString());
         stateRef.current = next;
         setState(next);
         return id;
@@ -835,6 +851,36 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
       setFormStatus: (cardId, st) => {
         if (role !== "ae") return;
         setState((s) => ({ ...s, cards: s.cards.map((c) => (c.id === cardId ? { ...c, form_completion_status: st } : c)) }));
+      },
+      toggleChecklistItem: (itemId) => {
+        const item = state.checklistItems.find((i) => i.id === itemId);
+        if (!item) return;
+        const owner = item.stage_key === "collect_data" ? "ae" : "service";
+        if (role !== owner && role !== "pm") return;
+        setState((s) => ({
+          ...s,
+          checklistItems: s.checklistItems.map((i) =>
+            i.id === itemId ? { ...i, checked: !i.checked, checked_at: i.checked ? null : new Date().toISOString() } : i,
+          ),
+        }));
+      },
+      addTemplateItem: (stage_key, service_variant, group_label, item_label) => {
+        if (role !== "pm") return;
+        setState((s) => ({
+          ...s,
+          checklistTemplates: [
+            ...s.checklistTemplates,
+            { id: rid(), stage_key, service_variant, ota_channel: null, group_label, item_label, order: s.checklistTemplates.length + 1, has_two_tick: false, field_type: "tick" },
+          ],
+        }));
+      },
+      renameTemplateItem: (templateId, item_label) => {
+        if (role !== "pm") return;
+        setState((s) => ({ ...s, checklistTemplates: s.checklistTemplates.map((t) => (t.id === templateId ? { ...t, item_label } : t)) }));
+      },
+      removeTemplateItem: (templateId) => {
+        if (role !== "pm") return;
+        setState((s) => ({ ...s, checklistTemplates: s.checklistTemplates.filter((t) => t.id !== templateId) }));
       },
       reset: () => setState(seed()),
     };
