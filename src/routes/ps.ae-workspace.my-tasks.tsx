@@ -239,6 +239,7 @@ function MyTasksPage() {
           </Panel>
         ))
       )}
+      <ServicingCardDrawer key={drawer ?? "closed"} id={drawer} onClose={() => setDrawer(null)} />
     </div>
   );
 }
