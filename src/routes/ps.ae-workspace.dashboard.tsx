@@ -26,7 +26,6 @@ import {
   portfolioTotals,
   renewalRate,
   surveyCollection,
-  tierAPipeline7,
   usePsRenewal,
 } from "@/lib/ps-renewal";
 import {
@@ -64,6 +63,8 @@ export const Route = createFileRoute("/ps/ae-workspace/dashboard")({
           "ภาพรวมพอร์ตโรงแรม, ผลงานรายเดือน, สถานะ property pipeline และนัดหมายที่กำลังจะถึงของทีม AE",
       },
       { property: "og:title", content: "AE Dashboard — AE Workspace" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       {
         property: "og:description",
         content: "Portfolio, performance, property pipeline และ upcoming meetings ของทีม AE",
