@@ -3,6 +3,8 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
 export type ServiceLine = "ORM" | "MARCOM";
+export type ExternalApp = "ORM_APP" | "MARCOM_APP";
+export const externalAppFor = (line: ServiceLine): ExternalApp => line === "ORM" ? "ORM_APP" : "MARCOM_APP";
 export type OwnerTrack = "AE" | "SPECIALIST" | "SERVICE";
 export type Role = "ae" | "specialist" | "pm" | "service" | "management";
 export type FormStatus = "not_started" | "in_progress" | "complete";
@@ -24,6 +26,8 @@ export type OnboardingCard = {
   meeting_record_url: string | null;
   pre_service_form_ref: string | null;
   form_completion_status: FormStatus;
+  external_app: ExternalApp | null;
+  external_ref_url: string | null;
 };
 export type StageEvent = { id: string; card_id: string; stage_key: string; entered_at: string; owner_track: OwnerTrack };
 export type FinalCheckItem = { id: string; card_id: string; item_label: string; checked: boolean; checked_at: string | null };
@@ -193,6 +197,8 @@ function buildCard(
     property_id: opts.property_id,
     property_name: opts.name,
     service_line: opts.line,
+    external_app: externalAppFor(opts.line),
+    external_ref_url: null,
     contract_ref: opts.ref,
     created_at: new Date(created).toISOString(),
     current_stage: reached[reached.length - 1] ?? "new_property",
@@ -341,7 +347,12 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(KEY);
-      setState(raw ? (JSON.parse(raw) as State) : seed());
+      const loaded = raw ? (JSON.parse(raw) as State) : seed();
+      setState({ ...loaded, cards: loaded.cards.map((card) => ({
+        ...card,
+        external_app: card.external_app ?? externalAppFor(card.service_line),
+        external_ref_url: card.external_ref_url ?? null,
+      })) });
     } catch {
       setState(seed());
     }
@@ -409,6 +420,8 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
             property_id,
             property_name,
             service_line,
+            external_app: externalAppFor(service_line),
+            external_ref_url: null,
             contract_ref: `#${count + 1}`,
             created_at: now,
             current_stage: "new_property",

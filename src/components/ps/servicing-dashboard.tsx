@@ -1,6 +1,6 @@
 /* PS App v5.0 · Phase 1 — Servicing re-design (day-count timeline, gates, surveys, disparity, KPI #4). */
-import { Link, useRouterState } from "@tanstack/react-router";
-import { ArrowRight, Plus, Search, Star, Trash2 } from "lucide-react";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { ArrowRight, ExternalLink, Plus, Search, Star, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
   CartesianGrid,
@@ -26,6 +26,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import {
   MILESTONES,
+  externalAppFor,
   fullSequence,
   STAGE_GUIDANCE,
   STAGE_LABEL,
@@ -155,8 +156,40 @@ function WorkLink({ card, label = "View details" }: { card: OnboardingCard; labe
 }
 
 function CondensedPipeline({ cards }: { cards: OnboardingCard[] }) {
+  const [expanded, setExpanded] = useState<string | null>(null);
   const stages = [...new Set(cards.map((card) => card.current_stage))];
-  return <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{stages.map((stage) => { const stageCards = cards.filter((card) => card.current_stage === stage); const sample = stageCards[0]; return <div key={stage} className="rounded-lg border p-4"><div className="flex items-start justify-between gap-3"><div><p className="text-sm font-semibold">{STAGE_LABEL[stage]}</p><p className="mt-1 text-xs text-muted-foreground">{sample ? TRACK_LABEL[trackForStage(sample, stage)] : "—"} · {stageCards.length} การ์ด</p></div><span className="font-display text-2xl font-bold tabular-nums">{stageCards.length}</span></div>{sample && <div className="mt-3 flex justify-end"><WorkLink card={sample} /></div>}</div>; })}{!stages.length && <p className="col-span-full rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">ไม่พบการ์ด</p>}</div>;
+  return <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{stages.map((stage) => {
+    const stageCards = cards.filter((card) => card.current_stage === stage);
+    const sample = stageCards[0];
+    return <div key={stage} className="rounded-lg border p-4">
+      <Button variant="ghost" className="h-auto w-full justify-between gap-3 px-0 text-left" aria-expanded={expanded === stage} onClick={() => setExpanded(expanded === stage ? null : stage)}>
+        <span><span className="block text-sm font-semibold">{STAGE_LABEL[stage]}</span><span className="mt-1 block text-xs text-muted-foreground">{sample ? TRACK_LABEL[trackForStage(sample, stage)] : "—"} · {stageCards.length} การ์ด</span></span>
+        <span className="font-display text-2xl font-bold tabular-nums">{stageCards.length}</span>
+      </Button>
+      {expanded === stage ? <div className="mt-3 divide-y">{stageCards.map((card) => <div key={card.id} className="space-y-2 py-3">
+        <p className="text-sm font-medium">{card.property_name} · {card.service_line}</p>
+        <p className="text-xs text-muted-foreground">{STAGE_LABEL[card.current_stage]} · {trackForStage(card, stage) === "SERVICE" ? card.assigned_service_owner_id : TRACK_LABEL[trackForStage(card, stage)]}</p>
+        <div className="flex flex-wrap gap-2"><WorkLink card={card} /><ExternalAppButton card={card} /></div>
+      </div>)}</div> : sample && <div className="mt-3 flex justify-end"><WorkLink card={sample} /></div>}
+    </div>;
+  })}{!stages.length && <p className="col-span-full rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">ไม่พบการ์ด</p>}</div>;
+}
+
+function ExternalAppButton({ card }: { card: OnboardingCard }) {
+  const navigate = useNavigate();
+  if (trackForStage(card, card.current_stage) !== "SERVICE") return null;
+  const app = card.external_app ?? externalAppFor(card.service_line);
+  const name = app === "ORM_APP" ? "ORM" : "Marcom";
+  let destination: string | null = null;
+  try {
+    const url = new URL(card.external_ref_url ?? "");
+    if (url.protocol === "https:" || url.protocol === "http:") destination = url.href;
+  } catch { /* No destination record yet. */ }
+  if (destination) return <Button asChild size="sm" variant="outline"><a href={destination} target="_blank" rel="noopener noreferrer">Open in {name} App <ExternalLink className="size-3.5" /></a></Button>;
+  return <Button size="sm" variant="outline" onClick={() => {
+    toast.info(`${name} App servicing — coming soon`);
+    void navigate({ to: app === "ORM_APP" ? "/orm" : "/marcom" });
+  }}>Open in {name} App <ExternalLink className="size-3.5" /></Button>;
 }
 
 function TrackingView({ cards, onCompare }: { cards: OnboardingCard[]; onCompare: (id: string) => void }) {
@@ -305,6 +338,7 @@ function DetailSheet({ id, onClose }: { id: string | null; onClose: () => void }
             <p className="text-sm">{STAGE_GUIDANCE[card.current_stage]}</p>
             <p className="text-xs text-muted-foreground">ผู้รับผิดชอบ: {card.current_stage === "approved" || card.current_stage === "final_check" ? "AE / Specialist / Service" : ["new_property", "introduction_sent_form", "collect_data", "property_pending"].includes(card.current_stage) ? card.assigned_ae_id : card.assigned_service_owner_id}</p>
             {nxt && <Button className="w-full sm:w-auto" disabled={missing.length > 0} onClick={() => doAdvance()}>{nxt === "approved" ? "Approve" : nxt === "completed" ? "Completed" : nxt === "go_live" ? "ยืนยัน Go Live" : `ทำขั้นนี้เสร็จ → ${STAGE_LABEL[nxt]}`}</Button>}
+            <ExternalAppButton card={card} />
             {missing.length > 0 && <div className="border-l-2 pl-3 text-sm text-muted-foreground"><p className="font-medium text-foreground">สิ่งที่ต้องทำก่อนดำเนินการต่อ</p><ul className="mt-1 space-y-1">{missing.map(reason => <li key={reason}>{reason}</li>)}</ul></div>}
             {card.current_stage === "collect_data" && <Button variant="outline" disabled={s.role !== "ae" && s.role !== "pm"} onClick={() => doAdvance("property_pending")}>Mark Property Pending</Button>}
           </section>
