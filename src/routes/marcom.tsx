@@ -12,6 +12,8 @@ export const Route = createFileRoute("/marcom")({
       { name: "description", content: mod.description },
       { property: "og:title", content: "MARCOM App — Marketing & Comms | Meridia Hotel ERP" },
       { property: "og:description", content: mod.description },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: () => <ModuleView module={mod} />,
