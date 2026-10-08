@@ -30,7 +30,6 @@ import {
   fullSequence,
   STAGE_GUIDANCE,
   STAGE_LABEL,
-  ServicingProvider,
   bottleneck,
   currentDay,
   daysBetween,
@@ -58,11 +57,11 @@ const ROLES: Role[] = ["ae", "specialist", "pm", "service", "management"];
 const d = (n: number | null) => (n === null ? "—" : `D${n}`);
 
 export function ServicingDashboard() {
-  return <ServicingProvider><ServicingWorkSurface /></ServicingProvider>;
+  return <ServicingWorkSurface />;
 }
 
 export function ServicingDashboardView() {
-  return <ServicingProvider><ServicingMonitor /></ServicingProvider>;
+  return <ServicingMonitor />;
 }
 
 function ServicingWorkSurface() {
