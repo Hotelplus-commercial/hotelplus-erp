@@ -345,6 +345,9 @@ export function sums(card: OnboardingCard, events: StageEvent[]) {
     overall: card.go_live_at ? daysBetween(card.created_at, card.go_live_at) : null,
   };
 }
+/** Simulated signed-in AE for own-only AE surfaces (workflow simulation, not auth). */
+export const CURRENT_AE = "AE · Ploy";
+export const AE_STAGES = new Set(["new_property", "introduction_sent_form", "collect_data", "property_pending", "final_check"]);
 export const currentDay = (card: OnboardingCard) => daysBetween(card.created_at, card.go_live_at ?? new Date());
 export const bottleneck = (s: ReturnType<typeof sums>): OwnerTrack | null => {
   const opts: [OwnerTrack, number | null][] = [
@@ -467,11 +470,11 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
           if (!h.verifier_checked) reasons.push(`Service: ตรวจรับ ${h.item_label}`);
           if (!h.item_label.trim()) reasons.push("Specialist: ระบุชื่อรายการส่งมอบ");
         });
-        if (!["specialist", "pm"].includes(role)) reasons.push("Specialist / PM: เป็นผู้กด Completed");
+        if (role !== "specialist") reasons.push("Specialist: เป็นผู้กด Completed");
       } else if (["new_property", "introduction_sent_form", "collect_data", "property_pending"].includes(card.current_stage)) {
-        if (!["ae", "pm"].includes(role)) reasons.push("AE / PM: เป็นผู้ดำเนินขั้นตอนข้อมูลโรงแรม");
+        if (role !== "ae") reasons.push("AE: เป็นผู้ดำเนินขั้นตอนข้อมูลโรงแรม");
         if (nxt === "final_check" && card.form_completion_status !== "complete") reasons.push("AE: รวบรวมข้อมูลและตั้งสถานะฟอร์มเป็น complete");
-      } else if (!["service", "pm"].includes(role)) reasons.push("Service / PM: เป็นผู้ทำและยืนยันขั้นตอนบริการนี้");
+      } else if (role !== "service") reasons.push("Service: เป็นผู้ทำและยืนยันขั้นตอนบริการนี้");
       return { ok: reasons.length === 0, ...(reasons[0] ? { reason: reasons[0] } : {}), reasons };
     };
     return {
@@ -494,7 +497,7 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
         const g = gate(state, cardId);
         const nxt = nextStage(card.service_line, card.current_stage);
         const to = opts?.to ?? nxt;
-        const pending = to === "property_pending" && card.current_stage === "collect_data" && ["ae", "pm"].includes(role);
+        const pending = to === "property_pending" && card.current_stage === "collect_data" && role === "ae";
         if (!pending && to !== nxt) return { ok: false, error: "ดำเนินการได้เฉพาะขั้นถัดไป" };
         if (!pending && !g.ok) return { ok: false, error: g.reasons.join(" · ") };
         if (!to) return { ok: false, error: "ไม่มีขั้นถัดไป" };
@@ -562,7 +565,7 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
         return { ok: true };
       },
       toggleFinalCheck: (itemId) => {
-        if (!["ae", "pm"].includes(role)) return;
+        if (role !== "ae") return;
         setState((s) => ({
           ...s,
           finalChecks: s.finalChecks.map((f) =>
@@ -571,7 +574,7 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
         }));
       },
       toggleHandover: (itemId, col) => {
-        if (col === "specialist" ? !["specialist", "pm"].includes(role) : !["service", "pm"].includes(role)) return;
+        if (col === "specialist" ? role !== "specialist" : role !== "service") return;
         setState((s) => ({
           ...s,
           handover: s.handover.map((h) => {
@@ -596,7 +599,7 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
       deleteHandover: (itemId) => setState((s) => ({ ...s, handover: s.handover.filter((h) => h.id !== itemId) })),
       submitHandoverSurvey: (id, score, comment) => {
         const survey = state.handoverSurveys.find(h => h.id === id);
-        if (!survey || surveyStatus(survey) !== "pending" || !["service", "pm"].includes(role) || score < 1 || score > 5) return;
+        if (!survey || surveyStatus(survey) !== "pending" || role !== "service" || score < 1 || score > 5) return;
         setState((s) => ({
           ...s,
           handoverSurveys: s.handoverSurveys.map((h) =>
@@ -610,7 +613,7 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
           customerSurveys: s.customerSurveys.map((c) => (c.id === id ? { ...c, ...patch, responded_at: new Date().toISOString() } : c)),
         })),
       setFormStatus: (cardId, st) => {
-        if (!["ae", "pm"].includes(role)) return;
+        if (role !== "ae") return;
         setState((s) => ({ ...s, cards: s.cards.map((c) => (c.id === cardId ? { ...c, form_completion_status: st } : c)) }));
       },
       reset: () => setState(seed()),
