@@ -33,6 +33,7 @@ import {
   bottleneck,
   currentDay,
   daysBetween,
+  CURRENT_AE,
   eventsOf,
   fmtDayMon,
   nextStage,
@@ -103,20 +104,40 @@ function ServicingMonitor() {
   const [status, setStatus] = useState("all");
   const [compare, setCompare] = useState<string | null>(null);
   const [openCard, setOpenCard] = useState<string | null>(null);
+  const [openReadOnly, setOpenReadOnly] = useState(false);
+  const [mineOnly, setMineOnly] = useState(false);
+  const [focusStage, setFocusStage] = useState<string | null>(null);
+  const [fromZone3, setFromZone3] = useState(false);
+  const hash = useRouterState({ select: (state) => state.location.hash });
+  useEffect(() => {
+    const m = /^#?z3-(work|view)-(.+)$/.exec(hash ?? "");
+    const card = m ? s.cards.find((c) => c.id === m[2]) : undefined;
+    if (!m || !card) return;
+    setView("pipeline");
+    setQ(""); setLine("all"); setStatus("all"); setMineOnly(false);
+    setFocusStage(card.current_stage);
+    setOpenReadOnly(m[1] === "view");
+    setOpenCard(card.id);
+    setFromZone3(true);
+    requestAnimationFrame(() => document.getElementById("servicing-overview")?.scrollIntoView({ block: "start" }));
+  }, [hash, s.cards]);
+  const openFromBoard = (id: string) => { setOpenReadOnly(false); setOpenCard(id); };
   const filtered = useMemo(() => s.cards.filter((card) => {
     const term = q.trim().toLowerCase();
     const bucket = card.go_live_at ? "live" : AE_TRACK_STAGES.has(card.current_stage) ? "ae" : "servicing";
     return (!term || `${card.property_name} ${card.property_id} ${card.contract_ref}`.toLowerCase().includes(term))
       && (line === "all" || card.service_line === line)
-      && (status === "all" || status === bucket);
-  }), [s.cards, q, line, status]);
+      && (status === "all" || status === bucket)
+      && (!mineOnly || card.assigned_ae_id === CURRENT_AE);
+  }), [s.cards, q, line, status, mineOnly]);
   const live = s.cards.filter((card) => card.go_live_at).length;
   const siblings = [...new Set(filtered.map((card) => card.property_id))]
     .map((id) => filtered.filter((card) => card.property_id === id))
     .filter((cards) => cards.length > 1);
 
   return (
-    <section className="space-y-4 border-t pt-6" aria-label="Servicing overview">
+    <section id="servicing-overview" className="scroll-mt-20 space-y-4 border-t pt-6" aria-label="Servicing overview">
+      {fromZone3 && <Button asChild variant="ghost" size="sm" className="px-0"><Link to="/ps/ae-workspace/dashboard">← กลับงานของฉัน (Zone 3)</Link></Button>}
       <div>
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Servicing</p>
         <h2 className="font-display text-xl font-semibold">ภาพรวม On-boarding และบริการ</h2>
@@ -134,18 +155,19 @@ function ServicingMonitor() {
         </div>
         <Select value={line} onValueChange={setLine}><SelectTrigger className="w-40"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">ทุกบริการ</SelectItem><SelectItem value="ORM">ORM</SelectItem><SelectItem value="MARCOM">Marcom</SelectItem></SelectContent></Select>
         <Select value={status} onValueChange={setStatus}><SelectTrigger className="w-44"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">ทุกสถานะ</SelectItem><SelectItem value="ae">AE track</SelectItem><SelectItem value="servicing">Servicing</SelectItem><SelectItem value="live">Go Live</SelectItem></SelectContent></Select>
+        <Button size="sm" variant={mineOnly ? "default" : "outline"} className="h-9 rounded-full" aria-pressed={mineOnly} onClick={() => setMineOnly((v) => !v)}>ของฉัน</Button>
       </div>
       <Tabs value={view} onValueChange={setView}>
         <TabsList className="grid h-auto w-full grid-cols-2 sm:w-fit sm:grid-cols-4">
           <TabsTrigger value="pipeline">Pipeline</TabsTrigger><TabsTrigger value="tracking">Tracking</TabsTrigger><TabsTrigger value="disparity">Disparity</TabsTrigger><TabsTrigger value="kpi">KPI #4</TabsTrigger>
         </TabsList>
-        <TabsContent value="pipeline"><CondensedPipeline cards={filtered} onOpen={setOpenCard} /></TabsContent>
-        <TabsContent value="tracking"><TrackingView cards={filtered} onCompare={setCompare} onOpen={setOpenCard} /></TabsContent>
+        <TabsContent value="pipeline"><CondensedPipeline cards={filtered} onOpen={openFromBoard} focusStage={focusStage} /></TabsContent>
+        <TabsContent value="tracking"><TrackingView cards={filtered} onCompare={setCompare} onOpen={openFromBoard} /></TabsContent>
         <TabsContent value="disparity"><div className="divide-y rounded-lg border px-4">{siblings.map((cards) => <div key={cards[0]?.property_id} className="flex flex-wrap items-center justify-between gap-2 py-3"><span className="text-sm font-medium">{cards[0]?.property_name}</span><div className="flex items-center gap-2"><DisparityBadge cards={cards} /><Button size="sm" variant="ghost" onClick={() => { const id = cards[0]?.property_id; if (id) setCompare(id); }}>Compare</Button></div></div>)}{!siblings.length && <p className="py-8 text-center text-sm text-muted-foreground">ไม่มีโรงแรมหลายบริการในผลลัพธ์นี้</p>}</div></TabsContent>
         <TabsContent value="kpi"><KpiView cards={filtered} /></TabsContent>
       </Tabs>
       <CompareDialog propertyId={compare} onClose={() => setCompare(null)} />
-      <ServicingCardDrawer key={openCard ?? "closed"} id={openCard} readOnly onClose={() => setOpenCard(null)} />
+      <ServicingCardDrawer key={openCard ?? "closed"} id={openCard} readOnly={openReadOnly} onClose={() => setOpenCard(null)} />
     </section>
   );
 }
@@ -156,8 +178,10 @@ function WorkLink({ card, onOpen, label = "ดูรายละเอียด�
   return <Button size="sm" variant="ghost" onClick={() => onOpen(card.id)}>{label} <ArrowRight className="size-3.5" /></Button>;
 }
 
-function CondensedPipeline({ cards, onOpen }: { cards: OnboardingCard[]; onOpen: (id: string) => void }) {
-  const [expanded, setExpanded] = useState<string | null>(null);
+/** View-only board: never advances a stage — advancing happens only inside ServicingCardDrawer. */
+function CondensedPipeline({ cards, onOpen, focusStage }: { cards: OnboardingCard[]; onOpen: (id: string) => void; focusStage?: string | null }) {
+  const [expanded, setExpanded] = useState<string | null>(focusStage ?? null);
+  useEffect(() => { if (focusStage) setExpanded(focusStage); }, [focusStage]);
   const stages = [...new Set([...fullSequence("ORM"), ...fullSequence("MARCOM")])];
   return <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{stages.map((stage) => {
     const stageCards = cards.filter((card) => card.current_stage === stage);
@@ -683,7 +707,7 @@ function KpiView({ cards }: { cards?: OnboardingCard[] }) {
             </tbody>
           </table>
         </div>
-        <ServicingCardDrawer key={kpiOpen ?? "closed"} id={kpiOpen} readOnly onClose={() => setKpiOpen(null)} />
+        <ServicingCardDrawer key={kpiOpen ?? "closed"} id={kpiOpen} onClose={() => setKpiOpen(null)} />
       </Panel>
     </div>
   );

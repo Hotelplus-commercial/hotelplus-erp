@@ -21,3 +21,8 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [x] Zone 3 → per-hotel AE entry (own-only; ส่งต่อแล้ว read-only group); Zone 3 menu-8 link removed.
 - [x] Property Info tab → status chips + เปิดการ์ด On-boarding (board removed); My Tasks onboarding opens drawer.
 - [x] PS Dashboard pipeline spans new_property→go_live; drill-down opens drawer read-only.
+
+# Servicing v5.4 Phase 1 — AE Workspace surface patch
+- [x] PS Dashboard Pipeline accepts Zone 3 card deep-link (auto-expand stage, auto-open drawer, role-aware actionable) + ของฉัน chip (default off).
+- [x] Zone 3 ทำต่อ/ดูสถานะ navigate to PS Dashboard Pipeline; back-link ← กลับงานของฉัน (Zone 3).
+- [x] Tier A Meeting Pipeline card + mock removed.

@@ -529,20 +529,12 @@ export const renewals = [
   { hotel: "City Center BKK", daysLeft: 41 },
 ];
 
-export const tierAPipeline = [
-  { label: "Not Assign", value: 4, tone: "muted" as const },
-  { label: "Draft", value: 6, tone: "info" as const },
-  { label: "Confirm Slot", value: 7, tone: "success" as const },
-  { label: "Reject Slot", value: 1, tone: "danger" as const },
-];
-
 export const upcomingTeam = [
   { time: "09:00", hotel: "Grand Palace Bangkok", tier: "A" as Tier, mine: true },
   { time: "11:00", hotel: "Riverside Resort Krabi", tier: "B" as Tier, mine: false },
   { time: "14:00", hotel: "Ocean View Phuket + Sunset Villa", tier: "A" as Tier, mine: true },
 ];
 
-export const upcomingSummary = { team: 15, mine: 8 };
 
 /* --- Property Info pipeline --- */
 
