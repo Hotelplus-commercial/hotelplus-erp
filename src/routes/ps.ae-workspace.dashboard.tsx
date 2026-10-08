@@ -15,6 +15,7 @@ import {
 } from "@/lib/ps-v4";
 import { PageHeader } from "@/components/erp-ui";
 import { JourneyBar } from "@/components/ps/meeting-ui";
+import { AeOnboardingEntry } from "@/components/ps/ae-onboarding-entry";
 import { MyDayZone } from "@/components/ps/my-day-zone";
 import { RenewalActivityCards } from "@/components/ps/renewal-ui";
 
@@ -347,66 +348,11 @@ function DashboardTab() {
         </Panel>
       )}
 
-      {/* Zone 3 — Property Info Pipeline (deep-link) */}
-      <Panel
-        title="Zone 3 · 🏨 Property Info Pipeline"
-        subtitle={`On-boarding: ${propertyCards.length} โรงแรม · คลิกการ์ดเพื่อไปที่ On-boarding Process`}
-        right={
-          <div className="flex flex-wrap gap-2">
-            <Button size="sm" variant="outline" asChild>
-              <Link to="/ps/ae-workspace/property-info">→ Property Info tab</Link>
-            </Button>
-            <Button size="sm" asChild>
-              <Link to="/ps/onboarding-process">→ On-boarding Process</Link>
-            </Button>
-          </div>
-        }
-      >
-        <div className="grid gap-3 md:grid-cols-2">
-          <div className="rounded-xl border p-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Pre-Services (On-boarding)
-            </p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              <Chip tone="info">{propertyCards.length} properties</Chip>
-              <Chip tone={overdue > 0 ? "danger" : "success"}>{overdue} overdue SLA</Chip>
-            </div>
-            <ul className="mt-3 flex flex-col gap-1.5">
-              {propertyCards.map((p) => (
-                <li key={p.id}>
-                  <Link
-                    to="/ps/onboarding-process"
-                    hash={`hotel-${p.id}`}
-                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-2.5 text-sm transition-colors hover:bg-muted/60"
-                  >
-                    <span className="min-w-0 truncate font-medium">{p.hotel}</span>
-                    <span className="text-xs text-muted-foreground">
-                      Owner: {p.owner}
-                      {p.lastActionBy && p.lastActionBy !== p.owner
-                        ? ` · last action: ${p.lastActionBy}`
-                        : ""}
-                    </span>
-                    <Chip tone={p.overdue ? "danger" : "success"}>
-                      {p.overdue ? `🔴 Overdue ${p.daysInStage - p.slaDays}d` : "🟢 On-time"}
-                    </Chip>
-                    <span className="text-xs text-muted-foreground">
-                      {p.daysInStage}d ในขั้นนี้ →
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-            <div className="mt-3 rounded-lg border bg-muted/30 p-2.5">
-              <p className="text-xs font-semibold">Customer Journey · {firstProperty.hotel}</p>
-              <div className="mt-1.5">
-                <JourneyBar
-                  step={firstProperty.journeyStep}
-                  signedDaysAgo={firstProperty.signedDaysAgo}
-                />
-              </div>
-            </div>
-          </div>
+      {/* Zone 3 — v5.3 AE entry (per-hotel, shared guided drawer) */}
+      <AeOnboardingEntry />
 
+      <Panel title="Tier A Meeting Pipeline" subtitle="ภาพรวมการประชุม Tier A">
+        <div>
           <div className="rounded-xl border p-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Tier A Meeting Pipeline

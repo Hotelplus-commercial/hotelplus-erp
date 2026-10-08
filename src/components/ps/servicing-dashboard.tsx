@@ -445,7 +445,7 @@ function HandoverSurveyForm({ id, status, score }: { id: string; status: string;
         <div className="mt-2 space-y-2">
           <ScorePicker value={v} onChange={setV} max={5} />
           <Textarea value={c} onChange={(e) => setC(e.target.value)} placeholder="ความคิดเห็น (ไม่บังคับ)" />
-          <Button variant="outline" size="sm" disabled={s.role !== "service" && s.role !== "pm"} onClick={() => { s.submitHandoverSurvey(id, v, c); toast.success("ส่ง Survey #1 แล้ว"); }}>
+          <Button variant="outline" size="sm" disabled={s.role !== "service"} onClick={() => { s.submitHandoverSurvey(id, v, c); toast.success("ส่ง Survey #1 แล้ว"); }}>
             ส่งคะแนน (Service)
           </Button>
         </div>

@@ -3,7 +3,11 @@ import { Link, createFileRoute } from "@tanstack/react-router";
 import { ArrowLeft, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { toast } from "sonner";
+
 import { Chip, Panel } from "@/components/crm/crm-ui";
+import { ServicingCardDrawer } from "@/components/ps/servicing-dashboard";
+import { useServicing } from "@/lib/ps-servicing";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -53,6 +57,18 @@ const actionRoutes: Record<TaskType, { to: string; hash?: string; label: string 
 type SortKey = "due" | "type" | "hotel";
 
 function MyTasksPage() {
+  const servicing = useServicing();
+  const [drawer, setDrawer] = useState<string | null>(null);
+  const openOnboarding = (hotel?: string) => {
+    const key = (hotel ?? "").toLowerCase();
+    const card = servicing.cards.find((c) => {
+      const name = c.property_name.toLowerCase();
+      return key && (name.includes(key) || key.includes(name));
+    });
+    if (!card) { toast.info(`ยังไม่พบการ์ด On-boarding ของ ${hotel ?? "โรงแรมนี้"}`); return; }
+    servicing.setRole("ae");
+    setDrawer(card.id);
+  };
   const [types, setTypes] = useState<TaskType[]>([]);
   const [subject, setSubject] = useState("all");
   const [from, setFrom] = useState("");
@@ -205,11 +221,17 @@ function MyTasksPage() {
                         กำหนด {t.due_date} · {todoDueLabel(t)}
                       </p>
                     </div>
+                    {t.type === "onboarding" ? (
+                      <Button size="sm" variant="outline" onClick={() => openOnboarding(t.hotel_name)}>
+                        {route.label} →
+                      </Button>
+                    ) : (
                     <Button size="sm" variant="outline" asChild>
                       <Link to={route.to} {...(route.hash ? { hash: route.hash } : {})}>
                         {route.label} →
                       </Link>
                     </Button>
+                    )}
                   </li>
                 );
               })}
