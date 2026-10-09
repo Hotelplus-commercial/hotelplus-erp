@@ -40,3 +40,8 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 ## v6.0 two-gate correction
 - [x] Remove WS-2 completion as an advance blocker; preserve role permissions and existing hard gates.
 - [x] Verify Collect Data → Final Check with incomplete form/unchecked checklist, persistence and blocked Approve.
+
+## v6.0 UI Fix Item 1
+- [x] Move owner-day summary first; replace drawer stage lists with a conditional horizontal dot rail.
+- [x] Default-collapse past-stage checklists and preserve current-stage expansion.
+- [x] Restore Property Pending pipeline visibility; verify AE entry, Final Check-only exit and persistence.

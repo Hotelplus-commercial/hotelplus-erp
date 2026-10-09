@@ -190,7 +190,9 @@ export const lineSequence = (line: ServiceLine) => {
   const seen = new Set<string>();
   const svc: string[] = [];
   for (const v of variantsForLine(line)) for (const stage of VARIANT_SERVICE_TRACK[v]) if (!seen.has(stage)) { seen.add(stage); svc.push(stage); }
-  return [...AE_TRACK, "completed", ...svc];
+  const stages = [...AE_TRACK, "completed", ...svc];
+  stages.splice(3, 0, "property_pending");
+  return stages;
 };
 export const trackOf = (stage: string): OwnerTrack =>
   ["new_property", "introduction_sent_form", "collect_data", "property_pending", "final_check"].includes(stage)

@@ -208,7 +208,9 @@ function DeptBadge({ stage, line, variant }: { stage: string; line?: ServiceLine
 
 function ChecklistSection({ card, readOnly }: { card: OnboardingCard; readOnly: boolean }) {
   const s = useServicing();
-  const stages = [...new Set(["collect_data", card.current_stage])];
+  const sequence = fullSequence(card.service_variant);
+  const currentIndex = sequence.indexOf(card.current_stage === "property_pending" ? "collect_data" : card.current_stage);
+  const stages = [...new Set([...sequence.slice(0, currentIndex + 1), card.current_stage])];
   const [stageKey, setStageKey] = useState("");
   const [group, setGroup] = useState("");
   const [label, setLabel] = useState("");
@@ -220,10 +222,10 @@ function ChecklistSection({ card, readOnly }: { card: OnboardingCard; readOnly: 
     {blocks.map(({ stage, items }) => {
       const can = !readOnly && (s.test_mode || s.role === owner(stage));
       const groups = [...new Set(items.map((i) => i.group_label))];
-      return <div key={stage} className="space-y-2 rounded-md border p-3">
-        <p className="flex flex-wrap items-center gap-2 text-xs font-medium">{STAGE_LABEL[stage]}<DeptBadge stage={stage} variant={card.service_variant} />{stage === "collect_data" && card.service_variant === "ORM" && <span className="text-muted-foreground">· แบบฟอร์ม WS-2: {card.form_completion_status}</span>}</p>
+      return <details key={`${card.id}-${card.current_stage}-${stage}`} open={stage === card.current_stage || undefined} className="space-y-2 rounded-md border p-3">
+        <summary className="cursor-pointer text-xs font-medium"><span className="inline-flex flex-wrap items-center gap-2">{STAGE_LABEL[stage]}<DeptBadge stage={stage} variant={card.service_variant} />{stage === "collect_data" && card.service_variant === "ORM" && <span className="text-muted-foreground">· แบบฟอร์ม WS-2: {card.form_completion_status}</span>}<span className="text-muted-foreground">· {items.filter((i) => i.checked).length}/{items.length}</span></span></summary>
         {groups.map((g) => <div key={g} className="space-y-1">{g && <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{g}</p>}{items.filter((i) => i.group_label === g).map((i) => <label key={i.id} className="flex items-start gap-2 text-sm"><Checkbox className="mt-0.5" checked={i.checked} disabled={!can} onCheckedChange={() => s.toggleChecklistItem(i.id)} /><span>{i.label}{i.checked_at && <span className="block text-[11px] text-muted-foreground">✓ {fmtDayMon(i.checked_at)} {new Date(i.checked_at).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })}</span>}</span></label>)}</div>)}
-      </div>;
+      </details>;
     })}
     {!blocks.length && <p className="text-xs text-muted-foreground">ขั้นนี้ไม่มี checklist (milestone)</p>}
     {s.role === "pm" && <details className="rounded-md border p-3 text-sm"><summary className="cursor-pointer font-medium">แก้แม่แบบ Checklist (PM) · มีผลกับการ์ดใหม่เท่านั้น</summary>
@@ -381,39 +383,40 @@ function DisparityBadge({ cards }: { cards: OnboardingCard[] }) {
 
 function Timeline({ card }: { card: OnboardingCard }) {
   const s = useServicing();
+  const [showPast, setShowPast] = useState(false);
+  const [showFull, setShowFull] = useState(false);
   const evs = eventsOf(s, card.id);
+  const sequence = fullSequence(card.service_variant);
+  if (card.current_stage === "property_pending" || evs.some((e) => e.stage_key === "property_pending")) sequence.splice(3, 0, "property_pending");
+  const currentIndex = sequence.indexOf(card.current_stage);
+  const visible = showFull ? sequence : sequence.slice(0, currentIndex + 2);
   const hs = s.handoverSurveys.find((h) => h.card_id === card.id);
-  return (
-    <ol className="relative ml-2 border-l pl-4">
-      {evs.map((e, i) => {
-        const big = MILESTONES.has(e.stage_key);
-        const isActive = i === evs.length - 1 && !card.go_live_at;
-        const dayN = daysBetween(card.created_at, e.entered_at);
-        return (
-          <li key={e.id} className="relative pb-3">
-            <span
-              className={cn(
-                "absolute top-1 rounded-full border-2 border-foreground/70 bg-background",
-                big ? "-left-[25px] size-4 bg-foreground/80" : "-left-[21px] size-2.5",
-              )}
-            />
-            <div className="flex flex-wrap items-center gap-2 text-sm">
-              <span className={cn(big && "font-semibold")}>{STAGE_LABEL[e.stage_key]}</span>
-              <span className="font-mono text-xs text-muted-foreground">
-                {fmtDayMon(e.entered_at)} · Day {dayN}
-              </span>
-              <span className="text-[10px] text-muted-foreground">{TRACK_LABEL[e.owner_track]}</span>
-              {e.stage_key === card.billing_anchor_stage && <Chip>★ Billing start</Chip>}
-              {e.stage_key === "completed" && hs && <SurveyBadge status={surveyStatus(hs)} expires={hs.window_expires_at} />}
-              {e.stage_key === card.billing_anchor_stage && <Chip>◇ Survey #2 sent</Chip>}
-              {isActive && <span className="text-xs text-muted-foreground">· live: Day {currentDay(card)}</span>}
-            </div>
-
-          </li>
-        );
-      })}
-    </ol>
-  );
+  return <section className="space-y-3 border-b pb-4" aria-label="Stage timeline">
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <Button variant="ghost" size="sm" aria-expanded={showPast} onClick={() => setShowPast((value) => !value)}>ผ่านมาแล้ว · {Math.max(0, currentIndex)}</Button>
+      <Button variant="ghost" size="sm" aria-expanded={showFull} onClick={() => setShowFull((value) => !value)}>{showFull ? "ย่อฉบับเต็ม" : "ดูฉบับเต็ม"}</Button>
+    </div>
+    <div className="overflow-x-auto pb-2">
+      <ol className="flex min-w-max items-start" aria-label="ลำดับขั้นตอน">
+        {visible.map((stage, index) => {
+          const past = index < currentIndex;
+          const active = stage === card.current_stage;
+          const labeled = !past || showPast || showFull;
+          const event = evs.find((e) => e.stage_key === stage);
+          const detail = event ? `${fmtDayMon(event.entered_at)} · Day ${daysBetween(card.created_at, event.entered_at)}` : "";
+          return <li key={stage} data-stage={stage} aria-current={active ? "step" : undefined} className={cn("relative shrink-0 pt-1", labeled ? "w-36" : "w-7")}>
+            {index < visible.length - 1 && <span aria-hidden="true" className="absolute left-3 right-0 top-3 border-t border-border" />}
+            <span title={`${STAGE_LABEL[stage]}${detail ? ` · ${detail}` : ""}`} className={cn("relative z-10 ml-1 block rounded-full border", active ? "size-4 border-primary bg-primary ring-4 ring-primary/15" : past ? "mt-1 size-2 border-muted-foreground bg-muted-foreground" : "size-4 border-muted-foreground bg-background")} />
+            {labeled && <div className="mt-3 space-y-1 pr-3 text-xs">
+              <p className={cn("break-words", active ? "font-semibold text-primary" : past ? "text-muted-foreground" : "text-foreground")}>{STAGE_LABEL[stage]}{stage === card.billing_anchor_stage ? " ★" : ""}</p>
+              {detail && <p className="text-[11px] text-muted-foreground">{detail}</p>}
+              {stage === "completed" && hs && <SurveyBadge status={surveyStatus(hs)} expires={hs.window_expires_at} />}
+            </div>}
+          </li>;
+        })}
+      </ol>
+    </div>
+  </section>;
 }
 
 function SurveyBadge({ status, expires }: { status: string; expires: string }) {
@@ -452,16 +455,12 @@ export function ServicingCardDrawer({ id, onClose, readOnly = false }: { id: str
   const s = useServicing();
   const card = s.cards.find((c) => c.id === id);
   const [meetUrl, setMeetUrl] = useState("");
-  const [showHistory, setShowHistory] = useState(false);
   if (!card) return null;
 
   const nxt = nextStage(card.service_variant, card.current_stage);
   const gate = s.canAdvance(card.id);
   const missing = [...(nxt ? gate.reasons ?? [] : []), ...(nxt === "completed" && !/^https?:\/\//.test(meetUrl.trim()) ? ["Specialist: ใส่ลิงก์ Meeting record (http/https)"] : [])];
-  const sequence = fullSequence(card.service_variant);
-  const future = sequence.slice(sequence.indexOf(card.current_stage === "property_pending" ? "collect_data" : card.current_stage) + 1);
   const finals = s.finalChecks.filter((f) => f.card_id === card.id);
-  const hand = s.handover.filter((h) => h.card_id === card.id);
   const hs = s.handoverSurveys.find((h) => h.card_id === card.id);
   const cs = s.customerSurveys.find((c) => c.card_id === card.id);
   const finalsDone = finals.length > 0 && finals.every((f) => f.checked);
@@ -486,6 +485,7 @@ export function ServicingCardDrawer({ id, onClose, readOnly = false }: { id: str
           </SheetTitle>
         </SheetHeader>
         <div className="mt-4 space-y-5 px-1 pb-8">
+          <SumChips card={card} />
           <section className="space-y-3 border-b pb-4" aria-label="Current step">
             <p className="text-xs text-muted-foreground">ขั้นตอนปัจจุบัน · Day {currentDay(card)}</p>
             <h3 className="flex flex-wrap items-center gap-2 font-display text-xl font-semibold">{STAGE_LABEL[card.current_stage]}<DeptBadge stage={card.current_stage} variant={card.service_variant} /></h3>
@@ -497,8 +497,8 @@ export function ServicingCardDrawer({ id, onClose, readOnly = false }: { id: str
             {missing.length > 0 && <div className="border-l-2 pl-3 text-sm text-muted-foreground"><p className="font-medium text-foreground">สิ่งที่ต้องทำก่อนดำเนินการต่อ</p><ul className="mt-1 space-y-1">{missing.map(reason => <li key={reason}>{reason}</li>)}</ul></div>}
             {card.current_stage === "collect_data" && <Button variant="outline" disabled={!canAct} onClick={() => doAdvance("property_pending")}>Mark Property Pending</Button>}
           </section>
+          <Timeline key={card.id} card={card} />
           <ChecklistSection card={card} readOnly={readOnly} />
-          <SumChips card={card} />
           <fieldset disabled={readOnly} className="m-0 min-w-0 space-y-5 border-0 p-0">
 
           <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -514,11 +514,6 @@ export function ServicingCardDrawer({ id, onClose, readOnly = false }: { id: str
           </div>
 
           </fieldset>
-          <section className="space-y-2">
-            <Button variant="ghost" size="sm" onClick={() => setShowHistory(v => !v)}>{showHistory ? "ซ่อน" : "แสดง"}ขั้นตอนที่ผ่านมา · {eventsOf(s, card.id).length}</Button>
-            {showHistory && <Timeline card={card} />}
-            {future.length > 0 && <div className="border-l pl-4 text-xs text-muted-foreground"><p className="mb-2 font-medium">ขั้นตอนถัดไป</p><ol className="space-y-1.5">{future.map(stage => <li key={stage}>{MILESTONES.has(stage) ? "●" : "○"} {STAGE_LABEL[stage]}{stage === card.billing_anchor_stage ? " ★" : ""}</li>)}</ol></div>}
-          </section>
 
           <fieldset disabled={readOnly} className="m-0 min-w-0 space-y-5 border-0 p-0">
           {card.current_stage === "final_check" && (
