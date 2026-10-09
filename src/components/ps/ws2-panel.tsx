@@ -4,23 +4,23 @@ import { toast } from "sonner";
 import { Chip } from "@/components/crm/crm-ui";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useServicing, type ServicingCard } from "@/lib/ps-servicing";
+import { useServicing, type OnboardingCard } from "@/lib/ps-servicing";
 import { SERVICE_LABEL, STATUS_LABEL, serviceForVariant, templateStats, useWs2, type ProfileStatus } from "@/lib/ws2-store";
 
 const toCardStatus = (st: ProfileStatus) => (st === "submitted" ? "complete" : st === "not_sent" ? "not_started" : "in_progress") as const;
 
-export function useWs2Status(card: Pick<ServicingCard, "property_id" | "service_variant">): ProfileStatus {
+export function useWs2Status(card: Pick<OnboardingCard, "property_id" | "service_variant">): ProfileStatus {
   const w = useWs2();
   return w.profiles.find((p) => p.property_id === card.property_id && p.service === serviceForVariant(card.service_variant))?.form_completion_status ?? "not_sent";
 }
 
-export function Ws2StatusChip({ card }: { card: Pick<ServicingCard, "property_id" | "service_variant"> }) {
+export function Ws2StatusChip({ card }: { card: Pick<OnboardingCard, "property_id" | "service_variant"> }) {
   const st = useWs2Status(card);
   return <Chip tone={st === "submitted" ? "success" : st === "not_sent" ? "muted" : "info"}>Form · {STATUS_LABEL[st]}</Chip>;
 }
 
 /** WS-2 panel inside the shared drawer. Guidance only — never gates any stage. */
-export function Ws2Panel({ card, readOnly }: { card: ServicingCard; readOnly: boolean }) {
+export function Ws2Panel({ card, readOnly }: { card: OnboardingCard; readOnly: boolean }) {
   const s = useServicing();
   const w = useWs2();
   const service = serviceForVariant(card.service_variant);

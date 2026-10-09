@@ -21,6 +21,7 @@ import { MeetingMgmtProvider } from "@/lib/orm-meeting";
 import { PsRenewalProvider } from "@/lib/ps-renewal";
 import { PsBlockGroupProvider } from "@/lib/ps-block-groups";
 import { ServicingProvider } from "@/lib/ps-servicing";
+import { Ws2Provider } from "@/lib/ws2-store";
 import { ContractLifecycleProvider } from "@/lib/contract-lifecycle";
 
 
@@ -145,6 +146,7 @@ function RootComponent() {
         <CrmStoreProvider>
           <BdStoreProvider>
           <ServicingProvider>
+          <Ws2Provider>
           <ContractLifecycleProvider>
           <PsTemplateProvider>
             <PsBlockGroupProvider>
@@ -160,6 +162,7 @@ function RootComponent() {
           </PsBlockGroupProvider>
           </PsTemplateProvider>
           </ContractLifecycleProvider>
+          </Ws2Provider>
           </ServicingProvider>
 
         </BdStoreProvider>
