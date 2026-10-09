@@ -36,3 +36,7 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [x] Add global preview-only TEST MODE, default ON, with top-bar toggle and production hard-off.
 - [x] Bypass checklist-role ticking only; preserve timestamps, gates, read-only surfaces and all non-ticking permissions.
 - [x] Verify ON/OFF for Final Check, both handover columns and service checklists; confirm stage CTA remains gated.
+
+## v6.0 two-gate correction
+- [x] Remove WS-2 completion as an advance blocker; preserve role permissions and existing hard gates.
+- [x] Verify Collect Data → Final Check with incomplete form/unchecked checklist, persistence and blocked Approve.
