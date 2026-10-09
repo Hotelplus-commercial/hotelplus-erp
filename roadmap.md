@@ -55,4 +55,4 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 
 ## WS-2 Property Information Form
 - [x] Phase 1: property data layer, 3 config templates (ORM from JSON export, Marcom MT from PDF + Owner Interview, GMB 8 fields), AE Generate Form, Image Portal #1, status chip, audit log
-- [ ] Phase 2 (awaiting go-ahead): customer fill page, submit routing L1/L2/L3, room folders + photo count, seed handover credentials, restricted access, template publish
+- [x] Phase 2: customer fill page, submit routing L1/L2/L3, room folders + photo count, seed handover credentials, restricted access, template publish
