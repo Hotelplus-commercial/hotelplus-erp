@@ -158,16 +158,16 @@ export function Ws2Provider({ children }: { children: ReactNode }) {
           if (v === undefined || v === "" || (Array.isArray(v) && !v.length)) continue;
           if (f.layer === "L1" && f.identity_key) l1[f.identity_key] = String(v);
           else if (f.layer === "L3" && f.restricted_category) (restrictedByCat[f.restricted_category] ??= {})[f.label] = v;
-          else l2[sec.repeat_group ? `${sec.id}[${String(entry._rid ?? idx)}].${f.label}` : `${sec.id}.${f.label}`] = v;
+          else l2[sec.repeat_group ? `${sec.id}[${String(entry["_rid"] ?? idx)}].${f.label}` : `${sec.id}.${f.label}`] = v;
         }
-        for (const [category, data] of Object.entries(restrictedByCat)) l3.push({ category: category as RestrictedCategory, data: { ...data, _entry: entry._rid ?? idx } });
+        for (const [category, data] of Object.entries(restrictedByCat)) l3.push({ category: category as RestrictedCategory, data: { ...data, _entry: entry["_rid"] ?? idx } });
         if (sec.repeat_group === "ota" && form.service === "ORM") {
           const by = (re: RegExp) => String(sec.fields.find((f) => re.test(f.label)) ? entry[sec.fields.find((f) => re.test(f.label))!.id] ?? "" : "");
           otaLogins.push({ ota: by(/^OTA Name/i), hotel_id: by(/^HOTEL ID/i), username: by(/^USERNAME/i), password: by(/^PASSWORD/i) });
         }
-        if (sec.repeat_group === "room_type" && entry._rid) {
+        if (sec.repeat_group === "room_type" && entry["_rid"]) {
           const nameField = sec.fields.find((f) => f.field_type === "text");
-          rooms.push({ rid: String(entry._rid), name: String((nameField && entry[nameField.id]) || `Room ${idx + 1}`) });
+          rooms.push({ rid: String(entry["_rid"]), name: String((nameField && entry[nameField.id]) || `Room ${idx + 1}`) });
         }
       });
     }
