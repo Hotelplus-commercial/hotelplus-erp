@@ -21,7 +21,9 @@ export type Audit = { last_updated_at: string; last_updated_by: string; last_upd
 export type Property = { hotel_id: string; hotel_name_th: string; hotel_name_en: string; address_th: string; address_en: string; phone: string; key_contact: string } & Audit;
 export type ProfileStatus = "not_sent" | "sent" | "partial" | "submitted";
 export type ServiceProfile = { property_id: string; service: Ws2Service; photo_repo_url: string | null; form_completion_status: ProfileStatus; profile_data: Record<string, unknown> } & Audit;
-export type Ws2Form = { id: string; property_id: string; service: Ws2Service; customer_email: string; status: "draft" | "generated" | "sent" | "submitted"; template_version: number; generated_by: string; generated_at: string; sent_at: string | null; submitted_at: string | null; form_token: string };
+export type Ws2Form = { id: string; property_id: string; service: Ws2Service; customer_email: string; status: "draft" | "generated" | "sent" | "submitted"; template_version: number; generated_by: string; generated_at: string; sent_at: string | null; submitted_at: string | null; form_token: string; answers?: Answers };
+/** sectionId → one entry (or many for repeat groups); each entry maps fieldId → value. Repeat entries carry a stable `_rid`. */
+export type Answers = Record<string, Record<string, unknown>[]>;
 export type RestrictedRecord = { id: string; property_id: string; service: Ws2Service; category: RestrictedCategory; data: Record<string, unknown> } & Audit;
 export type ActivityLog = { id: string; property_id: string; service: Ws2Service | null; app: string; user: string; action: "create" | "edit" | "view_restricted"; field: string; old_value: string; new_value: string; at: string };
 export type PortalFolder = { id: string; property_id: string; service: Ws2Service; path: string; label: string; photo_count: number };
@@ -36,6 +38,9 @@ const rid = () => Math.random().toString(36).slice(2, 10);
 export const SERVICE_LABEL: Record<Ws2Service, string> = { ORM: "ORM", MARCOM_MT: "Marcom Meta/TikTok", MARCOM_GMB: "Marcom GMB" };
 export const STATUS_LABEL: Record<ProfileStatus, string> = { not_sent: "ยังไม่ส่งฟอร์ม", sent: "ส่งฟอร์มแล้ว", partial: "กรอกบางส่วน", submitted: "ลูกค้าส่งแล้ว" };
 export const serviceForVariant = (v: ServiceVariant): Ws2Service => (v === "ORM" ? "ORM" : v === "MARCOM_GMB" ? "MARCOM_GMB" : "MARCOM_MT");
+/** Restricted layer (L3) is visible to ORM-side roles only; Marcom service owners are carved out. Prototype role flags, not real security. */
+export const canSeeRestricted = (role: string, service: Ws2Service) => ["ae", "specialist", "pm", "management"].includes(role) || (role === "service" && service === "ORM");
+export const canEditTemplates = (role: string) => role === "pm" || role === "management";
 export const IDENTITY_FIELDS = ["hotel_name_th", "hotel_name_en", "address_th", "address_en", "phone", "key_contact"] as const;
 
 const seedTemplates = (): TemplateVersion[] =>
@@ -53,6 +58,11 @@ type Api = State & {
   templateFor: (form: Ws2Form) => TemplateVersion | undefined;
   ensureProperty: (input: { hotel_id: string; hotel_name: string }, user: string) => void;
   updateProperty: (hotel_id: string, patch: Partial<Pick<Property, (typeof IDENTITY_FIELDS)[number]>>, user: string, app?: string) => void;
+  formByToken: (token: string) => Ws2Form | undefined;
+  saveAnswers: (token: string, answers: Answers, user: string, submit: boolean) => { ok: boolean; error?: string; otaLogins?: { ota: string; hotel_id: string; username: string; password: string }[] };
+  addPhotos: (folderId: string, count: number, user: string) => void;
+  logRestrictedView: (property_id: string, service: Ws2Service, user: string, app: string) => void;
+  publishTemplate: (service: Ws2Service, def: TemplateDef, user: string) => number;
   generateForm: (input: { hotel_id: string; hotel_name: string; variant: ServiceVariant; customer_email: string }, user: string) => { ok: boolean; error?: string; form?: Ws2Form };
 };
 
@@ -126,7 +136,95 @@ export function Ws2Provider({ children }: { children: ReactNode }) {
     return { ok: true, form };
   }, [s.forms, latestTemplate]);
 
-  const api = useMemo<Api>(() => ({ ...s, latestTemplate, templateFor: (f) => s.templates.find((t) => t.service === f.service && t.version === f.template_version), ensureProperty, updateProperty, generateForm }), [s, latestTemplate, ensureProperty, updateProperty, generateForm]);
+  const saveAnswers = useCallback<Api["saveAnswers"]>((token, answers, user, submit) => {
+    const form = s.forms.find((f) => f.form_token === token);
+    if (!form) return { ok: false, error: "ไม่พบฟอร์ม" };
+    if (form.status === "submitted") return { ok: false, error: "ฟอร์มนี้ส่งแล้ว" };
+    const tpl = s.templates.find((x) => x.service === form.service && x.version === form.template_version);
+    if (!tpl) return { ok: false, error: "ไม่พบ template" };
+    const app = "Customer form";
+    const t = now();
+    const l1: Record<string, string> = {};
+    const l2: Record<string, unknown> = {};
+    const l3: { category: RestrictedCategory; data: Record<string, unknown> }[] = [];
+    const otaLogins: { ota: string; hotel_id: string; username: string; password: string }[] = [];
+    const rooms: { rid: string; name: string }[] = [];
+    for (const sec of tpl.def.sections) {
+      const entries = answers[sec.id] ?? [];
+      entries.forEach((entry, idx) => {
+        const restrictedByCat: Partial<Record<RestrictedCategory, Record<string, unknown>>> = {};
+        for (const f of sec.fields) {
+          const v = entry[f.id];
+          if (v === undefined || v === "" || (Array.isArray(v) && !v.length)) continue;
+          if (f.layer === "L1" && f.identity_key) l1[f.identity_key] = String(v);
+          else if (f.layer === "L3" && f.restricted_category) (restrictedByCat[f.restricted_category] ??= {})[f.label] = v;
+          else l2[sec.repeat_group ? `${sec.id}[${String(entry._rid ?? idx)}].${f.label}` : `${sec.id}.${f.label}`] = v;
+        }
+        for (const [category, data] of Object.entries(restrictedByCat)) l3.push({ category: category as RestrictedCategory, data: { ...data, _entry: entry._rid ?? idx } });
+        if (sec.repeat_group === "ota" && form.service === "ORM") {
+          const by = (re: RegExp) => String(sec.fields.find((f) => re.test(f.label)) ? entry[sec.fields.find((f) => re.test(f.label))!.id] ?? "" : "");
+          otaLogins.push({ ota: by(/^OTA Name/i), hotel_id: by(/^HOTEL ID/i), username: by(/^USERNAME/i), password: by(/^PASSWORD/i) });
+        }
+        if (sec.repeat_group === "room_type" && entry._rid) {
+          const nameField = sec.fields.find((f) => f.field_type === "text");
+          rooms.push({ rid: String(entry._rid), name: String((nameField && entry[nameField.id]) || `Room ${idx + 1}`) });
+        }
+      });
+    }
+    const nextStatus: ProfileStatus = submit ? "submitted" : "partial";
+    setS((st) => {
+      const prop = st.properties.find((p) => p.hotel_id === form.property_id);
+      const logs: ActivityLog[] = [];
+      let properties = st.properties;
+      if (prop) {
+        const changed = Object.entries(l1).filter(([k, v]) => (prop as Record<string, unknown>)[k] !== v);
+        changed.forEach(([k, v]) => logs.push(logRow({ property_id: form.property_id, service: form.service, app, user, action: "edit", field: k, old_value: String((prop as Record<string, unknown>)[k] ?? ""), new_value: v })));
+        if (changed.length) properties = st.properties.map((p) => (p.hotel_id === form.property_id ? { ...p, ...l1, ...audit(user, app) } : p));
+      }
+      const profiles = st.profiles.map((p) => {
+        if (p.property_id !== form.property_id || p.service !== form.service) return p;
+        Object.entries(l2).filter(([k, v]) => JSON.stringify(p.profile_data[k]) !== JSON.stringify(v)).forEach(([k, v]) => logs.push(logRow({ property_id: p.property_id, service: p.service, app, user, action: "edit", field: k, old_value: p.profile_data[k] === undefined ? "" : JSON.stringify(p.profile_data[k]), new_value: JSON.stringify(v) })));
+        if (p.form_completion_status !== nextStatus) logs.push(logRow({ property_id: p.property_id, service: p.service, app, user, action: "edit", field: "form_completion_status", old_value: p.form_completion_status, new_value: nextStatus }));
+        return { ...p, profile_data: { ...p.profile_data, ...l2 }, form_completion_status: nextStatus, ...audit(user, app) };
+      });
+      const restricted = [
+        ...st.restricted.filter((r) => !(r.property_id === form.property_id && r.service === form.service)),
+        ...l3.map((r) => ({ id: rid(), property_id: form.property_id, service: form.service, category: r.category, data: r.data, ...audit(user, app) })),
+      ];
+      l3.forEach((r) => logs.push(logRow({ property_id: form.property_id, service: form.service, app, user, action: "edit", field: `🔒 ${r.category}`, old_value: "", new_value: "(hidden)" })));
+      const base = `portal://${form.property_id}/${form.service}/`;
+      let folders = st.folders;
+      if (form.service !== "MARCOM_GMB") for (const r of rooms) {
+        const path = `${base}${r.rid}/`;
+        const hit = folders.find((f) => f.path === path);
+        if (hit) folders = folders.map((f) => (f.id === hit.id ? { ...f, label: r.name } : f));
+        else { folders = [...folders, { id: rid(), property_id: form.property_id, service: form.service, path, label: r.name, photo_count: 0 }]; logs.push(logRow({ property_id: form.property_id, service: form.service, app, user, action: "create", field: "image_folder", old_value: "", new_value: path })); }
+      }
+      const forms = st.forms.map((f) => (f.id === form.id ? { ...f, answers, ...(submit ? { status: "submitted" as const, submitted_at: t } : {}) } : f));
+      return { ...st, properties, profiles, restricted, folders, forms, log: [...st.log, ...logs] };
+    });
+    return { ok: true, otaLogins: submit ? otaLogins.filter((o) => o.ota) : [] };
+  }, [s.forms, s.templates]);
+
+  const addPhotos = useCallback<Api["addPhotos"]>((folderId, count, user) => {
+    setS((st) => {
+      const f = st.folders.find((x) => x.id === folderId);
+      if (!f || count <= 0) return st;
+      return { ...st, folders: st.folders.map((x) => (x.id === folderId ? { ...x, photo_count: x.photo_count + count } : x)), log: [...st.log, logRow({ property_id: f.property_id, service: f.service, app: "Customer form", user, action: "edit", field: `photos ${f.path}`, old_value: String(f.photo_count), new_value: String(f.photo_count + count) })] };
+    });
+  }, []);
+
+  const logRestrictedView = useCallback<Api["logRestrictedView"]>((property_id, service, user, app) => {
+    setS((st) => ({ ...st, log: [...st.log, logRow({ property_id, service, app, user, action: "view_restricted", field: "🔒 restricted", old_value: "", new_value: "" })] }));
+  }, []);
+
+  const publishTemplate = useCallback<Api["publishTemplate"]>((service, def, user) => {
+    const version = Math.max(...s.templates.filter((x) => x.service === service).map((x) => x.version)) + 1;
+    setS((st) => ({ ...st, templates: [...st.templates, { service, version, published_at: now(), published_by: user, def }] }));
+    return version;
+  }, [s.templates]);
+
+  const api = useMemo<Api>(() => ({ ...s, latestTemplate, templateFor: (f) => s.templates.find((t) => t.service === f.service && t.version === f.template_version), formByToken: (tk) => s.forms.find((f) => f.form_token === tk), saveAnswers, addPhotos, logRestrictedView, publishTemplate, ensureProperty, updateProperty, generateForm }), [s, latestTemplate, saveAnswers, addPhotos, logRestrictedView, publishTemplate, ensureProperty, updateProperty, generateForm]);
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>;
 }
 
