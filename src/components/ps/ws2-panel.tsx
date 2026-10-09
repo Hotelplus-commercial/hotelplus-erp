@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 
 import { Chip } from "@/components/crm/crm-ui";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useServicing, type OnboardingCard } from "@/lib/ps-servicing";
-import { SERVICE_LABEL, STATUS_LABEL, serviceForVariant, templateStats, useWs2, type ProfileStatus } from "@/lib/ws2-store";
+import { SERVICE_LABEL, STATUS_LABEL, canSeeRestricted, serviceForVariant, templateStats, useWs2, type ProfileStatus } from "@/lib/ws2-store";
 
 const toCardStatus = (st: ProfileStatus): "complete" | "not_started" | "in_progress" => (st === "submitted" ? "complete" : st === "not_sent" ? "not_started" : "in_progress");
 
@@ -34,6 +35,13 @@ export function Ws2Panel({ card, readOnly }: { card: OnboardingCard; readOnly: b
   const [email, setEmail] = useState("");
   const [showFields, setShowFields] = useState(false);
   const canGenerate = !readOnly && (s.role === "ae" || s.test_mode);
+  const [showL3, setShowL3] = useState(false);
+  const restricted = w.restricted.filter((r) => r.property_id === card.property_id && r.service === service);
+  const mayL3 = canSeeRestricted(s.role, service);
+  const st = profile?.form_completion_status;
+  useEffect(() => {
+    if (st && card.form_completion_status !== toCardStatus(st)) s.setFormStatus(card.id, toCardStatus(st));
+  }, [st]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const generate = () => {
     const r = w.generateForm({ hotel_id: card.property_id, hotel_name: card.property_name, variant: card.service_variant, customer_email: email }, card.assigned_ae_id || "AE");
@@ -67,7 +75,9 @@ export function Ws2Panel({ card, readOnly }: { card: OnboardingCard; readOnly: b
       ) : (
         <div className="space-y-2 text-xs">
           <p>ส่งถึง <span className="font-medium">{form.customer_email}</span> · {new Date(form.sent_at ?? form.generated_at).toLocaleString("th-TH")} · โดย {form.generated_by}</p>
-          <p className="text-muted-foreground">Template ล็อกไว้ที่ v{form.template_version} · Form token <span className="font-mono">{form.form_token.slice(0, 8)}…</span> · หน้าให้ลูกค้ากรอกจะมาใน Phase 2</p>
+          <p className="text-muted-foreground">Template ล็อกไว้ที่ v{form.template_version} · Form token <span className="font-mono">{form.form_token.slice(0, 8)}…</span> </p>
+          <Button asChild size="sm" variant="outline" className="h-8"><Link to="/f/$token" params={{ token: form.form_token }} target="_blank">เปิดฟอร์มลูกค้า ↗ (AE กรอกแทนได้)</Link></Button>
+          {form.submitted_at && <p className="text-muted-foreground">ลูกค้าส่งเมื่อ {new Date(form.submitted_at).toLocaleString("th-TH")}</p>}
         </div>
       )}
 
@@ -77,6 +87,17 @@ export function Ws2Panel({ card, readOnly }: { card: OnboardingCard; readOnly: b
           <p className="break-all font-mono text-muted-foreground">{profile.photo_repo_url}</p>
           <ul className="space-y-0.5">{folders.map((f) => <li key={f.id} className="flex justify-between gap-2"><span>{f.path.replace(profile.photo_repo_url!, "")} · {f.label}</span><span className="text-muted-foreground">{f.photo_count} รูป</span></li>)}</ul>
           <p className="text-[11px] text-muted-foreground">นับจำนวนรูปต่อโฟลเดอร์เท่านั้น · ไม่บังคับขั้นต่ำ{service === "MARCOM_GMB" ? " (อ้างอิง ≥10 รูป)" : service === "ORM" ? " (อ้างอิง ~15 รูปทั่วไป + รายห้อง)" : ""}</p>
+        </div>
+      )}
+
+      {restricted.length > 0 && (
+        <div className="space-y-1 text-xs">
+          <p className="font-medium">🔒 ข้อมูลส่วนตัว ({restricted.length} รายการ)</p>
+          {!mayL3 ? <p className="text-muted-foreground">ทีม Marcom ไม่มีสิทธิ์ดูข้อมูลส่วนนี้</p> : !showL3 ? (
+            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => { w.logRestrictedView(card.property_id, service, s.role, "PS App"); setShowL3(true); }}>แสดงข้อมูล (บันทึกการเข้าดู)</Button>
+          ) : (
+            <ul className="space-y-1">{restricted.map((r) => <li key={r.id} className="rounded border p-1.5"><span className="font-medium">{r.category}</span> · {Object.entries(r.data).filter(([k]) => k !== "_entry").map(([k, v]) => `${k.split(" (")[0]}: ${String(v)}`).join(" · ")}</li>)}</ul>
+          )}
         </div>
       )}
 
