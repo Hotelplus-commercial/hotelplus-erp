@@ -556,7 +556,7 @@ export function ServicingCardDrawer({ id, onClose, readOnly = false }: { id: str
              <Input aria-label="Meeting record URL" className="h-8 text-xs" value={meetUrl} onChange={(e) => setMeetUrl(e.target.value)} placeholder="Meeting record URL (จำเป็นตอน Completed)" />
            </section>}
 
-           {hs && <HandoverSurveyForm key={hs.id} id={hs.id} status={surveyStatus(hs)} score={hs.score} />}
+           {hs && (card.service_variant !== "ORM" || handoverProgress(s, card).verifierDone) && <HandoverSurveyForm key={hs.id} id={hs.id} status={surveyStatus(hs)} score={hs.score} />}
           {cs && <CustomerSurveyForm key={cs.id} id={cs.id} responded={!!cs.responded_at} />}
           </fieldset>
         </div>

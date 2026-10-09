@@ -755,13 +755,17 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
     const created: string[] = [];
     const now = new Date().toISOString();
     for (const line of lines) {
-      if (next.cards.some((card) => card.contract_ref === ref && card.service_line === line)) continue;
+      const existing = next.cards.find((card) => card.contract_ref === ref && card.service_line === line);
+      if (existing) {
+        if (line === "ORM" && input.contract_code && !existing.contract_code) next = { ...next, cards: next.cards.map((card) => card.id === existing.id ? { ...card, contract_code: input.contract_code ?? "", orm_lite: /ORM-LITE/i.test(input.contract_code ?? "") } : card) };
+        continue;
+      }
       const id = `OB-${rid()}-${Date.now()}`;
       const variant = line === "ORM" ? undefined : input.service_variant;
-      next = insertNewCard(next, { property_name: input.property_name, service_line: line, service_variant: variant, property_id: input.hotel_id, contract_ref: ref, contract_code: input.contract_code, assigned_ae_id: input.assigned_ae_id }, id, now);
+      next = insertNewCard(next, { property_name: input.property_name, service_line: line, service_variant: variant, property_id: input.hotel_id, contract_ref: ref, contract_code: input.contract_code ?? "", assigned_ae_id: input.assigned_ae_id }, id, now);
       created.push(id);
     }
-    if (created.length) {
+    if (next !== stateRef.current) {
       stateRef.current = next;
       setState(next);
     }

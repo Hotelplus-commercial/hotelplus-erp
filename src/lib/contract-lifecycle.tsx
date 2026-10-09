@@ -200,10 +200,13 @@ export function ContractLifecycleProvider({ children }: { children: ReactNode })
   const handoff = (l: ContractLifecycle) => {
     const quote = quotes.find((q) => q.quote_id === l.quote_id);
     const hasGoogle = (quote?.calculator_output?.selected_items ?? []).some((it) => it.category === "google");
+    const approvedSkus = quote?.approved_snapshot?.approved_skus ?? quote?.skus ?? [];
+    const lite = approvedSkus.some((sku) => sku.sku_code === "ORM-MTH-LITE");
     const result = servicing.createFromContract({
       deal_id: l.id, contract_id: l.contract_id, contract_service_line: l.contract_service_line,
       hotel_id: l.hotel_id, property_name: l.property_name || l.hotel_name, assigned_ae_id: l.bd_owner_id,
       service_variant: hasGoogle ? "MARCOM_GMB" : "MARCOM_META_TIKTOK",
+      contract_code: lite ? "TPL-C-ORM-LITE" : quote?.package_code ?? "",
     });
     if (!result.ok) {
       toast("ยังสร้างการ์ด On-boarding ไม่ได้ — ขาด Contract ID / service line หรือ Hotel ID (ตั้งค่าในขั้น sub-process ก่อน)");
