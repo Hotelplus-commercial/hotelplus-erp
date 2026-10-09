@@ -1784,8 +1784,8 @@
      "id": "hotel_facilities_and_services.95",
      "label": "Fax / Photocopying (แฟกซ์ / เครื่องถ่ายเอกสาร)",
      "field_type": "select",
-     "layer": "L3",
-     "restricted_category": "document",
+     "layer": "L2",
+     "restricted_category": null,
      "repeat_group": null,
      "options": [
       "Yes",
