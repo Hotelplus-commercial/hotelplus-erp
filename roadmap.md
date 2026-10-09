@@ -38,5 +38,5 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [x] Verify ON/OFF for Final Check, both handover columns and service checklists; confirm stage CTA remains gated.
 
 ## v6.0 two-gate correction
-- [ ] Remove WS-2 completion as an advance blocker; preserve role permissions and existing hard gates.
-- [ ] Verify Collect Data → Final Check with incomplete form/unchecked checklist, persistence and blocked Approve.
+- [x] Remove WS-2 completion as an advance blocker; preserve role permissions and existing hard gates.
+- [x] Verify Collect Data → Final Check with incomplete form/unchecked checklist, persistence and blocked Approve.

@@ -139,8 +139,8 @@ export const STAGE_LABEL: Record<string, string> = {
 export const STAGE_GUIDANCE: Record<string, string> = {
   new_property: "AE: ติดต่อโรงแรมและส่งแบบฟอร์มเตรียมข้อมูล แล้วบันทึกการส่ง",
   introduction_sent_form: "AE: ติดตามแบบฟอร์มและเริ่มรวบรวมข้อมูลของโรงแรม",
-  collect_data: "AE: รวบรวมข้อมูลให้ครบและตั้งสถานะฟอร์มเป็น complete ก่อนส่ง Final Check; หากรอโรงแรมให้พักที่ Property Pending",
-  property_pending: "AE: ติดตามข้อมูลที่ยังขาดจากโรงแรม ตั้งสถานะฟอร์ม complete แล้วส่ง Final Check",
+  collect_data: "AE: รวบรวมข้อมูลโรงแรมและบันทึกความคืบหน้า; หากรอโรงแรมให้พักที่ Property Pending",
+  property_pending: "AE: ติดตามข้อมูลที่ยังขาดจากโรงแรมและบันทึกความคืบหน้า",
   final_check: "AE: ตรวจรายการทั้ง 4 ข้อให้ครบ จากนั้น Specialist หรือ PM อนุมัติ",
   approved: "Specialist: เตรียมส่งมอบงาน; Service ตรวจรับทุกรายการ แล้ว Specialist ใส่ลิงก์บันทึกการประชุมเพื่อยืนยัน Completed",
   completed: "Service: เริ่มงานบริการและบันทึกการเข้าสู่ขั้นแรก; แบบประเมินส่งมอบเป็นทางเลือก",
