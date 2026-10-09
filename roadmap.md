@@ -47,7 +47,8 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [x] Restore Property Pending pipeline visibility; verify AE entry, Final Check-only exit and persistence.
 
 ## v6.0 UI Fix Item 2
-- [ ] Add contract-detected ORM-Lite with per-card any-three OTA selection, scoped data and completion gates.
-- [ ] Sequence Specialist completion then ORM acceptance; trigger survey after acceptance and add appointment gate.
-- [ ] Expand shared handover layout and credential columns; preserve dashboard read-only consistency.
-- [ ] Verify full/Lite handover flows, survey timing, appointment gate, role/Test Mode and persistence.
+- [x] Add contract-detected ORM-Lite with configurable per-card three-OTA selection, scoped data and completion gates.
+- [x] Sequence Specialist completion then ORM acceptance; trigger survey after acceptance and add appointment gate.
+- [x] Expand shared handover layout and credential columns; preserve dashboard read-only consistency.
+- [x] Verify full/Lite handover flows, survey timing, appointment gate, workflow roles, dashboard read-only and persistence; existing Test Mode bypass remains unchanged.
+- [ ] Confirm whether Lite's three OTAs are chosen per card or a fixed subset (waiting for user choice).
