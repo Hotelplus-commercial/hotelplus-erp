@@ -33,6 +33,7 @@ import { Route as BdDealsRouteImport } from './routes/bd.deals'
 import { Route as BdQuotationsRouteImport } from './routes/bd.quotations'
 import { Route as BdQuotesRouteImport } from './routes/bd.quotes'
 import { Route as BdRegisterDealRouteImport } from './routes/bd.register-deal'
+import { Route as FTokenRouteImport } from './routes/f.$token'
 import { Route as LTokenRouteImport } from './routes/l.$token'
 import { Route as OrmIndexRouteImport } from './routes/orm.index'
 import { Route as OrmActionARouteImport } from './routes/orm.action-a'
@@ -196,6 +197,11 @@ const BdRegisterDealRoute = BdRegisterDealRouteImport.update({
   id: '/register-deal',
   path: '/register-deal',
   getParentRoute: () => BdRoute,
+} as any)
+const FTokenRoute = FTokenRouteImport.update({
+  id: '/f/$token',
+  path: '/f/$token',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const LTokenRoute = LTokenRouteImport.update({
   id: '/l/$token',
@@ -439,6 +445,7 @@ export interface FileRoutesByFullPath {
   '/bd/quotations': typeof BdQuotationsRouteWithChildren
   '/bd/quotes': typeof BdQuotesRouteWithChildren
   '/bd/register-deal': typeof BdRegisterDealRoute
+  '/f/$token': typeof FTokenRoute
   '/l/$token': typeof LTokenRoute
   '/orm/action-a': typeof OrmActionARouteWithChildren
   '/ps/ae-workspace': typeof PsAeWorkspaceRouteWithChildren
@@ -501,6 +508,7 @@ export interface FileRoutesByTo {
   '/bd/calculator': typeof BdCalculatorRouteWithChildren
   '/bd/deals': typeof BdDealsRoute
   '/bd/register-deal': typeof BdRegisterDealRoute
+  '/f/$token': typeof FTokenRoute
   '/l/$token': typeof LTokenRoute
   '/ps/contract-dashboard': typeof PsContractDashboardRoute
   '/ps/contracts': typeof PsContractsRoute
@@ -568,6 +576,7 @@ export interface FileRoutesById {
   '/bd/quotations': typeof BdQuotationsRouteWithChildren
   '/bd/quotes': typeof BdQuotesRouteWithChildren
   '/bd/register-deal': typeof BdRegisterDealRoute
+  '/f/$token': typeof FTokenRoute
   '/l/$token': typeof LTokenRoute
   '/orm/action-a': typeof OrmActionARouteWithChildren
   '/ps/ae-workspace': typeof PsAeWorkspaceRouteWithChildren
@@ -639,6 +648,7 @@ export interface FileRouteTypes {
     | '/bd/quotations'
     | '/bd/quotes'
     | '/bd/register-deal'
+    | '/f/$token'
     | '/l/$token'
     | '/orm/action-a'
     | '/ps/ae-workspace'
@@ -701,6 +711,7 @@ export interface FileRouteTypes {
     | '/bd/calculator'
     | '/bd/deals'
     | '/bd/register-deal'
+    | '/f/$token'
     | '/l/$token'
     | '/ps/contract-dashboard'
     | '/ps/contracts'
@@ -767,6 +778,7 @@ export interface FileRouteTypes {
     | '/bd/quotations'
     | '/bd/quotes'
     | '/bd/register-deal'
+    | '/f/$token'
     | '/l/$token'
     | '/orm/action-a'
     | '/ps/ae-workspace'
@@ -827,6 +839,7 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   SystemCostRoute: typeof SystemCostRoute
   TheOfficeAppRoute: typeof TheOfficeAppRouteWithChildren
+  FTokenRoute: typeof FTokenRoute
   LTokenRoute: typeof LTokenRoute
 }
 
@@ -999,6 +1012,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/bd/register-deal'
       preLoaderRoute: typeof BdRegisterDealRouteImport
       parentRoute: typeof BdRoute
+    }
+    '/f/$token': {
+      id: '/f/$token'
+      path: '/f/$token'
+      fullPath: '/f/$token'
+      preLoaderRoute: typeof FTokenRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/l/$token': {
       id: '/l/$token'
@@ -1526,6 +1546,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   SystemCostRoute: SystemCostRoute,
   TheOfficeAppRoute: TheOfficeAppRouteWithChildren,
+  FTokenRoute: FTokenRoute,
   LTokenRoute: LTokenRoute,
 }
 export const routeTree = rootRouteImport
