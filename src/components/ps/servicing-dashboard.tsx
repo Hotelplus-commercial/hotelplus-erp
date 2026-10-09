@@ -53,6 +53,7 @@ import {
   handoverProgress,
 } from "@/lib/ps-servicing";
 import { cn } from "@/lib/utils";
+import { Ws2Panel } from "@/components/ps/ws2-panel";
 
 const TRACK_COLOR: Record<OwnerTrack, string> = {
   AE: "var(--color-primary)",
@@ -514,17 +515,7 @@ export function ServicingCardDrawer({ id, onClose, readOnly = false }: { id: str
           <ChecklistSection card={card} readOnly={readOnly} />
           <fieldset disabled={readOnly} className="m-0 min-w-0 space-y-5 border-0 p-0">
 
-          <div className="flex flex-wrap items-center gap-2 text-xs">
-            <span className="text-muted-foreground">Form (WS-2):</span>
-            <Select disabled={s.role !== "ae"} value={card.form_completion_status} onValueChange={(v) => s.setFormStatus(card.id, v as typeof card.form_completion_status)}>
-              <SelectTrigger className="h-7 w-36 text-xs"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="not_started">not_started</SelectItem>
-                <SelectItem value="in_progress">in_progress</SelectItem>
-                <SelectItem value="complete">complete</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <Ws2Panel card={card} readOnly={readOnly} />
 
           </fieldset>
 

@@ -52,3 +52,7 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [x] Expand shared handover layout and credential columns; preserve dashboard read-only consistency.
 - [x] Verify full/Lite handover flows, survey timing, appointment gate, workflow roles, dashboard read-only and persistence; existing Test Mode bypass remains unchanged.
 - [x] User confirmed Specialist chooses any three OTAs per Lite card, not a fixed subset.
+
+## WS-2 Property Information Form
+- [x] Phase 1: property data layer, 3 config templates (ORM from JSON export, Marcom MT from PDF + Owner Interview, GMB 8 fields), AE Generate Form, Image Portal #1, status chip, audit log
+- [ ] Phase 2 (awaiting go-ahead): customer fill page, submit routing L1/L2/L3, room folders + photo count, seed handover credentials, restricted access, template publish

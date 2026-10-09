@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Chip, Panel } from "@/components/crm/crm-ui";
 import { PageHeader } from "@/components/erp-ui";
 import { ServicingCardDrawer } from "@/components/ps/servicing-dashboard";
+import { Ws2StatusChip } from "@/components/ps/ws2-panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { STAGE_LABEL, currentDay, useServicing } from "@/lib/ps-servicing";
@@ -51,6 +52,7 @@ function PropertyInfoTab() {
                   <Chip tone={c.service_line === "ORM" ? "info" : "muted"}>
                     {c.service_line === "ORM" ? "ORM" : "Marcom"} · {STAGE_LABEL[c.current_stage]} · Day {currentDay(c)}
                   </Chip>
+                  <Ws2StatusChip card={c} />
                   <Button size="sm" variant="outline" onClick={() => setOpen(c.id)}>เปิดการ์ด On-boarding</Button>
                 </div>
               ))}

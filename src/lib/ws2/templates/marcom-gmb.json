@@ -1,0 +1,89 @@
+{
+ "template_id": "MARCOM_GMB",
+ "name": "Marcom Google My Business",
+ "source": "GMB 8-field list (Head of Commercial)",
+ "sections": [
+  {
+   "id": "GMB",
+   "title": "Google My Business",
+   "repeat_group": null,
+   "fields": [
+    {
+     "id": "GMB.0",
+     "label": "ชื่อโรงแรม",
+     "field_type": "text",
+     "layer": "L1",
+     "restricted_category": null,
+     "repeat_group": null,
+     "identity_key": "hotel_name_th"
+    },
+    {
+     "id": "GMB.1",
+     "label": "ที่อยู่โรงแรม + รหัสไปรษณีย์",
+     "field_type": "text",
+     "layer": "L1",
+     "restricted_category": null,
+     "repeat_group": null,
+     "identity_key": "address_th"
+    },
+    {
+     "id": "GMB.2",
+     "label": "หมวดหมู่ (เช่น Hotel, Resort)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Hotel",
+      "Resort",
+      "Boutique hotel",
+      "Hostel",
+      "Guest house",
+      "Villa"
+     ]
+    },
+    {
+     "id": "GMB.3",
+     "label": "เบอร์โทรศัพท์",
+     "field_type": "text",
+     "layer": "L1",
+     "restricted_category": null,
+     "repeat_group": null,
+     "identity_key": "phone"
+    },
+    {
+     "id": "GMB.4",
+     "label": "เวลาทำการ",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "GMB.5",
+     "label": "รูปภาพ (อย่างน้อย 10 รูป · อ้างอิง)",
+     "field_type": "file",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "GMB.6",
+     "label": "Attributes (Facilities โรงแรม)",
+     "field_type": "freetext",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "GMB.7",
+     "label": "Website / Social Media",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    }
+   ]
+  }
+ ]
+}
