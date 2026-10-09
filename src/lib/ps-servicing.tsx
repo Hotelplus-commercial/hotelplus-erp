@@ -651,6 +651,8 @@ type Ctx = State & {
   submitHandoverSurvey: (id: string, score: number, comment: string) => void;
   setCredential: (id: string, patch: Partial<Pick<HandoverCredential, "hotel_id" | "username" | "password" | "commission">>) => void;
   addRoom: (cardId: string, name: string) => void;
+  /** WS-2 seed: fills empty credential fields from the customer's existing OTA logins; never overwrites Specialist edits. */
+  seedCredentials: (cardId: string, rows: { ota: string; hotel_id: string; username: string; password: string }[]) => number;
   removeRoom: (cardId: string, name: string) => void;
   setRoomMapping: (id: string, ota_room_name: string) => void;
   addHandoverTemplate: (ota_channel: string, group_label: string, item_label: string) => void;
@@ -1001,6 +1003,28 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
         const credential = state.credentials.find((c) => c.id === id);
         if (!state.cards.some((c) => c.id === credential?.card_id && c.current_stage === "approved")) return;
         setState((s) => ({ ...s, credentials: s.credentials.map((c) => (c.id === id ? { ...c, ...patch } : c)) }));
+      },
+      seedCredentials: (cardId, rows) => {
+        const card = state.cards.find((c) => c.id === cardId && c.service_variant === "ORM");
+        if (!card) return 0;
+        let n = 0;
+        setState((s) => {
+          let creds = [...s.credentials];
+          for (const r of rows) {
+            if (!r.ota.trim()) continue;
+            const key = r.ota.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+            const hit = creds.find((c) => c.card_id === cardId && c.ota_channel.toLowerCase().replace(/[^a-z0-9]/g, "") === key);
+            if (hit) {
+              const patch = { hotel_id: hit.hotel_id && hit.hotel_id !== card.property_id ? hit.hotel_id : r.hotel_id || hit.hotel_id, username: hit.username || r.username, password: hit.password || r.password };
+              creds = creds.map((c) => (c.id === hit.id ? { ...c, ...patch } : c));
+            } else {
+              creds.push({ id: rid(), card_id: cardId, ota_channel: r.ota.trim(), property_name: card.property_name, hotel_id: r.hotel_id, username: r.username, password: r.password, commission: "" });
+            }
+            n++;
+          }
+          return { ...s, credentials: creds };
+        });
+        return n;
       },
       addRoom: (cardId, name) => {
         if (role !== "specialist" || !name.trim()) return;
