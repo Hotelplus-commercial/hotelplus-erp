@@ -45,3 +45,9 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [x] Move owner-day summary first; replace drawer stage lists with a conditional horizontal dot rail.
 - [x] Default-collapse past-stage checklists and preserve current-stage expansion.
 - [x] Restore Property Pending pipeline visibility; verify AE entry, Final Check-only exit and persistence.
+
+## v6.0 UI Fix Item 2
+- [ ] Add contract-detected ORM-Lite with per-card any-three OTA selection, scoped data and completion gates.
+- [ ] Sequence Specialist completion then ORM acceptance; trigger survey after acceptance and add appointment gate.
+- [ ] Expand shared handover layout and credential columns; preserve dashboard read-only consistency.
+- [ ] Verify full/Lite handover flows, survey timing, appointment gate, role/Test Mode and persistence.
