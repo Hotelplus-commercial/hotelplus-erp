@@ -1,0 +1,3355 @@
+{
+ "template_id": "ORM",
+ "name": "ORM Property Information",
+ "source": "export_json_8b1733c0 (AppSheet ORM export) · 394 columns",
+ "sections": [
+  {
+   "id": "hotel_info",
+   "title": "ข้อมูลโรงแรม",
+   "repeat_group": null,
+   "fields": [
+    {
+     "id": "hotel_info.3",
+     "label": "Property name in English (ชื่อโรงแรมภาษาอังกฤษ)",
+     "field_type": "text",
+     "layer": "L1",
+     "restricted_category": null,
+     "repeat_group": null,
+     "identity_key": "hotel_name_en"
+    },
+    {
+     "id": "hotel_info.4",
+     "label": "Property name in Thai (ชื่อโรงแรมภาษาไทย)",
+     "field_type": "text",
+     "layer": "L1",
+     "restricted_category": null,
+     "repeat_group": null,
+     "identity_key": "hotel_name_th"
+    },
+    {
+     "id": "hotel_info.5",
+     "label": "Hotel full address in English (ที่อยู่โรงแรมภาษาอังกฤษ)",
+     "field_type": "text",
+     "layer": "L1",
+     "restricted_category": null,
+     "repeat_group": null,
+     "identity_key": "address_en"
+    },
+    {
+     "id": "hotel_info.6",
+     "label": "Hotel full address in Thai (ที่อยู่โรงแรมภาษาไทย)",
+     "field_type": "text",
+     "layer": "L1",
+     "restricted_category": null,
+     "repeat_group": null,
+     "identity_key": "address_th"
+    },
+    {
+     "id": "hotel_info.7",
+     "label": "Hotel location (พิกัดของโรงแรม *กรุณาใส่เป็นลิงก์ Google maps เท่านั้น*)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_info.8",
+     "label": "Hotel Reservation Email (อีเมลที่ทางโรงแรมใช้รับการจองห้องพัก)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_info.9",
+     "label": "Hotel Reservation phone number (เบอร์โทรศัพท์แผนกต้อนรับ)",
+     "field_type": "text",
+     "layer": "L1",
+     "restricted_category": null,
+     "repeat_group": null,
+     "identity_key": "phone"
+    },
+    {
+     "id": "hotel_info.10",
+     "label": "Property opening date (or year) (วันที่โรงแรมเปิด)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_info.11",
+     "label": "Property type (ประเภทของที่พัก)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_info.12",
+     "label": "Property star rating (1-5) (ดาวโรงแรม)",
+     "field_type": "number",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_info.13",
+     "label": "Property license number (เลขที่จดทะเบียนการดำเนินธุรกิจโรงแรม (ถ้ามี))",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_info.14",
+     "label": "Total number of rooms (จำนวนห้องทั้งหมดภายในโรงแรมตามใบอนุญาต)",
+     "field_type": "number",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_info.15",
+     "label": "Total Number of Room for H+ Management (จำนวนห้องที่เซ็นสัญญาให้ทาง H+ บริหาร)",
+     "field_type": "number",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    }
+   ]
+  },
+  {
+   "id": "owner_info",
+   "title": "เจ้าของ / ผู้ลงนาม",
+   "repeat_group": null,
+   "fields": [
+    {
+     "id": "owner_info.3",
+     "label": "Owner Contact (เจ้าของโรงแรม/ผู้ลงนาม)",
+     "field_type": "heading",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "owner_info.4",
+     "label": "Name and Last name in Thai (ชื่อและนามสกุลผู้ลงนามภาษาไทย)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "owner_info.5",
+     "label": "Name and Last name in English (ชื่อและนามสกุลผู้ลงนามภาษาอังกฤษ)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "owner_info.6",
+     "label": "Owner telephone number (เบอร์โทรศัพท์ผู้ลงนาม)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "owner_info.7",
+     "label": "Hotel owner email address (อีเมลหลักของผู้ลงนาม)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "owner_info.8",
+     "label": "Citizen ID (หมายเลขประจำตัวบัตรประชาชนผู้ลงนาม)",
+     "field_type": "text",
+     "layer": "L3",
+     "restricted_category": "national_id",
+     "repeat_group": null
+    },
+    {
+     "id": "owner_info.9",
+     "label": "Sign a Contract by (เซ็นสัญญาในนาม)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "owner_info.10",
+     "label": "Key Authorized person (ผู้ประสานงานหลัก)",
+     "field_type": "heading",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "owner_info.11",
+     "label": "Key Authorized person in Thai (ชื่อผู้ประสานงานหลักของโรงแรมภาษาไทย)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "owner_info.12",
+     "label": "Key Authorized person in English (ชื่อผู้ประสานงานหลักของโรงแรมภาษาอังกฤษ)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "owner_info.13",
+     "label": "Key Authorized person telephone number (เบอร์โทรศัพท์ของผู้ประสานงานหลัก)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "owner_info.14",
+     "label": "Key Authorized person email address (อีเมลหลักของผู้ประสานงานหลัก)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "owner_info.15",
+     "label": "Company Information (ข้อมูลบริษัท)",
+     "field_type": "heading",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "owner_info.16",
+     "label": "Company Name in Thai (ชื่อบริษัทของโรงแรมภาษาไทย)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "owner_info.17",
+     "label": "Company Name in English (ชื่อบริษัทของโรงแรมภาษาอังกฤษ)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "owner_info.18",
+     "label": "Company telephone number (เบอร์โทรศัพท์ของบริษัท)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "owner_info.19",
+     "label": "Company email address (อีเมลหลักของบริษัทสำหรับวางบิลค่าบริการ)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "owner_info.20",
+     "label": "Company Address (ที่อยู่บริษัท)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "owner_info.21",
+     "label": "Tax ID (หมายเลขประจำตัวผู้เสียภาษีของโรงแรม)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "owner_info.22",
+     "label": "Key Authorized person (ผู้ประสานงานหลัก)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "owner_info.23",
+     "label": "Document Required (เอกสารที่จำเป็น)",
+     "field_type": "text",
+     "layer": "L3",
+     "restricted_category": "document",
+     "repeat_group": null
+    },
+    {
+     "id": "owner_info.24",
+     "label": "Copy ID Card (สำเนาบัตรประชาชน)",
+     "field_type": "text",
+     "layer": "L3",
+     "restricted_category": "national_id",
+     "repeat_group": null
+    },
+    {
+     "id": "owner_info.25",
+     "label": "สำเนาทะเบียนบ้าน ที่อยู่ที่ระบุที่ตั้งของโรงแรม",
+     "field_type": "freetext",
+     "layer": "L3",
+     "restricted_category": "document",
+     "repeat_group": null
+    },
+    {
+     "id": "owner_info.26",
+     "label": "Business Registration Certificate (หนังสือรับรองบริษัท)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "owner_info.27",
+     "label": "Vat License (เอกสาร ภพ 20) ถ้ามี",
+     "field_type": "text",
+     "layer": "L3",
+     "restricted_category": "document",
+     "repeat_group": null
+    },
+    {
+     "id": "owner_info.28",
+     "label": "Copy Book Bank (สำเนาหน้าสมุดบัญชีที่ใช้รับเงินจาก  OTA)",
+     "field_type": "freetext",
+     "layer": "L3",
+     "restricted_category": "document",
+     "repeat_group": null
+    },
+    {
+     "id": "owner_info.29",
+     "label": "Utinity bills (บิลสาธารณูโภค เช่น บิลค่าน้ำ, ค่าไฟ, หรือค่าโทรศัพท์ ที่ระบุที่อยู๋ของโรงแรม)",
+     "field_type": "freetext",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    }
+   ]
+  },
+  {
+   "id": "account_information",
+   "title": "บัญชีธนาคาร",
+   "repeat_group": "bank",
+   "fields": [
+    {
+     "id": "account_information.3",
+     "label": "Bank Account",
+     "field_type": "text",
+     "layer": "L3",
+     "restricted_category": "bank",
+     "repeat_group": "bank"
+    },
+    {
+     "id": "account_information.4",
+     "label": "Bank account name (ชื่อธนาคาร)",
+     "field_type": "freetext",
+     "layer": "L3",
+     "restricted_category": "bank",
+     "repeat_group": "bank"
+    },
+    {
+     "id": "account_information.5",
+     "label": "Branch name (สาขาบัญชีธนาคาร)",
+     "field_type": "text",
+     "layer": "L3",
+     "restricted_category": "bank",
+     "repeat_group": "bank"
+    },
+    {
+     "id": "account_information.6",
+     "label": "Account name (ชื่อบัญชี)",
+     "field_type": "text",
+     "layer": "L3",
+     "restricted_category": "bank",
+     "repeat_group": "bank"
+    },
+    {
+     "id": "account_information.7",
+     "label": "Account number (เลขที่บัญชี)",
+     "field_type": "text",
+     "layer": "L3",
+     "restricted_category": "bank",
+     "repeat_group": "bank"
+    },
+    {
+     "id": "account_information.8",
+     "label": "Swift code รหัสสวิฟท์ (สามารถขอจากธนาคารได้)",
+     "field_type": "text",
+     "layer": "L3",
+     "restricted_category": "bank",
+     "repeat_group": "bank"
+    },
+    {
+     "id": "account_information.9",
+     "label": "Bank code รหัสธนาคาร (สามารถขอจากธนาคารได้)",
+     "field_type": "number",
+     "layer": "L3",
+     "restricted_category": "bank",
+     "repeat_group": "bank"
+    },
+    {
+     "id": "account_information.10",
+     "label": "Bank branch code รหัสสาขา (สามารถขอจากธนาคารได้)",
+     "field_type": "number",
+     "layer": "L3",
+     "restricted_category": "bank",
+     "repeat_group": "bank"
+    },
+    {
+     "id": "account_information.11",
+     "label": "Bank Address (ที่อยู่ธนาคาร)",
+     "field_type": "text",
+     "layer": "L3",
+     "restricted_category": "bank",
+     "repeat_group": "bank"
+    },
+    {
+     "id": "account_information.12",
+     "label": "OTA",
+     "field_type": "text",
+     "layer": "L3",
+     "restricted_category": "bank",
+     "repeat_group": "bank"
+    }
+   ]
+  },
+  {
+   "id": "otas",
+   "title": "ช่องทาง OTA / รูป / Email / PMS",
+   "repeat_group": null,
+   "fields": [
+    {
+     "id": "otas.3",
+     "label": "Hotel Photo, Room Type Photo (Google Drive share link)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "otas.4",
+     "label": "ลิงก์รูปภาพส่วนต่างๆของโรงแรม, รูปภาพห้องพัก-ห้องอาบน้ำของแต่ละประเภทห้องพัก",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "otas.5",
+     "label": "*กรุณาแยกแฟ้มภาพของแต่ละประเภทห้องพัก เพื่อความสะดวกในการจัดเรียงข้อมูลภาพ",
+     "field_type": "note",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "otas.6",
+     "label": "Property Photo",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "otas.7",
+     "label": "ข้อมูลที่ต้องทราบเกี่ยวกับรูปภาพ",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "otas.8",
+     "label": "Photo qaulity (คุณภาพรูปที่ควรใช้)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "otas.9",
+     "label": "- Shoot landscape images (horizontal) only ถ่ายแนวนอน (Landscape) เท่านั้น",
+     "field_type": "note",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "otas.10",
+     "label": "- Photos must have a high resolution, at least 2048 x 1080 pixels but preferably 4000 x 3000 pixels.",
+     "field_type": "note",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "otas.11",
+     "label": "ความละเอียดขั้นต่ำ 2048×1080 px (แนะนำ 4000×3000 px)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "otas.12",
+     "label": "Taking photos of your property",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "otas.13",
+     "label": "- Hotel photo",
+     "field_type": "note",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "otas.14",
+     "label": "(Lobby, Interior, Exterior, Enviroment, Common facilities, Property's entrance, Building)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "otas.15",
+     "label": "รูปภาพทั่วไปของโรงแรม (ล็อบบี้, อาคาร, สิ่งอำนวยความสะดวกส่วนกลาง, สระว่ายน้ำ, สวน, ส่วนกลาง, ลานจอดรถ ฯลฯ)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "otas.16",
+     "label": "- Room Photo",
+     "field_type": "note",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "otas.17",
+     "label": "(Whole of room, Bed, Bathroom, Balcony/terrace, room facilities, view)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "otas.18",
+     "label": "รูปภายในห้อง (เตียง, ห้องนอน, ห้องน้ำ, วิว ฯลฯ)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "otas.19",
+     "label": "Mandatory Photo require",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "otas.20",
+     "label": "จำนวนขั้นต่ำที่ควรใช้อย่างน้อยต้องมี ได้แก่ Property 15 + Bed 4 + Bathroom 4 + View 1 + Whole room 1 + Amenity 1",
+     "field_type": "note",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "otas.21",
+     "label": "Hotel Photo (รูปภาพทั่วไปของโรแงรม): 15 รูป",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "otas.22",
+     "label": "Bed (เตียง): 4 รูป",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "otas.23",
+     "label": "Bathroom (ห้องน้ำ): 4 รูป",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "otas.24",
+     "label": "View of room (วิวรูม): 1 รูป",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "otas.25",
+     "label": "Whole of room(ห้องนอน): 1 รูป",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "otas.26",
+     "label": "Amenity in room (สิ่งอำนวยความสะดวกภายในห้อง) : 1 รูป",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "otas.27",
+     "label": "Example photo link",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "otas.28",
+     "label": "https://drive.google.com/drive/folders/15_mBxC39fbOzN3QXaTo59LTg-rT2mqBQ",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "otas.29",
+     "label": "Photo link",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "otas.30",
+     "label": "Hotel email address",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "otas.31",
+     "label": "(อีเมลหลักของโรงแรมสำหรับให้ทาง Hotel Plus เข้าถึง verify code โดยควรสร้างอีเมลขึ้นใหม่ สามารถเป็น gmail ได้ และไม่ควรใช้อีเมลส่วนตัว)",
+     "field_type": "note",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "otas.32",
+     "label": "กรุณา 'ยกเว้น' การตั้งค่า Verify email ผ่านทางเบอร์โทรศัพท์ หรือ อีเมลสำรอง เพื่อความสะดวกในการจัดการข้อมูลโดย H+ Hotel Plus",
+     "field_type": "note",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "otas.33",
+     "label": "Email Address",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "otas.34",
+     "label": "Hotel email password (รหัสผ่านของอีเมลหลักโรงแรม)",
+     "field_type": "text",
+     "layer": "L3",
+     "restricted_category": "hotel_email",
+     "repeat_group": null
+    },
+    {
+     "id": "otas.35",
+     "label": "PMS and Channel manager system details",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "otas.36",
+     "label": "PMS or Channel manager system name",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "otas.37",
+     "label": "Username",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "otas.38",
+     "label": "Password",
+     "field_type": "text",
+     "layer": "L3",
+     "restricted_category": "hotel_email",
+     "repeat_group": null
+    },
+    {
+     "id": "otas.39",
+     "label": "B2B Rate (Net Rate ที่ให้ OTAs พิเศษ เช่น Agoda Bedsnetwork, Trip.com, Ascend Travel , Thai Tour, etc.,)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "otas.40",
+     "label": "B2B Rate (OTA)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "otas.43",
+     "label": "OTA List",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    }
+   ]
+  },
+  {
+   "id": "ota_details",
+   "title": "OTA login",
+   "repeat_group": "ota",
+   "fields": [
+    {
+     "id": "ota_details.3",
+     "label": "OTAs username & password",
+     "field_type": "text",
+     "layer": "L3",
+     "restricted_category": "ota_login",
+     "repeat_group": "ota"
+    },
+    {
+     "id": "ota_details.4",
+     "label": "ในกรณีที่ไม่สามารถจำ username ไม่ได้ กรุณาแจ้ง email ที่ใช้ในการลงทะเบียนแทนได้",
+     "field_type": "text",
+     "layer": "L3",
+     "restricted_category": "ota_login",
+     "repeat_group": "ota"
+    },
+    {
+     "id": "ota_details.5",
+     "label": "OTA Name",
+     "field_type": "text",
+     "layer": "L3",
+     "restricted_category": "ota_login",
+     "repeat_group": "ota"
+    },
+    {
+     "id": "ota_details.6",
+     "label": "HOTEL ID",
+     "field_type": "text",
+     "layer": "L3",
+     "restricted_category": "ota_login",
+     "repeat_group": "ota"
+    },
+    {
+     "id": "ota_details.7",
+     "label": "USERNAME",
+     "field_type": "text",
+     "layer": "L3",
+     "restricted_category": "ota_login",
+     "repeat_group": "ota"
+    },
+    {
+     "id": "ota_details.8",
+     "label": "PASSWORD",
+     "field_type": "text",
+     "layer": "L3",
+     "restricted_category": "ota_login",
+     "repeat_group": "ota"
+    }
+   ]
+  },
+  {
+   "id": "hotel_facilities_and_services",
+   "title": "สิ่งอำนวยความสะดวก & บริการ",
+   "repeat_group": null,
+   "fields": [
+    {
+     "id": "hotel_facilities_and_services.3",
+     "label": "General",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.4",
+     "label": "Lobby / Reception area (ล็อบบี้ / พื้นที่แผนกต้อนรับ)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.5",
+     "label": "Lift / Elevator (ลิฟต์)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.6",
+     "label": "Non-smoking rooms (ห้องปลอดบุหรี่)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.7",
+     "label": "Designated smoking area (พื้นที่สูบบุหรี่)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.8",
+     "label": "Air conditioning (เครื่องปรับอากาศ)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.9",
+     "label": "Shared lounge / TV area (ห้องนั่งเล่นส่วนกลาง / พื้นที่ดูทีวี)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.10",
+     "label": "Garden (สวน)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.11",
+     "label": "Terrace / Balcony (ระเบียง / เฉลียง)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.12",
+     "label": "Outdoor furniture (เฟอร์นิเจอร์กลางแจ้ง)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.13",
+     "label": "Sun terrace / Patio (ลานอาบแดด)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.14",
+     "label": "Luggage storage (ที่เก็บสัมภาระ)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.15",
+     "label": "Free",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.16",
+     "label": "Charge",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.17",
+     "label": "Other",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.18",
+     "label": "Gift shop / Convenience store on site / Minimart on site (ร้านของขวัญ / ร้านสะดวกซื้อในโรงแรม / มินิมาร์ทในโรงแรม)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.19",
+     "label": "start time",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.20",
+     "label": "end time",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.21",
+     "label": "Shared kitchen (ครัวส่วนกลาง)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.22",
+     "label": "Shared bathroom (ห้องน้ำส่วนกลาง)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.23",
+     "label": "Sun loungers / Beach chairs (เก้าอี้อาบแดด / เก้าอี้ชายหาด)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.24",
+     "label": "Beach access / Private beach area (ทางออกสู่ชายหาด / พื้นที่ชายหาดส่วนตัว)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.25",
+     "label": "Front Desk & Guest Services",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.26",
+     "label": "24-hour front desk (แผนกต้อนรับ 24 ชั่วโมง)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.27",
+     "label": "check-in time (เวลาเช็คอิน)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.28",
+     "label": "check-out time (เวลาเช็คเอ้าท์)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.29",
+     "label": "From (ตั้งแต่เวลา)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.30",
+     "label": "to (ถึงเวลา)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.31",
+     "label": "Self Check-in (เช็คอินด้วยตนเอง)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.32",
+     "label": "Self Check-in by (วิธีการเช็คอินด้วยตนเอง)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.33",
+     "label": "Concierge service (บริการคอนเซียร์จ)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.34",
+     "label": "Express check-in / check-out (เช็คอิน / เช็คเอาท์แบบด่วน)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.35",
+     "label": "Currency exchange (บริการแลกเปลี่ยนเงินตรา)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.36",
+     "label": "Accepted Payments (ช่องทางการรับชำระเงินของโรงแรม)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.37",
+     "label": "Cash",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.38",
+     "label": "Debit card",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.39",
+     "label": "Online banking/transfering",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.40",
+     "label": "Credit card",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.41",
+     "label": "Credit card machine (ประเภทเครื่องชาร์จบัตรเครดิต)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.42",
+     "label": "Accepted credit cards (เลือกประเภทเครดิตการ์ด)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.43",
+     "label": "Tour desk / Ticket service (เคาน์เตอร์ทัวร์ / บริการจองตั๋ว)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.44",
+     "label": "Bell service / Porter (บริการเบลล์บอย / พนักงานยกกระเป๋า)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.45",
+     "label": "Safety deposit box (ตู้นิรภัยฝากของมีค่า)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.46",
+     "label": "Wake-up service (บริการปลุกตามเวลา)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.47",
+     "label": "Doorman (พนักงานเปิดประตู)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.48",
+     "label": "Multilingual staff (พนักงานที่สื่อสารได้หลายภาษา)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.49",
+     "label": "Language (ภาษา)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.50",
+     "label": "Outlet (ระบุเวลาทำการ / Operation hours required)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.51",
+     "label": "Swimming pool (สระว่ายน้ำ)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.52",
+     "label": "Swimming pool type",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.53",
+     "label": "Jacuzzi / Hot tub (จากุซซี่ / อ่างน้ำร้อน)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.54",
+     "label": "Fitness centre / Gym (ฟิตเนส / ห้องออกกำลังกาย)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.55",
+     "label": "Sauna / Steam room (ซาวน่า / ห้องอบไอน้ำ)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.56",
+     "label": "Spa & wellness centre (สปาและเวลเนสเซ็นเตอร์)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.57",
+     "label": "Spa type",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.58",
+     "label": "Yoga room / Meditation area (ห้องโยคะ / พื้นที่ทำสมาธิ)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.59",
+     "label": "Pool bar (พูลบาร์)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.60",
+     "label": "Restaurant / On-site dining (ร้านอาหาร / ร้านอาหารในโรงแรม)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.61",
+     "label": "Open for",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.62",
+     "label": "Meal type",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.63",
+     "label": "start time (เวลาเปิดห้องอาหาร)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.64",
+     "label": "end time (เวลาปิดห้องอาหาร)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.65",
+     "label": "Café / Coffee shop (คาเฟ่ / ร้านกาแฟ)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.66",
+     "label": "Bar / Lounge (บาร์ / เลานจ์)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.67",
+     "label": "Room service (รูมเซอร์วิส)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.68",
+     "label": "ฺBreakfast Available (มีบริการอาหารเช้า)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.69",
+     "label": "Breakfast served (รูปแบบการเสิร์ฟอาหารเช้า)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.70",
+     "label": "Breakfast Type (ประเภทอาหารเช้า)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.71",
+     "label": "other",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.72",
+     "label": "Additional breakfast fee (ค่าบริการอาหารเช้าเพิ่มเติมท่านละ (บาท))",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.73",
+     "label": "Adult (THB)",
+     "field_type": "number",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.74",
+     "label": "Children (THB)",
+     "field_type": "number",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.75",
+     "label": "Remark: ช่วงอายุเด็กที่ไม่คิดค่าอาหารเช้า (Age Range for Complimentary Breakfast (Child)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.76",
+     "label": "Food & Beverage",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.77",
+     "label": "Special diet menus on request (เมนูอาหารพิเศษตามคำขอ)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.78",
+     "label": "Kids' meals (อาหารสำหรับเด็ก)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.79",
+     "label": "BBQ facilities (สิ่งอำนวยความสะดวกสำหรับบาร์บีคิว)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.80",
+     "label": "Vending machine drinks / snacks (เครื่องขายเครื่องดื่ม / ขนมอัตโนมัติ)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.81",
+     "label": "Alcohol available (มีเครื่องดื่มแอลกอฮอล์)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.82",
+     "label": "Snack bar",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.83",
+     "label": "Transport & Parking",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.84",
+     "label": "Parking Available",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.85",
+     "label": "Parking type (ประเภทที่จอดรถ)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.86",
+     "label": "Electric vehicle charging station (สถานีชาร์จรถยนต์ไฟฟ้า)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.87",
+     "label": "Shuttle service (บริการรถรับส่ง)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.88",
+     "label": "Airport transfer (บริการรับส่งสนามบิน)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.89",
+     "label": "Rental service (บริการเช่า) (Car / Bicycle / Motorbike / Scooter)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.90",
+     "label": "Taxi service (บริการแท็กซี่)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.91",
+     "label": "Internet & Business",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.92",
+     "label": "Free Wi-Fi in all areas (Wi-Fi ฟรีทุกพื้นที่)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.93",
+     "label": "Wi-Fi / LAN Access (Wi-Fi / การเชื่อมต่อสายแลน)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.94",
+     "label": "Business centre (ศูนย์ธุรกิจ)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.95",
+     "label": "Fax / Photocopying (แฟกซ์ / เครื่องถ่ายเอกสาร)",
+     "field_type": "select",
+     "layer": "L3",
+     "restricted_category": "document",
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.96",
+     "label": "Meeting rooms / Event space (ห้องประชุม / พื้นที่จัดงาน)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.97",
+     "label": "Co-working area (พื้นที่ทำงานร่วม)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.98",
+     "label": "Conference room (ห้องคอนเฟอเรนซ์)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.99",
+     "label": "Safety & Security",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.100",
+     "label": "24-hour security guards (เจ้าหน้าที่รักษาความปลอดภัย 24 ชั่วโมง)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.101",
+     "label": "CCTV in common areas (กล้องวงจรปิดในพื้นที่ส่วนกลาง)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.102",
+     "label": "Smoke alarms (สัญญาณเตือนควันไฟ)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.103",
+     "label": "Fire extinguishers (ถังดับเพลิง)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.104",
+     "label": "Security alarm (ระบบสัญญาณเตือนภัย)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.105",
+     "label": "Key card access (ระบบเข้าถึงด้วยคีย์การ์ด)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.106",
+     "label": "Key access (ระบบเข้าถึงด้วยกุญแจ)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.107",
+     "label": "Emergency lighting (ไฟฉุกเฉิน)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.108",
+     "label": "First aid kit (ชุดปฐมพยาบาล)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.109",
+     "label": "Family & Kids",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.110",
+     "label": "Family rooms (ห้องพักสำหรับครอบครัว)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.111",
+     "label": "Babysitting / Child services (บริการเลี้ยงเด็ก / บริการสำหรับเด็ก)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.112",
+     "label": "Children's playground (สนามเด็กเล่น)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.113",
+     "label": "Kids' club (คิดส์คลับ)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.114",
+     "label": "Baby cot / Crib available (เปลเด็ก / เตียงเด็กอ่อน)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.115",
+     "label": "High chair in restaurant (เก้าอี้สูงสำหรับเด็กในร้านอาหาร)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.116",
+     "label": "Child and Extra bed Policy",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.117",
+     "label": "Child allowed (อนุญาตให้เด็กเข้าพัก)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.118",
+     "label": "Age of child (ช่วงอายุเด็ก) (ตัวอย่าง Infant 0–5 / Child 2–12)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.119",
+     "label": "Child extra charge (ค่าใช้จ่ายเพิ่มเติมสำหรับเด็ก) \n(โปรดระบุ หากราคาเด็กไม่รวม ABF หรือ Extra bed)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.120",
+     "label": "Extra bed available (มีบริการเตียงเสริม)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.121",
+     "label": "Adult surchagre",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.122",
+     "label": "Child surcharge",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.123",
+     "label": "Extra bed (ค่าเตียงเสริมสำหรับผู้เข้าพักตั้งแต่อายุกี่ปีขึ้นไป เช่น เด็กอายุ\n6 - 11 ปี ชำระเพิ่ม 500 บาทต่อคืน อายุ 12 ปีขึ้นไป 1,000 ต่อคืน)",
+     "field_type": "note",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.124",
+     "label": "Pet Policy",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.125",
+     "label": "Pets allowed (อนุญาตให้นำสัตว์เลี้ยงเข้าพัก)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.126",
+     "label": "Pet Type (ประเภทสัตว์เลี้ยง)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.127",
+     "label": "Minimum and maximum size / weight (ขนาด / น้ำหนักขั้นต่ำและสูงสุด)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.128",
+     "label": "No. of pets per room (จำนวนสัตว์เลี้ยงต่อห้อง)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.129",
+     "label": "Services for pet (บริการสำหรับสัตว์เลี้ยง)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.130",
+     "label": "ระบุบริการที่มี เช่น (Bowl / ที่นอนสัตว์เลี้ยง)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.131",
+     "label": "Pet-friendly area / garden (พื้นที่สำหรับสัตว์เลี้ยง / สวน)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.132",
+     "label": "Room type available (ประเภทห้องพักที่อนุญาตให้นำสัตว์เลี้ยงเข้าพัก)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.133",
+     "label": "การตั้งค่า Pet Policy อาจมีข้อจำกัดในบาง OTA",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.134",
+     "label": "Accessibility",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.135",
+     "label": "Accessibility List",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.136",
+     "label": "Activities (Optional — สำหรับ Resort หรือ Destination Property)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "hotel_facilities_and_services.137",
+     "label": "Activities List",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.138",
+     "label": "Other Activities",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.141",
+     "label": "page1",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.142",
+     "label": "page2",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.143",
+     "label": "page3",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.144",
+     "label": "page4",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.145",
+     "label": "page5",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.146",
+     "label": "Deposit Policy",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.147",
+     "label": "Deposit Policy (นโยบายค่ามัดจำห้องพัก ป้องกันกรณีของชำรุดเสียหาย / ชำระ ณ ที่พัก(บาท)",
+     "field_type": "number",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "hotel_facilities_and_services.148",
+     "label": "Deposit Policy Remark (หมายเหตุ)",
+     "field_type": "number",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    }
+   ]
+  },
+  {
+   "id": "room_type",
+   "title": "ประเภทห้องพัก",
+   "repeat_group": "room_type",
+   "fields": [
+    {
+     "id": "room_type.3",
+     "label": "Room Type",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type"
+    },
+    {
+     "id": "room_type.4",
+     "label": "Room type name ex. Deluxe twin (ชื่อประเภทห้องที่ใช้ขาย)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type"
+    },
+    {
+     "id": "room_type.5",
+     "label": "Internal room name (ชื่อประเภทห้องพักที่ใช้ภายใน)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type"
+    },
+    {
+     "id": "room_type.6",
+     "label": "Room description (คำอธิบายห้องพัก)",
+     "field_type": "freetext",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type"
+    },
+    {
+     "id": "room_type.7",
+     "label": "Room size (sq.m.) ขนาดพื้นที่ทั้งหมดของห้องพัก (รวมห้องน้ำ, ห้องครัว และระเบียง)",
+     "field_type": "number",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type"
+    },
+    {
+     "id": "room_type.8",
+     "label": "Total number of this room type (จำนวนห้องพักทั้งหมดของประเภทนี้) ระบุตามจำนวนที่ให้ Hotel Plus manage",
+     "field_type": "number",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type"
+    },
+    {
+     "id": "room_type.9",
+     "label": "View for this room type",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type"
+    },
+    {
+     "id": "room_type.10",
+     "label": "No. of Bathroom (ระบุจำนวนห้องน้ำ)",
+     "field_type": "number",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type"
+    },
+    {
+     "id": "room_type.11",
+     "label": "Total Number of guests for this room type (จำนวนผู้เข้าพักปกติต่อห้องสำหรับห้องพักประเภทนี้)",
+     "field_type": "number",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type"
+    },
+    {
+     "id": "room_type.12",
+     "label": "Max. of adult (ผู้ใหญ่ที่พักได้สูงสุด)",
+     "field_type": "number",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type"
+    },
+    {
+     "id": "room_type.13",
+     "label": "Max. of child (เด็กที่เข้าได้สูงสุด)",
+     "field_type": "number",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type"
+    },
+    {
+     "id": "room_type.14",
+     "label": "General",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type"
+    },
+    {
+     "id": "room_type.15",
+     "label": "Air conditioning (เครื่องปรับอากาศ) (Cool / Heater / Both)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type.16",
+     "label": "Fan (พัดลม)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type.17",
+     "label": "Desk / Work area (โต๊ะทำงาน / พื้นที่ทำงาน)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type.18",
+     "label": "Private pool (สระว่ายน้ำส่วนตัว)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type.19",
+     "label": "Seating area / Sofa / Sofa bed (พื้นที่นั่งเล่น / โซฟา / โซฟาเบด)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type.20",
+     "label": "Wardrobe / Closet (ตู้เสื้อผ้า)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type.21",
+     "label": "Clothes rack (ราวแขวนเสื้อผ้า)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type.22",
+     "label": "Iron & ironing board (เตารีด / กระดานรีดผ้า) (Available / On request)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type.23",
+     "label": "Mosquito net (มุ้งกันยุง)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type.24",
+     "label": "Safety box (ตู้เซฟ)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type.25",
+     "label": "Non-smoking room (ห้องปลอดบุหรี่)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type.26",
+     "label": "Trash cans (ถังขยะ)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type.27",
+     "label": "Wi-Fi in-room (Wi-Fi ในห้องพัก)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type.28",
+     "label": "Blackout curtain (ผ้าม่านกันแสง)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type.29",
+     "label": "Umbrella (ร่ม)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type.30",
+     "label": "Patio (ลานกลางแจ้ง)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type.31",
+     "label": "Window (หน้าต่าง) (Cannot open)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type.32",
+     "label": "Openable window (หน้าต่างที่เปิดได้)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type.33",
+     "label": "Outdoor furniture (เฟอร์นิเจอร์กลางแจ้ง)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type.34",
+     "label": "Outdoor furniture (เฟอร์นิเจอร์กลางแจ้ง) (โปรดระบุ)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type"
+    },
+    {
+     "id": "room_type.35",
+     "label": "Entertainment & Connectivity",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type"
+    },
+    {
+     "id": "room_type.36",
+     "label": "TV",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type.37",
+     "label": "TV type (ประเภทโทรทัศน์)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type"
+    },
+    {
+     "id": "room_type.38",
+     "label": "TV size (ขนาดโทรทัศน์)",
+     "field_type": "number",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type"
+    },
+    {
+     "id": "room_type.39",
+     "label": "Cable / Satellite channels (ช่องเคเบิล / ดาวเทียม)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type.40",
+     "label": "Streaming service (บริการสตรีมมิ่ง) (Netflix / YouTube / etc.)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type.41",
+     "label": "Free Wi-Fi (Wi-Fi ฟรี)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type.42",
+     "label": "LAN available (การเชื่อมต่อ LAN)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type.43",
+     "label": "Telephone (โทรศัพท์)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type.44",
+     "label": "Free",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type"
+    },
+    {
+     "id": "room_type.45",
+     "label": "Charge",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type"
+    },
+    {
+     "id": "room_type.46",
+     "label": "Bluetooth speaker (ลำโพงบลูทูธ)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type.47",
+     "label": "Alarm clock (นาฬิกาปลุก)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type.48",
+     "label": "Other (อื่นๆ) (โปรดระบุ)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type"
+    },
+    {
+     "id": "room_type.49",
+     "label": "Food & Beverage",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type"
+    },
+    {
+     "id": "room_type.50",
+     "label": "Minibar (มินิบาร์)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type.51",
+     "label": "Mini bar list (อาหารและเครื่องดื่มที่มีบริการในห้องพัก)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type"
+    },
+    {
+     "id": "room_type.52",
+     "label": "Electric kettle (กาต้มน้ำไฟฟ้า)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type.53",
+     "label": "Coffee / Tea maker (เครื่องชงกาแฟ / ชา)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type.54",
+     "label": "Refrigerator (ตู้เย็น)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type.55",
+     "label": "Refrigerator size (ขนาดตู้เย็น)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type"
+    },
+    {
+     "id": "room_type.56",
+     "label": "Microwave (ไมโครเวฟ)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type.57",
+     "label": "Snack / Fruit (ของว่าง / ผลไม้)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type.58",
+     "label": "Dining area / Dining table (พื้นที่รับประทานอาหาร / โต๊ะอาหาร)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type.59",
+     "label": "Kitchen / Kitchenette (ครัว / ครัวขนาดเล็ก)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type.60",
+     "label": "Cookware / Utensils (เครื่องครัว / อุปกรณ์ทำอาหาร)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type.61",
+     "label": "Complimentary bottled water (น้ำดื่มบรรจุขวดฟรี)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type.62",
+     "label": "Instant coffee and tea (กาแฟและชาสำเร็จรูป)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type.63",
+     "label": "Oven (เตาอบ)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type.64",
+     "label": "Toaster (เครื่องปิ้งขนมปัง)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type.65",
+     "label": "Alcohol (แอลกอฮอล์)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type.66",
+     "label": "Bathroom",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type"
+    },
+    {
+     "id": "room_type.67",
+     "label": "Bathroom Type (ประเภทห้องน้ำสำหรับห้องนี้)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type"
+    },
+    {
+     "id": "room_type.68",
+     "label": "Bath Configuration (รายละเอียดห้องอาบน้ำภายในห้องพัก)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type"
+    },
+    {
+     "id": "room_type.69",
+     "label": "Bathroom Amenities (สิ่งอำนวยความสะดวกในห้องน้ำ)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type"
+    },
+    {
+     "id": "room_type.70",
+     "label": "Free toiletries (บริการผลิตภัณฑ์สำหรับอาบน้ำ)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type"
+    },
+    {
+     "id": "room_type.71",
+     "label": "Bathroom accessibility (อุปกรณ์อำนวยความสะดวกภายในห้องน้ำ)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type"
+    },
+    {
+     "id": "room_type.72",
+     "label": "Safety Features",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type"
+    },
+    {
+     "id": "room_type.73",
+     "label": "Smoke detector (เครื่องตรวจจับควันไฟ)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type.74",
+     "label": "Fire extinguisher (ถังดับเพลิง)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type.75",
+     "label": "Emergency lighting (ไฟฉุกเฉิน)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type.76",
+     "label": "Air purifier (เครื่องฟอกอากาศ)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type.77",
+     "label": "Comfort & Convenience",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type"
+    },
+    {
+     "id": "room_type.78",
+     "label": "Housekeeping (บริการทำความสะอาดห้องพัก)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type.79",
+     "label": "Housekeeping Time (บริการทำความสะอาดห้องพัก)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type"
+    },
+    {
+     "id": "room_type.80",
+     "label": "Wake-up call service (บริการปลุกตามเวลา)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type.81",
+     "label": "Extra pillows or blankets on request (หมอนหรือผ้าห่มเพิ่มเติมตามคำขอ)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type.82",
+     "label": "Ashtray (ที่เขี่ยบุหรี่)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type.85",
+     "label": "Bedroom",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type"
+    },
+    {
+     "id": "room_type.86",
+     "label": "page1",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type"
+    },
+    {
+     "id": "room_type.87",
+     "label": "page2",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type"
+    },
+    {
+     "id": "room_type.88",
+     "label": "page3",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type"
+    },
+    {
+     "id": "room_type.89",
+     "label": "page4",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type"
+    },
+    {
+     "id": "room_type.90",
+     "label": "page5",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type"
+    }
+   ]
+  },
+  {
+   "id": "room_type_detail",
+   "title": "รายละเอียดห้อง / เตียง",
+   "repeat_group": "room_type_detail",
+   "fields": [
+    {
+     "id": "room_type_detail.3",
+     "label": "Bed Room Name",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type_detail"
+    },
+    {
+     "id": "room_type_detail.4",
+     "label": "Bed type (ประเภทเตียง)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type_detail"
+    },
+    {
+     "id": "room_type_detail.5",
+     "label": "No. of bed (จำนวนเตียง)",
+     "field_type": "number",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type_detail"
+    },
+    {
+     "id": "room_type_detail.6",
+     "label": "This room is located on which floor (ถ้าห้องพักประเภทนี้มีมากกว่า 1 ชั้น กรุณาระบุเลขชั้นให้ครบถ้วน)",
+     "field_type": "number",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type_detail"
+    },
+    {
+     "id": "room_type_detail.7",
+     "label": "Room number or title of this room type (ถ้าห้องพักประเภทนี้มีมากกว่า 1 ห้อง กรุณาระบุเลขห้อง หรือชื่อของห้องให้ครบถ้วน)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type_detail"
+    },
+    {
+     "id": "room_type_detail.8",
+     "label": "Extra bed options",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type_detail"
+    },
+    {
+     "id": "room_type_detail.9",
+     "label": "Extra bed option (เตียงเสริม)",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type_detail",
+     "options": [
+      "Yes",
+      "No"
+     ]
+    },
+    {
+     "id": "room_type_detail.10",
+     "label": "No of bed (จำนวนเตียงเสริม)",
+     "field_type": "number",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type_detail"
+    },
+    {
+     "id": "room_type_detail.11",
+     "label": "Extra Bed type (ประเภทเตียงเสริม)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type_detail"
+    },
+    {
+     "id": "room_type_detail.12",
+     "label": "Extra bed surcharge for Adult (ค่าบริการเตียงเสริมสำหรับผู้ใหญ่ (บาท))",
+     "field_type": "number",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type_detail"
+    },
+    {
+     "id": "room_type_detail.13",
+     "label": "Extra bed surcharge for Child (ค่าบริการเตียงเสริมสำหรับเด็ก (บาท))",
+     "field_type": "number",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type_detail"
+    }
+   ]
+  },
+  {
+   "id": "information_for_analysis",
+   "title": "ข้อมูลวิเคราะห์",
+   "repeat_group": null,
+   "fields": [
+    {
+     "id": "information_for_analysis.3",
+     "label": "\"*หากทางโรงแรมมีการจองห้องพักล่วงหน้า กรุณาเตรียมข้อมูลเพื่อส่ง\nอัพเดตเข้าระบบการจองห้องพักก่อนเริ่มไลฟ์\"",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "information_for_analysis.4",
+     "label": "No. of Type of room",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "information_for_analysis.5",
+     "label": "ที่พักที่คุณมองว่าเป็นคู่แข่ง 1-3 โรงแรม",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "information_for_analysis.6",
+     "label": "Hotel Competative (1)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "information_for_analysis.7",
+     "label": "Hotel Competative (2)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "information_for_analysis.8",
+     "label": "Hotel Competative (3)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "information_for_analysis.9",
+     "label": "Additional Hotel Competative",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "information_for_analysis.10",
+     "label": "Room Type",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    }
+   ]
+  }
+ ]
+}

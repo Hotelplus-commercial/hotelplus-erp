@@ -1,0 +1,737 @@
+{
+ "template_id": "MARCOM_META_TIKTOK",
+ "name": "Marcom Meta/TikTok Property Information + Owner Interview",
+ "source": "Property Information V2.2 (PDF) + Owner Interview DOCX",
+ "sections": [
+  {
+   "id": "B0",
+   "title": "B0 · Hotel Name",
+   "repeat_group": null,
+   "fields": [
+    {
+     "id": "B0.0",
+     "label": "ชื่อโรงแรม",
+     "field_type": "text",
+     "layer": "L1",
+     "restricted_category": null,
+     "repeat_group": null,
+     "identity_key": "hotel_name_th"
+    },
+    {
+     "id": "B0.1",
+     "label": "ที่อยู่โรงแรม",
+     "field_type": "text",
+     "layer": "L1",
+     "restricted_category": null,
+     "repeat_group": null,
+     "identity_key": "address_th"
+    }
+   ]
+  },
+  {
+   "id": "B1",
+   "title": "B1 · Competitor Matrix",
+   "repeat_group": null,
+   "fields": [
+    {
+     "id": "B1.0",
+     "label": "Direct Competitor #1 — ชื่อ + จุดเปรียบเทียบ",
+     "field_type": "freetext",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "B1.1",
+     "label": "Direct Competitor #2 — ชื่อ + จุดเปรียบเทียบ",
+     "field_type": "freetext",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "B1.2",
+     "label": "Direct Competitor #3 — ชื่อ + จุดเปรียบเทียบ",
+     "field_type": "freetext",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "B1.3",
+     "label": "Direct Competitor #4 — ชื่อ + จุดเปรียบเทียบ",
+     "field_type": "freetext",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "B1.4",
+     "label": "Direct Competitor #5 — ชื่อ + จุดเปรียบเทียบ",
+     "field_type": "freetext",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "B1.5",
+     "label": "Direct Competitor #6 — ชื่อ + จุดเปรียบเทียบ",
+     "field_type": "freetext",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "B1.6",
+     "label": "Aspirational Facebook Page",
+     "field_type": "freetext",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    }
+   ]
+  },
+  {
+   "id": "B2",
+   "title": "B2 · Price Positioning",
+   "repeat_group": null,
+   "fields": [
+    {
+     "id": "B2.0",
+     "label": "Weekday Rate Range (min–max)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "B2.1",
+     "label": "Weekend Rate Range (min–max)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "B2.2",
+     "label": "Peak Season Premium",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "B2.3",
+     "label": "Competitor Price Comparison",
+     "field_type": "freetext",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    }
+   ]
+  },
+  {
+   "id": "C2",
+   "title": "C2 · Booking Behavior",
+   "repeat_group": null,
+   "fields": [
+    {
+     "id": "C2.0",
+     "label": "Booking Lead Time",
+     "field_type": "freetext",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "C2.1",
+     "label": "Average Length of Stay",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "C2.2",
+     "label": "Peak Booking Hours",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "C2.3",
+     "label": "Cancellation Rate",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "C2.4",
+     "label": "Repeat Customer Rate",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    }
+   ]
+  },
+  {
+   "id": "D1",
+   "title": "D1 · USP Matrix",
+   "repeat_group": "usp",
+   "fields": [
+    {
+     "id": "D1.0",
+     "label": "ชื่อจุดขาย",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "usp"
+    },
+    {
+     "id": "D1.1",
+     "label": "Evidence (ลิงก์รูป)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "usp"
+    },
+    {
+     "id": "D1.2",
+     "label": "Target Emotion",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "usp"
+    },
+    {
+     "id": "D1.3",
+     "label": "Keywords",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "usp"
+    },
+    {
+     "id": "D1.4",
+     "label": "Visual Elements",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "usp"
+    }
+   ]
+  },
+  {
+   "id": "D2",
+   "title": "D2 · Service Ecosystem Audit",
+   "repeat_group": null,
+   "fields": [
+    {
+     "id": "D2.0",
+     "label": "Core Services",
+     "field_type": "freetext",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "D2.1",
+     "label": "Value-Added Services",
+     "field_type": "freetext",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "D2.2",
+     "label": "Missing Services",
+     "field_type": "freetext",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    }
+   ]
+  },
+  {
+   "id": "E1",
+   "title": "E1 · Brand Personality",
+   "repeat_group": null,
+   "fields": [
+    {
+     "id": "E1.0",
+     "label": "Brand Archetype",
+     "field_type": "select",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Innocent",
+      "Explorer",
+      "Sage",
+      "Hero",
+      "Outlaw",
+      "Magician",
+      "Everyman",
+      "Lover",
+      "Jester",
+      "Caregiver",
+      "Creator",
+      "Ruler"
+     ]
+    },
+    {
+     "id": "E1.1",
+     "label": "Personality Traits (3–5)",
+     "field_type": "multiselect",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "Authentic",
+      "Adventurous",
+      "Caring",
+      "Professional",
+      "Friendly",
+      "Luxurious",
+      "Creative",
+      "Peaceful",
+      "Energetic",
+      "Romantic"
+     ]
+    },
+    {
+     "id": "E1.2",
+     "label": "Tone: Formal ←→ Casual",
+     "field_type": "slider",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "E1.3",
+     "label": "Tone: Serious ←→ Playful",
+     "field_type": "slider",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "E1.4",
+     "label": "Tone: Traditional ←→ Modern",
+     "field_type": "slider",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    }
+   ]
+  },
+  {
+   "id": "E2",
+   "title": "E2 · Visual Identity",
+   "repeat_group": null,
+   "fields": [
+    {
+     "id": "E2.0",
+     "label": "Primary Color 1",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "E2.1",
+     "label": "Primary Color 2",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "E2.2",
+     "label": "Primary Color 3",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "E2.3",
+     "label": "Photography Style",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "E2.4",
+     "label": "Avoid Themes",
+     "field_type": "freetext",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    }
+   ]
+  },
+  {
+   "id": "F3",
+   "title": "F3 · Marketing Budget",
+   "repeat_group": null,
+   "fields": [
+    {
+     "id": "F3.0",
+     "label": "Total Monthly Budget (THB)",
+     "field_type": "number",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "F3.1",
+     "label": "Goal Ads",
+     "field_type": "multiselect",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "การเพิ่มยอดไลค์",
+      "คอมเมนต์",
+      "การแชร์ engagement",
+      "ข้อความ / Inbox",
+      "ยอดจอง"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "G1",
+   "title": "G1 · Seasonal Pattern",
+   "repeat_group": null,
+   "fields": [
+    {
+     "id": "G1.0",
+     "label": "High Season months",
+     "field_type": "multiselect",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "มกราคม",
+      "กุมภาพันธ์",
+      "มีนาคม",
+      "เมษายน",
+      "พฤษภาคม",
+      "มิถุนายน",
+      "กรกฎาคม",
+      "สิงหาคม",
+      "กันยายน",
+      "ตุลาคม",
+      "พฤศจิกายน",
+      "ธันวาคม"
+     ]
+    },
+    {
+     "id": "G1.1",
+     "label": "Occupancy Rate (High)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "G1.2",
+     "label": "Rate Premium",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "G1.3",
+     "label": "Main Customer Types",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "G1.4",
+     "label": "Low Season months",
+     "field_type": "multiselect",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null,
+     "options": [
+      "มกราคม",
+      "กุมภาพันธ์",
+      "มีนาคม",
+      "เมษายน",
+      "พฤษภาคม",
+      "มิถุนายน",
+      "กรกฎาคม",
+      "สิงหาคม",
+      "กันยายน",
+      "ตุลาคม",
+      "พฤศจิกายน",
+      "ธันวาคม"
+     ]
+    },
+    {
+     "id": "G1.5",
+     "label": "Occupancy Rate (Low)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "G1.6",
+     "label": "Discount Level",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "G1.7",
+     "label": "Marketing Focus",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    }
+   ]
+  },
+  {
+   "id": "G2",
+   "title": "G2 · Local Event Calendar",
+   "repeat_group": null,
+   "fields": [
+    {
+     "id": "G2.0",
+     "label": "Annual Events",
+     "field_type": "freetext",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "G2.1",
+     "label": "Recurring Events",
+     "field_type": "freetext",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    }
+   ]
+  },
+  {
+   "id": "ROOM",
+   "title": "Room Types",
+   "repeat_group": "room_type",
+   "fields": [
+    {
+     "id": "ROOM.0",
+     "label": "ชื่อ Room Type",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type"
+    },
+    {
+     "id": "ROOM.1",
+     "label": "ชื่อ Room Type (สากล)",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type"
+    },
+    {
+     "id": "ROOM.2",
+     "label": "ขนาดห้องพัก",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type"
+    },
+    {
+     "id": "ROOM.3",
+     "label": "ความจุจำนวนผู้เข้าพัก",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type"
+    },
+    {
+     "id": "ROOM.4",
+     "label": "จำนวนและขนาดของเตียง",
+     "field_type": "text",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type"
+    },
+    {
+     "id": "ROOM.5",
+     "label": "จุดเด่นห้องพัก",
+     "field_type": "freetext",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type"
+    },
+    {
+     "id": "ROOM.6",
+     "label": "รายละเอียดเพิ่มเติม",
+     "field_type": "freetext",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": "room_type"
+    }
+   ]
+  },
+  {
+   "id": "OI",
+   "title": "Owner Interview · Experience Journey",
+   "repeat_group": null,
+   "fields": [
+    {
+     "id": "OI.0",
+     "label": "Pre-Arrival · ช่องทางที่แขกรู้จัก/จอง",
+     "field_type": "freetext",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "OI.1",
+     "label": "Pre-Arrival · ความคาดหวังของแขกและสิ่งที่ยังไม่ตอบโจทย์",
+     "field_type": "freetext",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "OI.2",
+     "label": "Pre-Arrival · คะแนนความพึงพอใจตอนเช็กอิน (เต็ม 10) และเหตุผล",
+     "field_type": "freetext",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "OI.3",
+     "label": "Pre-Arrival · สไตล์การต้อนรับ",
+     "field_type": "freetext",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "OI.4",
+     "label": "During Stay · กิจกรรม/บริการที่แขกใช้เวลามากที่สุด",
+     "field_type": "freetext",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "OI.5",
+     "label": "During Stay · Feedback ที่ได้รับบ่อยและวิธีเก็บ",
+     "field_type": "freetext",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "OI.6",
+     "label": "Post-Stay · การติดตาม/ขอบคุณลูกค้า",
+     "field_type": "freetext",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "OI.7",
+     "label": "Post-Stay · การกระตุ้นรีวิว/แนะนำต่อ",
+     "field_type": "freetext",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "OI.8",
+     "label": "Story Bank · Origin Story",
+     "field_type": "freetext",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "OI.9",
+     "label": "Story Bank · Opening Year",
+     "field_type": "freetext",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "OI.10",
+     "label": "Story Bank · Hero Stories",
+     "field_type": "freetext",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "OI.11",
+     "label": "Story Bank · Community Impact Story",
+     "field_type": "freetext",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "OI.12",
+     "label": "Content Capacity · ทีม Graphic / Freelancer / Agency",
+     "field_type": "freetext",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "OI.13",
+     "label": "Content Capacity · ผู้เขียน Content",
+     "field_type": "freetext",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "OI.14",
+     "label": "Content Capacity · ผู้ดูแล Social Media และเวลาต่อสัปดาห์",
+     "field_type": "freetext",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "OI.15",
+     "label": "Content Capacity · เนื้อหาที่ควรเน้น",
+     "field_type": "freetext",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    },
+    {
+     "id": "OI.16",
+     "label": "Content Capacity · อุปสรรคในการทำ Content",
+     "field_type": "freetext",
+     "layer": "L2",
+     "restricted_category": null,
+     "repeat_group": null
+    }
+   ]
+  }
+ ]
+}
