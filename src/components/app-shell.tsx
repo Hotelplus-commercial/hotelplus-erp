@@ -15,10 +15,13 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { Switch } from "@/components/ui/switch";
 import { properties } from "@/lib/erp-data";
+import { useServicing } from "@/lib/ps-servicing";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
+  const servicing = useServicing();
 
   // Public customer-facing LIVE Link renders without the internal ERP chrome.
   if (pathname.startsWith("/l/")) {
@@ -48,6 +51,12 @@ export function AppShell({ children }: { children: ReactNode }) {
               </div>
 
               <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+                {import.meta.env.DEV && (
+                  <label className="flex items-center gap-1.5 rounded-md border px-2 py-1.5 text-[10px] font-semibold text-muted-foreground">
+                    <span className={servicing.test_mode ? "text-primary" : "text-muted-foreground"}>TEST MODE</span>
+                    <Switch aria-label="TEST MODE" checked={servicing.test_mode} onCheckedChange={servicing.setTestMode} className="scale-75" />
+                  </label>
+                )}
                 <Select defaultValue="All properties">
                   <SelectTrigger className="hidden h-9 w-[170px] lg:flex">
                     <SelectValue />

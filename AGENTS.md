@@ -13,6 +13,7 @@
 - Zone 3 navigates to the existing menu-8 full Pipeline with a card/mode hash before opening the shared drawer; only the drawer advances stages, preserving one working board and direct My Day entry.
 - Servicing stage events are append-only and created by gated in-app actions; historical demo data remains separate from live action timestamps.
 - Servicing role flags are workflow simulation only, not authentication or authorization; do not treat them as production security.
+- Servicing UAT test mode lives in the shared provider and is hard-disabled outside development; it bypasses checklist ticking roles only, preserving read-only surfaces and every other workflow permission to prevent production bypass.
 - Servicing remains a browser-local prototype until authenticated shared persistence is explicitly scoped; Cloud activation alone does not migrate workflow data.
 - Servicing cross-app links share one service-stage-only control, hydrate missing scaffold fields without replacing local data, and allow only HTTP(S) destinations; this keeps native work intact and prevents unsafe navigation.
 
