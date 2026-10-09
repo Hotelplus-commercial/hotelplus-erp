@@ -601,6 +601,8 @@ type Ctx = State & {
   hydrated: boolean;
   role: Role;
   setRole: (r: Role) => void;
+  test_mode: boolean;
+  setTestMode: (enabled: boolean) => void;
   createFromContract: (input: { deal_id: string; contract_id: string | null; contract_service_line: "ORM" | "MARCOM" | "BOTH" | null; hotel_id: string | null; property_name: string; assigned_ae_id?: string; service_variant?: ServiceVariant }) => { ok: boolean; created: string[] } ;
   createCard: (input: { property_name: string; service_line: ServiceLine; service_variant?: ServiceVariant }) => string;
   toggleChecklistItem: (itemId: string) => void;
@@ -631,9 +633,23 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
   const stateRef = useRef(state);
   stateRef.current = state;
   const [role, setRole] = useState<Role>("specialist");
+  const [testMode, setTestModeState] = useState(false);
+  const test_mode = import.meta.env.DEV && testMode;
+  const setTestMode = useCallback((enabled: boolean) => {
+    if (!import.meta.env.DEV) return;
+    setTestModeState(enabled);
+    localStorage.setItem("meridia.ps.servicing.uat.test_mode", String(enabled));
+  }, []);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
+    if (import.meta.env.DEV) {
+      try {
+        setTestModeState(localStorage.getItem("meridia.ps.servicing.uat.test_mode") !== "false");
+      } catch {
+        setTestModeState(true);
+      }
+    }
     try {
       const raw = localStorage.getItem(KEY);
       const loaded = raw ? (JSON.parse(raw) as State) : seed();
@@ -838,7 +854,7 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
         return { ok: true };
       },
       toggleFinalCheck: (itemId) => {
-        if (role !== "ae") return;
+        if (!test_mode && role !== "ae") return;
         setState((s) => ({
           ...s,
           finalChecks: s.finalChecks.map((f) =>
@@ -847,7 +863,7 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
         }));
       },
       toggleHandover: (itemId, col) => {
-        if (col === "specialist" ? role !== "specialist" : role !== "service") return;
+        if (!test_mode && (col === "specialist" ? role !== "specialist" : role !== "service")) return;
         setState((s) => ({
           ...s,
           handover: s.handover.map((h) => {
@@ -893,7 +909,7 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
         const item = state.checklistItems.find((i) => i.id === itemId);
         if (!item) return;
         const owner = item.stage_key === "collect_data" ? "ae" : "service";
-        if (role !== owner && role !== "pm") return;
+        if (!test_mode && role !== owner) return;
         setState((s) => ({
           ...s,
           checklistItems: s.checklistItems.map((i) =>
@@ -947,7 +963,7 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
       },
       reset: () => setState(seed()),
     };
-  }, [state, hydrated, role, createFromContract]);
+  }, [state, hydrated, role, test_mode, setTestMode, createFromContract]);
 
   return <C.Provider value={value}>{children}</C.Provider>;
 }

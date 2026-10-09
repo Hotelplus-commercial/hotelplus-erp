@@ -218,7 +218,7 @@ function ChecklistSection({ card, readOnly }: { card: OnboardingCard; readOnly: 
   return <section className="space-y-3 border-b pb-4" aria-label="Checklist">
     <p className="text-sm font-semibold">Checklist <span className="text-xs font-normal text-muted-foreground">· ไม่ล็อกการเลื่อนขั้น</span></p>
     {blocks.map(({ stage, items }) => {
-      const can = !readOnly && (s.role === owner(stage) || s.role === "pm");
+      const can = !readOnly && (s.test_mode || s.role === owner(stage));
       const groups = [...new Set(items.map((i) => i.group_label))];
       return <div key={stage} className="space-y-2 rounded-md border p-3">
         <p className="flex flex-wrap items-center gap-2 text-xs font-medium">{STAGE_LABEL[stage]}<DeptBadge stage={stage} variant={card.service_variant} />{stage === "collect_data" && card.service_variant === "ORM" && <span className="text-muted-foreground">· แบบฟอร์ม WS-2: {card.form_completion_status}</span>}</p>
@@ -269,8 +269,8 @@ function OrmHandover({ card }: { card: OnboardingCard }) {
           <tr key={`g-${g}`}><td colSpan={3} className="pt-2 text-[11px] uppercase tracking-wide text-muted-foreground">{g}</td></tr>,
           ...otaItems.filter((h) => (h.group_label ?? "") === g).map((h) => <tr key={h.id} className="border-t">
             <td className="py-1 text-xs">{h.item_label}</td>
-            <td className="text-center"><Checkbox aria-label={`Specialist: ${ota} ${h.item_label}`} checked={h.specialist_checked} disabled={!isSpec} onCheckedChange={() => s.toggleHandover(h.id, "specialist")} /></td>
-            <td className="text-center"><Checkbox aria-label={`ORM: ${ota} ${h.item_label}`} checked={h.verifier_checked} disabled={s.role !== "service" || !h.specialist_checked} onCheckedChange={() => s.toggleHandover(h.id, "verifier")} /></td>
+            <td className="text-center"><Checkbox aria-label={`Specialist: ${ota} ${h.item_label}`} checked={h.specialist_checked} disabled={!s.test_mode && !isSpec} onCheckedChange={() => s.toggleHandover(h.id, "specialist")} /></td>
+            <td className="text-center"><Checkbox aria-label={`ORM: ${ota} ${h.item_label}`} checked={h.verifier_checked} disabled={(!s.test_mode && s.role !== "service") || !h.specialist_checked} onCheckedChange={() => s.toggleHandover(h.id, "verifier")} /></td>
           </tr>),
         ])}</tbody>
       </table>
@@ -528,7 +528,7 @@ export function ServicingCardDrawer({ id, onClose, readOnly = false }: { id: str
                 {finals.map((f) => (
                   <li key={f.id}>
                     <label className="flex items-center gap-2 text-sm">
-                      <Checkbox aria-label={f.item_label} checked={f.checked} disabled={readOnly || s.role !== "ae"} onCheckedChange={() => s.toggleFinalCheck(f.id)} />
+                      <Checkbox aria-label={f.item_label} checked={f.checked} disabled={readOnly || (!s.test_mode && s.role !== "ae")} onCheckedChange={() => s.toggleFinalCheck(f.id)} />
                       {f.item_label}
                     </label>
                   </li>

@@ -30,4 +30,9 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 
 ## v6.0 Servicing (variants + checklists)
 - [x] Phase 1: service variants, new service stages, checklist templates/items (non-gating, PM edits), ORM|Marcom toggle, dept badges, AE Collect-Data checklist
-- [x] Phase 2: ORM Handover OTA 2-tick + credentials + room schema gate — waiting on Head of Commercial approval
+- [x] Phase 2: ORM Handover OTA 2-tick + credentials + room schema gate — approved and implemented
+
+## v6.0 UAT test mode
+- [ ] Add global preview-only TEST MODE, default ON, with top-bar toggle and production hard-off.
+- [ ] Bypass checklist-role ticking only; preserve timestamps, gates, read-only surfaces and all non-ticking permissions.
+- [ ] Verify ON/OFF for Final Check, both handover columns and service checklists; confirm stage CTA remains gated.
