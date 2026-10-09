@@ -26,6 +26,10 @@ export type OnboardingCard = {
   service_line: ServiceLine;
   service_variant: ServiceVariant;
   contract_ref: string;
+  contract_code?: string;
+  orm_lite?: boolean;
+  handover_otas?: string[];
+  meeting_appointment_url?: string | null;
   created_at: string;
   current_stage: string;
   assigned_ae_id: string;
@@ -57,6 +61,26 @@ export type HandoverItem = {
 export type HandoverCredential = { id: string; card_id: string; ota_channel: string; property_name: string; hotel_id: string; username: string; password: string; commission: string };
 export type RoomMapping = { id: string; card_id: string; original_room_name: string; ota_channel: string; ota_room_name: string };
 export const OTA_CHANNELS = ["Agoda", "Booking.com", "Expedia", "Trip.com", "Traveloka", "Tiket"] as const;
+export const handoverOtas = (card: OnboardingCard): string[] => card.orm_lite
+  ? OTA_CHANNELS.filter((ota) => card.handover_otas?.includes(ota))
+  : [...OTA_CHANNELS];
+export const validMeetingUrl = (value: string | null | undefined) => {
+  try { return ["http:", "https:"].includes(new URL(value?.trim() ?? "").protocol); } catch { return false; }
+};
+export function handoverProgress(s: Pick<State, "handover" | "credentials" | "roomMappings">, card: OnboardingCard) {
+  const otas = handoverOtas(card);
+  const selectionComplete = otas.length === (card.orm_lite ? 3 : 6);
+  const items = s.handover.filter((h) => h.card_id === card.id && (!h.ota_channel || otas.includes(h.ota_channel)));
+  const names = [...new Set(s.roomMappings.filter((m) => m.card_id === card.id).map((m) => m.original_room_name))];
+  const rowsPresent = otas.every((ota) => items.some((h) => h.ota_channel === ota)) || (items.length > 0 && items.every((h) => !h.ota_channel));
+  return {
+    otas, items, selectionComplete,
+    specialistDone: selectionComplete && rowsPresent && items.every((h) => h.specialist_checked),
+    verifierDone: selectionComplete && rowsPresent && items.every((h) => h.specialist_checked && h.verifier_checked),
+    credentialsDone: selectionComplete && otas.every((ota) => s.credentials.some((c) => c.card_id === card.id && c.ota_channel === ota && c.hotel_id.trim() && credentialComplete(c))),
+    roomsDone: selectionComplete && names.length > 0 && names.every((name) => otas.every((ota) => s.roomMappings.some((m) => m.card_id === card.id && m.original_room_name === name && m.ota_channel === ota && m.ota_room_name.trim()))),
+  };
+}
 export type HandoverSurvey = {
   id: string;
   card_id: string;
@@ -514,7 +538,7 @@ function seed(): State {
 }
 
 
-type CardInput = { property_name: string; service_line: ServiceLine; service_variant?: ServiceVariant | undefined; property_id?: string; contract_ref?: string; assigned_ae_id?: string | undefined };
+type CardInput = { property_name: string; service_line: ServiceLine; service_variant?: ServiceVariant | undefined; property_id?: string; contract_ref?: string; contract_code?: string; assigned_ae_id?: string | undefined };
 
 /** One initializer for manual and contract-created cards, including checklist and first event. */
 function insertNewCard(s: State, input: CardInput, id: string, now: string): State {
@@ -532,6 +556,10 @@ function insertNewCard(s: State, input: CardInput, id: string, now: string): Sta
             external_app: externalAppFor(service_line),
             external_ref_url: null,
             contract_ref: input.contract_ref ?? `#${count + 1}`,
+             contract_code: input.contract_code ?? "",
+             orm_lite: service_variant === "ORM" && /ORM-LITE/i.test(input.contract_code ?? input.contract_ref ?? ""),
+             handover_otas: [],
+             meeting_appointment_url: null,
             created_at: now,
             current_stage: "new_property",
             assigned_ae_id: input.assigned_ae_id ?? "AE · Ploy",
@@ -605,9 +633,11 @@ type Ctx = State & {
   setRole: (r: Role) => void;
   test_mode: boolean;
   setTestMode: (enabled: boolean) => void;
-  createFromContract: (input: { deal_id: string; contract_id: string | null; contract_service_line: "ORM" | "MARCOM" | "BOTH" | null; hotel_id: string | null; property_name: string; assigned_ae_id?: string; service_variant?: ServiceVariant }) => { ok: boolean; created: string[] } ;
+  createFromContract: (input: { deal_id: string; contract_id: string | null; contract_service_line: "ORM" | "MARCOM" | "BOTH" | null; hotel_id: string | null; property_name: string; assigned_ae_id?: string; service_variant?: ServiceVariant; contract_code?: string }) => { ok: boolean; created: string[] } ;
   createCard: (input: { property_name: string; service_line: ServiceLine; service_variant?: ServiceVariant }) => string;
   toggleChecklistItem: (itemId: string) => void;
+  setHandoverOtas: (cardId: string, otas: string[]) => void;
+  setMeetingAppointment: (cardId: string, url: string) => void;
   addTemplateItem: (stage_key: string, service_variant: ServiceVariant, group_label: string, item_label: string) => void;
   renameTemplateItem: (templateId: string, item_label: string) => void;
   removeTemplateItem: (templateId: string) => void;
@@ -619,7 +649,7 @@ type Ctx = State & {
   editHandover: (itemId: string, label: string) => void;
   deleteHandover: (itemId: string) => void;
   submitHandoverSurvey: (id: string, score: number, comment: string) => void;
-  setCredential: (id: string, patch: Partial<Pick<HandoverCredential, "username" | "password" | "commission">>) => void;
+  setCredential: (id: string, patch: Partial<Pick<HandoverCredential, "hotel_id" | "username" | "password" | "commission">>) => void;
   addRoom: (cardId: string, name: string) => void;
   removeRoom: (cardId: string, name: string) => void;
   setRoomMapping: (id: string, ota_room_name: string) => void;
@@ -684,6 +714,10 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
         return {
           ...card,
           service_variant,
+          contract_code: card.contract_code ?? "",
+          orm_lite: service_variant === "ORM" && (card.orm_lite ?? /ORM-LITE/i.test(card.contract_code ?? card.contract_ref)),
+          handover_otas: card.handover_otas ?? [],
+          meeting_appointment_url: card.meeting_appointment_url ?? null,
           current_stage: migrateStageKey(card.current_stage, service_variant),
           billing_anchor_stage: BILLING_ANCHOR_VARIANT[service_variant],
           external_app: card.external_app ?? externalAppFor(card.service_line),
@@ -721,13 +755,17 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
     const created: string[] = [];
     const now = new Date().toISOString();
     for (const line of lines) {
-      if (next.cards.some((card) => card.contract_ref === ref && card.service_line === line)) continue;
+      const existing = next.cards.find((card) => card.contract_ref === ref && card.service_line === line);
+      if (existing) {
+        if (line === "ORM" && input.contract_code && !existing.contract_code) next = { ...next, cards: next.cards.map((card) => card.id === existing.id ? { ...card, contract_code: input.contract_code ?? "", orm_lite: /ORM-LITE/i.test(input.contract_code ?? "") } : card) };
+        continue;
+      }
       const id = `OB-${rid()}-${Date.now()}`;
       const variant = line === "ORM" ? undefined : input.service_variant;
-      next = insertNewCard(next, { property_name: input.property_name, service_line: line, service_variant: variant, property_id: input.hotel_id, contract_ref: ref, assigned_ae_id: input.assigned_ae_id }, id, now);
+      next = insertNewCard(next, { property_name: input.property_name, service_line: line, service_variant: variant, property_id: input.hotel_id, contract_ref: ref, contract_code: input.contract_code ?? "", assigned_ae_id: input.assigned_ae_id }, id, now);
       created.push(id);
     }
-    if (created.length) {
+    if (next !== stateRef.current) {
       stateRef.current = next;
       setState(next);
     }
@@ -748,20 +786,19 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
         if (!["specialist", "pm"].includes(role)) reasons.push("Specialist / PM: เป็นผู้กด Approve หลัง AE ตรวจครบ");
       } else if (nxt === "completed") {
         if (card.service_variant === "ORM") {
-          const items = s.handover.filter(h => h.card_id === cardId);
-          const spec = items.filter(h => !h.specialist_checked).length;
-          const ver = items.filter(h => !h.verifier_checked).length;
-          if (!items.length) reasons.push("Specialist: ยังไม่มีรายการ Handover OTA");
-          if (spec) reasons.push(`Specialist: ติ๊ก Handover OTA อีก ${spec} รายการ`);
-          if (ver) reasons.push(`ORM: ตรวจรับ Handover OTA อีก ${ver} รายการ`);
-          const creds = (s.credentials ?? []).filter(c => c.card_id === cardId);
-          const credMissing = creds.filter(c => !credentialComplete(c)).map(c => c.ota_channel);
-          if (!creds.length || credMissing.length) reasons.push(`Specialist: กรอก OTA Log-in ให้ครบ${credMissing.length ? ` (${credMissing.join(", ")})` : ""}`);
-          const rooms = (s.roomMappings ?? []).filter(m => m.card_id === cardId);
-          if (!rooms.length) reasons.push("Specialist: เพิ่มประเภทห้องใน Room schema อย่างน้อย 1 ห้อง");
-          else if (rooms.some(m => !m.ota_room_name.trim())) reasons.push("Specialist: จับคู่ชื่อห้องกับทุก OTA ให้ครบ");
+          const progress = handoverProgress(s, card);
+          if (!progress.selectionComplete) reasons.push("Specialist: เลือก OTA ให้ครบ 3 รายสำหรับ ORM-Lite");
+          if (!progress.specialistDone) reasons.push("Specialist: ติ๊ก Handover OTA ให้ครบทุกช่องทางที่เลือก");
+          if (!progress.credentialsDone) reasons.push("Specialist: กรอก Hotel ID และ OTA Log-in ให้ครบ");
+          if (!progress.roomsDone) reasons.push("Specialist: จับคู่ชื่อห้องกับทุก OTA ที่เลือกให้ครบ");
         }
         if (role !== "specialist") reasons.push("Specialist: เป็นผู้กด Completed");
+      } else if (card.service_variant === "ORM" && card.current_stage === "completed") {
+        if (!handoverProgress(s, card).verifierDone) reasons.push("ORM: ตรวจรับ Handover ทุกช่องทางที่เลือกก่อน Prepare Data");
+        if (role !== "service") reasons.push("ORM: เป็นผู้เริ่ม Prepare Data หลังตรวจรับ");
+      } else if (card.service_variant === "ORM" && nxt === "orm_rate_structure") {
+        if (!validMeetingUrl(card.meeting_appointment_url)) reasons.push("ORM: ใส่ลิงก์นัดประชุม (http/https) ก่อน Rate Structure");
+        if (role !== "service") reasons.push("ORM: เป็นผู้ยืนยัน Rate Structure");
       } else if (["new_property", "introduction_sent_form", "collect_data", "property_pending"].includes(card.current_stage)) {
         if (role !== "ae") reasons.push("AE: เป็นผู้ดำเนินขั้นตอนข้อมูลโรงแรม");
       } else if (role !== "service") reasons.push("Service: เป็นผู้ทำและยืนยันขั้นตอนบริการนี้");
@@ -793,7 +830,7 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
         if (!pending && to !== nxt) return { ok: false, error: "ดำเนินการได้เฉพาะขั้นถัดไป" };
         if (!pending && !g.ok) return { ok: false, error: g.reasons.join(" · ") };
         if (!to) return { ok: false, error: "ไม่มีขั้นถัดไป" };
-        if (to === "completed") {
+        if (to === "completed" && card.service_variant !== "ORM") {
           try { const url = new URL(opts?.meetingUrl?.trim() ?? ""); if (!["http:", "https:"].includes(url.protocol)) throw new Error(); }
           catch { return { ok: false, error: "Specialist: ใส่ลิงก์ Meeting record (http/https)" }; }
         }
@@ -814,11 +851,11 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
                     current_stage: to,
                     ...(to === "go_live" ? { go_live_at: now } : {}),
                     ...(isAnchor ? { billing_start_at: now } : {}),
-                    ...(to === "completed" ? { meeting_record_url: opts?.meetingUrl ?? null } : {}),
+                    ...(to === "completed" && card.service_variant !== "ORM" ? { meeting_record_url: opts?.meetingUrl ?? null } : {}),
                   },
             ),
             handoverSurveys:
-              to === "completed"
+              to === "completed" && card.service_variant !== "ORM"
                 ? [
                     ...s.handoverSurveys,
                     {
@@ -867,16 +904,22 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
       },
       toggleHandover: (itemId, col) => {
         if (!test_mode && (col === "specialist" ? role !== "specialist" : role !== "service")) return;
-        setState((s) => ({
-          ...s,
-          handover: s.handover.map((h) => {
-            if (h.id !== itemId) return h;
-            const now = new Date().toISOString();
-            return col === "specialist"
-              ? { ...h, specialist_checked: !h.specialist_checked, specialist_checked_at: h.specialist_checked ? null : now }
-              : { ...h, verifier_checked: !h.verifier_checked, verifier_checked_at: h.verifier_checked ? null : now };
-          }),
-        }));
+        setState((s) => {
+          const item = s.handover.find((h) => h.id === itemId);
+          const card = s.cards.find((c) => c.id === item?.card_id);
+          if (!item || !card || card.service_variant !== "ORM") return s;
+          if (col === "specialist" ? card.current_stage !== "approved" : card.current_stage !== "completed" || !item.specialist_checked) return s;
+          if (item.ota_channel && !handoverOtas(card).includes(item.ota_channel)) return s;
+          const now = new Date().toISOString();
+          const handover = s.handover.map((h) => h.id !== itemId ? h : col === "specialist"
+            ? { ...h, specialist_checked: !h.specialist_checked, specialist_checked_at: h.specialist_checked ? null : now }
+            : { ...h, verifier_checked: !h.verifier_checked, verifier_checked_at: h.verifier_checked ? null : now });
+          const next = { ...s, handover };
+          if (col === "verifier" && handoverProgress(next, card).verifierDone && !s.handoverSurveys.some((h) => h.card_id === card.id)) {
+            return { ...next, handoverSurveys: [...s.handoverSurveys, { id: rid(), card_id: card.id, evaluatee_specialist_id: card.assigned_specialist_id, evaluator_service_id: card.assigned_service_owner_id, score: null, comment: null, submitted_at: null, window_expires_at: new Date(Date.now() + 7 * DAY).toISOString(), status: "pending" as const }] };
+          }
+          return next;
+        });
       },
       addHandover: (cardId, label) =>
         setState((s) => ({
@@ -938,23 +981,45 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
         if (role !== "pm") return;
         setState((s) => ({ ...s, checklistTemplates: s.checklistTemplates.filter((t) => t.id !== templateId) }));
       },
+      setHandoverOtas: (cardId, otas) => {
+        if (role !== "specialist") return;
+        setState((s) => {
+          const card = s.cards.find((c) => c.id === cardId);
+          const selected = OTA_CHANNELS.filter((ota) => otas.includes(ota));
+          if (!card?.orm_lite || card.current_stage !== "approved" || selected.length > 3) return s;
+          const names = [...new Set(s.roomMappings.filter((m) => m.card_id === cardId).map((m) => m.original_room_name))];
+          const fresh = names.flatMap((name) => selected.filter((ota) => !s.roomMappings.some((m) => m.card_id === cardId && m.original_room_name === name && m.ota_channel === ota)).map((ota) => ({ id: rid(), card_id: cardId, original_room_name: name, ota_channel: ota, ota_room_name: "" })));
+          return { ...s, cards: s.cards.map((c) => c.id === cardId ? { ...c, handover_otas: selected } : c), roomMappings: [...s.roomMappings, ...fresh] };
+        });
+      },
+      setMeetingAppointment: (cardId, url) => {
+        if (!["specialist", "service"].includes(role)) return;
+        setState((s) => ({ ...s, cards: s.cards.map((c) => c.id === cardId && c.service_variant === "ORM" && fullSequence("ORM").indexOf(c.current_stage) >= fullSequence("ORM").indexOf("approved") ? { ...c, meeting_appointment_url: url } : c) }));
+      },
       setCredential: (id, patch) => {
         if (role !== "specialist") return;
+        const credential = state.credentials.find((c) => c.id === id);
+        if (!state.cards.some((c) => c.id === credential?.card_id && c.current_stage === "approved")) return;
         setState((s) => ({ ...s, credentials: s.credentials.map((c) => (c.id === id ? { ...c, ...patch } : c)) }));
       },
       addRoom: (cardId, name) => {
         if (role !== "specialist" || !name.trim()) return;
+        const card = state.cards.find((c) => c.id === cardId);
+        if (!card || card.current_stage !== "approved") return;
         setState((s) => s.roomMappings.some((m) => m.card_id === cardId && m.original_room_name.toLowerCase() === name.trim().toLowerCase()) ? s : ({
           ...s,
-          roomMappings: [...s.roomMappings, ...OTA_CHANNELS.map((ota) => ({ id: rid(), card_id: cardId, original_room_name: name.trim(), ota_channel: ota, ota_room_name: "" }))],
+          roomMappings: [...s.roomMappings, ...handoverOtas(card).map((ota) => ({ id: rid(), card_id: cardId, original_room_name: name.trim(), ota_channel: ota, ota_room_name: "" }))],
         }));
       },
       removeRoom: (cardId, name) => {
         if (role !== "specialist") return;
+        if (!state.cards.some((c) => c.id === cardId && c.current_stage === "approved")) return;
         setState((s) => ({ ...s, roomMappings: s.roomMappings.filter((m) => !(m.card_id === cardId && m.original_room_name === name)) }));
       },
       setRoomMapping: (id, ota_room_name) => {
         if (role !== "specialist") return;
+        const mapping = state.roomMappings.find((m) => m.id === id);
+        if (!state.cards.some((c) => c.id === mapping?.card_id && c.current_stage === "approved")) return;
         setState((s) => ({ ...s, roomMappings: s.roomMappings.map((m) => (m.id === id ? { ...m, ota_room_name } : m)) }));
       },
       addHandoverTemplate: (ota_channel, group_label, item_label) => {
