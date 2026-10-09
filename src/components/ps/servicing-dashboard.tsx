@@ -49,7 +49,8 @@ import {
   lineSequence,
   deptBadge,
   OTA_CHANNELS,
-  credentialComplete,
+  handoverOtas,
+  handoverProgress,
 } from "@/lib/ps-servicing";
 import { cn } from "@/lib/utils";
 
@@ -117,7 +118,7 @@ function ServicingMonitor() {
   const s = useServicing();
   const [view, setView] = useState("pipeline");
   const [q, setQ] = useState("");
-  const [line, setLine] = useState("all");
+  const [line, setLine] = useState("ORM");
   const [status, setStatus] = useState("all");
   const [compare, setCompare] = useState<string | null>(null);
   const [openCard, setOpenCard] = useState<string | null>(null);
@@ -237,42 +238,50 @@ function ChecklistSection({ card, readOnly }: { card: OnboardingCard; readOnly: 
 
 function OrmHandover({ card }: { card: OnboardingCard }) {
   const s = useServicing();
-  const [ota, setOta] = useState<string>(OTA_CHANNELS[0]);
+  const otas = handoverOtas(card);
+  const progress = handoverProgress(s, card);
+  const [selectedOta, setOta] = useState<string>(otas[0] ?? OTA_CHANNELS[0]);
+  const ota = otas.includes(selectedOta) ? selectedOta : otas[0] ?? selectedOta;
   const [room, setRoom] = useState("");
   const [tGroup, setTGroup] = useState("");
   const [tLabel, setTLabel] = useState("");
-  const items = s.handover.filter((h) => h.card_id === card.id);
-  const creds = s.credentials.filter((c) => c.card_id === card.id);
-  const rooms = s.roomMappings.filter((m) => m.card_id === card.id);
+  const items = progress.items;
+  const creds = s.credentials.filter((c) => c.card_id === card.id && otas.includes(c.ota_channel));
+  const rooms = s.roomMappings.filter((m) => m.card_id === card.id && otas.includes(m.ota_channel));
   const roomNames = [...new Set(rooms.map((m) => m.original_room_name))];
-  const isSpec = s.role === "specialist";
+  const isSpec = s.role === "specialist" && card.current_stage === "approved";
+  const accepting = card.current_stage === "completed";
   const otaItems = items.filter((h) => (h.ota_channel ?? "อื่นๆ") === ota);
   const groups = [...new Set(otaItems.map((h) => h.group_label ?? ""))];
-  const doneOf = (o: string) => { const l = items.filter((h) => (h.ota_channel ?? "อื่นๆ") === o); return `${l.filter((h) => h.specialist_checked && h.verifier_checked).length}/${l.length}`; };
-  const allTicked = items.length > 0 && items.every((h) => h.specialist_checked && h.verifier_checked);
-  const credsDone = creds.length > 0 && creds.every(credentialComplete);
-  const roomsDone = rooms.length > 0 && rooms.every((m) => m.ota_room_name.trim());
+  const doneOf = (o: string) => { const l = items.filter((h) => (h.ota_channel ?? "อื่นๆ") === o); return `${l.filter((h) => accepting ? h.verifier_checked : h.specialist_checked).length}/${l.length}`; };
+  const allTicked = accepting ? progress.verifierDone : progress.specialistDone;
+  const credsDone = progress.credentialsDone;
+  const roomsDone = progress.roomsDone;
   const tmpl = s.checklistTemplates.filter((t) => t.has_two_tick && t.ota_channel === ota);
   return <div className="space-y-4">
     <div>
-      <h3 className="text-sm font-semibold">ORM Handover · ต้องครบ 3 ส่วนก่อน Completed</h3>
+      <h3 className="text-sm font-semibold">{accepting ? "ORM Handover · ORM ตรวจรับก่อน Prepare Data" : "ORM Handover · Specialist ทำครบ 3 ส่วนก่อน Completed"}</h3>
       <div className="mt-1 flex flex-wrap gap-1.5 text-[11px]">
         <Chip tone={allTicked ? "info" : "muted"}>{allTicked ? "✓" : "○"} OTA checklist</Chip>
         <Chip tone={credsDone ? "info" : "muted"}>{credsDone ? "✓" : "○"} OTA Log-in</Chip>
         <Chip tone={roomsDone ? "info" : "muted"}>{roomsDone ? "✓" : "○"} Room schema</Chip>
       </div>
     </div>
+    {card.orm_lite && <div className="space-y-2" aria-label="ORM-Lite OTA selection">
+      <p className="text-xs font-semibold">ORM-Lite · OTA {otas.length}/3</p>
+      <div className="flex flex-wrap gap-2">{OTA_CHANNELS.map((o) => <label key={o} className="flex items-center gap-2 text-xs"><Checkbox aria-label={`เลือก OTA ${o}`} checked={otas.includes(o)} disabled={!isSpec || (!otas.includes(o) && otas.length >= 3)} onCheckedChange={() => s.setHandoverOtas(card.id, otas.includes(o) ? otas.filter((item) => item !== o) : [...otas, o])} />{o}</label>)}</div>
+    </div>}
     <div className="space-y-2" aria-label="OTA checklist">
-      <p className="text-xs font-medium">1 · OTA checklist · Specialist ติ๊ก แล้ว ORM ตรวจรับ</p>
-      <div className="flex flex-wrap gap-1">{OTA_CHANNELS.map((o) => <Button key={o} type="button" size="sm" variant={o === ota ? "default" : "outline"} className="h-7 text-xs" onClick={() => setOta(o)}>{o} · {doneOf(o)}</Button>)}</div>
+      <p className="text-xs font-medium">1 · OTA checklist · {accepting ? "ORM ตรวจรับที่ Completed" : "Specialist ติ๊กที่ Approved"}</p>
+      <div className="flex flex-wrap gap-1">{otas.map((o) => <Button key={o} type="button" size="sm" variant={o === ota ? "default" : "outline"} className="h-7 text-xs" onClick={() => setOta(o)}>{o} · {doneOf(o)}</Button>)}</div>
       <table className="w-full text-sm">
         <thead className="text-[11px] text-muted-foreground"><tr><th className="text-left">รายการ</th><th className="w-20">Specialist</th><th className="w-20">ORM</th></tr></thead>
         <tbody>{groups.map((g) => [
           <tr key={`g-${g}`}><td colSpan={3} className="pt-2 text-[11px] uppercase tracking-wide text-muted-foreground">{g}</td></tr>,
           ...otaItems.filter((h) => (h.group_label ?? "") === g).map((h) => <tr key={h.id} className="border-t">
-            <td className="py-1 text-xs">{h.item_label}</td>
-            <td className="text-center"><Checkbox aria-label={`Specialist: ${ota} ${h.item_label}`} checked={h.specialist_checked} disabled={!s.test_mode && !isSpec} onCheckedChange={() => s.toggleHandover(h.id, "specialist")} /></td>
-            <td className="text-center"><Checkbox aria-label={`ORM: ${ota} ${h.item_label}`} checked={h.verifier_checked} disabled={(!s.test_mode && s.role !== "service") || !h.specialist_checked} onCheckedChange={() => s.toggleHandover(h.id, "verifier")} /></td>
+            <td className="whitespace-normal break-words py-2 pr-3 text-xs">{h.item_label}</td>
+            <td className="text-center"><Checkbox aria-label={`Specialist: ${ota} ${h.item_label}`} checked={h.specialist_checked} disabled={card.current_stage !== "approved" || (!s.test_mode && !isSpec)} onCheckedChange={() => s.toggleHandover(h.id, "specialist")} /></td>
+            <td className="text-center"><Checkbox aria-label={`ORM: ${ota} ${h.item_label}`} checked={h.verifier_checked} disabled={!accepting || (!s.test_mode && s.role !== "service") || !h.specialist_checked} onCheckedChange={() => s.toggleHandover(h.id, "verifier")} /></td>
           </tr>),
         ])}</tbody>
       </table>
@@ -284,26 +293,30 @@ function OrmHandover({ card }: { card: OnboardingCard }) {
     <div className="space-y-2" aria-label="OTA Log-in">
       <p className="text-xs font-medium">2 · Provide OTA Log-in (Specialist กรอก)</p>
       <p className="text-[11px] text-muted-foreground">{card.property_name} · Hotel ID {card.property_id}</p>
-      <div className="space-y-1">{creds.map((c) => <div key={c.id} className="grid grid-cols-[88px_1fr_1fr_64px] items-center gap-1.5">
-        <span className="text-xs">{c.ota_channel}</span>
-        <Input aria-label={`${c.ota_channel} username`} disabled={!isSpec} className="h-7 text-xs" placeholder="username" value={c.username} onChange={(e) => s.setCredential(c.id, { username: e.target.value })} />
-        <Input aria-label={`${c.ota_channel} password`} disabled={!isSpec} type="password" className="h-7 text-xs" placeholder="password" value={c.password} onChange={(e) => s.setCredential(c.id, { password: e.target.value })} />
-        <Input aria-label={`${c.ota_channel} commission`} disabled={!isSpec} className="h-7 text-xs" placeholder="%" value={c.commission} onChange={(e) => s.setCredential(c.id, { commission: e.target.value })} />
-      </div>)}</div>
+      <div className="overflow-x-auto"><table className="w-full min-w-[540px] text-xs">
+        <thead><tr className="text-left text-[11px] text-muted-foreground"><th className="py-2 pr-2">OTA</th><th className="pr-2">Hotel ID</th><th className="pr-2">Username</th><th className="pr-2">Password</th><th>Commission %</th></tr></thead>
+        <tbody>{creds.map((c) => <tr key={c.id} className="border-t">
+          <td className="py-2 pr-2">{c.ota_channel}</td>
+          <td className="pr-2"><Input aria-label={`${c.ota_channel} Hotel ID`} disabled={!isSpec} className="h-8 min-w-20 text-xs" value={c.hotel_id} onChange={(e) => s.setCredential(c.id, { hotel_id: e.target.value })} /></td>
+          <td className="pr-2"><Input aria-label={`${c.ota_channel} username`} disabled={!isSpec} className="h-8 min-w-24 text-xs" placeholder="username" value={c.username} onChange={(e) => s.setCredential(c.id, { username: e.target.value })} /></td>
+          <td className="pr-2"><Input aria-label={`${c.ota_channel} password`} disabled={!isSpec} type="password" className="h-8 min-w-24 text-xs" placeholder="password" value={c.password} onChange={(e) => s.setCredential(c.id, { password: e.target.value })} /></td>
+          <td><Input aria-label={`${c.ota_channel} commission`} disabled={!isSpec} className="h-8 min-w-16 text-xs" placeholder="%" value={c.commission} onChange={(e) => s.setCredential(c.id, { commission: e.target.value })} /></td>
+        </tr>)}</tbody>
+      </table></div>
       <p className="text-[11px] text-muted-foreground">ต้นแบบเท่านั้น · ข้อมูลเก็บในเบราว์เซอร์นี้ ห้ามใส่รหัสผ่านจริง</p>
     </div>
     <div className="space-y-2" aria-label="Room schema">
-      <p className="text-xs font-medium">3 · Room schema · จับคู่ชื่อห้องกับ 6 OTA</p>
+      <p className="text-xs font-medium">3 · Room schema · จับคู่ชื่อห้องกับ {otas.length} OTA</p>
       <div className="overflow-x-auto"><table className="w-full min-w-[560px] text-xs">
-        <thead className="text-[11px] text-muted-foreground"><tr><th className="text-left">ห้องเดิม</th>{OTA_CHANNELS.map((o) => <th key={o} className="text-left">{o}</th>)}<th /></tr></thead>
+        <thead className="text-[11px] text-muted-foreground"><tr><th className="text-left">ห้องเดิม</th>{otas.map((o) => <th key={o} className="text-left">{o}</th>)}<th /></tr></thead>
         <tbody>{roomNames.map((n) => <tr key={n} className="border-t">
           <td className="py-1 pr-1 font-medium">{n}</td>
-          {OTA_CHANNELS.map((o) => { const m = rooms.find((r) => r.original_room_name === n && r.ota_channel === o); return <td key={o} className="pr-1">{m && <Input aria-label={`${n} บน ${o}`} disabled={!isSpec} className="h-7 text-xs" value={m.ota_room_name} onChange={(e) => s.setRoomMapping(m.id, e.target.value)} />}</td>; })}
+          {otas.map((o) => { const m = rooms.find((r) => r.original_room_name === n && r.ota_channel === o); return <td key={o} className="pr-1">{m && <Input aria-label={`${n} บน ${o}`} disabled={!isSpec} className="h-7 text-xs" value={m.ota_room_name} onChange={(e) => s.setRoomMapping(m.id, e.target.value)} />}</td>; })}
           <td><Button aria-label={`ลบห้อง ${n}`} size="icon" variant="ghost" className="size-7" disabled={!isSpec} onClick={() => s.removeRoom(card.id, n)}><Trash2 className="size-3.5" /></Button></td>
         </tr>)}</tbody>
       </table></div>
       {!roomNames.length && <p className="text-[11px] text-muted-foreground">ยังไม่มีประเภทห้อง</p>}
-      <div className="flex gap-2"><Input aria-label="ชื่อห้องเดิม" className="h-8 text-xs" value={room} onChange={(e) => setRoom(e.target.value)} placeholder="ชื่อห้องเดิม เช่น Deluxe Double" /><Button size="sm" variant="outline" disabled={!isSpec || !room.trim()} onClick={() => { s.addRoom(card.id, room); setRoom(""); }}>เพิ่มห้อง</Button></div>
+      <div className="flex gap-2"><Input aria-label="ชื่อห้องเดิม" className="h-8 text-xs" value={room} onChange={(e) => setRoom(e.target.value)} placeholder="ชื่อห้องเดิม เช่น Deluxe Double" /><Button size="sm" variant="outline" disabled={!isSpec || !otas.length || !room.trim()} onClick={() => { s.addRoom(card.id, room); setRoom(""); }}>เพิ่มห้อง</Button></div>
     </div>
   </div>;
 }
@@ -459,7 +472,7 @@ export function ServicingCardDrawer({ id, onClose, readOnly = false }: { id: str
 
   const nxt = nextStage(card.service_variant, card.current_stage);
   const gate = s.canAdvance(card.id);
-  const missing = [...(nxt ? gate.reasons ?? [] : []), ...(nxt === "completed" && !/^https?:\/\//.test(meetUrl.trim()) ? ["Specialist: ใส่ลิงก์ Meeting record (http/https)"] : [])];
+  const missing = [...(nxt ? gate.reasons ?? [] : []), ...(card.service_variant !== "ORM" && nxt === "completed" && !/^https?:\/\//.test(meetUrl.trim()) ? ["Specialist: ใส่ลิงก์ Meeting record (http/https)"] : [])];
   const finals = s.finalChecks.filter((f) => f.card_id === card.id);
   const hs = s.handoverSurveys.find((h) => h.card_id === card.id);
   const cs = s.customerSurveys.find((c) => c.card_id === card.id);
@@ -478,7 +491,7 @@ export function ServicingCardDrawer({ id, onClose, readOnly = false }: { id: str
 
   return (
     <Sheet open={!!id} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
+      <SheetContent className={cn("w-full overflow-y-auto", card.service_variant === "ORM" ? "sm:w-[max(36rem,33vw)] sm:max-w-[min(56rem,100vw)]" : "sm:max-w-xl")}>
         <SheetHeader>
           <SheetTitle>
             {card.property_name} · {card.service_line} {card.contract_ref}
@@ -489,7 +502,7 @@ export function ServicingCardDrawer({ id, onClose, readOnly = false }: { id: str
           <section className="space-y-3 border-b pb-4" aria-label="Current step">
             <p className="text-xs text-muted-foreground">ขั้นตอนปัจจุบัน · Day {currentDay(card)}</p>
             <h3 className="flex flex-wrap items-center gap-2 font-display text-xl font-semibold">{STAGE_LABEL[card.current_stage]}<DeptBadge stage={card.current_stage} variant={card.service_variant} /></h3>
-            <p className="text-sm">{STAGE_GUIDANCE[card.current_stage]}</p>
+            <p className="text-sm">{card.service_variant === "ORM" && card.current_stage === "approved" ? "Specialist: ติ๊ก OTA และกรอกข้อมูลส่งมอบครบทั้ง 3 ส่วน แล้วกด Completed" : card.service_variant === "ORM" && card.current_stage === "completed" ? "ORM: ติ๊กตรวจรับทุกรายการก่อนเริ่ม Prepare Data" : STAGE_GUIDANCE[card.current_stage]}</p>
             <p className="text-xs text-muted-foreground">ผู้รับผิดชอบ: {card.current_stage === "approved" || card.current_stage === "final_check" ? "AE / Specialist / Service" : ["new_property", "introduction_sent_form", "collect_data", "property_pending"].includes(card.current_stage) ? card.assigned_ae_id : card.assigned_service_owner_id}</p>
             {nxt && <p className="rounded-md bg-muted/50 px-3 py-2 text-xs"><span className="font-medium">{readOnly ? "อ่านอย่างเดียว · " : !canAct ? "ไม่ใช่ขั้นของคุณ · " : ""}</span>{waitMsg}</p>}
             {nxt && <Button className="w-full sm:w-auto" disabled={!canAct || missing.length > 0} onClick={() => doAdvance()}>{nxt === "approved" ? "Approve" : nxt === "completed" ? "Completed" : nxt.endsWith("go_live") ? "ยืนยัน Go Live" : `ทำขั้นนี้เสร็จ → ${STAGE_LABEL[nxt]}`}</Button>}
@@ -533,15 +546,17 @@ export function ServicingCardDrawer({ id, onClose, readOnly = false }: { id: str
             </section>
           )}
 
-          {card.current_stage === "approved" && (
-            <section className="space-y-3 rounded-lg border p-3">
-              {card.service_variant === "ORM" ? <OrmHandover card={card} /> : <p className="text-xs text-muted-foreground">Marcom ไม่มีขั้น Handover · Specialist กด Completed พร้อมแนบลิงก์ประชุม</p>}
-              <Input aria-label="Meeting record URL" className="h-8 text-xs" value={meetUrl} onChange={(e) => setMeetUrl(e.target.value)} placeholder="Meeting record URL (จำเป็นตอน Completed)" />
-            </section>
-          )}
+          {card.service_variant === "ORM" && fullSequence("ORM").indexOf(card.current_stage) >= fullSequence("ORM").indexOf("approved") && <section className="space-y-2 border-b pb-4">
+             <label htmlFor={`appointment-${card.id}`} className="text-xs font-medium">ลิงก์นัดประชุม · Rate Structure</label>
+             <Input id={`appointment-${card.id}`} aria-label="Meeting appointment URL" disabled={!['specialist', 'service'].includes(s.role)} className="h-9 text-sm" value={card.meeting_appointment_url ?? ""} onChange={(e) => s.setMeetingAppointment(card.id, e.target.value)} placeholder="https://…" />
+           </section>}
+           {card.service_variant === "ORM" && ["approved", "completed"].includes(card.current_stage) && <section className="space-y-3 border-b pb-4"><OrmHandover card={card} /></section>}
+           {card.service_variant !== "ORM" && card.current_stage === "approved" && <section className="space-y-3 rounded-lg border p-3">
+             <p className="text-xs text-muted-foreground">Marcom ไม่มีขั้น Handover · Specialist กด Completed พร้อมแนบลิงก์ประชุม</p>
+             <Input aria-label="Meeting record URL" className="h-8 text-xs" value={meetUrl} onChange={(e) => setMeetUrl(e.target.value)} placeholder="Meeting record URL (จำเป็นตอน Completed)" />
+           </section>}
 
-
-          {hs && <HandoverSurveyForm key={hs.id} id={hs.id} status={surveyStatus(hs)} score={hs.score} />}
+           {hs && <HandoverSurveyForm key={hs.id} id={hs.id} status={surveyStatus(hs)} score={hs.score} />}
           {cs && <CustomerSurveyForm key={cs.id} id={cs.id} responded={!!cs.responded_at} />}
           </fieldset>
         </div>
