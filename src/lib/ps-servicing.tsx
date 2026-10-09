@@ -762,7 +762,6 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
         if (role !== "specialist") reasons.push("Specialist: เป็นผู้กด Completed");
       } else if (["new_property", "introduction_sent_form", "collect_data", "property_pending"].includes(card.current_stage)) {
         if (role !== "ae") reasons.push("AE: เป็นผู้ดำเนินขั้นตอนข้อมูลโรงแรม");
-        if (nxt === "final_check" && card.form_completion_status !== "complete") reasons.push("AE: รวบรวมข้อมูลและตั้งสถานะฟอร์มเป็น complete");
       } else if (role !== "service") reasons.push("Service: เป็นผู้ทำและยืนยันขั้นตอนบริการนี้");
       return { ok: reasons.length === 0, ...(reasons[0] ? { reason: reasons[0] } : {}), reasons };
     };
