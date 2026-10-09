@@ -771,6 +771,8 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
       hydrated,
       role,
       setRole,
+      test_mode,
+      setTestMode,
       createFromContract,
       canAdvance: (id) => gate(state, id),
       createCard: ({ property_name, service_line, service_variant }) => {
