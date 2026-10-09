@@ -19,4 +19,5 @@
 
 - Contract Prop Info (display stage 10, lifecycle step 11) uses the root ServicingProvider and the manual-card initializer; deduplicate by contract reference/service line before recording handoff so menu 8 reads the same cards and no legacy shadow write can double-create.
 - Service checklists are instantiated per card from PM-managed templates by service variant and never gate stage advance; keeps the two hard gates the only blockers.
+- Pipeline columns include the conditional pending stage, while drawer rails include it only for cards with a pending event or current pending stage; keeps parked cards visible without changing the default forward path.
 - ORM Handover (Approved→Completed) is instantiated from PM-managed 2-tick OTA templates plus per-card OTA log-ins and room mapping; all three must be complete to unlock Completed, and Marcom has no handover — keeps the hard gate data-driven.
