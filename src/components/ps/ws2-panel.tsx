@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { useServicing, type OnboardingCard } from "@/lib/ps-servicing";
 import { SERVICE_LABEL, STATUS_LABEL, serviceForVariant, templateStats, useWs2, type ProfileStatus } from "@/lib/ws2-store";
 
-const toCardStatus = (st: ProfileStatus) => (st === "submitted" ? "complete" : st === "not_sent" ? "not_started" : "in_progress") as const;
+const toCardStatus = (st: ProfileStatus): "complete" | "not_started" | "in_progress" => (st === "submitted" ? "complete" : st === "not_sent" ? "not_started" : "in_progress");
 
 export function useWs2Status(card: Pick<OnboardingCard, "property_id" | "service_variant">): ProfileStatus {
   const w = useWs2();
@@ -37,7 +37,7 @@ export function Ws2Panel({ card, readOnly }: { card: OnboardingCard; readOnly: b
 
   const generate = () => {
     const r = w.generateForm({ hotel_id: card.property_id, hotel_name: card.property_name, variant: card.service_variant, customer_email: email }, card.assigned_ae_id || "AE");
-    if (!r.ok) return toast.info(r.error);
+    if (!r.ok) { toast.info(r.error); return; }
     s.setFormStatus(card.id, toCardStatus("sent"));
     toast.success("สร้างฟอร์มแล้ว · แนบลิงก์ Image Portal ให้การ์ด");
   };
