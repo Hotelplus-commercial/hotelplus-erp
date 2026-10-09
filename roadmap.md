@@ -51,4 +51,4 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [x] Sequence Specialist completion then ORM acceptance; trigger survey after acceptance and add appointment gate.
 - [x] Expand shared handover layout and credential columns; preserve dashboard read-only consistency.
 - [x] Verify full/Lite handover flows, survey timing, appointment gate, workflow roles, dashboard read-only and persistence; existing Test Mode bypass remains unchanged.
-- [ ] Confirm whether Lite's three OTAs are chosen per card or a fixed subset (waiting for user choice).
+- [x] User confirmed Specialist chooses any three OTAs per Lite card, not a fixed subset.
