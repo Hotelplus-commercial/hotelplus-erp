@@ -18,9 +18,9 @@ export type TemplateDef = { template_id: string; name: string; source: string; s
 export type TemplateVersion = { service: Ws2Service; version: number; published_at: string; published_by: string; def: TemplateDef };
 
 export type Audit = { last_updated_at: string; last_updated_by: string; last_updated_app: string };
-export type Property = { hotel_id: string; hotel_name_th: string; hotel_name_en: string; address_th: string; address_en: string; phone: string; key_contact: string; /** Property Content: owning AE + service start year. */ owner_ae?: string | null; start_year?: number | null } & Audit;
+export type Property = { hotel_id: string; hotel_name_th: string; hotel_name_en: string; address_th: string; address_en: string; phone: string; key_contact: string; /** Property Content: owning AE + service start year. */ owner_ae?: string | null; start_year?: number | null; /** Assignment master (HR member ids). */ assigned_ae_id?: string | null; assigned_specialist_id?: string | null } & Audit;
 export type ProfileStatus = "not_sent" | "sent" | "partial" | "submitted";
-export type ServiceProfile = { property_id: string; service: Ws2Service; photo_repo_url: string | null; form_completion_status: ProfileStatus; profile_data: Record<string, unknown>; /** Property Content: ORM team / Marcom owner for this profile. */ assigned_to?: string | null } & Audit;
+export type ServiceProfile = { property_id: string; service: Ws2Service; photo_repo_url: string | null; form_completion_status: ProfileStatus; profile_data: Record<string, unknown>; /** Property Content: ORM team / Marcom owner for this profile. */ assigned_to?: string | null; orm_team?: string | null; revenue_member_id?: string | null; ecommerce_member_id?: string | null; marcom_member_id?: string | null } & Audit;
 export type Ws2Form = { id: string; property_id: string; service: Ws2Service; customer_email: string; status: "draft" | "generated" | "sent" | "submitted"; template_version: number; generated_by: string; generated_at: string; sent_at: string | null; submitted_at: string | null; form_token: string; answers?: Answers; /** v1.1: owning onboarding card. */ card_id?: string | null };
 /** sectionId → one entry (or many for repeat groups); each entry maps fieldId → value. Repeat entries carry a stable `_rid`. */
 export type Answers = Record<string, Record<string, unknown>[]>;
@@ -101,6 +101,8 @@ type Api = State & {
   saveAnswers: (token: string, answers: Answers, user: string, submit: boolean) => { ok: boolean; error?: string; otaLogins?: { ota: string; hotel_id: string; username: string; password: string }[] };
   addPhotos: (folderId: string, count: number, user: string) => void;
   logRestrictedView: (property_id: string, service: Ws2Service, user: string, app: string) => void;
+  /** Assignment master write (property- or service-scoped), audited; creates the property/profile row if missing. */
+  saveAssignment: (input: { hotel_id: string; hotel_name: string; service: Ws2Service | null; patch: Record<string, string | null> }, user: string, app: string) => void;
   updateProfileData: (hotel_id: string, service: Ws2Service, patch: Record<string, unknown>, user: string, app?: string) => void;
   publishTemplate: (service: Ws2Service, def: TemplateDef, user: string) => number;
   generateForm: (input: { hotel_id: string; hotel_name: string; variant: ServiceVariant; customer_email: string; card_id?: string | null }, user: string) => { ok: boolean; error?: string; form?: Ws2Form };
@@ -141,6 +143,21 @@ export function Ws2Provider({ children }: { children: ReactNode }) {
       const logs = Object.entries(patch).filter(([k, v]) => (cur as Record<string, unknown>)[k] !== v).map(([k, v]) => logRow({ property_id: hotel_id, service: null, app, user, action: "edit", field: k, old_value: String((cur as Record<string, unknown>)[k] ?? ""), new_value: String(v ?? "") }));
       if (!logs.length) return st;
       return { ...st, properties: st.properties.map((p) => (p.hotel_id === hotel_id ? { ...p, ...patch, ...audit(user, app) } : p)), log: [...st.log, ...logs] };
+    });
+  }, []);
+
+  const saveAssignment = useCallback<Api["saveAssignment"]>(({ hotel_id, hotel_name, service, patch }, user, app) => {
+    setS((st) => {
+      let properties = st.properties; let profiles = st.profiles;
+      const logs: ActivityLog[] = [];
+      if (!properties.some((p) => p.hotel_id === hotel_id)) properties = [...properties, { hotel_id, hotel_name_th: hotel_name, hotel_name_en: hotel_name, address_th: "", address_en: "", phone: "", key_contact: "", ...audit(user, app) }];
+      if (service && !profiles.some((p) => p.property_id === hotel_id && p.service === service)) profiles = [...profiles, { property_id: hotel_id, service, photo_repo_url: null, form_completion_status: "not_sent", profile_data: {}, ...audit(user, app) }];
+      const cur = (service ? profiles.find((p) => p.property_id === hotel_id && p.service === service) : properties.find((p) => p.hotel_id === hotel_id)) as Record<string, unknown>;
+      for (const [k, v] of Object.entries(patch)) if ((cur[k] ?? null) !== v) logs.push(logRow({ property_id: hotel_id, service, app, user, action: "edit", field: `assign.${k}`, old_value: String(cur[k] ?? ""), new_value: String(v ?? "") }));
+      if (!logs.length && properties === st.properties && profiles === st.profiles) return st;
+      if (service) profiles = profiles.map((p) => (p.property_id === hotel_id && p.service === service ? { ...p, ...patch, ...audit(user, app) } : p));
+      else properties = properties.map((p) => (p.hotel_id === hotel_id ? { ...p, ...patch, ...audit(user, app) } : p));
+      return { ...st, properties, profiles, log: [...st.log, ...logs] };
     });
   }, []);
 
@@ -281,7 +298,7 @@ export function Ws2Provider({ children }: { children: ReactNode }) {
     return version;
   }, [s.templates]);
 
-  const api = useMemo<Api>(() => ({ ...s, latestTemplate, templateFor: (f) => s.templates.find((t) => t.service === f.service && t.version === f.template_version), formByToken: (tk) => s.forms.find((f) => f.form_token === tk), saveAnswers, addPhotos, logRestrictedView, publishTemplate, ensureProperty, updateProperty, updateProfileData, generateForm }), [s, updateProfileData, latestTemplate, saveAnswers, addPhotos, logRestrictedView, publishTemplate, ensureProperty, updateProperty, generateForm]);
+  const api = useMemo<Api>(() => ({ ...s, latestTemplate, templateFor: (f) => s.templates.find((t) => t.service === f.service && t.version === f.template_version), formByToken: (tk) => s.forms.find((f) => f.form_token === tk), saveAnswers, addPhotos, logRestrictedView, publishTemplate, ensureProperty, updateProperty, updateProfileData, saveAssignment, generateForm }), [s, updateProfileData, saveAssignment, latestTemplate, saveAnswers, addPhotos, logRestrictedView, publishTemplate, ensureProperty, updateProperty, generateForm]);
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>;
 }
 

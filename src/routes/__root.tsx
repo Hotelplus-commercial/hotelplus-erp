@@ -22,6 +22,7 @@ import { PsRenewalProvider } from "@/lib/ps-renewal";
 import { PsBlockGroupProvider } from "@/lib/ps-block-groups";
 import { ServicingProvider } from "@/lib/ps-servicing";
 import { Ws2Provider } from "@/lib/ws2-store";
+import { HrMembersProvider } from "@/lib/hr-members";
 import { ContractLifecycleProvider } from "@/lib/contract-lifecycle";
 
 
@@ -147,6 +148,7 @@ function RootComponent() {
           <BdStoreProvider>
           <ServicingProvider>
           <Ws2Provider>
+          <HrMembersProvider>
           <ContractLifecycleProvider>
           <PsTemplateProvider>
             <PsBlockGroupProvider>
@@ -162,6 +164,7 @@ function RootComponent() {
           </PsBlockGroupProvider>
           </PsTemplateProvider>
           </ContractLifecycleProvider>
+          </HrMembersProvider>
           </Ws2Provider>
           </ServicingProvider>
 

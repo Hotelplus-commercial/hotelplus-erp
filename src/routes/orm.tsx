@@ -8,6 +8,7 @@ const mod = getModule("orm");
 export const ormTabs = [
   { label: "ORM Overview", to: "/orm" },
   { label: "Action A · Hotel Plus ORM", to: "/orm/action-a" },
+  { label: "ORM Dashboard", to: "/orm/dashboard" },
 ];
 
 export const Route = createFileRoute("/orm")({
