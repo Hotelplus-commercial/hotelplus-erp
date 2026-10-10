@@ -261,12 +261,18 @@ function OrmHandover({ card }: { card: OnboardingCard }) {
   const tmpl = s.checklistTemplates.filter((t) => t.has_two_tick && t.ota_channel === ota);
   return <div className="space-y-4">
     <div>
-      <h3 className="text-sm font-semibold">{accepting ? "ORM Handover · ORM ตรวจรับก่อน Prepare Data" : "ORM Handover · Specialist ทำครบ 3 ส่วนก่อน Completed"}</h3>
+      <h3 className="text-sm font-semibold">{accepting ? "ORM Handover · ORM ตรวจรับก่อน Prepare Data" : "ORM Handover · Specialist ทำครบ 4 ส่วนก่อน Completed"}</h3>
       <div className="mt-1 flex flex-wrap gap-1.5 text-[11px]">
         <Chip tone={allTicked ? "info" : "muted"}>{allTicked ? "✓" : "○"} OTA checklist</Chip>
         <Chip tone={credsDone ? "info" : "muted"}>{credsDone ? "✓" : "○"} OTA Log-in</Chip>
         <Chip tone={roomsDone ? "info" : "muted"}>{roomsDone ? "✓" : "○"} Room schema</Chip>
+        <Chip tone={(accepting ? progress.pmsVerified : progress.pmsDone) ? "info" : "muted"}>{(accepting ? progress.pmsVerified : progress.pmsDone) ? "✓" : "○"} PMS / CM</Chip>
       </div>
+    </div>
+    <div className="space-y-1 rounded-md border p-2" aria-label="PMS / CM">
+      <p className="text-xs font-semibold">4. เปิดระบบ PMS / CM</p>
+      <label className="flex items-center gap-2 text-xs"><Checkbox aria-label="Specialist: เปิดระบบ PMS / CM" checked={!!card.pms_specialist_at} disabled={card.current_stage !== "approved" || (!s.test_mode && s.role !== "specialist")} onCheckedChange={() => s.togglePms(card.id)} />Specialist ยืนยันเปิดระบบแล้ว{card.pms_specialist_at && <span className="text-muted-foreground">· {new Date(card.pms_specialist_at).toLocaleString("th-TH")}</span>}</label>
+      <label className="flex items-center gap-2 text-xs"><Checkbox aria-label="ORM: ตรวจรับ PMS / CM" checked={!!card.pms_verified_at} disabled={!accepting || !card.pms_specialist_at || (!s.test_mode && s.role !== "service")} onCheckedChange={() => s.togglePms(card.id)} />ORM ตรวจรับ{card.pms_verified_at && <span className="text-muted-foreground">· {new Date(card.pms_verified_at).toLocaleString("th-TH")}</span>}</label>
     </div>
     {card.orm_lite && <div className="space-y-2" aria-label="ORM-Lite OTA selection">
       <p className="text-xs font-semibold">ORM-Lite · OTA {otas.length}/3</p>
@@ -468,12 +474,11 @@ const ACTOR_LABEL: Record<string, string> = { ae: "AE", specialist: "Specialist"
 export function ServicingCardDrawer({ id, onClose, readOnly = false }: { id: string | null; onClose: () => void; readOnly?: boolean }) {
   const s = useServicing();
   const card = s.cards.find((c) => c.id === id);
-  const [meetUrl, setMeetUrl] = useState("");
   if (!card) return null;
 
   const nxt = nextStage(card.service_variant, card.current_stage);
   const gate = s.canAdvance(card.id);
-  const missing = [...(nxt ? gate.reasons ?? [] : []), ...(card.service_variant !== "ORM" && nxt === "completed" && !/^https?:\/\//.test(meetUrl.trim()) ? ["Specialist: ใส่ลิงก์ Meeting record (http/https)"] : [])];
+  const missing = nxt ? gate.reasons ?? [] : [];
   const finals = s.finalChecks.filter((f) => f.card_id === card.id);
   const hs = s.handoverSurveys.find((h) => h.card_id === card.id);
   const cs = s.customerSurveys.find((c) => c.card_id === card.id);
@@ -485,7 +490,7 @@ export function ServicingCardDrawer({ id, onClose, readOnly = false }: { id: str
     ? (finalsDone ? "พร้อม Approve · อยู่ที่ Specialist (หรือ PM)" : "รอ AE ติ๊ก Final Check ให้ครบ")
     : `ขั้นถัดไปโดย ${ACTOR_LABEL[actor]}`;
   const doAdvance = (to?: string) => {
-    const r = s.advance(card.id, { ...(to ? { to } : {}), ...(meetUrl ? { meetingUrl: meetUrl } : {}) });
+    const r = s.advance(card.id, { ...(to ? { to } : {}) });
     if (r.ok) toast.success(`เข้าสู่ ${STAGE_LABEL[to ?? nxt ?? ""]}`);
     else toast.info(r.error ?? "ยังเลื่อนไม่ได้");
   };
@@ -503,7 +508,7 @@ export function ServicingCardDrawer({ id, onClose, readOnly = false }: { id: str
           <section className="space-y-3 border-b pb-4" aria-label="Current step">
             <p className="text-xs text-muted-foreground">ขั้นตอนปัจจุบัน · Day {currentDay(card)}</p>
             <h3 className="flex flex-wrap items-center gap-2 font-display text-xl font-semibold">{STAGE_LABEL[card.current_stage]}<DeptBadge stage={card.current_stage} variant={card.service_variant} /></h3>
-            <p className="text-sm">{card.service_variant === "ORM" && card.current_stage === "approved" ? "Specialist: ติ๊ก OTA และกรอกข้อมูลส่งมอบครบทั้ง 3 ส่วน แล้วกด Completed" : card.service_variant === "ORM" && card.current_stage === "completed" ? "ORM: ติ๊กตรวจรับทุกรายการก่อนเริ่ม Prepare Data" : STAGE_GUIDANCE[card.current_stage]}</p>
+            <p className="text-sm">{card.service_variant === "ORM" && card.current_stage === "approved" ? "Specialist: ทำข้อมูลส่งมอบครบทั้ง 4 ส่วน (รวมเปิดระบบ PMS / CM) แล้วกด Completed" : card.service_variant === "ORM" && card.current_stage === "completed" ? "ORM: ติ๊กตรวจรับทุกรายการก่อนเริ่ม Prepare Data" : STAGE_GUIDANCE[card.current_stage]}</p>
             <p className="text-xs text-muted-foreground">ผู้รับผิดชอบ: {card.current_stage === "approved" || card.current_stage === "final_check" ? "AE / Specialist / Service" : ["new_property", "introduction_sent_form", "collect_data", "property_pending"].includes(card.current_stage) ? card.assigned_ae_id : card.assigned_service_owner_id}</p>
             {nxt && <p className="rounded-md bg-muted/50 px-3 py-2 text-xs"><span className="font-medium">{readOnly ? "อ่านอย่างเดียว · " : !canAct ? "ไม่ใช่ขั้นของคุณ · " : ""}</span>{waitMsg}</p>}
             {nxt && <Button className="w-full sm:w-auto" disabled={!canAct || missing.length > 0} onClick={() => doAdvance()}>{nxt === "approved" ? "Approve" : nxt === "completed" ? "Completed" : nxt.endsWith("go_live") ? "ยืนยัน Go Live" : `ทำขั้นนี้เสร็จ → ${STAGE_LABEL[nxt]}`}</Button>}
@@ -537,15 +542,9 @@ export function ServicingCardDrawer({ id, onClose, readOnly = false }: { id: str
             </section>
           )}
 
-          {card.service_variant === "ORM" && fullSequence("ORM").indexOf(card.current_stage) >= fullSequence("ORM").indexOf("approved") && <section className="space-y-2 border-b pb-4">
-             <label htmlFor={`appointment-${card.id}`} className="text-xs font-medium">ลิงก์นัดประชุม · Rate Structure</label>
-             <Input id={`appointment-${card.id}`} aria-label="Meeting appointment URL" disabled={!['specialist', 'service'].includes(s.role)} className="h-9 text-sm" value={card.meeting_appointment_url ?? ""} onChange={(e) => s.setMeetingAppointment(card.id, e.target.value)} placeholder="https://…" />
-           </section>}
+          <MeetingBilling card={card} readOnly={readOnly} />
            {card.service_variant === "ORM" && ["approved", "completed"].includes(card.current_stage) && <section className="space-y-3 border-b pb-4"><OrmHandover card={card} /></section>}
-           {card.service_variant !== "ORM" && card.current_stage === "approved" && <section className="space-y-3 rounded-lg border p-3">
-             <p className="text-xs text-muted-foreground">Marcom ไม่มีขั้น Handover · Specialist กด Completed พร้อมแนบลิงก์ประชุม</p>
-             <Input aria-label="Meeting record URL" className="h-8 text-xs" value={meetUrl} onChange={(e) => setMeetUrl(e.target.value)} placeholder="Meeting record URL (จำเป็นตอน Completed)" />
-           </section>}
+
 
            {hs && (card.service_variant !== "ORM" || handoverProgress(s, card).verifierDone) && <HandoverSurveyForm key={hs.id} id={hs.id} status={surveyStatus(hs)} score={hs.score} />}
           {cs && <CustomerSurveyForm key={cs.id} id={cs.id} responded={!!cs.responded_at} />}
@@ -582,35 +581,72 @@ function HandoverSurveyForm({ id, status, score }: { id: string; status: string;
 
 function CustomerSurveyForm({ id, responded }: { id: string; responded: boolean }) {
   const s = useServicing();
-  const [f, setF] = useState({ score_bd: 4, score_ae: 4, score_service_exp: 4, score_strategy: 4, nps: 8, comment: "" });
+  const [f, setF] = useState({ score_bd: 4, score_ae: 4, score_service_exp: 4, score_strategy: 4, score_overall: 4, comment: "" });
   return (
     <section className="rounded-lg border p-3 text-sm">
-      <h3 className="font-semibold">◇ Survey #2 · Customer (optional)</h3>
+      <h3 className="font-semibold">◇ Survey #2 · แบบประเมินความพึงพอใจลูกค้า</h3>
       {responded ? (
         <p className="mt-1 text-muted-foreground">ลูกค้าตอบแล้ว</p>
       ) : (
         <div className="mt-2 space-y-2">
           {([
-            ["score_bd", "BD"],
-            ["score_ae", "AE"],
-            ["score_service_exp", "Service experience"],
-            ["score_strategy", "Strategy"],
+            ["score_bd", "ฝ่ายขาย (BD)"],
+            ["score_ae", "ฝ่ายดูแลลูกค้า (AE)"],
+            ["score_service_exp", "ฝ่ายกลยุทธ์ (ORM)"],
+            ["score_strategy", "ความเหมาะสมของแผนกลยุทธ์ (Strategy)"],
+            ["score_overall", "ความพึงพอใจโดยภาพรวม"],
           ] as const).map(([k, l]) => (
             <div key={k} className="flex items-center justify-between gap-2">
               <span className="text-xs">{l}</span>
               <ScorePicker value={f[k]} onChange={(n) => setF({ ...f, [k]: n })} max={5} />
             </div>
           ))}
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-xs">NPS</span>
-            <ScorePicker value={f.nps} onChange={(n) => setF({ ...f, nps: n })} max={10} min={0} />
-          </div>
-          <Textarea value={f.comment} onChange={(e) => setF({ ...f, comment: e.target.value })} placeholder="ความคิดเห็น" />
+          <Textarea value={f.comment} onChange={(e) => setF({ ...f, comment: e.target.value })} placeholder="ความคิดเห็นเพิ่มเติม (ไม่บังคับ)" />
           <Button size="sm" variant="outline" onClick={() => { s.submitCustomerSurvey(id, f); toast.success("บันทึก Survey #2 แล้ว"); }}>
             บันทึกคำตอบลูกค้า
           </Button>
         </div>
       )}
+    </section>
+  );
+}
+
+const fmtDate = (d: string) => { const [y, m, day] = d.slice(0, 10).split("-"); return `${day}/${m}/${y}`; };
+
+/** v6.2: meeting date (Prepare Data) → record URL + billing-confirmation email (meeting stage; GMB at Go Live). */
+function MeetingBilling({ card, readOnly }: { card: OnboardingCard; readOnly: boolean }) {
+  const s = useServicing();
+  const gmb = card.service_variant === "MARCOM_GMB";
+  const canEdit = !readOnly && (s.test_mode || s.role === "service");
+  const atPrep = !gmb && ["orm_prepare_data", "marcom_prepare_data"].includes(card.current_stage);
+  const atAnchor = card.current_stage === card.billing_anchor_stage;
+  if (!atPrep && !atAnchor && !card.billing_email_sent_at && !card.meeting_date) return null;
+  const meetingName = card.service_variant === "ORM" ? "Rate Structure" : "First Sync-up";
+  const startText = gmb ? fmtDate((card.billing_start_at ?? new Date().toISOString())) : card.meeting_date ? fmtDate(card.meeting_date) : "dd/mm/yyyy";
+  const send = () => { const r = s.sendBillingEmail(card.id); if (r.ok) toast.success("ส่งอีเมลยืนยันถึงลูกค้าแล้ว · เริ่มคิดค่าบริการ + Survey #2"); else toast.info(r.error); };
+  return (
+    <section className="space-y-2 border-b pb-4" aria-label="Meeting and billing">
+      {!gmb && <div className="space-y-1">
+        <label htmlFor={`meeting-date-${card.id}`} className="text-xs font-medium">ระบุวันนัดประชุม · {meetingName}</label>
+        <Input id={`meeting-date-${card.id}`} type="date" aria-label="Meeting date" className="h-9 w-48 text-sm" value={card.meeting_date ?? ""} disabled={!atPrep || !canEdit} onChange={(e) => s.setMeetingDate(card.id, e.target.value || null)} />
+        {atPrep && <p className="text-[11px] text-muted-foreground">ต้องระบุก่อนเข้า {meetingName} · วันนี้จะเป็นวันเริ่มคิดค่าบริการ</p>}
+      </div>}
+      {atAnchor && !gmb && <div className="space-y-1">
+        <label htmlFor={`record-${card.id}`} className="text-xs font-medium">แนบ Record ประชุม (URL)</label>
+        <Input id={`record-${card.id}`} aria-label="Meeting record URL" className="h-9 text-sm" placeholder="https://…" value={card.meeting_record_url ?? ""} disabled={!canEdit || !!card.billing_email_sent_at} onChange={(e) => s.setMeetingRecord(card.id, e.target.value)} />
+      </div>}
+      {(atAnchor || card.billing_email_sent_at) && <div className="space-y-2 rounded-md bg-muted/50 p-3 text-xs">
+        <p className="font-medium">อีเมลถึงลูกค้า</p>
+        <ul className="list-disc space-y-0.5 pl-4">
+          {gmb ? <li>ยืนยันว่าเปิดให้บริการ Google My Business เรียบร้อยแล้ว</li> : <li>ยืนยันว่าการประชุม {meetingName} กับทีม H+ เรียบร้อยแล้ว</li>}
+          <li>วันที่ {startText} = วันเริ่มคิดค่าบริการ และเป็นวันที่ 1 ของอายุสัญญา</li>
+          {!gmb && <li>Record การประชุม: {card.meeting_record_url || "—"}</li>}
+          <li>ลิงก์แบบประเมินความพึงพอใจ (Survey #2)</li>
+        </ul>
+        {card.billing_email_sent_at
+          ? <p className="text-muted-foreground">ส่งแล้ว {new Date(card.billing_email_sent_at).toLocaleString("th-TH")} · ★ เริ่มคิดค่าบริการ {card.billing_start_at ? fmtDate(card.billing_start_at) : ""}</p>
+          : <Button size="sm" disabled={!canEdit || (!gmb && !/^https?:\/\/\S+/.test(card.meeting_record_url ?? ""))} onClick={send}>Send email to customer</Button>}
+      </div>}
     </section>
   );
 }
