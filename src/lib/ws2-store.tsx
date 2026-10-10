@@ -18,9 +18,9 @@ export type TemplateDef = { template_id: string; name: string; source: string; s
 export type TemplateVersion = { service: Ws2Service; version: number; published_at: string; published_by: string; def: TemplateDef };
 
 export type Audit = { last_updated_at: string; last_updated_by: string; last_updated_app: string };
-export type Property = { hotel_id: string; hotel_name_th: string; hotel_name_en: string; address_th: string; address_en: string; phone: string; key_contact: string } & Audit;
+export type Property = { hotel_id: string; hotel_name_th: string; hotel_name_en: string; address_th: string; address_en: string; phone: string; key_contact: string; /** Property Content: owning AE + service start year. */ owner_ae?: string | null; start_year?: number | null } & Audit;
 export type ProfileStatus = "not_sent" | "sent" | "partial" | "submitted";
-export type ServiceProfile = { property_id: string; service: Ws2Service; photo_repo_url: string | null; form_completion_status: ProfileStatus; profile_data: Record<string, unknown> } & Audit;
+export type ServiceProfile = { property_id: string; service: Ws2Service; photo_repo_url: string | null; form_completion_status: ProfileStatus; profile_data: Record<string, unknown>; /** Property Content: ORM team / Marcom owner for this profile. */ assigned_to?: string | null } & Audit;
 export type Ws2Form = { id: string; property_id: string; service: Ws2Service; customer_email: string; status: "draft" | "generated" | "sent" | "submitted"; template_version: number; generated_by: string; generated_at: string; sent_at: string | null; submitted_at: string | null; form_token: string; answers?: Answers; /** v1.1: owning onboarding card. */ card_id?: string | null };
 /** sectionId → one entry (or many for repeat groups); each entry maps fieldId → value. Repeat entries carry a stable `_rid`. */
 export type Answers = Record<string, Record<string, unknown>[]>;
@@ -48,6 +48,43 @@ export const IDENTITY_FIELDS = ["hotel_name_th", "hotel_name_en", "address_th", 
 const seedTemplates = (): TemplateVersion[] =>
   ([["ORM", ormTpl], ["MARCOM_MT", mtTpl], ["MARCOM_GMB", gmbTpl]] as const).map(([service, def]) => ({ service, version: 1, published_at: now(), published_by: "seed", def: def as TemplateDef }));
 
+/* Property Content v1.0 sample portfolio (mock photos; real file hosting deferred). */
+const PC_SEED: [string, number, Ws2Service[], string, string | null, string | null][] = [
+  ["Anjali Resort", 2024, ["ORM", "MARCOM_MT"], "Nont", "ORM Team A", "แนน"],
+  ["Baan Suan Hotel", 2023, ["ORM"], "Fern", "ORM Team B", null],
+  ["Chaba Grand", 2025, ["MARCOM_MT", "MARCOM_GMB"], "Boss", null, "บิว"],
+  ["Dusit Pool Villa", 2022, ["ORM", "MARCOM_MT", "MARCOM_GMB"], "Nont", "ORM Team A", "โบว์"],
+  ["Erawan Boutique", 2024, ["MARCOM_MT"], "Fern", "ORM Team C", "เจน"],
+  ["Baan Rim Nam", 2023, ["ORM", "MARCOM_GMB"], "Boss", "ORM Team B", "แนน"],
+  ["Lanta Bay Resort", 2025, ["ORM"], "Nont", "ORM Team D", null],
+  ["Patong Hills", 2022, ["MARCOM_GMB"], "Fern", null, "บิว"],
+];
+export const PC_VIEWERS = ["Nont", "Fern", "Boss", "ORM Team A", "ORM Team B", "ORM Team C", "ORM Team D", "แนน", "บิว", "โบว์", "เจน"] as const;
+export const MARCOM_VIEWERS = new Set(["แนน", "บิว", "โบว์", "เจน"]);
+function seedPortfolio(st: State): State {
+  const t = new Date().toISOString();
+  const a: Audit = { last_updated_at: t, last_updated_by: "seed", last_updated_app: "PS App" };
+  const next = { ...st, properties: [...st.properties], profiles: [...st.profiles], folders: [...st.folders], images: [...(st.images ?? [])] };
+  PC_SEED.forEach(([name, year, services, ae, ormTeam, marcom], i) => {
+    const hotel_id = `H-${1040 + i}`;
+    if (next.properties.some((p) => p.hotel_id === hotel_id)) return;
+    next.properties.push({ hotel_id, hotel_name_th: name, hotel_name_en: name, address_th: "", address_en: "", phone: "", key_contact: "", owner_ae: ae, start_year: year, ...a });
+    services.forEach((service, j) => {
+      const base = `portal://${hotel_id}/${service}/`;
+      const status: ProfileStatus = (["submitted", "partial", "sent", "not_sent"] as const)[(i + j) % 4]!;
+      next.profiles.push({ property_id: hotel_id, service, photo_repo_url: base, form_completion_status: status, profile_data: {}, assigned_to: service === "ORM" ? ormTeam : marcom, ...a });
+      const dirs = service === "MARCOM_GMB" ? [["_all/", "รูปทั้งหมด", "_all"]] : [["_property/", "รูปส่วนกลางโรงแรม", "_property"], ["rt-deluxe/", "Deluxe", "room_type"]];
+      dirs.forEach(([d, label, kind], k) => {
+        const fid = `${hotel_id}-${service}-${k}`;
+        const n = 2 + ((i + k) % 4);
+        next.folders.push({ id: fid, property_id: hotel_id, service, path: base + d, label: label!, photo_count: n });
+        for (let x = 0; x < n; x++) next.images.push({ id: `${fid}-img${x}`, property_id: hotel_id, service, folder_id: fid, folder: kind as PropertyImage["folder"], room_type_id: kind === "room_type" ? fid : null, file_url: `${base}${d}photo-${x + 1}.jpg`, uploaded_by: "seed", uploaded_at: t });
+      });
+    });
+  });
+  return next;
+}
+
 const empty = (): State => ({ properties: [], profiles: [], forms: [], restricted: [], log: [], folders: [], images: [], templates: seedTemplates() });
 
 export function templateStats(def: TemplateDef) {
@@ -64,6 +101,7 @@ type Api = State & {
   saveAnswers: (token: string, answers: Answers, user: string, submit: boolean) => { ok: boolean; error?: string; otaLogins?: { ota: string; hotel_id: string; username: string; password: string }[] };
   addPhotos: (folderId: string, count: number, user: string) => void;
   logRestrictedView: (property_id: string, service: Ws2Service, user: string, app: string) => void;
+  updateProfileData: (hotel_id: string, service: Ws2Service, patch: Record<string, unknown>, user: string, app?: string) => void;
   publishTemplate: (service: Ws2Service, def: TemplateDef, user: string) => number;
   generateForm: (input: { hotel_id: string; hotel_name: string; variant: ServiceVariant; customer_email: string; card_id?: string | null }, user: string) => { ok: boolean; error?: string; form?: Ws2Form };
 };
@@ -76,7 +114,8 @@ export function Ws2Provider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(KEY);
-      if (raw) { const p = JSON.parse(raw) as State; setS({ ...empty(), ...p, templates: p.templates?.length ? p.templates : seedTemplates() }); }
+      const p = raw ? (JSON.parse(raw) as State) : null;
+      setS(seedPortfolio(p ? { ...empty(), ...p, templates: p.templates?.length ? p.templates : seedTemplates() } : empty()));
     } catch { /* ignore corrupt local data */ }
     setReady(true);
   }, []);
@@ -102,6 +141,17 @@ export function Ws2Provider({ children }: { children: ReactNode }) {
       const logs = Object.entries(patch).filter(([k, v]) => (cur as Record<string, unknown>)[k] !== v).map(([k, v]) => logRow({ property_id: hotel_id, service: null, app, user, action: "edit", field: k, old_value: String((cur as Record<string, unknown>)[k] ?? ""), new_value: String(v ?? "") }));
       if (!logs.length) return st;
       return { ...st, properties: st.properties.map((p) => (p.hotel_id === hotel_id ? { ...p, ...patch, ...audit(user, app) } : p)), log: [...st.log, ...logs] };
+    });
+  }, []);
+
+  const updateProfileData = useCallback<Api["updateProfileData"]>((hotel_id, service, patch, user, app = "Property Content") => {
+    setS((st) => {
+      const p = st.profiles.find((x) => x.property_id === hotel_id && x.service === service);
+      if (!p) return st;
+      const changed = Object.entries(patch).filter(([k, v]) => JSON.stringify(p.profile_data[k] ?? "") !== JSON.stringify(v ?? ""));
+      if (!changed.length) return st;
+      const logs = changed.map(([k, v]) => logRow({ property_id: hotel_id, service, app, user, action: "edit", field: k, old_value: String(p.profile_data[k] ?? ""), new_value: String(v ?? "") }));
+      return { ...st, profiles: st.profiles.map((x) => (x === p ? { ...x, profile_data: { ...x.profile_data, ...Object.fromEntries(changed) }, ...audit(user, app) } : x)), log: [...st.log, ...logs] };
     });
   }, []);
 
@@ -231,7 +281,7 @@ export function Ws2Provider({ children }: { children: ReactNode }) {
     return version;
   }, [s.templates]);
 
-  const api = useMemo<Api>(() => ({ ...s, latestTemplate, templateFor: (f) => s.templates.find((t) => t.service === f.service && t.version === f.template_version), formByToken: (tk) => s.forms.find((f) => f.form_token === tk), saveAnswers, addPhotos, logRestrictedView, publishTemplate, ensureProperty, updateProperty, generateForm }), [s, latestTemplate, saveAnswers, addPhotos, logRestrictedView, publishTemplate, ensureProperty, updateProperty, generateForm]);
+  const api = useMemo<Api>(() => ({ ...s, latestTemplate, templateFor: (f) => s.templates.find((t) => t.service === f.service && t.version === f.template_version), formByToken: (tk) => s.forms.find((f) => f.form_token === tk), saveAnswers, addPhotos, logRestrictedView, publishTemplate, ensureProperty, updateProperty, updateProfileData, generateForm }), [s, updateProfileData, latestTemplate, saveAnswers, addPhotos, logRestrictedView, publishTemplate, ensureProperty, updateProperty, generateForm]);
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>;
 }
 
