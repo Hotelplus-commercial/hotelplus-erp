@@ -36,6 +36,9 @@ export type OnboardingCard = {
   pms_specialist_at?: string | null;
   pms_verified_at?: string | null;
   billing_email_sent_at?: string | null;
+  /** v6.3 split timestamps: Specialist row-1 (4 parts) complete · ORM prep group complete. */
+  specialist_handover_done_at?: string | null;
+  orm_prep_done_at?: string | null;
   created_at: string;
   current_stage: string;
   assigned_ae_id: string;
@@ -175,8 +178,8 @@ export const STAGE_GUIDANCE: Record<string, string> = {
   collect_data: "AE: รวบรวมข้อมูลโรงแรมและบันทึกความคืบหน้า; หากรอโรงแรมให้พักที่ Property Pending",
   property_pending: "AE: ติดตามข้อมูลที่ยังขาดจากโรงแรมและบันทึกความคืบหน้า",
   final_check: "AE: ตรวจรายการทั้ง 4 ข้อให้ครบ จากนั้น Specialist หรือ PM อนุมัติ",
-  approved: "Specialist: เตรียมส่งมอบงาน; Service ตรวจรับทุกรายการ แล้ว Specialist ใส่ลิงก์บันทึกการประชุมเพื่อยืนยัน Completed",
-  completed: "Service: เริ่มงานบริการและบันทึกการเข้าสู่ขั้นแรก; แบบประเมินส่งมอบเป็นทางเลือก",
+  approved: "Specialist: เริ่มทำ Handover 4 ส่วน (ทำคู่ขนานได้จนถึง Final Setup) แล้วส่งต่อเข้า Prepare Data",
+  completed: "ORM: ตรวจรับ Handover (row-2) ให้ครบ → Survey #1 → ปลดล็อก System Training",
   rate_structure_meeting: "ORM: จัดประชุมโครงสร้างราคาและเตรียมส่งสรุปให้โรงแรม",
   send_summary: "ORM: ส่งสรุปที่ตกลงกับโรงแรม แล้วดำเนินการโหลด BAR Rate",
   load_bar_rate: "ORM: โหลดและตรวจสอบ BAR Rate ให้ครบก่อนเริ่ม Mapping",
@@ -189,7 +192,7 @@ export const STAGE_GUIDANCE: Record<string, string> = {
   ads_planning: "Marcom: จัดทำแผนโฆษณาแล้วนัด First Sync-up Meeting",
   first_sync_up_meeting: "Marcom: ประชุม Sync-up ครั้งแรกและตรวจความพร้อมก่อนยืนยัน Go Live",
   go_live: "เปิดให้บริการแล้ว · วันที่ Go Live และจำนวนวันรวมถูกบันทึกเรียบร้อย",
-  orm_prepare_data: "ORM: ทำ Revplus+ และ Rate Structure เบื้องต้น",
+  orm_prepare_data: "Specialist + ORM: Specialist ทำ Handover 4 ส่วนคู่ขนาน · ORM ทำ Revplus+, Rate Structure และระบุวันนัดประชุม",
   orm_rate_structure: "ORM: นัดประชุมโครงสร้างราคาและแนบลิงก์บันทึกการประชุม",
   orm_final_setup: "ORM: ส่ง Summary, โหลด BAR Rate, Mapping และขอ Forward Booking ให้ครบ",
   orm_system_training: "ORM: สมัครคอร์ส นัดวันเทรน และยืนยันลูกค้าเข้าเรียน",
@@ -217,13 +220,24 @@ export const BILLING_ANCHOR_VARIANT: Record<ServiceVariant, string> = {
   MARCOM_GMB: "marcom_go_live",
 };
 export const MILESTONES = new Set(["new_property", "approved", "completed", "go_live", "orm_go_live", "marcom_go_live"]);
-export const fullSequence = (variant: ServiceVariant) => [...AE_TRACK, "completed", ...VARIANT_SERVICE_TRACK[variant]];
+/** v6.3: ORM = Approved → Prepare Data (shared) → Rate Structure → Final Setup → Completed (Handover, ceiling) → System Training → Go Live.
+ *  Marcom has no handover stage: Approved → Prepare Data → (First Sync) → Go Live. */
+export const fullSequence = (variant: ServiceVariant) => {
+  const svc = VARIANT_SERVICE_TRACK[variant];
+  if (variant !== "ORM") return [...AE_TRACK, ...svc];
+  const i = svc.indexOf("orm_final_setup") + 1;
+  return [...AE_TRACK, ...svc.slice(0, i), "completed", ...svc.slice(i)];
+};
+/** v6.3: Specialist handover row-1 runs in parallel from Approved until Completed (Handover) is entered. */
+export const SPECIALIST_HANDOVER_STAGES = new Set(["approved", "orm_prepare_data", "orm_rate_structure", "orm_final_setup"]);
+export const specialistHandoverOpen = (card: Pick<OnboardingCard, "service_variant" | "current_stage">) =>
+  card.service_variant === "ORM" && SPECIALIST_HANDOVER_STAGES.has(card.current_stage);
 /** Union of every service-stage key for a line (both variants), in logical order — used to build pipeline columns. */
 export const lineSequence = (line: ServiceLine) => {
   const seen = new Set<string>();
   const svc: string[] = [];
   for (const v of variantsForLine(line)) for (const stage of VARIANT_SERVICE_TRACK[v]) if (!seen.has(stage)) { seen.add(stage); svc.push(stage); }
-  const stages = [...AE_TRACK, "completed", ...svc];
+  const stages = line === "ORM" ? fullSequence("ORM") : [...AE_TRACK, ...svc];
   stages.splice(3, 0, "property_pending");
   return stages;
 };
@@ -234,7 +248,9 @@ export const trackOf = (stage: string): OwnerTrack =>
       ? "SPECIALIST"
       : "SERVICE";
 /** Department badge (§2.5): AE / On-boarding Specialist / ORM / Marcom. */
-export const deptBadge = (stage: string, variant: ServiceVariant): "AE" | "On-boarding Specialist" | "ORM" | "Marcom" => {
+export const deptBadge = (stage: string, variant: ServiceVariant): "AE" | "On-boarding Specialist" | "ORM" | "Marcom" | "Specialist + ORM" => {
+  if (stage === "orm_prepare_data" && variant === "ORM") return "Specialist + ORM";
+  if (stage === "completed" && variant === "ORM") return "ORM";
   const t = trackOf(stage);
   if (t === "AE") return "AE";
   if (t === "SPECIALIST") return "On-boarding Specialist";
@@ -602,7 +618,8 @@ export function sums(card: OnboardingCard, events: StageEvent[]) {
   const co = at("completed");
   return {
     ae: fc ? daysBetween(card.created_at, fc) : null,
-    specialist: ap && co ? daysBetween(ap, co) : null,
+    // v6.3 split Σ: Specialist = handover row-1 done − Approved (legacy fallback: Completed entry); never summed with ORM.
+    specialist: ap && (card.specialist_handover_done_at ?? co) ? daysBetween(ap, (card.specialist_handover_done_at ?? co)!) : null,
     service: ap && card.go_live_at ? daysBetween(ap, card.go_live_at) : null,
     overall: card.go_live_at ? daysBetween(card.created_at, card.go_live_at) : null,
   };
@@ -732,7 +749,7 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
           orm_lite: service_variant === "ORM" && (card.orm_lite ?? /ORM-LITE/i.test(card.contract_code ?? card.contract_ref)),
           handover_otas: card.handover_otas ?? [],
           meeting_appointment_url: card.meeting_appointment_url ?? null,
-          current_stage: migrateStageKey(card.current_stage, service_variant),
+          current_stage: service_variant !== "ORM" && card.current_stage === "completed" ? VARIANT_SERVICE_TRACK[service_variant][0]! : migrateStageKey(card.current_stage, service_variant),
           billing_anchor_stage: BILLING_ANCHOR_VARIANT[service_variant],
           external_app: card.external_app ?? externalAppFor(card.service_line),
           external_ref_url: card.external_ref_url ?? null,
@@ -747,6 +764,27 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (hydrated) localStorage.setItem(KEY, JSON.stringify(state));
   }, [state, hydrated]);
+  /* v6.3: stamp per-team completion times (Specialist row-1 vs ORM prep) as each team finishes. */
+  useEffect(() => {
+    if (!hydrated) return;
+    setState((s) => {
+      let changed = false;
+      const now = new Date().toISOString();
+      const cards = s.cards.map((c) => {
+        if (c.service_variant !== "ORM") return c;
+        const p = handoverProgress(s, c);
+        const specDone = p.specialistDone && p.credentialsDone && p.roomsDone && p.pmsDone;
+        const prepItems = s.checklistItems.filter((i) => i.card_id === c.id && i.stage_key === "orm_prepare_data");
+        const prepDone = !!c.meeting_date && prepItems.every((i) => i.checked);
+        const spec = specDone ? (c.specialist_handover_done_at ?? now) : specialistHandoverOpen(c) ? null : (c.specialist_handover_done_at ?? null);
+        const prep = prepDone ? (c.orm_prep_done_at ?? now) : null;
+        if (spec === (c.specialist_handover_done_at ?? null) && prep === (c.orm_prep_done_at ?? null)) return c;
+        changed = true;
+        return { ...c, specialist_handover_done_at: spec, orm_prep_done_at: prep };
+      });
+      return changed ? { ...s, cards } : s;
+    });
+  }, [hydrated, state.handover, state.credentials, state.roomMappings, state.checklistItems, state.cards]);
   /* scheduled check: flip pending → expired after the 7-day window */
   useEffect(() => {
     if (!hydrated) return;
@@ -798,6 +836,8 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
         if (!checks.length) reasons.push("AE: เพิ่มรายการ Final Check ก่อนอนุมัติ");
         checks.filter(f => !f.checked).forEach(f => reasons.push(`AE: ตรวจ ${f.item_label}`));
         if (!["specialist", "pm"].includes(role)) reasons.push("Specialist / PM: เป็นผู้กด Approve หลัง AE ตรวจครบ");
+      } else if (nxt === "orm_prepare_data" || nxt === "marcom_prepare_data") {
+        if (!["specialist", "service"].includes(role)) reasons.push("Specialist / Service: เป็นผู้ส่งต่อเข้า Prepare Data");
       } else if (nxt === "completed") {
         if (card.service_variant === "ORM") {
           const progress = handoverProgress(s, card);
@@ -807,10 +847,10 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
           if (!progress.roomsDone) reasons.push("Specialist: จับคู่ชื่อห้องกับทุก OTA ที่เลือกให้ครบ");
           if (!progress.pmsDone) reasons.push("Specialist: ยืนยันเปิดระบบ PMS / CM");
         }
-        if (role !== "specialist") reasons.push("Specialist: เป็นผู้กด Completed");
+        if (!["specialist", "service"].includes(role)) reasons.push("ORM / Specialist: เป็นผู้กดเข้า Completed (Handover)");
       } else if (card.service_variant === "ORM" && card.current_stage === "completed") {
-        if (!handoverProgress(s, card).verifierDone) reasons.push("ORM: ตรวจรับ Handover ทุกช่องทางที่เลือกก่อน Prepare Data");
-        if (role !== "service") reasons.push("ORM: เป็นผู้เริ่ม Prepare Data หลังตรวจรับ");
+        if (!handoverProgress(s, card).verifierDone) reasons.push("ORM: ตรวจรับ Handover (row-2) ทุกช่องทางที่เลือกก่อน System Training");
+        if (role !== "service") reasons.push("ORM: เป็นผู้เริ่ม System Training หลังตรวจรับ");
       } else if (nxt === "orm_rate_structure" || nxt === "marcom_first_sync") {
         if (!card.meeting_date) reasons.push(`${card.service_variant === "ORM" ? "ORM" : "Marcom"}: ระบุวันนัดประชุมก่อนเข้า ${STAGE_LABEL[nxt]}`);
         if (role !== "service") reasons.push(`${card.service_variant === "ORM" ? "ORM" : "Marcom"}: เป็นผู้ยืนยัน ${STAGE_LABEL[nxt]}`);
@@ -919,7 +959,7 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
           const item = s.handover.find((h) => h.id === itemId);
           const card = s.cards.find((c) => c.id === item?.card_id);
           if (!item || !card || card.service_variant !== "ORM") return s;
-          if (col === "specialist" ? card.current_stage !== "approved" : card.current_stage !== "completed" || !item.specialist_checked) return s;
+          if (col === "specialist" ? !specialistHandoverOpen(card) : card.current_stage !== "completed" || !item.specialist_checked) return s;
           if (item.ota_channel && !handoverOtas(card).includes(item.ota_channel)) return s;
           const now = new Date().toISOString();
           const handover = s.handover.map((h) => h.id !== itemId ? h : col === "specialist"
@@ -965,7 +1005,7 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
         const card = state.cards.find((c) => c.id === cardId && c.service_variant === "ORM");
         if (!card) return;
         const now = new Date().toISOString();
-        if (card.current_stage === "approved" && (test_mode || role === "specialist")) setState((s) => ({ ...s, cards: s.cards.map((c) => c.id === cardId ? { ...c, pms_specialist_at: c.pms_specialist_at ? null : now } : c) }));
+        if (specialistHandoverOpen(card) && (test_mode || role === "specialist")) setState((s) => ({ ...s, cards: s.cards.map((c) => c.id === cardId ? { ...c, pms_specialist_at: c.pms_specialist_at ? null : now } : c) }));
         else if (card.current_stage === "completed" && card.pms_specialist_at && (test_mode || role === "service")) {
           const willVerify = !card.pms_verified_at;
           setState((s) => {
@@ -1039,7 +1079,7 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
         setState((s) => {
           const card = s.cards.find((c) => c.id === cardId);
           const selected = OTA_CHANNELS.filter((ota) => otas.includes(ota));
-          if (!card?.orm_lite || card.current_stage !== "approved" || selected.length > 3) return s;
+          if (!card?.orm_lite || !specialistHandoverOpen(card) || selected.length > 3) return s;
           const names = [...new Set(s.roomMappings.filter((m) => m.card_id === cardId).map((m) => m.original_room_name))];
           const fresh = names.flatMap((name) => selected.filter((ota) => !s.roomMappings.some((m) => m.card_id === cardId && m.original_room_name === name && m.ota_channel === ota)).map((ota) => ({ id: rid(), card_id: cardId, original_room_name: name, ota_channel: ota, ota_room_name: "" })));
           return { ...s, cards: s.cards.map((c) => c.id === cardId ? { ...c, handover_otas: selected } : c), roomMappings: [...s.roomMappings, ...fresh] };
@@ -1052,7 +1092,7 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
       setCredential: (id, patch) => {
         if (role !== "specialist") return;
         const credential = state.credentials.find((c) => c.id === id);
-        if (!state.cards.some((c) => c.id === credential?.card_id && c.current_stage === "approved")) return;
+        if (!state.cards.some((c) => c.id === credential?.card_id && specialistHandoverOpen(c))) return;
         setState((s) => ({ ...s, credentials: s.credentials.map((c) => (c.id === id ? { ...c, ...patch } : c)) }));
       },
       seedCredentials: (cardId, rows) => {
@@ -1080,7 +1120,7 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
       addRoom: (cardId, name) => {
         if (role !== "specialist" || !name.trim()) return;
         const card = state.cards.find((c) => c.id === cardId);
-        if (!card || card.current_stage !== "approved") return;
+        if (!card || !specialistHandoverOpen(card)) return;
         setState((s) => s.roomMappings.some((m) => m.card_id === cardId && m.original_room_name.toLowerCase() === name.trim().toLowerCase()) ? s : ({
           ...s,
           roomMappings: [...s.roomMappings, ...handoverOtas(card).map((ota) => ({ id: rid(), card_id: cardId, original_room_name: name.trim(), ota_channel: ota, ota_room_name: "" }))],
@@ -1088,13 +1128,13 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
       },
       removeRoom: (cardId, name) => {
         if (role !== "specialist") return;
-        if (!state.cards.some((c) => c.id === cardId && c.current_stage === "approved")) return;
+        if (!state.cards.some((c) => c.id === cardId && specialistHandoverOpen(c))) return;
         setState((s) => ({ ...s, roomMappings: s.roomMappings.filter((m) => !(m.card_id === cardId && m.original_room_name === name)) }));
       },
       setRoomMapping: (id, ota_room_name) => {
         if (role !== "specialist") return;
         const mapping = state.roomMappings.find((m) => m.id === id);
-        if (!state.cards.some((c) => c.id === mapping?.card_id && c.current_stage === "approved")) return;
+        if (!state.cards.some((c) => c.id === mapping?.card_id && specialistHandoverOpen(c))) return;
         setState((s) => ({ ...s, roomMappings: s.roomMappings.map((m) => (m.id === id ? { ...m, ota_room_name } : m)) }));
       },
       addHandoverTemplate: (ota_channel, group_label, item_label) => {

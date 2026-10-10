@@ -47,6 +47,7 @@ import {
   type ServiceLine,
   type ServiceVariant,
   lineSequence,
+  specialistHandoverOpen,
   deptBadge,
   OTA_CHANNELS,
   handoverOtas,
@@ -250,7 +251,8 @@ function OrmHandover({ card }: { card: OnboardingCard }) {
   const creds = s.credentials.filter((c) => c.card_id === card.id && otas.includes(c.ota_channel));
   const rooms = s.roomMappings.filter((m) => m.card_id === card.id && otas.includes(m.ota_channel));
   const roomNames = [...new Set(rooms.map((m) => m.original_room_name))];
-  const isSpec = s.role === "specialist" && card.current_stage === "approved";
+  const specOpen = specialistHandoverOpen(card);
+  const isSpec = s.role === "specialist" && specOpen;
   const accepting = card.current_stage === "completed";
   const otaItems = items.filter((h) => (h.ota_channel ?? "อื่นๆ") === ota);
   const groups = [...new Set(otaItems.map((h) => h.group_label ?? ""))];
@@ -261,7 +263,7 @@ function OrmHandover({ card }: { card: OnboardingCard }) {
   const tmpl = s.checklistTemplates.filter((t) => t.has_two_tick && t.ota_channel === ota);
   return <div className="space-y-4">
     <div>
-      <h3 className="text-sm font-semibold">{accepting ? "ORM Handover · ORM ตรวจรับก่อน Prepare Data" : "ORM Handover · Specialist ทำครบ 4 ส่วนก่อน Completed"}</h3>
+      <h3 className="text-sm font-semibold">{accepting ? "ORM Handover · ORM ตรวจรับ (row-2) ก่อน System Training" : "ORM Handover · Specialist ทำครบ 4 ส่วน (คู่ขนาน · เพดาน Final Setup)"}</h3>
       <div className="mt-1 flex flex-wrap gap-1.5 text-[11px]">
         <Chip tone={allTicked ? "info" : "muted"}>{allTicked ? "✓" : "○"} OTA checklist</Chip>
         <Chip tone={credsDone ? "info" : "muted"}>{credsDone ? "✓" : "○"} OTA Log-in</Chip>
@@ -271,7 +273,7 @@ function OrmHandover({ card }: { card: OnboardingCard }) {
     </div>
     <div className="space-y-1 rounded-md border p-2" aria-label="PMS / CM">
       <p className="text-xs font-semibold">4. เปิดระบบ PMS / CM</p>
-      <label className="flex items-center gap-2 text-xs"><Checkbox aria-label="Specialist: เปิดระบบ PMS / CM" checked={!!card.pms_specialist_at} disabled={card.current_stage !== "approved" || (!s.test_mode && s.role !== "specialist")} onCheckedChange={() => s.togglePms(card.id)} />Specialist ยืนยันเปิดระบบแล้ว{card.pms_specialist_at && <span className="text-muted-foreground">· {new Date(card.pms_specialist_at).toLocaleString("th-TH")}</span>}</label>
+      <label className="flex items-center gap-2 text-xs"><Checkbox aria-label="Specialist: เปิดระบบ PMS / CM" checked={!!card.pms_specialist_at} disabled={!specOpen || (!s.test_mode && s.role !== "specialist")} onCheckedChange={() => s.togglePms(card.id)} />Specialist ยืนยันเปิดระบบแล้ว{card.pms_specialist_at && <span className="text-muted-foreground">· {new Date(card.pms_specialist_at).toLocaleString("th-TH")}</span>}</label>
       <label className="flex items-center gap-2 text-xs"><Checkbox aria-label="ORM: ตรวจรับ PMS / CM" checked={!!card.pms_verified_at} disabled={!accepting || !card.pms_specialist_at || (!s.test_mode && s.role !== "service")} onCheckedChange={() => s.togglePms(card.id)} />ORM ตรวจรับ{card.pms_verified_at && <span className="text-muted-foreground">· {new Date(card.pms_verified_at).toLocaleString("th-TH")}</span>}</label>
     </div>
     {card.orm_lite && <div className="space-y-2" aria-label="ORM-Lite OTA selection">
@@ -279,7 +281,7 @@ function OrmHandover({ card }: { card: OnboardingCard }) {
       <div className="flex flex-wrap gap-2">{OTA_CHANNELS.map((o) => <label key={o} className="flex items-center gap-2 text-xs"><Checkbox aria-label={`เลือก OTA ${o}`} checked={otas.includes(o)} disabled={!isSpec || (!otas.includes(o) && otas.length >= 3)} onCheckedChange={() => s.setHandoverOtas(card.id, otas.includes(o) ? otas.filter((item) => item !== o) : [...otas, o])} />{o}</label>)}</div>
     </div>}
     <div className="space-y-2" aria-label="OTA checklist">
-      <p className="text-xs font-medium">1 · OTA checklist · {accepting ? "ORM ตรวจรับที่ Completed" : "Specialist ติ๊กที่ Approved"}</p>
+      <p className="text-xs font-medium">1 · OTA checklist · {accepting ? "ORM ตรวจรับที่ Completed (Handover)" : "Specialist ติ๊กได้ตั้งแต่ Approved ถึง Final Setup"}</p>
       <div className="flex flex-wrap gap-1">{otas.map((o) => <Button key={o} type="button" size="sm" variant={o === ota ? "default" : "outline"} className="h-7 text-xs" onClick={() => setOta(o)}>{o} · {doneOf(o)}</Button>)}</div>
       <table className="w-full text-sm">
         <thead className="text-[11px] text-muted-foreground"><tr><th className="text-left">รายการ</th><th className="w-20">Specialist</th><th className="w-20">ORM</th></tr></thead>
@@ -287,7 +289,7 @@ function OrmHandover({ card }: { card: OnboardingCard }) {
           <tr key={`g-${g}`}><td colSpan={3} className="pt-2 text-[11px] uppercase tracking-wide text-muted-foreground">{g}</td></tr>,
           ...otaItems.filter((h) => (h.group_label ?? "") === g).map((h) => <tr key={h.id} className="border-t">
             <td className="whitespace-normal break-words py-2 pr-3 text-xs">{h.item_label}</td>
-            <td className="text-center"><Checkbox aria-label={`Specialist: ${ota} ${h.item_label}`} checked={h.specialist_checked} disabled={card.current_stage !== "approved" || (!s.test_mode && !isSpec)} onCheckedChange={() => s.toggleHandover(h.id, "specialist")} /></td>
+            <td className="text-center"><Checkbox aria-label={`Specialist: ${ota} ${h.item_label}`} checked={h.specialist_checked} disabled={!specOpen || (!s.test_mode && !isSpec)} onCheckedChange={() => s.toggleHandover(h.id, "specialist")} /></td>
             <td className="text-center"><Checkbox aria-label={`ORM: ${ota} ${h.item_label}`} checked={h.verifier_checked} disabled={!accepting || (!s.test_mode && s.role !== "service") || !h.specialist_checked} onCheckedChange={() => s.toggleHandover(h.id, "verifier")} /></td>
           </tr>),
         ])}</tbody>
@@ -454,7 +456,7 @@ function SumChips({ card }: { card: OnboardingCard }) {
       {[
         ["Σ AE", v.ae],
         ["Σ Specialist", v.specialist],
-        ["Σ Service", v.service],
+        [card.service_variant === "ORM" ? "Σ ORM" : "Σ Service", v.service],
         ["Overall", v.overall],
       ].map(([l, n]) => (
         <div key={l as string} className="rounded-lg border bg-surface/50 px-3 py-1.5">
@@ -483,8 +485,8 @@ export function ServicingCardDrawer({ id, onClose, readOnly = false }: { id: str
   const hs = s.handoverSurveys.find((h) => h.card_id === card.id);
   const cs = s.customerSurveys.find((c) => c.card_id === card.id);
   const finalsDone = finals.length > 0 && finals.every((f) => f.checked);
-  const actor: "ae" | "specialist" | "service" = nxt === "approved" ? (finalsDone ? "specialist" : "ae") : nxt === "completed" ? "specialist" : AE_TRACK_STAGES.has(card.current_stage) ? "ae" : "service";
-  const actorRoles: Role[] = nxt === "approved" && finalsDone ? ["specialist", "pm"] : [actor];
+  const actor: "ae" | "specialist" | "service" = nxt === "approved" ? (finalsDone ? "specialist" : "ae") : nxt === "completed" ? "service" : nxt === "orm_prepare_data" || nxt === "marcom_prepare_data" ? "specialist" : AE_TRACK_STAGES.has(card.current_stage) ? "ae" : "service";
+  const actorRoles: Role[] = nxt === "approved" && finalsDone ? ["specialist", "pm"] : nxt === "completed" || nxt === "orm_prepare_data" || nxt === "marcom_prepare_data" ? ["specialist", "service"] : [actor];
   const canAct = !readOnly && actorRoles.includes(s.role);
   const waitMsg = card.current_stage === "final_check"
     ? (finalsDone ? "พร้อม Approve · อยู่ที่ Specialist (หรือ PM)" : "รอ AE ติ๊ก Final Check ให้ครบ")
@@ -508,10 +510,10 @@ export function ServicingCardDrawer({ id, onClose, readOnly = false }: { id: str
           <section className="space-y-3 border-b pb-4" aria-label="Current step">
             <p className="text-xs text-muted-foreground">ขั้นตอนปัจจุบัน · Day {currentDay(card)}</p>
             <h3 className="flex flex-wrap items-center gap-2 font-display text-xl font-semibold">{STAGE_LABEL[card.current_stage]}<DeptBadge stage={card.current_stage} variant={card.service_variant} /></h3>
-            <p className="text-sm">{card.service_variant === "ORM" && card.current_stage === "approved" ? "Specialist: ทำข้อมูลส่งมอบครบทั้ง 4 ส่วน (รวมเปิดระบบ PMS / CM) แล้วกด Completed" : card.service_variant === "ORM" && card.current_stage === "completed" ? "ORM: ติ๊กตรวจรับทุกรายการก่อนเริ่ม Prepare Data" : STAGE_GUIDANCE[card.current_stage]}</p>
+            <p className="text-sm">{card.service_variant === "ORM" && card.current_stage === "orm_final_setup" && !card.specialist_handover_done_at ? "เพดาน Final Setup · รอ Specialist ทำ Handover 4 ส่วนให้ครบก่อนเข้า Completed (Handover)" : card.service_variant === "ORM" && card.current_stage === "completed" ? "ORM: ติ๊กตรวจรับ (row-2) ทุกรายการ → Survey #1 → ปลดล็อก System Training" : STAGE_GUIDANCE[card.current_stage]}</p>
             <p className="text-xs text-muted-foreground">ผู้รับผิดชอบ: {card.current_stage === "approved" || card.current_stage === "final_check" ? "AE / Specialist / Service" : ["new_property", "introduction_sent_form", "collect_data", "property_pending"].includes(card.current_stage) ? card.assigned_ae_id : card.assigned_service_owner_id}</p>
             {nxt && <p className="rounded-md bg-muted/50 px-3 py-2 text-xs"><span className="font-medium">{readOnly ? "อ่านอย่างเดียว · " : !canAct ? "ไม่ใช่ขั้นของคุณ · " : ""}</span>{waitMsg}</p>}
-            {nxt && <Button className="w-full sm:w-auto" disabled={!canAct || missing.length > 0} onClick={() => doAdvance()}>{nxt === "approved" ? "Approve" : nxt === "completed" ? "Completed" : nxt.endsWith("go_live") ? "ยืนยัน Go Live" : `ทำขั้นนี้เสร็จ → ${STAGE_LABEL[nxt]}`}</Button>}
+            {nxt && <Button className="w-full sm:w-auto" disabled={!canAct || missing.length > 0} onClick={() => doAdvance()}>{nxt === "approved" ? "Approve" : nxt === "completed" ? "เข้า Completed (Handover)" : nxt.endsWith("go_live") ? "ยืนยัน Go Live" : `ทำขั้นนี้เสร็จ → ${STAGE_LABEL[nxt]}`}</Button>}
             <ExternalAppButton card={card} />
             {missing.length > 0 && <div className="border-l-2 pl-3 text-sm text-muted-foreground"><p className="font-medium text-foreground">สิ่งที่ต้องทำก่อนดำเนินการต่อ</p><ul className="mt-1 space-y-1">{missing.map(reason => <li key={reason}>{reason}</li>)}</ul></div>}
             {card.current_stage === "collect_data" && <Button variant="outline" disabled={!canAct} onClick={() => doAdvance("property_pending")}>Mark Property Pending</Button>}
@@ -543,7 +545,7 @@ export function ServicingCardDrawer({ id, onClose, readOnly = false }: { id: str
           )}
 
           <MeetingBilling card={card} readOnly={readOnly} />
-           {card.service_variant === "ORM" && ["approved", "completed"].includes(card.current_stage) && <section className="space-y-3 border-b pb-4"><OrmHandover card={card} /></section>}
+           {card.service_variant === "ORM" && (specialistHandoverOpen(card) || card.current_stage === "completed") && <section className="space-y-3 border-b pb-4"><OrmHandover card={card} /></section>}
 
 
            {hs && (card.service_variant !== "ORM" || handoverProgress(s, card).verifierDone) && <HandoverSurveyForm key={hs.id} id={hs.id} status={surveyStatus(hs)} score={hs.score} />}
