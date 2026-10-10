@@ -75,3 +75,6 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [x] Property Content menu: hotel folders, search, A–Z / Start year sort, My Hotel (owner AE or service assignee), Generate for new property moved here.
 - [x] Internal Property Info page per hotel: service tabs, form data (template-driven, editable + audited), photo library counts, back to card; Marcom never sees private data.
 - [x] 8 sample hotels with owners/assignees and mock photos.
+
+## v6.4 Item 1
+- [x] On-card line "N of M tasks completed · updated …" for the current stage (hidden when no tasks; 2-tick counts when both done; board + PS Dashboard).
