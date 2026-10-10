@@ -21,14 +21,16 @@ export type Audit = { last_updated_at: string; last_updated_by: string; last_upd
 export type Property = { hotel_id: string; hotel_name_th: string; hotel_name_en: string; address_th: string; address_en: string; phone: string; key_contact: string } & Audit;
 export type ProfileStatus = "not_sent" | "sent" | "partial" | "submitted";
 export type ServiceProfile = { property_id: string; service: Ws2Service; photo_repo_url: string | null; form_completion_status: ProfileStatus; profile_data: Record<string, unknown> } & Audit;
-export type Ws2Form = { id: string; property_id: string; service: Ws2Service; customer_email: string; status: "draft" | "generated" | "sent" | "submitted"; template_version: number; generated_by: string; generated_at: string; sent_at: string | null; submitted_at: string | null; form_token: string; answers?: Answers };
+export type Ws2Form = { id: string; property_id: string; service: Ws2Service; customer_email: string; status: "draft" | "generated" | "sent" | "submitted"; template_version: number; generated_by: string; generated_at: string; sent_at: string | null; submitted_at: string | null; form_token: string; answers?: Answers; /** v1.1: owning onboarding card. */ card_id?: string | null };
 /** sectionId → one entry (or many for repeat groups); each entry maps fieldId → value. Repeat entries carry a stable `_rid`. */
 export type Answers = Record<string, Record<string, unknown>[]>;
 export type RestrictedRecord = { id: string; property_id: string; service: Ws2Service; category: RestrictedCategory; data: Record<string, unknown> } & Audit;
 export type ActivityLog = { id: string; property_id: string; service: Ws2Service | null; app: string; user: string; action: "create" | "edit" | "view_restricted"; field: string; old_value: string; new_value: string; at: string };
+/** v1.1: every uploaded photo is one row (no caption, no tag); per-folder count = row count. */
+export type PropertyImage = { id: string; property_id: string; service: Ws2Service; folder_id: string; folder: "_property" | "room_type" | "_all"; room_type_id: string | null; file_url: string; uploaded_by: string; uploaded_at: string };
 export type PortalFolder = { id: string; property_id: string; service: Ws2Service; path: string; label: string; photo_count: number };
 
-type State = { properties: Property[]; profiles: ServiceProfile[]; forms: Ws2Form[]; restricted: RestrictedRecord[]; log: ActivityLog[]; folders: PortalFolder[]; templates: TemplateVersion[] };
+type State = { properties: Property[]; profiles: ServiceProfile[]; forms: Ws2Form[]; restricted: RestrictedRecord[]; log: ActivityLog[]; folders: PortalFolder[]; images: PropertyImage[]; templates: TemplateVersion[] };
 
 const KEY = "ps-ws2-v1";
 const APP = "PS App";
@@ -46,7 +48,7 @@ export const IDENTITY_FIELDS = ["hotel_name_th", "hotel_name_en", "address_th", 
 const seedTemplates = (): TemplateVersion[] =>
   ([["ORM", ormTpl], ["MARCOM_MT", mtTpl], ["MARCOM_GMB", gmbTpl]] as const).map(([service, def]) => ({ service, version: 1, published_at: now(), published_by: "seed", def: def as TemplateDef }));
 
-const empty = (): State => ({ properties: [], profiles: [], forms: [], restricted: [], log: [], folders: [], templates: seedTemplates() });
+const empty = (): State => ({ properties: [], profiles: [], forms: [], restricted: [], log: [], folders: [], images: [], templates: seedTemplates() });
 
 export function templateStats(def: TemplateDef) {
   const inputs = def.sections.flatMap((s) => s.fields).filter((f) => f.field_type !== "heading" && f.field_type !== "note");
@@ -63,7 +65,7 @@ type Api = State & {
   addPhotos: (folderId: string, count: number, user: string) => void;
   logRestrictedView: (property_id: string, service: Ws2Service, user: string, app: string) => void;
   publishTemplate: (service: Ws2Service, def: TemplateDef, user: string) => number;
-  generateForm: (input: { hotel_id: string; hotel_name: string; variant: ServiceVariant; customer_email: string }, user: string) => { ok: boolean; error?: string; form?: Ws2Form };
+  generateForm: (input: { hotel_id: string; hotel_name: string; variant: ServiceVariant; customer_email: string; card_id?: string | null }, user: string) => { ok: boolean; error?: string; form?: Ws2Form };
 };
 
 const Ctx = createContext<Api | null>(null);
@@ -110,7 +112,7 @@ export function Ws2Provider({ children }: { children: ReactNode }) {
     if (s.forms.some((f) => f.property_id === input.hotel_id && f.service === service)) return { ok: false, error: "บริการนี้สร้างฟอร์มแล้ว" };
     const tpl = latestTemplate(service);
     const t = now();
-    const form: Ws2Form = { id: rid(), property_id: input.hotel_id, service, customer_email: email, status: "sent", template_version: tpl.version, generated_by: user, generated_at: t, sent_at: t, submitted_at: null, form_token: `${rid()}${rid()}` };
+    const form: Ws2Form = { id: rid(), property_id: input.hotel_id, service, customer_email: email, status: "sent", template_version: tpl.version, generated_by: user, generated_at: t, sent_at: t, submitted_at: null, form_token: `${rid()}${rid()}`, card_id: input.card_id ?? null };
     const base = `portal://${input.hotel_id}/${service}/`;
     const folders: PortalFolder[] = (service === "MARCOM_GMB" ? [["_all/", "รูปทั้งหมด"]] : [["_property/", "รูปส่วนกลางโรงแรม"]]).map(([p, label]) => ({ id: rid(), property_id: input.hotel_id, service, path: base + p, label: label!, photo_count: 0 }));
     setS((st) => {
@@ -210,7 +212,12 @@ export function Ws2Provider({ children }: { children: ReactNode }) {
     setS((st) => {
       const f = st.folders.find((x) => x.id === folderId);
       if (!f || count <= 0) return st;
-      return { ...st, folders: st.folders.map((x) => (x.id === folderId ? { ...x, photo_count: x.photo_count + count } : x)), log: [...st.log, logRow({ property_id: f.property_id, service: f.service, app: "Customer form", user, action: "edit", field: `photos ${f.path}`, old_value: String(f.photo_count), new_value: String(f.photo_count + count) })] };
+      const t = now();
+      const kind: PropertyImage["folder"] = f.path.endsWith("_all/") ? "_all" : f.path.endsWith("_property/") ? "_property" : "room_type";
+      const rows: PropertyImage[] = Array.from({ length: count }, () => { const id = rid(); return { id, property_id: f.property_id, service: f.service, folder_id: f.id, folder: kind, room_type_id: kind === "room_type" ? f.id : null, file_url: `${f.path}${id}.jpg`, uploaded_by: user, uploaded_at: t }; });
+      const images = [...(st.images ?? []), ...rows];
+      const total = images.filter((i) => i.folder_id === f.id).length;
+      return { ...st, images, folders: st.folders.map((x) => (x.id === folderId ? { ...x, photo_count: total } : x)), log: [...st.log, logRow({ property_id: f.property_id, service: f.service, app: "Customer form", user, action: "edit", field: `photos ${f.path}`, old_value: String(f.photo_count), new_value: String(f.photo_count + count) })] };
     });
   }, []);
 

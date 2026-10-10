@@ -65,3 +65,8 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [x] Specialist handover row-1 editable Approved→Final Setup; row-2 at Completed → Survey #1 → System Training.
 - [x] Split timestamps (specialist_handover_done_at, orm_prep_done_at) and split Σ Specialist / Σ ORM.
 - [x] Marcom: Completed stage dropped (Approved → Prepare Data → First Sync → Go Live; GMB → Go Live); old Marcom cards at Completed move to Prepare Data.
+
+## WS-2 v1.1 delta
+- [x] Photo rows per upload (count = rows, no caption/tag); form linked to its card.
+- [x] "Generate for new property" (per card, New Property, no form yet) using the same Generate logic.
+- [x] Form status chip on Zone 3 cards; Marcom still cannot see private data.

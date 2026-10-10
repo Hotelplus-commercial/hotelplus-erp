@@ -44,7 +44,7 @@ export function Ws2Panel({ card, readOnly }: { card: OnboardingCard; readOnly: b
   }, [st]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const generate = () => {
-    const r = w.generateForm({ hotel_id: card.property_id, hotel_name: card.property_name, variant: card.service_variant, customer_email: email }, card.assigned_ae_id || "AE");
+    const r = w.generateForm({ hotel_id: card.property_id, hotel_name: card.property_name, variant: card.service_variant, customer_email: email, card_id: card.id }, card.assigned_ae_id || "AE");
     if (!r.ok) { toast.info(r.error); return; }
     s.setFormStatus(card.id, toCardStatus("sent"));
     toast.success("สร้างฟอร์มแล้ว · แนบลิงก์ Image Portal ให้การ์ด");
@@ -126,6 +126,48 @@ export function Ws2Panel({ card, readOnly }: { card: OnboardingCard; readOnly: b
         </div>
       )}
       <p className="text-[11px] text-muted-foreground">สถานะฟอร์มเป็นข้อมูลแนะนำเท่านั้น · ไม่ล็อกปุ่มขั้นตอนใด</p>
+    </section>
+  );
+}
+
+/** v1.1 Entry #2 — "Generate for new property": per-CARD list (stage New Property, no form yet). Uses the same generateForm. */
+export function Ws2GenerateNewProperty() {
+  const s = useServicing();
+  const w = useWs2();
+  const [q, setQ] = useState("");
+  const [pick, setPick] = useState<string | null>(null);
+  const [email, setEmail] = useState("");
+  const canGenerate = s.role === "ae" || s.test_mode;
+  const list = s.cards.filter((c) => c.current_stage === "new_property"
+    && !w.forms.some((f) => f.property_id === c.property_id && f.service === serviceForVariant(c.service_variant))
+    && c.property_name.toLowerCase().includes(q.trim().toLowerCase()));
+  const card = list.find((c) => c.id === pick);
+  const go = () => {
+    if (!card) return;
+    const r = w.generateForm({ hotel_id: card.property_id, hotel_name: card.property_name, variant: card.service_variant, customer_email: email, card_id: card.id }, card.assigned_ae_id || "AE");
+    if (!r.ok) { toast.info(r.error); return; }
+    s.setFormStatus(card.id, toCardStatus("sent"));
+    toast.success(`สร้างฟอร์มแล้ว · ${card.property_name} (${SERVICE_LABEL[serviceForVariant(card.service_variant)]})`);
+    setPick(null); setEmail("");
+  };
+  return (
+    <section className="space-y-3 rounded-lg border p-4" aria-label="Generate for new property">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="text-sm font-semibold">Generate for new property</h3>
+        <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="ค้นหาชื่อการ์ด…" className="h-8 w-[200px] text-sm" />
+      </div>
+      <p className="text-xs text-muted-foreground">แสดงรายการต่อการ์ด (แยกบริการ) ที่อยู่ขั้น New Property และยังไม่มีฟอร์ม · ใช้ขั้นตอน Generate เดียวกับในการ์ด</p>
+      <ul className="divide-y rounded-md border">
+        {list.map((c) => (
+          <li key={c.id} className="flex flex-wrap items-center gap-2 p-2 text-sm">
+            <span className="flex-1">{c.property_name} <span className="text-xs text-muted-foreground">· {c.property_id} · {SERVICE_LABEL[serviceForVariant(c.service_variant)]}</span></span>
+            <Button size="sm" variant={pick === c.id ? "default" : "outline"} disabled={!canGenerate} onClick={() => setPick(c.id)}>เลือก</Button>
+          </li>
+        ))}
+        {!list.length && <li className="p-3 text-center text-xs text-muted-foreground">ไม่มีการ์ด New Property ที่รอสร้างฟอร์ม</li>}
+      </ul>
+      {card && <div className="flex flex-wrap gap-2"><Input type="email" aria-label="Customer email" className="h-9 min-w-0 flex-1 text-sm" placeholder="customer@hotel.com" value={email} onChange={(e) => setEmail(e.target.value)} /><Button size="sm" className="h-9" onClick={go}>Generate Form · {card.property_name}</Button></div>}
+      {!canGenerate && <p className="text-[11px] text-muted-foreground">เฉพาะ AE กด Generate ได้</p>}
     </section>
   );
 }
