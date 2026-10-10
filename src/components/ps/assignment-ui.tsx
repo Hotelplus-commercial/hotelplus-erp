@@ -11,10 +11,13 @@ import { STAGE_LABEL, fullSequence, useServicing, type OnboardingCard } from "@/
 import { serviceForVariant, useWs2 } from "@/lib/ws2-store";
 
 const TYPE_LABEL: Record<AssignType, string> = { AE: "AE", SPECIALIST: "Specialist", ORM: "ORM", MARCOM: "Marcom" };
+/** v1.1 due rule: true only when the card's current stage is at/after the trigger stage (unknown stages → not due). */
 const reached = (card: OnboardingCard, stage: string) => {
   const seq = fullSequence(card.service_variant);
+  const target = seq.indexOf(stage);
   const cur = seq.indexOf(card.current_stage === "property_pending" ? "collect_data" : card.current_stage);
-  return cur >= seq.indexOf(stage);
+  if (target < 0 || cur < 0) return false;
+  return cur >= target;
 };
 
 export function useAssignments() {
@@ -24,19 +27,22 @@ export function useAssignments() {
     const prop = (id: string) => w.properties.find((p) => p.hotel_id === id);
     const profile = (id: string, svc: string) => w.profiles.find((p) => p.property_id === id && p.service === svc);
     const ormDone = (id: string) => { const p = profile(id, "ORM"); return !!(p?.orm_team && p.revenue_member_id && p.ecommerce_member_id); };
-    const pendingOf = (card: OnboardingCard): AssignType[] => {
-      const out: AssignType[] = [];
+    /** Due role slots with completion flag (ORM = 1 slot, complete only with all 3 values). */
+    const slotsOf = (card: OnboardingCard): { type: AssignType; done: boolean }[] => {
+      const out: { type: AssignType; done: boolean }[] = [];
       const pr = prop(card.property_id);
-      if (!pr?.assigned_ae_id) out.push("AE");
-      if (reached(card, "final_check") && !pr?.assigned_specialist_id) out.push("SPECIALIST");
+      if (reached(card, "new_property")) out.push({ type: "AE", done: !!pr?.assigned_ae_id });
+      if (reached(card, "final_check")) out.push({ type: "SPECIALIST", done: !!pr?.assigned_specialist_id });
       if (reached(card, "approved")) {
-        if (card.service_variant === "ORM" && !ormDone(card.property_id)) out.push("ORM");
-        if (card.service_variant !== "ORM" && !profile(card.property_id, serviceForVariant(card.service_variant))?.marcom_member_id) out.push("MARCOM");
+        if (card.service_variant === "ORM") out.push({ type: "ORM", done: ormDone(card.property_id) });
+        else out.push({ type: "MARCOM", done: !!profile(card.property_id, serviceForVariant(card.service_variant))?.marcom_member_id });
       }
       return out;
     };
-    const rows = s.cards.map((card) => ({ card, pending: pendingOf(card) })).filter((r) => r.pending.length);
-    return { rows, prop, profile, pendingOf };
+    const pendingOf = (card: OnboardingCard): AssignType[] => slotsOf(card).filter((x) => !x.done).map((x) => x.type);
+    const rows = s.cards.map((card) => { const slots = slotsOf(card); return { card, slots, pending: slots.filter((x) => !x.done).map((x) => x.type) }; }).filter((r) => r.pending.length);
+    const roleCount = rows.reduce((n, r) => n + r.pending.length, 0);
+    return { rows, roleCount, prop, profile, pendingOf, slotsOf };
   }, [s.cards, w.properties, w.profiles]);
 }
 
@@ -144,11 +150,12 @@ export function PendingAssignList({ scope }: { scope: "PS" | "ORM" | "MARCOM" })
     <div className="space-y-2">
       <div className="flex justify-end"><AssignRolePicker /></div>
       <ul className="divide-y rounded-lg border">
-        {rows.map(({ card, pending }) => (
+        {rows.map(({ card, pending, slots }) => (
           <li key={card.id} className="flex flex-wrap items-center gap-2 p-3 text-sm">
             <span className="min-w-[10rem] flex-1 font-medium">{card.property_name}</span>
             <Chip tone={card.service_line === "ORM" ? "info" : "muted"}>{card.service_line === "ORM" ? "ORM" : "Marcom"}</Chip>
             <span className="text-xs text-muted-foreground">{STAGE_LABEL[card.current_stage]}</span>
+            <span className="text-xs tabular-nums text-muted-foreground">{slots.filter((x) => x.done).length} of {slots.length} roles set</span>
             {pending.map((t) => (
               <Button key={t} size="sm" variant="outline" className="h-7 border-warning text-xs" onClick={() => setOpen({ card, type: t })}>
                 {canAssign(hr.role, t) ? `ระบุผู้ดูแล · ${TYPE_LABEL[t]}` : `${TYPE_LABEL[t]} · ยังไม่ระบุ`}
@@ -172,10 +179,11 @@ export function PendingAssignTile() {
       <button type="button" onClick={() => setOpen(true)} className="rounded-xl border border-warning bg-warning/10 p-4 text-left transition-colors hover:bg-warning/20">
         <p className="flex items-center gap-1.5 text-xs font-medium text-warning-foreground"><AlertTriangle className="size-3.5" /> รอระบุผู้ดูแล</p>
         <p className="mt-1 font-display text-2xl font-bold tabular-nums">{a.rows.length}</p>
+        <p className="text-xs text-muted-foreground">{a.rows.length} การ์ด · {a.roleCount} role ค้าง</p>
       </button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-3xl">
-          <DialogHeader><DialogTitle>⚠ รอระบุผู้ดูแล · {a.rows.length} การ์ด</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>⚠ รอระบุผู้ดูแล · {a.rows.length} การ์ด · {a.roleCount} role ค้าง</DialogTitle></DialogHeader>
           <div className="max-h-[70vh] overflow-y-auto"><PendingAssignList scope="PS" /></div>
         </DialogContent>
       </Dialog>
