@@ -34,9 +34,13 @@ import { Route as BdQuotationsRouteImport } from './routes/bd.quotations'
 import { Route as BdQuotesRouteImport } from './routes/bd.quotes'
 import { Route as BdRegisterDealRouteImport } from './routes/bd.register-deal'
 import { Route as FTokenRouteImport } from './routes/f.$token'
+import { Route as HrIndexRouteImport } from './routes/hr.index'
 import { Route as LTokenRouteImport } from './routes/l.$token'
+import { Route as MarcomIndexRouteImport } from './routes/marcom.index'
+import { Route as MarcomDashboardRouteImport } from './routes/marcom.dashboard'
 import { Route as OrmIndexRouteImport } from './routes/orm.index'
 import { Route as OrmActionARouteImport } from './routes/orm.action-a'
+import { Route as OrmDashboardRouteImport } from './routes/orm.dashboard'
 import { Route as PsIndexRouteImport } from './routes/ps.index'
 import { Route as PsAeWorkspaceRouteImport } from './routes/ps.ae-workspace'
 import { Route as PsContractDashboardRouteImport } from './routes/ps.contract-dashboard'
@@ -205,10 +209,25 @@ const FTokenRoute = FTokenRouteImport.update({
   path: '/f/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const HrIndexRoute = HrIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => HrRoute,
+} as any)
 const LTokenRoute = LTokenRouteImport.update({
   id: '/l/$token',
   path: '/l/$token',
   getParentRoute: () => rootRouteImport,
+} as any)
+const MarcomIndexRoute = MarcomIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => MarcomRoute,
+} as any)
+const MarcomDashboardRoute = MarcomDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => MarcomRoute,
 } as any)
 const OrmIndexRoute = OrmIndexRouteImport.update({
   id: '/',
@@ -218,6 +237,11 @@ const OrmIndexRoute = OrmIndexRouteImport.update({
 const OrmActionARoute = OrmActionARouteImport.update({
   id: '/action-a',
   path: '/action-a',
+  getParentRoute: () => OrmRoute,
+} as any)
+const OrmDashboardRoute = OrmDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => OrmRoute,
 } as any)
 const PsIndexRoute = PsIndexRouteImport.update({
@@ -441,8 +465,8 @@ export interface FileRoutesByFullPath {
   '/automation': typeof AutomationRoute
   '/bd': typeof BdRouteWithChildren
   '/hotel-profile': typeof HotelProfileRoute
-  '/hr': typeof HrRoute
-  '/marcom': typeof MarcomRoute
+  '/hr': typeof HrRouteWithChildren
+  '/marcom': typeof MarcomRouteWithChildren
   '/orm': typeof OrmRouteWithChildren
   '/ps': typeof PsRouteWithChildren
   '/settings': typeof SettingsRoute
@@ -460,7 +484,9 @@ export interface FileRoutesByFullPath {
   '/bd/register-deal': typeof BdRegisterDealRoute
   '/f/$token': typeof FTokenRoute
   '/l/$token': typeof LTokenRoute
+  '/marcom/dashboard': typeof MarcomDashboardRoute
   '/orm/action-a': typeof OrmActionARouteWithChildren
+  '/orm/dashboard': typeof OrmDashboardRoute
   '/ps/ae-workspace': typeof PsAeWorkspaceRouteWithChildren
   '/ps/contract-dashboard': typeof PsContractDashboardRoute
   '/ps/contract-wizard': typeof PsContractWizardRouteWithChildren
@@ -472,6 +498,8 @@ export interface FileRoutesByFullPath {
   '/the-office-app/orm-bonus': typeof TheOfficeAppOrmBonusRoute
   '/ac/': typeof AcIndexRoute
   '/bd/': typeof BdIndexRoute
+  '/hr/': typeof HrIndexRoute
+  '/marcom/': typeof MarcomIndexRoute
   '/orm/': typeof OrmIndexRoute
   '/ps/': typeof PsIndexRoute
   '/the-office-app/': typeof TheOfficeAppIndexRoute
@@ -511,8 +539,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/automation': typeof AutomationRoute
   '/hotel-profile': typeof HotelProfileRoute
-  '/hr': typeof HrRoute
-  '/marcom': typeof MarcomRoute
   '/settings': typeof SettingsRoute
   '/system-cost': typeof SystemCostRoute
   '/ac/billing': typeof AcBillingRoute
@@ -525,6 +551,8 @@ export interface FileRoutesByTo {
   '/bd/register-deal': typeof BdRegisterDealRoute
   '/f/$token': typeof FTokenRoute
   '/l/$token': typeof LTokenRoute
+  '/marcom/dashboard': typeof MarcomDashboardRoute
+  '/orm/dashboard': typeof OrmDashboardRoute
   '/ps/contract-dashboard': typeof PsContractDashboardRoute
   '/ps/contracts': typeof PsContractsRoute
   '/ps/onboarding-process': typeof PsOnboardingProcessRoute
@@ -534,6 +562,8 @@ export interface FileRoutesByTo {
   '/the-office-app/orm-bonus': typeof TheOfficeAppOrmBonusRoute
   '/ac': typeof AcIndexRoute
   '/bd': typeof BdIndexRoute
+  '/hr': typeof HrIndexRoute
+  '/marcom': typeof MarcomIndexRoute
   '/orm': typeof OrmIndexRoute
   '/ps': typeof PsIndexRoute
   '/the-office-app': typeof TheOfficeAppIndexRoute
@@ -576,8 +606,8 @@ export interface FileRoutesById {
   '/automation': typeof AutomationRoute
   '/bd': typeof BdRouteWithChildren
   '/hotel-profile': typeof HotelProfileRoute
-  '/hr': typeof HrRoute
-  '/marcom': typeof MarcomRoute
+  '/hr': typeof HrRouteWithChildren
+  '/marcom': typeof MarcomRouteWithChildren
   '/orm': typeof OrmRouteWithChildren
   '/ps': typeof PsRouteWithChildren
   '/settings': typeof SettingsRoute
@@ -595,7 +625,9 @@ export interface FileRoutesById {
   '/bd/register-deal': typeof BdRegisterDealRoute
   '/f/$token': typeof FTokenRoute
   '/l/$token': typeof LTokenRoute
+  '/marcom/dashboard': typeof MarcomDashboardRoute
   '/orm/action-a': typeof OrmActionARouteWithChildren
+  '/orm/dashboard': typeof OrmDashboardRoute
   '/ps/ae-workspace': typeof PsAeWorkspaceRouteWithChildren
   '/ps/contract-dashboard': typeof PsContractDashboardRoute
   '/ps/contract-wizard': typeof PsContractWizardRouteWithChildren
@@ -607,6 +639,8 @@ export interface FileRoutesById {
   '/the-office-app/orm-bonus': typeof TheOfficeAppOrmBonusRoute
   '/ac/': typeof AcIndexRoute
   '/bd/': typeof BdIndexRoute
+  '/hr/': typeof HrIndexRoute
+  '/marcom/': typeof MarcomIndexRoute
   '/orm/': typeof OrmIndexRoute
   '/ps/': typeof PsIndexRoute
   '/the-office-app/': typeof TheOfficeAppIndexRoute
@@ -669,7 +703,9 @@ export interface FileRouteTypes {
     | '/bd/register-deal'
     | '/f/$token'
     | '/l/$token'
+    | '/marcom/dashboard'
     | '/orm/action-a'
+    | '/orm/dashboard'
     | '/ps/ae-workspace'
     | '/ps/contract-dashboard'
     | '/ps/contract-wizard'
@@ -681,6 +717,8 @@ export interface FileRouteTypes {
     | '/the-office-app/orm-bonus'
     | '/ac/'
     | '/bd/'
+    | '/hr/'
+    | '/marcom/'
     | '/orm/'
     | '/ps/'
     | '/the-office-app/'
@@ -720,8 +758,6 @@ export interface FileRouteTypes {
     | '/'
     | '/automation'
     | '/hotel-profile'
-    | '/hr'
-    | '/marcom'
     | '/settings'
     | '/system-cost'
     | '/ac/billing'
@@ -734,6 +770,8 @@ export interface FileRouteTypes {
     | '/bd/register-deal'
     | '/f/$token'
     | '/l/$token'
+    | '/marcom/dashboard'
+    | '/orm/dashboard'
     | '/ps/contract-dashboard'
     | '/ps/contracts'
     | '/ps/onboarding-process'
@@ -743,6 +781,8 @@ export interface FileRouteTypes {
     | '/the-office-app/orm-bonus'
     | '/ac'
     | '/bd'
+    | '/hr'
+    | '/marcom'
     | '/orm'
     | '/ps'
     | '/the-office-app'
@@ -803,7 +843,9 @@ export interface FileRouteTypes {
     | '/bd/register-deal'
     | '/f/$token'
     | '/l/$token'
+    | '/marcom/dashboard'
     | '/orm/action-a'
+    | '/orm/dashboard'
     | '/ps/ae-workspace'
     | '/ps/contract-dashboard'
     | '/ps/contract-wizard'
@@ -815,6 +857,8 @@ export interface FileRouteTypes {
     | '/the-office-app/orm-bonus'
     | '/ac/'
     | '/bd/'
+    | '/hr/'
+    | '/marcom/'
     | '/orm/'
     | '/ps/'
     | '/the-office-app/'
@@ -857,8 +901,8 @@ export interface RootRouteChildren {
   AutomationRoute: typeof AutomationRoute
   BdRoute: typeof BdRouteWithChildren
   HotelProfileRoute: typeof HotelProfileRoute
-  HrRoute: typeof HrRoute
-  MarcomRoute: typeof MarcomRoute
+  HrRoute: typeof HrRouteWithChildren
+  MarcomRoute: typeof MarcomRouteWithChildren
   OrmRoute: typeof OrmRouteWithChildren
   PsRoute: typeof PsRouteWithChildren
   SettingsRoute: typeof SettingsRoute
@@ -1045,12 +1089,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/hr/': {
+      id: '/hr/'
+      path: '/'
+      fullPath: '/hr/'
+      preLoaderRoute: typeof HrIndexRouteImport
+      parentRoute: typeof HrRoute
+    }
     '/l/$token': {
       id: '/l/$token'
       path: '/l/$token'
       fullPath: '/l/$token'
       preLoaderRoute: typeof LTokenRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/marcom/': {
+      id: '/marcom/'
+      path: '/'
+      fullPath: '/marcom/'
+      preLoaderRoute: typeof MarcomIndexRouteImport
+      parentRoute: typeof MarcomRoute
+    }
+    '/marcom/dashboard': {
+      id: '/marcom/dashboard'
+      path: '/dashboard'
+      fullPath: '/marcom/dashboard'
+      preLoaderRoute: typeof MarcomDashboardRouteImport
+      parentRoute: typeof MarcomRoute
     }
     '/orm/': {
       id: '/orm/'
@@ -1064,6 +1129,13 @@ declare module '@tanstack/react-router' {
       path: '/action-a'
       fullPath: '/orm/action-a'
       preLoaderRoute: typeof OrmActionARouteImport
+      parentRoute: typeof OrmRoute
+    }
+    '/orm/dashboard': {
+      id: '/orm/dashboard'
+      path: '/dashboard'
+      fullPath: '/orm/dashboard'
+      preLoaderRoute: typeof OrmDashboardRouteImport
       parentRoute: typeof OrmRoute
     }
     '/ps/': {
@@ -1447,6 +1519,29 @@ const BdRouteChildren: BdRouteChildren = {
 
 const BdRouteWithChildren = BdRoute._addFileChildren(BdRouteChildren)
 
+interface HrRouteChildren {
+  HrIndexRoute: typeof HrIndexRoute
+}
+
+const HrRouteChildren: HrRouteChildren = {
+  HrIndexRoute: HrIndexRoute,
+}
+
+const HrRouteWithChildren = HrRoute._addFileChildren(HrRouteChildren)
+
+interface MarcomRouteChildren {
+  MarcomDashboardRoute: typeof MarcomDashboardRoute
+  MarcomIndexRoute: typeof MarcomIndexRoute
+}
+
+const MarcomRouteChildren: MarcomRouteChildren = {
+  MarcomDashboardRoute: MarcomDashboardRoute,
+  MarcomIndexRoute: MarcomIndexRoute,
+}
+
+const MarcomRouteWithChildren =
+  MarcomRoute._addFileChildren(MarcomRouteChildren)
+
 interface OrmActionARouteChildren {
   OrmActionAAnalysisRoute: typeof OrmActionAAnalysisRoute
   OrmActionAReportRoute: typeof OrmActionAReportRoute
@@ -1469,11 +1564,13 @@ const OrmActionARouteWithChildren = OrmActionARoute._addFileChildren(
 
 interface OrmRouteChildren {
   OrmActionARoute: typeof OrmActionARouteWithChildren
+  OrmDashboardRoute: typeof OrmDashboardRoute
   OrmIndexRoute: typeof OrmIndexRoute
 }
 
 const OrmRouteChildren: OrmRouteChildren = {
   OrmActionARoute: OrmActionARouteWithChildren,
+  OrmDashboardRoute: OrmDashboardRoute,
   OrmIndexRoute: OrmIndexRoute,
 }
 
@@ -1582,8 +1679,8 @@ const rootRouteChildren: RootRouteChildren = {
   AutomationRoute: AutomationRoute,
   BdRoute: BdRouteWithChildren,
   HotelProfileRoute: HotelProfileRoute,
-  HrRoute: HrRoute,
-  MarcomRoute: MarcomRoute,
+  HrRoute: HrRouteWithChildren,
+  MarcomRoute: MarcomRouteWithChildren,
   OrmRoute: OrmRouteWithChildren,
   PsRoute: PsRouteWithChildren,
   SettingsRoute: SettingsRoute,
