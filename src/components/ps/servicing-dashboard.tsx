@@ -456,7 +456,7 @@ function SumChips({ card }: { card: OnboardingCard }) {
       {[
         ["Σ AE", v.ae],
         ["Σ Specialist", v.specialist],
-        ["Σ Service", v.service],
+        [card.service_variant === "ORM" ? "Σ ORM" : "Σ Service", v.service],
         ["Overall", v.overall],
       ].map(([l, n]) => (
         <div key={l as string} className="rounded-lg border bg-surface/50 px-3 py-1.5">
@@ -510,10 +510,10 @@ export function ServicingCardDrawer({ id, onClose, readOnly = false }: { id: str
           <section className="space-y-3 border-b pb-4" aria-label="Current step">
             <p className="text-xs text-muted-foreground">ขั้นตอนปัจจุบัน · Day {currentDay(card)}</p>
             <h3 className="flex flex-wrap items-center gap-2 font-display text-xl font-semibold">{STAGE_LABEL[card.current_stage]}<DeptBadge stage={card.current_stage} variant={card.service_variant} /></h3>
-            <p className="text-sm">{card.service_variant === "ORM" && card.current_stage === "approved" ? "Specialist: ทำข้อมูลส่งมอบครบทั้ง 4 ส่วน (รวมเปิดระบบ PMS / CM) แล้วกด Completed" : card.service_variant === "ORM" && card.current_stage === "completed" ? "ORM: ติ๊กตรวจรับทุกรายการก่อนเริ่ม Prepare Data" : STAGE_GUIDANCE[card.current_stage]}</p>
+            <p className="text-sm">{card.service_variant === "ORM" && card.current_stage === "orm_final_setup" && !card.specialist_handover_done_at ? "เพดาน Final Setup · รอ Specialist ทำ Handover 4 ส่วนให้ครบก่อนเข้า Completed (Handover)" : card.service_variant === "ORM" && card.current_stage === "completed" ? "ORM: ติ๊กตรวจรับ (row-2) ทุกรายการ → Survey #1 → ปลดล็อก System Training" : STAGE_GUIDANCE[card.current_stage]}</p>
             <p className="text-xs text-muted-foreground">ผู้รับผิดชอบ: {card.current_stage === "approved" || card.current_stage === "final_check" ? "AE / Specialist / Service" : ["new_property", "introduction_sent_form", "collect_data", "property_pending"].includes(card.current_stage) ? card.assigned_ae_id : card.assigned_service_owner_id}</p>
             {nxt && <p className="rounded-md bg-muted/50 px-3 py-2 text-xs"><span className="font-medium">{readOnly ? "อ่านอย่างเดียว · " : !canAct ? "ไม่ใช่ขั้นของคุณ · " : ""}</span>{waitMsg}</p>}
-            {nxt && <Button className="w-full sm:w-auto" disabled={!canAct || missing.length > 0} onClick={() => doAdvance()}>{nxt === "approved" ? "Approve" : nxt === "completed" ? "Completed" : nxt.endsWith("go_live") ? "ยืนยัน Go Live" : `ทำขั้นนี้เสร็จ → ${STAGE_LABEL[nxt]}`}</Button>}
+            {nxt && <Button className="w-full sm:w-auto" disabled={!canAct || missing.length > 0} onClick={() => doAdvance()}>{nxt === "approved" ? "Approve" : nxt === "completed" ? "เข้า Completed (Handover)" : nxt.endsWith("go_live") ? "ยืนยัน Go Live" : `ทำขั้นนี้เสร็จ → ${STAGE_LABEL[nxt]}`}</Button>}
             <ExternalAppButton card={card} />
             {missing.length > 0 && <div className="border-l-2 pl-3 text-sm text-muted-foreground"><p className="font-medium text-foreground">สิ่งที่ต้องทำก่อนดำเนินการต่อ</p><ul className="mt-1 space-y-1">{missing.map(reason => <li key={reason}>{reason}</li>)}</ul></div>}
             {card.current_stage === "collect_data" && <Button variant="outline" disabled={!canAct} onClick={() => doAdvance("property_pending")}>Mark Property Pending</Button>}
