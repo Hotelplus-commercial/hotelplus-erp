@@ -638,6 +638,28 @@ export const bottleneck = (s: ReturnType<typeof sums>): OwnerTrack | null => {
   if (!valid.length) return null;
   return valid.sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
 };
+/** v6.4 display-only: current-stage checklist progress for the card face (never gates). */
+export function currentStageProgress(st: Pick<State, "checklistItems" | "finalChecks" | "handover" | "credentials" | "roomMappings">, card: OnboardingCard) {
+  const stage = card.current_stage;
+  const ticks: { done: boolean; at: (string | null | undefined)[] }[] = [];
+  st.checklistItems.filter((i) => i.card_id === card.id && i.stage_key === stage).forEach((i) => ticks.push({ done: i.checked, at: [i.checked_at] }));
+  if (stage === "final_check") st.finalChecks.filter((f) => f.card_id === card.id).forEach((f) => ticks.push({ done: f.checked, at: [f.checked_at] }));
+  // Shared Prepare Data (ORM) + Completed (Handover): include the 2-tick handover row-1 items and PMS/CM; done only when both ticks are set.
+  if (card.service_variant === "ORM" && (stage === "orm_prepare_data" || stage === "completed")) {
+    handoverProgress(st, card).items.forEach((h) => ticks.push({ done: h.specialist_checked && h.verifier_checked, at: [h.specialist_checked_at, h.verifier_checked_at] }));
+    ticks.push({ done: !!card.pms_specialist_at && !!card.pms_verified_at, at: [card.pms_specialist_at, card.pms_verified_at] });
+  }
+  const last = ticks.flatMap((t) => t.at).filter((x): x is string => !!x).sort().pop() ?? null;
+  return { M: ticks.length, N: ticks.filter((t) => t.done).length, last_updated: last };
+}
+const bkkDay = (d: Date | string) => new Date(new Date(d).toLocaleString("en-US", { timeZone: "Asia/Bangkok" })).setHours(0, 0, 0, 0);
+export function stageProgressLine(p: ReturnType<typeof currentStageProgress>): string | null {
+  if (!p.M) return null;
+  if (!p.N) return `0 of ${p.M} tasks · not started`;
+  const days = p.last_updated ? Math.round((bkkDay(new Date()) - bkkDay(p.last_updated)) / DAY) : null;
+  const rel = days === null ? "" : ` · updated ${days <= 0 ? "today" : days === 1 ? "1 day ago" : `${days} days ago`}`;
+  return `${p.N} of ${p.M} tasks completed${rel}`;
+}
 export const surveyStatus = (h: HandoverSurvey): HandoverSurvey["status"] =>
   h.status === "pending" && Date.now() > new Date(h.window_expires_at).getTime() ? "expired" : h.status;
 
