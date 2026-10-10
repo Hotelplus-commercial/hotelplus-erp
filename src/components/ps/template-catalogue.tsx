@@ -7,7 +7,7 @@ import { Ws2TemplateEditor } from "@/components/ps/ws2-template-editor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ROLE_DISPLAY, activeEmail, canManageTemplates, useTemplateMgmt, type EmailKey } from "@/lib/email-templates";
+import { ROLE_DISPLAY, SURVEY_OPEN_KEY, activeEmail, activeSurvey, canManageTemplates, useTemplateMgmt, type EmailKey, type SurveyKey, type SurveyText } from "@/lib/email-templates";
 import { AE_STAGES, STAGE_LABEL, VARIANT_LABEL, useServicing, type Role, type ServiceVariant } from "@/lib/ps-servicing";
 import { SERVICE_LABEL, useWs2, type Ws2Service } from "@/lib/ws2-store";
 
@@ -38,7 +38,7 @@ export function TemplateCatalogue({ onDocuments }: { onDocuments: () => void }) 
       {!can && <p className="text-xs text-muted-foreground">ดูได้อย่างเดียว · แก้ไข / Publish ได้เฉพาะ PM และ System Admin</p>}
       {sec === "form" && <FormCatalogue />}
       {sec === "checklist" && <ChecklistEditor can={can} />}
-      {sec === "survey" && <SurveyCatalogue />}
+      {sec === "survey" && <SurveyCatalogue can={can} />}
       {sec === "email" && <EmailEditor can={can} />}
     </div>
   );
@@ -131,16 +131,50 @@ function ChecklistEditor({ can }: { can: boolean }) {
   );
 }
 
-const SURVEYS = [
+const LOCKED_SURVEYS = [
   { name: "#1 Internal (ORM → Specialist)", where: "ORM Handover · Completed" },
   { name: "#2 Customer (5 มิติ ภาษาไทย)", where: "หลังส่งอีเมลยืนยันวันเริ่มบริการ" },
-  { name: "Monthly meeting — ORM", where: "AE Workspace › Zone B · Pending Survey Queue" },
-  { name: "Monthly meeting — Marcom", where: "AE Workspace › Zone B · Pending Survey Queue" },
 ];
-function SurveyCatalogue() {
+function SurveyCatalogue({ can }: { can: boolean }) {
+  const s = useServicing();
+  const tm = useTemplateMgmt();
+  const [open, setOpen] = useState<SurveyKey | null>(null);
+  const [preview, setPreview] = useState(false);
+  const by = ROLE_DISPLAY[s.role] ?? s.role;
   return (
-    <Panel title="Survey Templates" subtitle="แคตตาล็อกแม่แบบ · ฟอร์มที่ใช้งานอยู่ไม่ถูกสร้างใหม่ · แบบประเมินที่เข้าคิวแล้วคงเวอร์ชันเดิม">
-      <ul className="divide-y text-sm">{SURVEYS.map((x) => <li key={x.name} className="flex flex-wrap items-center gap-2 py-2"><span className="flex-1 font-medium">{x.name}</span><Chip tone="info">Survey</Chip><span className="text-xs text-muted-foreground">v1 · {x.where}</span></li>)}</ul>
+    <Panel title="Survey Templates" subtitle="Monthly meeting แก้ได้เฉพาะข้อความ · สเกล 1–10 / จำนวนข้อ / โครงสร้างล็อก · แบบประเมินที่เข้าคิวแล้วคงเวอร์ชันเดิม">
+      <ul className="divide-y text-sm">
+        {LOCKED_SURVEYS.map((x) => <li key={x.name} className="flex flex-wrap items-center gap-2 py-2"><span className="flex-1 font-medium">{x.name}</span><Chip tone="info">Survey</Chip><Chip tone="muted">ดูอย่างเดียว</Chip><span className="text-xs text-muted-foreground">v1 · {x.where}</span></li>)}
+        {tm.surveys.map((d) => { const v = activeSurvey(d); const cur: SurveyText = d.draft ?? { section_label: v.section_label, overall_label: v.overall_label, comment_placeholder: v.comment_placeholder, open_placeholder: v.open_placeholder, help: v.help, q: v.q };
+          const set = (patch: Partial<SurveyText>) => tm.saveSurveyDraft(d.key, { ...cur, ...patch, q: { ...cur.q, ...(patch.q ?? {}) } });
+          return (
+          <li key={d.key} className="py-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="flex-1 font-medium">{d.name}</span><Chip tone="info">Survey</Chip>{d.draft && <Chip tone="warn">draft</Chip>}
+              <span className="text-xs text-muted-foreground">v{v.version} · {v.published_by} · {fmt(v.published_at)} · AE Workspace › Zone B</span>
+              <Button size="sm" variant="outline" className="h-7" onClick={() => { setOpen(open === d.key ? null : d.key); setPreview(false); }}>{can ? "Edit" : "View"}</Button>
+            </div>
+            {open === d.key && <div className="mt-2 space-y-2 rounded-md border p-3">
+              <div className="flex gap-1"><Button size="sm" variant={!preview ? "default" : "outline"} className="h-7 text-xs" onClick={() => setPreview(false)}>แก้ข้อความ</Button><Button size="sm" variant={preview ? "default" : "outline"} className="h-7 text-xs" onClick={() => setPreview(true)}>โหมด PS user (พรีวิว)</Button></div>
+              {preview ? <div className="space-y-3 text-sm">
+                {[cur.section_label, cur.overall_label].map((sec, si) => <div key={si} className="rounded-md border"><p className="bg-muted px-3 py-1.5 text-xs font-bold">【 SECTION: {sec} 】</p><div className="space-y-2 p-3">
+                  {d.keys.filter((k) => (si === 0) === !["Q7", "Q8", "Q9"].includes(k)).map((k) => <div key={k}><p>{k}. {cur.q[k]}</p>{k === SURVEY_OPEN_KEY ? <Textarea disabled placeholder={cur.open_placeholder} /> : <><div className="mt-1 flex gap-1">{Array.from({ length: 10 }, (_, i) => <span key={i} className="flex size-6 items-center justify-center rounded border text-[11px]">{i + 1}</span>)}</div>{si === 0 && <Input disabled className="mt-1 h-8" placeholder={cur.comment_placeholder} />}</>}</div>)}
+                </div></div>)}
+                <div className="rounded-md border p-3 text-xs">【 Take Notes 】 (AE internal) · ล็อก</div>
+                {cur.help && <p className="text-xs text-muted-foreground">{cur.help}</p>}
+              </div> : <div className="grid gap-2 text-xs">
+                <label className="grid gap-1">ชื่อ Section<Input disabled={!can} className="h-8" value={cur.section_label} onChange={(e) => set({ section_label: e.target.value })} /></label>
+                {d.keys.map((k) => <label key={k} className="grid gap-1">{k}{k === "Q7" ? ` · ${cur.overall_label}` : ""}<Input aria-label={`${d.key} ${k}`} disabled={!can} className="h-8" value={cur.q[k] ?? ""} onChange={(e) => set({ q: { [k]: e.target.value } })} /></label>)}
+                <label className="grid gap-1">ชื่อ Section OVERALL<Input disabled={!can} className="h-8" value={cur.overall_label} onChange={(e) => set({ overall_label: e.target.value })} /></label>
+                <label className="grid gap-1">ข้อความในช่อง Comment<Input disabled={!can} className="h-8" value={cur.comment_placeholder} onChange={(e) => set({ comment_placeholder: e.target.value })} /></label>
+                <label className="grid gap-1">ข้อความในช่อง Q9<Input disabled={!can} className="h-8" value={cur.open_placeholder} onChange={(e) => set({ open_placeholder: e.target.value })} /></label>
+                <label className="grid gap-1">Help text<Input disabled={!can} className="h-8" value={cur.help} onChange={(e) => set({ help: e.target.value })} /></label>
+                {can && <div className="flex gap-2"><Button size="sm" disabled={!d.draft} onClick={() => toast.success(`Publish ${d.name} v${tm.publishSurvey(d.key, by)} · ใช้กับแบบประเมินที่เข้าคิวใหม่`)}>Publish</Button>{d.draft && <Button size="sm" variant="ghost" onClick={() => tm.discardSurveyDraft(d.key)}>ยกเลิกการแก้ไข</Button>}</div>}
+              </div>}
+            </div>}
+          </li>
+        ); })}
+      </ul>
     </Panel>
   );
 }
