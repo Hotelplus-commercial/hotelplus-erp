@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { Chip, Panel } from "@/components/crm/crm-ui";
@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { SURVEY_OPEN_KEY, useTemplateMgmt } from "@/lib/email-templates";
 import { monthOptions, scoreTone, useMeetingMgmt } from "@/lib/orm-meeting";
 import {
   surveyFlagCards,
@@ -72,6 +73,8 @@ function SurveysTab() {
   const [type, setType] = useState("All");
   const [subStatus, setSubStatus] = useState<string>("All");
   const [form, setForm] = useState<FormTarget | null>(null);
+  const tmStore = useTemplateMgmt();
+  useEffect(() => { tmStore.stampSurveys(surveyPending.map((c) => ({ id: c.id, key: c.type === "ORM" ? "ORM_MONTHLY" : "MARCOM_MONTHLY" }))); }, [tmStore]);
 
   const typeOk = (t: MeetingType) => type === "All" || type === (t === "ORM" ? "ORM" : "Marcom");
   const tierOk = (t: string) => tier === "All" || tier === t;
@@ -300,9 +303,11 @@ function SurveysTab() {
 function SurveyForm({ target, onClose }: { target: FormTarget; onClose: () => void }) {
   const { card, preview } = target;
   const sectionKey = card.type === "ORM" ? "ORM" : "MARCOM";
-  const questions = v4SurveyQuestions.filter(
-    (q) => q.section === sectionKey || q.section === "OVERALL",
-  );
+  const tm = useTemplateMgmt();
+  const def = tm.surveyFor(card.id, sectionKey === "ORM" ? "ORM_MONTHLY" : "MARCOM_MONTHLY");
+  const questions = v4SurveyQuestions
+    .filter((q) => q.section === sectionKey || q.section === "OVERALL")
+    .map((q) => ({ ...q, text: def.q[q.key] ?? q.text, open: q.key === SURVEY_OPEN_KEY ? true : q.open }));
   const scored = questions.filter((q) => !q.open);
 
   const [scores, setScores] = useState<Record<string, number>>({});
@@ -328,6 +333,7 @@ function SurveyForm({ target, onClose }: { target: FormTarget; onClose: () => vo
           <DialogDescription>
             Meeting Type: {card.type === "ORM" ? "🟦 ORM" : "🟪 Marcom"} · Attendees: {card.attendees},
             Customer (Contact: {card.contact})
+            <span className="block text-[11px]">แม่แบบ v{def.version}{def.help ? ` · ${def.help}` : ""}</span>
           </DialogDescription>
         </DialogHeader>
 
@@ -335,7 +341,7 @@ function SurveyForm({ target, onClose }: { target: FormTarget; onClose: () => vo
           {groups.map((g) => (
             <div key={g} className="overflow-hidden rounded-xl border">
               <div className="px-3 py-2 text-sm font-bold" style={{ backgroundColor: sectionBg(g) }}>
-                【 SECTION: {g} 】
+                【 SECTION: {g === "OVERALL" ? def.overall_label : def.section_label} 】
               </div>
               <div className="flex flex-col gap-4 p-3">
                 {questions
@@ -351,7 +357,7 @@ function SurveyForm({ target, onClose }: { target: FormTarget; onClose: () => vo
                           value={open9}
                           disabled={preview}
                           onChange={(e) => setOpen9(e.target.value)}
-                          placeholder="ความเห็นเพิ่มเติมจากลูกค้า…"
+                          placeholder={def.open_placeholder}
                         />
                       ) : (
                         <>
@@ -371,7 +377,7 @@ function SurveyForm({ target, onClose }: { target: FormTarget; onClose: () => vo
                               disabled={preview}
                               value={comments[q.key] ?? ""}
                               onChange={(e) => setComments((p) => ({ ...p, [q.key]: e.target.value }))}
-                              placeholder="Comment (optional)"
+                              placeholder={def.comment_placeholder}
                             />
                           )}
                         </>
