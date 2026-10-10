@@ -1,6 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Outlet } from "@tanstack/react-router";
 
-import { ModuleView } from "@/components/erp-ui";
 import { getModule } from "@/lib/erp-data";
 
 const mod = getModule("marcom");
@@ -16,5 +15,5 @@ export const Route = createFileRoute("/marcom")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: () => <ModuleView module={mod} />,
+  component: () => <Outlet />,
 });

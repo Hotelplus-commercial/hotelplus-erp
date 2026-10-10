@@ -55,6 +55,15 @@ const moduleChildren: Record<string, { title: string; url: string; icon: typeof 
   orm: [
     { title: "ORM Overview", url: "/orm", icon: LayoutDashboard },
     { title: "Action A · Hotel Plus ORM", url: "/orm/action-a", icon: BarChart3 },
+    { title: "ORM Dashboard", url: "/orm/dashboard", icon: LayoutDashboard },
+  ],
+  marcom: [
+    { title: "Marcom Overview", url: "/marcom", icon: Megaphone },
+    { title: "Marcom Dashboard", url: "/marcom/dashboard", icon: LayoutDashboard },
+  ],
+  hr: [
+    { title: "HR Overview", url: "/hr", icon: LayoutDashboard },
+    { title: "Members", url: "/hr/members", icon: Users },
   ],
   ac: [
     { title: "Hotel Profile", url: "/ac/hotel-profile", icon: BuildingIcon },
