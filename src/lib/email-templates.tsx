@@ -126,6 +126,7 @@ export function TemplateMgmtProvider({ children }: { children: ReactNode }) {
       return cur + 1;
     },
     stampSurveys: (ids) => {
+      if (!ready) return;
       const missing = ids.filter((i) => state.surveyStamps[i.id] === undefined);
       if (!missing.length) return;
       setState((s) => { const st = { ...s.surveyStamps }; missing.forEach((i) => { if (st[i.id] === undefined) st[i.id] = activeSurvey(s.surveys.find((d) => d.key === i.key)!).version; }); return { ...s, surveyStamps: st }; });
@@ -136,7 +137,7 @@ export function TemplateMgmtProvider({ children }: { children: ReactNode }) {
       setState((s) => ({ ...s, checklist: { version: s.checklist.version + 1, published_at: new Date().toISOString(), published_by: by } }));
       return next;
     },
-  }), [state, render]);
+  }), [state, render, ready]);
   return <C.Provider value={value}>{children}</C.Provider>;
 }
 
