@@ -78,3 +78,8 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 
 ## v6.4 Item 1
 - [x] On-card line "N of M tasks completed · updated …" for the current stage (hidden when no tasks; 2-tick counts when both done; board + PS Dashboard).
+
+## Cross-App Assignment & Alerts v1.0
+- [x] HR Members roster (seeded, HR/Admin edit, deactivate keeps history).
+- [x] Assignment fields on hotel master + audit; Assign dialog (ORM team -> Rev/Ecom cascade), role-gated.
+- [x] PS Dashboard 5th tile + list; ORM / Marcom Dashboard inboxes; card "ผู้ดูแล Account" block.
