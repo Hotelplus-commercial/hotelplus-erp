@@ -58,6 +58,9 @@ import {
 } from "@/lib/ps-servicing";
 import { cn } from "@/lib/utils";
 import { Ws2Panel } from "@/components/ps/ws2-panel";
+import { ROLE_DISPLAY, useTemplateMgmt } from "@/lib/email-templates";
+
+const emailVars = (card: OnboardingCard): Record<string, string> => ({ hotel_name: card.property_name, contact_name: card.property_name, service_name: card.service_variant === "ORM" ? "ORM" : card.service_variant === "MARCOM_GMB" ? "Google My Business" : "Marcom (Meta / TikTok)", survey_link: `ลิงก์แบบประเมิน (${card.id})`, team: card.service_variant === "ORM" ? "ORM" : "Marcom" });
 
 const TRACK_COLOR: Record<OwnerTrack, string> = {
   AE: "var(--color-primary)",
@@ -107,7 +110,7 @@ function ServicingWorkSurface() {
           <div className="flex flex-wrap items-center gap-2">
             <Select value={s.role} onValueChange={(v) => s.setRole(v as Role)}>
               <SelectTrigger aria-label="Servicing role" className="h-9 w-40"><SelectValue /></SelectTrigger>
-              <SelectContent>{ROLES.map(r => <SelectItem key={r} value={r}>Role: {r}</SelectItem>)}</SelectContent>
+              <SelectContent>{ROLES.map(r => <SelectItem key={r} value={r}>Role: {ROLE_DISPLAY[r] ?? r}</SelectItem>)}</SelectContent>
             </Select>
             <Button size="sm" disabled={s.role === "management"} onClick={() => setCreating(true)}><Plus className="size-4" /> Create card</Button>
           </div>
@@ -224,27 +227,21 @@ function ChecklistSection({ card, readOnly }: { card: OnboardingCard; readOnly: 
   const sequence = fullSequence(card.service_variant);
   const currentIndex = sequence.indexOf(card.current_stage === "property_pending" ? "collect_data" : card.current_stage);
   const stages = [...new Set([...sequence.slice(0, currentIndex + 1), card.current_stage])];
-  const [stageKey, setStageKey] = useState("");
-  const [group, setGroup] = useState("");
-  const [label, setLabel] = useState("");
+  const tm = useTemplateMgmt();
   const owner = (stage: string) => (stage === "collect_data" ? "ae" : "service");
   const blocks = stages.map((stage) => ({ stage, items: s.checklistItems.filter((i) => i.card_id === card.id && i.stage_key === stage) })).filter((b) => b.items.length);
-  const templates = s.checklistTemplates.filter((t) => t.service_variant === card.service_variant && !t.has_two_tick);
   return <section className="space-y-3 border-b pb-4" aria-label="Checklist">
     <p className="text-sm font-semibold">Checklist <span className="text-xs font-normal text-muted-foreground">· ไม่ล็อกการเลื่อนขั้น</span></p>
+    <p className="text-[11px] text-muted-foreground">checklist นี้มาจากแม่แบบ · จัดการที่เมนู Template</p>
     {blocks.map(({ stage, items }) => {
       const can = !readOnly && (s.test_mode || s.role === owner(stage));
       const groups = [...new Set(items.map((i) => i.group_label))];
       return <details key={`${card.id}-${card.current_stage}-${stage}`} open={stage === card.current_stage || undefined} className="space-y-2 rounded-md border p-3">
         <summary className="cursor-pointer text-xs font-medium"><span className="inline-flex flex-wrap items-center gap-2">{STAGE_LABEL[stage]}<DeptBadge stage={stage} variant={card.service_variant} />{stage === "collect_data" && card.service_variant === "ORM" && <span className="text-muted-foreground">· แบบฟอร์ม WS-2: {card.form_completion_status}</span>}<span className="text-muted-foreground">· {items.filter((i) => i.checked).length}/{items.length}</span></span></summary>
-        {groups.map((g) => <div key={g} className="space-y-1">{g && <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{g}</p>}{items.filter((i) => i.group_label === g).map((i) => <label key={i.id} className="flex items-start gap-2 text-sm"><Checkbox className="mt-0.5" checked={i.checked} disabled={!can} onCheckedChange={() => s.toggleChecklistItem(i.id)} /><span>{i.label}{i.checked_at && <span className="block text-[11px] text-muted-foreground">✓ {fmtDayMon(i.checked_at)} {new Date(i.checked_at).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })}</span>}</span></label>)}</div>)}
+        {groups.map((g) => <div key={g} className="space-y-1">{g && <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{g}</p>}{items.filter((i) => i.group_label === g).map((i) => <label key={i.id} className="flex items-start gap-2 text-sm"><Checkbox className="mt-0.5" checked={i.checked} disabled={!can} onCheckedChange={() => { s.toggleChecklistItem(i.id); if (!i.checked && i.label.includes("ส่งอีเมลแจ้งลูกค้า")) { const r = tm.recordSend("go_live", emailVars(card), { card_id: card.id, property_id: card.property_id, sent_by: s.role }); toast.success(`ส่งอีเมล Go Live (แม่แบบ v${r.email_template_version})`); } }} /><span>{i.label}{i.checked_at && <span className="block text-[11px] text-muted-foreground">✓ {fmtDayMon(i.checked_at)} {new Date(i.checked_at).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })}</span>}</span></label>)}</div>)}
       </details>;
     })}
     {!blocks.length && <p className="text-xs text-muted-foreground">ขั้นนี้ไม่มี checklist (milestone)</p>}
-    {s.role === "pm" && <details className="rounded-md border p-3 text-sm"><summary className="cursor-pointer font-medium">แก้แม่แบบ Checklist (PM) · มีผลกับการ์ดใหม่เท่านั้น</summary>
-      <div className="mt-2 max-h-60 space-y-1 overflow-y-auto">{templates.map((t) => <div key={t.id} className="flex items-center gap-2"><span className="w-28 shrink-0 truncate text-[11px] text-muted-foreground">{STAGE_LABEL[t.stage_key]}</span><Input defaultValue={t.item_label} className="h-7 text-xs" onBlur={(e) => e.target.value.trim() && e.target.value !== t.item_label && s.renameTemplateItem(t.id, e.target.value.trim())} /><Button size="sm" variant="ghost" onClick={() => s.removeTemplateItem(t.id)}>ลบ</Button></div>)}</div>
-      <div className="mt-2 flex flex-wrap gap-2"><Input value={stageKey} onChange={(e) => setStageKey(e.target.value)} placeholder="stage_key" className="h-8 w-36 text-xs" /><Input value={group} onChange={(e) => setGroup(e.target.value)} placeholder="กลุ่ม" className="h-8 w-28 text-xs" /><Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="รายการใหม่" className="h-8 flex-1 text-xs" /><Button size="sm" disabled={!stageKey.trim() || !label.trim()} onClick={() => { s.addTemplateItem(stageKey.trim(), card.service_variant, group.trim(), label.trim()); setLabel(""); }}>เพิ่ม</Button></div>
-    </details>}
   </section>;
 }
 
@@ -255,8 +252,6 @@ function OrmHandover({ card }: { card: OnboardingCard }) {
   const [selectedOta, setOta] = useState<string>(otas[0] ?? OTA_CHANNELS[0]);
   const ota = otas.includes(selectedOta) ? selectedOta : otas[0] ?? selectedOta;
   const [room, setRoom] = useState("");
-  const [tGroup, setTGroup] = useState("");
-  const [tLabel, setTLabel] = useState("");
   const items = progress.items;
   const creds = s.credentials.filter((c) => c.card_id === card.id && otas.includes(c.ota_channel));
   const rooms = s.roomMappings.filter((m) => m.card_id === card.id && otas.includes(m.ota_channel));
@@ -270,7 +265,6 @@ function OrmHandover({ card }: { card: OnboardingCard }) {
   const allTicked = accepting ? progress.verifierDone : progress.specialistDone;
   const credsDone = progress.credentialsDone;
   const roomsDone = progress.roomsDone;
-  const tmpl = s.checklistTemplates.filter((t) => t.has_two_tick && t.ota_channel === ota);
   return <div className="space-y-4">
     <div>
       <h3 className="text-sm font-semibold">{accepting ? "ORM Handover · ORM ตรวจรับ (row-2) ก่อน System Training" : "ORM Handover · Specialist ทำครบ 4 ส่วน (คู่ขนาน · เพดาน Final Setup)"}</h3>
@@ -291,6 +285,7 @@ function OrmHandover({ card }: { card: OnboardingCard }) {
       <div className="flex flex-wrap gap-2">{OTA_CHANNELS.map((o) => <label key={o} className="flex items-center gap-2 text-xs"><Checkbox aria-label={`เลือก OTA ${o}`} checked={otas.includes(o)} disabled={!isSpec || (!otas.includes(o) && otas.length >= 3)} onCheckedChange={() => s.setHandoverOtas(card.id, otas.includes(o) ? otas.filter((item) => item !== o) : [...otas, o])} />{o}</label>)}</div>
     </div>}
     <div className="space-y-2" aria-label="OTA checklist">
+      <p className="text-[11px] text-muted-foreground">checklist นี้มาจากแม่แบบ · จัดการที่เมนู Template</p>
       <p className="text-xs font-medium">1 · OTA checklist · {accepting ? "ORM ตรวจรับที่ Completed (Handover)" : "Specialist ติ๊กได้ตั้งแต่ Approved ถึง Final Setup"}</p>
       <div className="flex flex-wrap gap-1">{otas.map((o) => <Button key={o} type="button" size="sm" variant={o === ota ? "default" : "outline"} className="h-7 text-xs" onClick={() => setOta(o)}>{o} · {doneOf(o)}</Button>)}</div>
       <table className="w-full text-sm">
@@ -304,10 +299,6 @@ function OrmHandover({ card }: { card: OnboardingCard }) {
           </tr>),
         ])}</tbody>
       </table>
-      {s.role === "pm" && <details className="rounded-md border p-2 text-xs"><summary className="cursor-pointer font-medium">แก้แม่แบบ Handover {ota} (PM) · มีผลกับการ์ดใหม่เท่านั้น</summary>
-        <div className="mt-2 max-h-48 space-y-1 overflow-y-auto">{tmpl.map((t) => <div key={t.id} className="flex items-center gap-2"><span className="w-24 shrink-0 truncate text-muted-foreground">{t.group_label}</span><Input defaultValue={t.item_label} className="h-7 text-xs" onBlur={(e) => e.target.value.trim() && e.target.value !== t.item_label && s.renameTemplateItem(t.id, e.target.value.trim())} /><Button size="sm" variant="ghost" onClick={() => s.removeTemplateItem(t.id)}>ลบ</Button></div>)}</div>
-        <div className="mt-2 flex gap-2"><Input value={tGroup} onChange={(e) => setTGroup(e.target.value)} placeholder="กลุ่ม" className="h-7 w-28 text-xs" /><Input value={tLabel} onChange={(e) => setTLabel(e.target.value)} placeholder="รายการใหม่" className="h-7 flex-1 text-xs" /><Button size="sm" disabled={!tGroup.trim() || !tLabel.trim()} onClick={() => { s.addHandoverTemplate(ota, tGroup.trim(), tLabel.trim()); setTLabel(""); }}>เพิ่ม</Button></div>
-      </details>}
     </div>
     <div className="space-y-2" aria-label="OTA Log-in">
       <p className="text-xs font-medium">2 · Provide OTA Log-in (Specialist กรอก)</p>
@@ -635,7 +626,11 @@ function MeetingBilling({ card, readOnly }: { card: OnboardingCard; readOnly: bo
   if (!atPrep && !atAnchor && !card.billing_email_sent_at && !card.meeting_date) return null;
   const meetingName = card.service_variant === "ORM" ? "Rate Structure" : "First Sync-up";
   const startText = gmb ? fmtDate((card.billing_start_at ?? new Date().toISOString())) : card.meeting_date ? fmtDate(card.meeting_date) : "dd/mm/yyyy";
-  const send = () => { const r = s.sendBillingEmail(card.id); if (r.ok) toast.success("ส่งอีเมลยืนยันถึงลูกค้าแล้ว · เริ่มคิดค่าบริการ + Survey #2"); else toast.info(r.error); };
+  const tm = useTemplateMgmt();
+  const vars = { ...emailVars(card), meeting_date: startText, meeting_record: card.meeting_record_url || "—" };
+  const preview = tm.render("billing_survey2", vars);
+  const sentRow = [...tm.sent].reverse().find((e) => e.card_id === card.id && e.email_key === "billing_survey2");
+  const send = () => { const r = s.sendBillingEmail(card.id); if (r.ok) tm.recordSend("billing_survey2", vars, { card_id: card.id, property_id: card.property_id, sent_by: s.role }); if (r.ok) toast.success("ส่งอีเมลยืนยันถึงลูกค้าแล้ว · เริ่มคิดค่าบริการ + Survey #2"); else toast.info(r.error); };
   return (
     <section className="space-y-2 border-b pb-4" aria-label="Meeting and billing">
       {!gmb && <div className="space-y-1">
@@ -649,12 +644,9 @@ function MeetingBilling({ card, readOnly }: { card: OnboardingCard; readOnly: bo
       </div>}
       {(atAnchor || card.billing_email_sent_at) && <div className="space-y-2 rounded-md bg-muted/50 p-3 text-xs">
         <p className="font-medium">อีเมลถึงลูกค้า</p>
-        <ul className="list-disc space-y-0.5 pl-4">
-          {gmb ? <li>ยืนยันว่าเปิดให้บริการ Google My Business เรียบร้อยแล้ว</li> : <li>ยืนยันว่าการประชุม {meetingName} กับทีม H+ เรียบร้อยแล้ว</li>}
-          <li>วันที่ {startText} = วันเริ่มคิดค่าบริการ และเป็นวันที่ 1 ของอายุสัญญา</li>
-          {!gmb && <li>Record การประชุม: {card.meeting_record_url || "—"}</li>}
-          <li>ลิงก์แบบประเมินความพึงพอใจ (Survey #2)</li>
-        </ul>
+        <p className="font-medium">{sentRow ? sentRow.rendered_subject : preview.subject}</p>
+        <p className="whitespace-pre-line">{sentRow ? sentRow.rendered_body : preview.body}</p>
+        <p className="text-[11px] text-muted-foreground">แม่แบบอีเมล v{sentRow ? sentRow.email_template_version : preview.version}{sentRow ? " · snapshot ตอนส่ง" : ""}</p>
         {card.billing_email_sent_at
           ? <p className="text-muted-foreground">ส่งแล้ว {new Date(card.billing_email_sent_at).toLocaleString("th-TH")} · ★ เริ่มคิดค่าบริการ {card.billing_start_at ? fmtDate(card.billing_start_at) : ""}</p>
           : <Button size="sm" disabled={!canEdit || (!gmb && !/^https?:\/\/\S+/.test(card.meeting_record_url ?? ""))} onClick={send}>Send email to customer</Button>}
