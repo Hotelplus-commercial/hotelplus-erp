@@ -179,10 +179,11 @@ export function PendingAssignTile() {
       <button type="button" onClick={() => setOpen(true)} className="rounded-xl border border-warning bg-warning/10 p-4 text-left transition-colors hover:bg-warning/20">
         <p className="flex items-center gap-1.5 text-xs font-medium text-warning-foreground"><AlertTriangle className="size-3.5" /> รอระบุผู้ดูแล</p>
         <p className="mt-1 font-display text-2xl font-bold tabular-nums">{a.rows.length}</p>
+        <p className="text-xs text-muted-foreground">{a.rows.length} การ์ด · {a.roleCount} role ค้าง</p>
       </button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-3xl">
-          <DialogHeader><DialogTitle>⚠ รอระบุผู้ดูแล · {a.rows.length} การ์ด</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>⚠ รอระบุผู้ดูแล · {a.rows.length} การ์ด · {a.roleCount} role ค้าง</DialogTitle></DialogHeader>
           <div className="max-h-[70vh] overflow-y-auto"><PendingAssignList scope="PS" /></div>
         </DialogContent>
       </Dialog>
