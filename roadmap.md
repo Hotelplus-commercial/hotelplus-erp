@@ -70,3 +70,8 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [x] Photo rows per upload (count = rows, no caption/tag); form linked to its card.
 - [x] "Generate for new property" (per card, New Property, no form yet) using the same Generate logic.
 - [x] Form status chip on Zone 3 cards; Marcom still cannot see private data.
+
+## Property Content v1.0
+- [x] Property Content menu: hotel folders, search, A–Z / Start year sort, My Hotel (owner AE or service assignee), Generate for new property moved here.
+- [x] Internal Property Info page per hotel: service tabs, form data (template-driven, editable + audited), photo library counts, back to card; Marcom never sees private data.
+- [x] 8 sample hotels with owners/assignees and mock photos.
