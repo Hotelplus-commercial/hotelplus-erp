@@ -81,6 +81,7 @@ export function Ws2Panel({ card, readOnly }: { card: OnboardingCard; readOnly: b
         </div>
       )}
 
+      <Button asChild size="sm" variant="ghost" className="h-7 px-2 text-xs"><Link to="/ps/property-content/$hotelId" params={{ hotelId: card.property_id }} search={{ card: card.id }}>เปิดหน้า Property Info (ทีม) →</Link></Button>
       {profile?.photo_repo_url && (
         <div className="space-y-1 text-xs">
           <p className="font-medium">Image Portal</p>
