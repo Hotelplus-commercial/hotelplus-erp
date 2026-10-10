@@ -3,6 +3,7 @@ import { FileSignature, FileText, PencilLine, RotateCcw, Shield, ShieldCheck } f
 import { useMemo, useState } from "react";
 
 import { Chip, Kpi, Panel, fmtDate } from "@/components/crm/crm-ui";
+import { TemplateCatalogue } from "@/components/ps/template-catalogue";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -119,7 +120,7 @@ function TemplatesDashboard() {
         <div>
           <h1 className="font-display text-2xl font-bold tracking-tight">Templates</h1>
           <p className="text-sm text-muted-foreground">
-            เทมเพลตเอกสารกลาง — Contract ใช้โครงสร้าง flat แบบ 1 SKU ต่อ 1 template และ snapshot ล็อกตอนสร้างเอกสาร
+            ที่เดียวสำหรับทุกแม่แบบ (Form · Checklist · Survey · Email · Documents) · แก้ไขได้เฉพาะ PM และ System Admin · Contract ใช้โครงสร้าง flat แบบ 1 SKU ต่อ 1 template และ snapshot ล็อกตอนสร้างเอกสาร
           </p>
         </div>
         <div className="flex gap-2">
@@ -143,6 +144,9 @@ function TemplatesDashboard() {
         </div>
       </div>
 
+      <TemplateCatalogue onDocuments={() => document.getElementById("documents")?.scrollIntoView({ behavior: "smooth" })} />
+
+      <h2 id="documents" className="border-t pt-4 font-display text-lg font-semibold">Documents · QT / Contract</h2>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Kpi label="Quote templates" value={templates.filter((t) => t.template_type === "quote").length} />
         <Kpi label="Contract templates" value={`${contractTemplates.length} · Active ${activeContractCount}`} />
