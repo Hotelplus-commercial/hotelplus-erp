@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { Chip, Panel } from "@/components/crm/crm-ui";
@@ -73,6 +73,8 @@ function SurveysTab() {
   const [type, setType] = useState("All");
   const [subStatus, setSubStatus] = useState<string>("All");
   const [form, setForm] = useState<FormTarget | null>(null);
+  const tmStore = useTemplateMgmt();
+  useEffect(() => { tmStore.stampSurveys(surveyPending.map((c) => ({ id: c.id, key: c.type === "ORM" ? "ORM_MONTHLY" : "MARCOM_MONTHLY" }))); }, [tmStore]);
 
   const typeOk = (t: MeetingType) => type === "All" || type === (t === "ORM" ? "ORM" : "Marcom");
   const tierOk = (t: string) => tier === "All" || tier === t;
@@ -331,6 +333,7 @@ function SurveyForm({ target, onClose }: { target: FormTarget; onClose: () => vo
           <DialogDescription>
             Meeting Type: {card.type === "ORM" ? "🟦 ORM" : "🟪 Marcom"} · Attendees: {card.attendees},
             Customer (Contact: {card.contact})
+            <span className="block text-[11px]">แม่แบบ v{def.version}{def.help ? ` · ${def.help}` : ""}</span>
           </DialogDescription>
         </DialogHeader>
 
