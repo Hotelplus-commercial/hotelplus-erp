@@ -30,6 +30,12 @@ export type OnboardingCard = {
   orm_lite?: boolean;
   handover_otas?: string[];
   meeting_appointment_url?: string | null;
+  /** v6.2: scheduled meeting date (yyyy-mm-dd) set at Prepare Data; gates the meeting stage and = billing start. */
+  meeting_date?: string | null;
+  /** v6.2: ORM handover part 4 "เปิดระบบ PMS / CM" — Specialist tick + ORM row-2 verify. */
+  pms_specialist_at?: string | null;
+  pms_verified_at?: string | null;
+  billing_email_sent_at?: string | null;
   created_at: string;
   current_stage: string;
   assigned_ae_id: string;
@@ -76,7 +82,9 @@ export function handoverProgress(s: Pick<State, "handover" | "credentials" | "ro
   return {
     otas, items, selectionComplete,
     specialistDone: selectionComplete && rowsPresent && items.every((h) => h.specialist_checked),
-    verifierDone: selectionComplete && rowsPresent && items.every((h) => h.specialist_checked && h.verifier_checked),
+    pmsDone: !!card.pms_specialist_at,
+    pmsVerified: !!card.pms_specialist_at && !!card.pms_verified_at,
+    verifierDone: selectionComplete && rowsPresent && items.every((h) => h.specialist_checked && h.verifier_checked) && !!card.pms_verified_at,
     credentialsDone: selectionComplete && otas.every((ota) => s.credentials.some((c) => c.card_id === card.id && c.ota_channel === ota && c.hotel_id.trim() && credentialComplete(c))),
     roomsDone: selectionComplete && names.length > 0 && names.every((name) => otas.every((ota) => s.roomMappings.some((m) => m.card_id === card.id && m.original_room_name === name && m.ota_channel === ota && m.ota_room_name.trim()))),
   };
@@ -102,6 +110,7 @@ export type CustomerSurvey = {
   score_service_exp: number | null;
   score_strategy: number | null;
   nps: number | null;
+  score_overall?: number | null;
   comment: string | null;
   optional: boolean;
 };
@@ -323,7 +332,6 @@ export const CHECKLIST_TEMPLATE_SEED: ChecklistTemplate[] = [
   // (D) ORM service stages
   tpl("orm_prepare_data", "ORM", "Prepare Data", "ทำ Revplus+"),
   tpl("orm_prepare_data", "ORM", "Prepare Data", "Rate Structure"),
-  tpl("orm_rate_structure", "ORM", "Rate Structure Meeting", "ระบุวันนัดประชุม"),
   tpl("orm_rate_structure", "ORM", "Rate Structure Meeting", "แนบ record Google Meet"),
   tpl("orm_final_setup", "ORM", "Final Setup", "Send Summary"),
   tpl("orm_final_setup", "ORM", "Final Setup", "Load BAR Rate"),
@@ -339,7 +347,6 @@ export const CHECKLIST_TEMPLATE_SEED: ChecklistTemplate[] = [
   tpl("marcom_prepare_data", "MARCOM_META_TIKTOK", "Prepare Data", "Audience + Key Message"),
   tpl("marcom_prepare_data", "MARCOM_META_TIKTOK", "Prepare Data", "Content Plan 52 week"),
   tpl("marcom_prepare_data", "MARCOM_META_TIKTOK", "Prepare Data", "Ads Planning"),
-  tpl("marcom_first_sync", "MARCOM_META_TIKTOK", "First Sync-up Meeting", "ระบุวันนัดประชุม"),
   tpl("marcom_first_sync", "MARCOM_META_TIKTOK", "First Sync-up Meeting", "แนบ record Google Meet"),
   tpl("marcom_go_live", "MARCOM_META_TIKTOK", "Go Live", "ส่งอีเมลแจ้งลูกค้า"),
 
@@ -657,6 +664,11 @@ type Ctx = State & {
   setRoomMapping: (id: string, ota_room_name: string) => void;
   addHandoverTemplate: (ota_channel: string, group_label: string, item_label: string) => void;
   submitCustomerSurvey: (id: string, patch: Partial<CustomerSurvey>) => void;
+  setMeetingDate: (cardId: string, date: string | null) => void;
+  setMeetingRecord: (cardId: string, url: string) => void;
+  togglePms: (cardId: string) => void;
+  /** v6.2 billing ★: confirmation email → billing_start = meeting_date (GMB: Go Live) + Survey #2. Once per card. */
+  sendBillingEmail: (cardId: string) => { ok: boolean; error?: string };
   setFormStatus: (cardId: string, st: FormStatus) => void;
   reset: () => void;
 };
@@ -793,14 +805,15 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
           if (!progress.specialistDone) reasons.push("Specialist: ติ๊ก Handover OTA ให้ครบทุกช่องทางที่เลือก");
           if (!progress.credentialsDone) reasons.push("Specialist: กรอก Hotel ID และ OTA Log-in ให้ครบ");
           if (!progress.roomsDone) reasons.push("Specialist: จับคู่ชื่อห้องกับทุก OTA ที่เลือกให้ครบ");
+          if (!progress.pmsDone) reasons.push("Specialist: ยืนยันเปิดระบบ PMS / CM");
         }
         if (role !== "specialist") reasons.push("Specialist: เป็นผู้กด Completed");
       } else if (card.service_variant === "ORM" && card.current_stage === "completed") {
         if (!handoverProgress(s, card).verifierDone) reasons.push("ORM: ตรวจรับ Handover ทุกช่องทางที่เลือกก่อน Prepare Data");
         if (role !== "service") reasons.push("ORM: เป็นผู้เริ่ม Prepare Data หลังตรวจรับ");
-      } else if (card.service_variant === "ORM" && nxt === "orm_rate_structure") {
-        if (!validMeetingUrl(card.meeting_appointment_url)) reasons.push("ORM: ใส่ลิงก์นัดประชุม (http/https) ก่อน Rate Structure");
-        if (role !== "service") reasons.push("ORM: เป็นผู้ยืนยัน Rate Structure");
+      } else if (nxt === "orm_rate_structure" || nxt === "marcom_first_sync") {
+        if (!card.meeting_date) reasons.push(`${card.service_variant === "ORM" ? "ORM" : "Marcom"}: ระบุวันนัดประชุมก่อนเข้า ${STAGE_LABEL[nxt]}`);
+        if (role !== "service") reasons.push(`${card.service_variant === "ORM" ? "ORM" : "Marcom"}: เป็นผู้ยืนยัน ${STAGE_LABEL[nxt]}`);
       } else if (["new_property", "introduction_sent_form", "collect_data", "property_pending"].includes(card.current_stage)) {
         if (role !== "ae") reasons.push("AE: เป็นผู้ดำเนินขั้นตอนข้อมูลโรงแรม");
       } else if (role !== "service") reasons.push("Service: เป็นผู้ทำและยืนยันขั้นตอนบริการนี้");
@@ -832,16 +845,13 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
         if (!pending && to !== nxt) return { ok: false, error: "ดำเนินการได้เฉพาะขั้นถัดไป" };
         if (!pending && !g.ok) return { ok: false, error: g.reasons.join(" · ") };
         if (!to) return { ok: false, error: "ไม่มีขั้นถัดไป" };
-        if (to === "completed" && card.service_variant !== "ORM") {
-          try { const url = new URL(opts?.meetingUrl?.trim() ?? ""); if (!["http:", "https:"].includes(url.protocol)) throw new Error(); }
-          catch { return { ok: false, error: "Specialist: ใส่ลิงก์ Meeting record (http/https)" }; }
-        }
         const now = new Date().toISOString();
         setState((s) => {
           const current = s.cards.find(c => c.id === cardId);
           if (current?.current_stage !== card.current_stage || s.events.some(e => e.card_id === cardId && e.stage_key === to)) return s;
           const ev: StageEvent = { id: rid(), card_id: cardId, stage_key: to, entered_at: now, owner_track: trackOf(to) };
-          const isAnchor = to === card.billing_anchor_stage;
+          // v6.2: billing ★ + Survey #2 now fire from the Send-email action, not stage entry.
+          const isAnchor = false;
           return {
             ...s,
             events: [...s.events, ev],
@@ -853,7 +863,6 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
                     current_stage: to,
                     ...(to === "go_live" ? { go_live_at: now } : {}),
                     ...(isAnchor ? { billing_start_at: now } : {}),
-                    ...(to === "completed" && card.service_variant !== "ORM" ? { meeting_record_url: opts?.meetingUrl ?? null } : {}),
                   },
             ),
             handoverSurveys:
@@ -943,6 +952,48 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
             h.id === id ? { ...h, score, comment, submitted_at: new Date().toISOString(), status: "submitted" } : h,
           ),
         }));
+      },
+      setMeetingDate: (cardId, date) => {
+        if (!test_mode && role !== "service") return;
+        setState((s) => ({ ...s, cards: s.cards.map((c) => c.id === cardId && ["orm_prepare_data", "marcom_prepare_data"].includes(c.current_stage) && c.service_variant !== "MARCOM_GMB" ? { ...c, meeting_date: date } : c) }));
+      },
+      setMeetingRecord: (cardId, url) => {
+        if (!test_mode && role !== "service") return;
+        setState((s) => ({ ...s, cards: s.cards.map((c) => c.id === cardId && c.current_stage === c.billing_anchor_stage && !c.billing_email_sent_at ? { ...c, meeting_record_url: url } : c) }));
+      },
+      togglePms: (cardId) => {
+        const card = state.cards.find((c) => c.id === cardId && c.service_variant === "ORM");
+        if (!card) return;
+        const now = new Date().toISOString();
+        if (card.current_stage === "approved" && (test_mode || role === "specialist")) setState((s) => ({ ...s, cards: s.cards.map((c) => c.id === cardId ? { ...c, pms_specialist_at: c.pms_specialist_at ? null : now } : c) }));
+        else if (card.current_stage === "completed" && card.pms_specialist_at && (test_mode || role === "service")) {
+          const willVerify = !card.pms_verified_at;
+          setState((s) => {
+            const next = { ...s, cards: s.cards.map((c) => c.id === cardId ? { ...c, pms_verified_at: willVerify ? now : null } : c) };
+            const nc = next.cards.find((c) => c.id === cardId)!;
+            if (willVerify && handoverProgress(next, nc).verifierDone && !next.handoverSurveys.some((h) => h.card_id === cardId))
+              next.handoverSurveys = [...next.handoverSurveys, { id: rid(), card_id: cardId, evaluatee_specialist_id: nc.assigned_specialist_id, evaluator_service_id: nc.assigned_service_owner_id, score: null, comment: null, submitted_at: null, window_expires_at: new Date(Date.now() + 7 * DAY).toISOString(), status: "pending" }];
+            return next;
+          });
+        }
+      },
+      sendBillingEmail: (cardId) => {
+        const card = state.cards.find((c) => c.id === cardId);
+        if (!card) return { ok: false, error: "ไม่พบการ์ด" };
+        if (card.billing_email_sent_at) return { ok: false, error: "ส่งอีเมลแล้ว" };
+        if (card.current_stage !== card.billing_anchor_stage) return { ok: false, error: "ส่งได้ที่ขั้นประชุม (GMB: Go Live)" };
+        if (!test_mode && role !== "service") return { ok: false, error: "Service: เป็นผู้ส่งอีเมล" };
+        const gmb = card.service_variant === "MARCOM_GMB";
+        if (!gmb && !card.meeting_date) return { ok: false, error: "ยังไม่มีวันนัดประชุม" };
+        if (!gmb && !validMeetingUrl(card.meeting_record_url)) return { ok: false, error: "แนบ Record ประชุม (http/https) ก่อนส่ง" };
+        const now = new Date().toISOString();
+        const start = gmb ? (card.go_live_at ?? now) : new Date(`${card.meeting_date}T00:00:00`).toISOString();
+        setState((s) => ({
+          ...s,
+          cards: s.cards.map((c) => c.id === cardId ? { ...c, billing_start_at: start, billing_email_sent_at: now } : c),
+          customerSurveys: s.customerSurveys.some((x) => x.card_id === cardId) ? s.customerSurveys : [...s.customerSurveys, { id: rid(), card_id: cardId, dispatched_at: now, responded_at: null, score_bd: null, score_ae: null, score_service_exp: null, score_strategy: null, nps: null, score_overall: null, comment: null, optional: true }],
+        }));
+        return { ok: true };
       },
       submitCustomerSurvey: (id, patch) =>
         setState((s) => ({
