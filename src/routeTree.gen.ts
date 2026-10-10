@@ -73,6 +73,7 @@ import { Route as PsContractWizardDealIdRouteImport } from './routes/ps.contract
 import { Route as PsContractWizardClassicRouteImport } from './routes/ps.contract-wizard.classic'
 import { Route as PsContractWizardNewRouteImport } from './routes/ps.contract-wizard.new'
 import { Route as PsPropertyContentIndexRouteImport } from './routes/ps.property-content.index'
+import { Route as PsPropertyContentHotelIdRouteImport } from './routes/ps.property-content.$hotelId'
 import { Route as PsTemplatesIndexRouteImport } from './routes/ps.templates.index'
 import { Route as PsTemplatesTemplateIdRouteImport } from './routes/ps.templates.$templateId'
 import { Route as PsTemplatesAutoFieldsRouteImport } from './routes/ps.templates.auto-fields'
@@ -400,6 +401,12 @@ const PsPropertyContentIndexRoute = PsPropertyContentIndexRouteImport.update({
   path: '/property-content/',
   getParentRoute: () => PsRoute,
 } as any)
+const PsPropertyContentHotelIdRoute =
+  PsPropertyContentHotelIdRouteImport.update({
+    id: '/property-content/$hotelId',
+    path: '/property-content/$hotelId',
+    getParentRoute: () => PsRoute,
+  } as any)
 const PsTemplatesIndexRoute = PsTemplatesIndexRouteImport.update({
   id: '/templates/',
   path: '/templates/',
@@ -487,6 +494,7 @@ export interface FileRoutesByFullPath {
   '/ps/contract-wizard/$dealId': typeof PsContractWizardDealIdRoute
   '/ps/contract-wizard/classic': typeof PsContractWizardClassicRoute
   '/ps/contract-wizard/new': typeof PsContractWizardNewRoute
+  '/ps/property-content/$hotelId': typeof PsPropertyContentHotelIdRoute
   '/ps/templates/$templateId': typeof PsTemplatesTemplateIdRoute
   '/ps/templates/auto-fields': typeof PsTemplatesAutoFieldsRoute
   '/bd/quotations/': typeof BdQuotationsIndexRoute
@@ -548,6 +556,7 @@ export interface FileRoutesByTo {
   '/ps/contract-wizard/$dealId': typeof PsContractWizardDealIdRoute
   '/ps/contract-wizard/classic': typeof PsContractWizardClassicRoute
   '/ps/contract-wizard/new': typeof PsContractWizardNewRoute
+  '/ps/property-content/$hotelId': typeof PsPropertyContentHotelIdRoute
   '/ps/templates/$templateId': typeof PsTemplatesTemplateIdRoute
   '/ps/templates/auto-fields': typeof PsTemplatesAutoFieldsRoute
   '/bd/quotations': typeof BdQuotationsIndexRoute
@@ -620,6 +629,7 @@ export interface FileRoutesById {
   '/ps/contract-wizard/$dealId': typeof PsContractWizardDealIdRoute
   '/ps/contract-wizard/classic': typeof PsContractWizardClassicRoute
   '/ps/contract-wizard/new': typeof PsContractWizardNewRoute
+  '/ps/property-content/$hotelId': typeof PsPropertyContentHotelIdRoute
   '/ps/templates/$templateId': typeof PsTemplatesTemplateIdRoute
   '/ps/templates/auto-fields': typeof PsTemplatesAutoFieldsRoute
   '/bd/quotations/': typeof BdQuotationsIndexRoute
@@ -693,6 +703,7 @@ export interface FileRouteTypes {
     | '/ps/contract-wizard/$dealId'
     | '/ps/contract-wizard/classic'
     | '/ps/contract-wizard/new'
+    | '/ps/property-content/$hotelId'
     | '/ps/templates/$templateId'
     | '/ps/templates/auto-fields'
     | '/bd/quotations/'
@@ -754,6 +765,7 @@ export interface FileRouteTypes {
     | '/ps/contract-wizard/$dealId'
     | '/ps/contract-wizard/classic'
     | '/ps/contract-wizard/new'
+    | '/ps/property-content/$hotelId'
     | '/ps/templates/$templateId'
     | '/ps/templates/auto-fields'
     | '/bd/quotations'
@@ -825,6 +837,7 @@ export interface FileRouteTypes {
     | '/ps/contract-wizard/$dealId'
     | '/ps/contract-wizard/classic'
     | '/ps/contract-wizard/new'
+    | '/ps/property-content/$hotelId'
     | '/ps/templates/$templateId'
     | '/ps/templates/auto-fields'
     | '/bd/quotations/'
@@ -1305,6 +1318,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PsPropertyContentIndexRouteImport
       parentRoute: typeof PsRoute
     }
+    '/ps/property-content/$hotelId': {
+      id: '/ps/property-content/$hotelId'
+      path: '/property-content/$hotelId'
+      fullPath: '/ps/property-content/$hotelId'
+      preLoaderRoute: typeof PsPropertyContentHotelIdRouteImport
+      parentRoute: typeof PsRoute
+    }
     '/ps/templates/': {
       id: '/ps/templates/'
       path: '/templates'
@@ -1512,6 +1532,7 @@ interface PsRouteChildren {
   PsServicingTimelineRoute: typeof PsServicingTimelineRoute
   PsSystemCostRoute: typeof PsSystemCostRoute
   PsIndexRoute: typeof PsIndexRoute
+  PsPropertyContentHotelIdRoute: typeof PsPropertyContentHotelIdRoute
   PsTemplatesTemplateIdRoute: typeof PsTemplatesTemplateIdRoute
   PsTemplatesAutoFieldsRoute: typeof PsTemplatesAutoFieldsRoute
   PsPropertyContentIndexRoute: typeof PsPropertyContentIndexRoute
@@ -1530,6 +1551,7 @@ const PsRouteChildren: PsRouteChildren = {
   PsServicingTimelineRoute: PsServicingTimelineRoute,
   PsSystemCostRoute: PsSystemCostRoute,
   PsIndexRoute: PsIndexRoute,
+  PsPropertyContentHotelIdRoute: PsPropertyContentHotelIdRoute,
   PsTemplatesTemplateIdRoute: PsTemplatesTemplateIdRoute,
   PsTemplatesAutoFieldsRoute: PsTemplatesAutoFieldsRoute,
   PsPropertyContentIndexRoute: PsPropertyContentIndexRoute,
