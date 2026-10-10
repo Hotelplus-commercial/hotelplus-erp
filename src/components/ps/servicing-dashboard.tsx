@@ -58,9 +58,10 @@ import {
 } from "@/lib/ps-servicing";
 import { cn } from "@/lib/utils";
 import { Ws2Panel } from "@/components/ps/ws2-panel";
-import { ROLE_DISPLAY, useTemplateMgmt } from "@/lib/email-templates";
+import { ROLE_DISPLAY, greetingName, useTemplateMgmt } from "@/lib/email-templates";
+import { useWs2 } from "@/lib/ws2-store";
 
-const emailVars = (card: OnboardingCard): Record<string, string> => ({ hotel_name: card.property_name, contact_name: card.property_name, service_name: card.service_variant === "ORM" ? "ORM" : card.service_variant === "MARCOM_GMB" ? "Google My Business" : "Marcom (Meta / TikTok)", survey_link: `ลิงก์แบบประเมิน (${card.id})`, team: card.service_variant === "ORM" ? "ORM" : "Marcom" });
+const emailVars = (card: OnboardingCard, keyContact?: string | null): Record<string, string> => ({ hotel_name: card.property_name, contact_name: greetingName(keyContact), service_name: card.service_variant === "ORM" ? "ORM" : card.service_variant === "MARCOM_GMB" ? "Google My Business" : "Marcom (Meta / TikTok)", survey_link: `ลิงก์แบบประเมิน (${card.id})`, team: card.service_variant === "ORM" ? "ORM" : "Marcom" });
 
 const TRACK_COLOR: Record<OwnerTrack, string> = {
   AE: "var(--color-primary)",
@@ -228,6 +229,7 @@ function ChecklistSection({ card, readOnly }: { card: OnboardingCard; readOnly: 
   const currentIndex = sequence.indexOf(card.current_stage === "property_pending" ? "collect_data" : card.current_stage);
   const stages = [...new Set([...sequence.slice(0, currentIndex + 1), card.current_stage])];
   const tm = useTemplateMgmt();
+  const ws2 = useWs2();
   const owner = (stage: string) => (stage === "collect_data" ? "ae" : "service");
   const blocks = stages.map((stage) => ({ stage, items: s.checklistItems.filter((i) => i.card_id === card.id && i.stage_key === stage) })).filter((b) => b.items.length);
   return <section className="space-y-3 border-b pb-4" aria-label="Checklist">
@@ -238,7 +240,7 @@ function ChecklistSection({ card, readOnly }: { card: OnboardingCard; readOnly: 
       const groups = [...new Set(items.map((i) => i.group_label))];
       return <details key={`${card.id}-${card.current_stage}-${stage}`} open={stage === card.current_stage || undefined} className="space-y-2 rounded-md border p-3">
         <summary className="cursor-pointer text-xs font-medium"><span className="inline-flex flex-wrap items-center gap-2">{STAGE_LABEL[stage]}<DeptBadge stage={stage} variant={card.service_variant} />{stage === "collect_data" && card.service_variant === "ORM" && <span className="text-muted-foreground">· แบบฟอร์ม WS-2: {card.form_completion_status}</span>}<span className="text-muted-foreground">· {items.filter((i) => i.checked).length}/{items.length}</span></span></summary>
-        {groups.map((g) => <div key={g} className="space-y-1">{g && <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{g}</p>}{items.filter((i) => i.group_label === g).map((i) => <label key={i.id} className="flex items-start gap-2 text-sm"><Checkbox className="mt-0.5" checked={i.checked} disabled={!can} onCheckedChange={() => { s.toggleChecklistItem(i.id); if (!i.checked && i.label.includes("ส่งอีเมลแจ้งลูกค้า")) { const r = tm.recordSend("go_live", emailVars(card), { card_id: card.id, property_id: card.property_id, sent_by: s.role }); toast.success(`ส่งอีเมล Go Live (แม่แบบ v${r.email_template_version})`); } }} /><span>{i.label}{i.checked_at && <span className="block text-[11px] text-muted-foreground">✓ {fmtDayMon(i.checked_at)} {new Date(i.checked_at).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })}</span>}</span></label>)}</div>)}
+        {groups.map((g) => <div key={g} className="space-y-1">{g && <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{g}</p>}{items.filter((i) => i.group_label === g).map((i) => <label key={i.id} className="flex items-start gap-2 text-sm"><Checkbox className="mt-0.5" checked={i.checked} disabled={!can} onCheckedChange={() => { s.toggleChecklistItem(i.id); if (!i.checked && i.label.includes("ส่งอีเมลแจ้งลูกค้า")) { const r = tm.recordSend("go_live", emailVars(card, ws2.properties.find((p) => p.hotel_id === card.property_id)?.key_contact), { card_id: card.id, property_id: card.property_id, sent_by: s.role }); toast.success(`ส่งอีเมล Go Live (แม่แบบ v${r.email_template_version})`); } }} /><span>{i.label}{i.checked_at && <span className="block text-[11px] text-muted-foreground">✓ {fmtDayMon(i.checked_at)} {new Date(i.checked_at).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })}</span>}</span></label>)}</div>)}
       </details>;
     })}
     {!blocks.length && <p className="text-xs text-muted-foreground">ขั้นนี้ไม่มี checklist (milestone)</p>}
@@ -627,7 +629,8 @@ function MeetingBilling({ card, readOnly }: { card: OnboardingCard; readOnly: bo
   const meetingName = card.service_variant === "ORM" ? "Rate Structure" : "First Sync-up";
   const startText = gmb ? fmtDate((card.billing_start_at ?? new Date().toISOString())) : card.meeting_date ? fmtDate(card.meeting_date) : "dd/mm/yyyy";
   const tm = useTemplateMgmt();
-  const vars = { ...emailVars(card), meeting_date: startText, meeting_record: card.meeting_record_url || "—" };
+  const ws2 = useWs2();
+  const vars = { ...emailVars(card, ws2.properties.find((p) => p.hotel_id === card.property_id)?.key_contact), meeting_date: startText, meeting_record: card.meeting_record_url || "—" };
   const preview = tm.render("billing_survey2", vars);
   const sentRow = [...tm.sent].reverse().find((e) => e.card_id === card.id && e.email_key === "billing_survey2");
   const send = () => { const r = s.sendBillingEmail(card.id); if (r.ok) tm.recordSend("billing_survey2", vars, { card_id: card.id, property_id: card.property_id, sent_by: s.role }); if (r.ok) toast.success("ส่งอีเมลยืนยันถึงลูกค้าแล้ว · เริ่มคิดค่าบริการ + Survey #2"); else toast.info(r.error); };
