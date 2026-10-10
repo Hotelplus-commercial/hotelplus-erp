@@ -33,6 +33,7 @@ export function Ws2Panel({ card, readOnly }: { card: OnboardingCard; readOnly: b
   const tpl = form ? w.templateFor(form) : w.latestTemplate(service);
   const stats = tpl ? templateStats(tpl.def) : null;
   const [email, setEmail] = useState("");
+  const [contact, setContact] = useState<string | null>(null);
   const [showFields, setShowFields] = useState(false);
   const canGenerate = !readOnly && (s.role === "ae" || s.test_mode);
   const [showL3, setShowL3] = useState(false);
@@ -46,6 +47,7 @@ export function Ws2Panel({ card, readOnly }: { card: OnboardingCard; readOnly: b
   const generate = () => {
     const r = w.generateForm({ hotel_id: card.property_id, hotel_name: card.property_name, variant: card.service_variant, customer_email: email, card_id: card.id }, card.assigned_ae_id || "AE");
     if (!r.ok) { toast.info(r.error); return; }
+    if (contact !== null && contact.trim() !== (property?.key_contact ?? "")) w.updateProperty(card.property_id, { key_contact: contact.trim() }, card.assigned_ae_id || "AE");
     s.setFormStatus(card.id, toCardStatus("sent"));
     toast.success("สร้างฟอร์มแล้ว · แนบลิงก์ Image Portal ให้การ์ด");
   };
@@ -67,6 +69,7 @@ export function Ws2Panel({ card, readOnly }: { card: OnboardingCard; readOnly: b
         <div className="space-y-2">
           <p className="text-xs text-muted-foreground">AE ใส่อีเมลลูกค้าแล้วกด Generate · ระบบประทับ Hotel ID / ชื่อโรงแรม / บริการ และสร้างโฟลเดอร์รูปให้อัตโนมัติ</p>
           <div className="flex flex-wrap gap-2">
+            <Input aria-label="ชื่อผู้ติดต่อ" className="h-9 min-w-0 flex-1 text-sm" placeholder="ชื่อผู้ติดต่อ" value={contact ?? property?.key_contact ?? ""} disabled={!canGenerate} onChange={(e) => setContact(e.target.value)} />
             <Input type="email" aria-label="Customer email" className="h-9 min-w-0 flex-1 text-sm" placeholder="customer@hotel.com" value={email} disabled={!canGenerate} onChange={(e) => setEmail(e.target.value)} />
             <Button size="sm" className="h-9" disabled={!canGenerate} onClick={generate}>Generate Form</Button>
           </div>
@@ -138,18 +141,21 @@ export function Ws2GenerateNewProperty() {
   const [q, setQ] = useState("");
   const [pick, setPick] = useState<string | null>(null);
   const [email, setEmail] = useState("");
+  const [contact, setContact] = useState<string | null>(null);
   const canGenerate = s.role === "ae" || s.test_mode;
   const list = s.cards.filter((c) => c.current_stage === "new_property"
     && !w.forms.some((f) => f.property_id === c.property_id && f.service === serviceForVariant(c.service_variant))
     && c.property_name.toLowerCase().includes(q.trim().toLowerCase()));
   const card = list.find((c) => c.id === pick);
+  const keyContact = card ? w.properties.find((p) => p.hotel_id === card.property_id)?.key_contact : undefined;
   const go = () => {
     if (!card) return;
     const r = w.generateForm({ hotel_id: card.property_id, hotel_name: card.property_name, variant: card.service_variant, customer_email: email, card_id: card.id }, card.assigned_ae_id || "AE");
     if (!r.ok) { toast.info(r.error); return; }
+    if (contact !== null && contact.trim() !== (keyContact ?? "")) w.updateProperty(card.property_id, { key_contact: contact.trim() }, card.assigned_ae_id || "AE");
     s.setFormStatus(card.id, toCardStatus("sent"));
     toast.success(`สร้างฟอร์มแล้ว · ${card.property_name} (${SERVICE_LABEL[serviceForVariant(card.service_variant)]})`);
-    setPick(null); setEmail("");
+    setPick(null); setEmail(""); setContact(null);
   };
   return (
     <section className="space-y-3 rounded-lg border p-4" aria-label="Generate for new property">
@@ -162,12 +168,12 @@ export function Ws2GenerateNewProperty() {
         {list.map((c) => (
           <li key={c.id} className="flex flex-wrap items-center gap-2 p-2 text-sm">
             <span className="flex-1">{c.property_name} <span className="text-xs text-muted-foreground">· {c.property_id} · {SERVICE_LABEL[serviceForVariant(c.service_variant)]}</span></span>
-            <Button size="sm" variant={pick === c.id ? "default" : "outline"} disabled={!canGenerate} onClick={() => setPick(c.id)}>เลือก</Button>
+            <Button size="sm" variant={pick === c.id ? "default" : "outline"} disabled={!canGenerate} onClick={() => { setPick(c.id); setContact(null); }}>เลือก</Button>
           </li>
         ))}
         {!list.length && <li className="p-3 text-center text-xs text-muted-foreground">ไม่มีการ์ด New Property ที่รอสร้างฟอร์ม</li>}
       </ul>
-      {card && <div className="flex flex-wrap gap-2"><Input type="email" aria-label="Customer email" className="h-9 min-w-0 flex-1 text-sm" placeholder="customer@hotel.com" value={email} onChange={(e) => setEmail(e.target.value)} /><Button size="sm" className="h-9" onClick={go}>Generate Form · {card.property_name}</Button></div>}
+      {card && <div className="flex flex-wrap gap-2"><Input aria-label="ชื่อผู้ติดต่อ" className="h-9 min-w-0 flex-1 text-sm" placeholder="ชื่อผู้ติดต่อ" value={contact ?? keyContact ?? ""} onChange={(e) => setContact(e.target.value)} /><Input type="email" aria-label="Customer email" className="h-9 min-w-0 flex-1 text-sm" placeholder="customer@hotel.com" value={email} onChange={(e) => setEmail(e.target.value)} /><Button size="sm" className="h-9" onClick={go}>Generate Form · {card.property_name}</Button></div>}
       {!canGenerate && <p className="text-[11px] text-muted-foreground">เฉพาะ AE กด Generate ได้</p>}
     </section>
   );
