@@ -644,7 +644,7 @@ function MeetingBilling({ card, readOnly }: { card: OnboardingCard; readOnly: bo
           <li>ลิงก์แบบประเมินความพึงพอใจ (Survey #2)</li>
         </ul>
         {card.billing_email_sent_at
-          ? <p className="text-muted-foreground">ส่งแล้ว {new Date(card.billing_email_sent_at).toLocaleString("th-TH")} · ★ เริ่มคิดค่าบริการ {card.billing_start_at ? fmtDate(card.billing_start_at.slice(0, 10) === card.meeting_date ? card.meeting_date : card.billing_start_at) : ""}</p>
+          ? <p className="text-muted-foreground">ส่งแล้ว {new Date(card.billing_email_sent_at).toLocaleString("th-TH")} · ★ เริ่มคิดค่าบริการ {card.billing_start_at ? fmtDate(card.billing_start_at) : ""}</p>
           : <Button size="sm" disabled={!canEdit || (!gmb && !/^https?:\/\/\S+/.test(card.meeting_record_url ?? ""))} onClick={send}>Send email to customer</Button>}
       </div>}
     </section>

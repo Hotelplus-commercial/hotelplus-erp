@@ -987,7 +987,7 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
         if (!gmb && !card.meeting_date) return { ok: false, error: "ยังไม่มีวันนัดประชุม" };
         if (!gmb && !validMeetingUrl(card.meeting_record_url)) return { ok: false, error: "แนบ Record ประชุม (http/https) ก่อนส่ง" };
         const now = new Date().toISOString();
-        const start = gmb ? (state.events.find((e) => e.card_id === cardId && e.stage_key === card.billing_anchor_stage)?.entered_at ?? now) : new Date(`${card.meeting_date}T00:00:00`).toISOString();
+        const start = gmb ? (state.events.find((e) => e.card_id === cardId && e.stage_key === card.billing_anchor_stage)?.entered_at ?? now) : `${card.meeting_date}T00:00:00.000Z`;
         setState((s) => ({
           ...s,
           cards: s.cards.map((c) => c.id === cardId ? { ...c, billing_start_at: start, billing_email_sent_at: now } : c),
