@@ -59,3 +59,9 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 
 ## v6.2 patch — Meeting & Billing
 - [x] ORM handover 4 parts (PMS/CM: Specialist tick + ORM verify), meeting-date picker at Prepare Data gates meeting stage, record URL + customer email = billing ★ (meeting date; GMB at Go Live) + Survey #2 in Thai, Marcom Completed meeting link removed
+
+## v6.3 ORM/Marcom stage reorder
+- [x] ORM: Approved → Prepare Data (Specialist + ORM) → Rate Structure ★ → Final Setup → Completed (Handover) → System Training → Go Live; ceiling at Final Setup.
+- [x] Specialist handover row-1 editable Approved→Final Setup; row-2 at Completed → Survey #1 → System Training.
+- [x] Split timestamps (specialist_handover_done_at, orm_prep_done_at) and split Σ Specialist / Σ ORM.
+- [x] Marcom: Completed stage dropped (Approved → Prepare Data → First Sync → Go Live; GMB → Go Live); old Marcom cards at Completed move to Prepare Data.

@@ -250,6 +250,7 @@ export const trackOf = (stage: string): OwnerTrack =>
 /** Department badge (§2.5): AE / On-boarding Specialist / ORM / Marcom. */
 export const deptBadge = (stage: string, variant: ServiceVariant): "AE" | "On-boarding Specialist" | "ORM" | "Marcom" | "Specialist + ORM" => {
   if (stage === "orm_prepare_data" && variant === "ORM") return "Specialist + ORM";
+  if (stage === "completed" && variant === "ORM") return "ORM";
   const t = trackOf(stage);
   if (t === "AE") return "AE";
   if (t === "SPECIALIST") return "On-boarding Specialist";
