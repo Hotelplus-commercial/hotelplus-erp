@@ -56,3 +56,6 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 ## WS-2 Property Information Form
 - [x] Phase 1: property data layer, 3 config templates (ORM from JSON export, Marcom MT from PDF + Owner Interview, GMB 8 fields), AE Generate Form, Image Portal #1, status chip, audit log
 - [x] Phase 2: customer fill page, submit routing L1/L2/L3, room folders + photo count, seed handover credentials, restricted access, template publish
+
+## v6.2 patch — Meeting & Billing
+- [x] ORM handover 4 parts (PMS/CM: Specialist tick + ORM verify), meeting-date picker at Prepare Data gates meeting stage, record URL + customer email = billing ★ (meeting date; GMB at Go Live) + Survey #2 in Thai, Marcom Completed meeting link removed
