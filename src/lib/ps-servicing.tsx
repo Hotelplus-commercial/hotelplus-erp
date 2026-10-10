@@ -36,6 +36,9 @@ export type OnboardingCard = {
   pms_specialist_at?: string | null;
   pms_verified_at?: string | null;
   billing_email_sent_at?: string | null;
+  /** v6.3 split timestamps: Specialist row-1 (4 parts) complete · ORM prep group complete. */
+  specialist_handover_done_at?: string | null;
+  orm_prep_done_at?: string | null;
   created_at: string;
   current_stage: string;
   assigned_ae_id: string;
@@ -760,6 +763,27 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (hydrated) localStorage.setItem(KEY, JSON.stringify(state));
   }, [state, hydrated]);
+  /* v6.3: stamp per-team completion times (Specialist row-1 vs ORM prep) as each team finishes. */
+  useEffect(() => {
+    if (!hydrated) return;
+    setState((s) => {
+      let changed = false;
+      const now = new Date().toISOString();
+      const cards = s.cards.map((c) => {
+        if (c.service_variant !== "ORM") return c;
+        const p = handoverProgress(s, c);
+        const specDone = p.specialistDone && p.credentialsDone && p.roomsDone && p.pmsDone;
+        const prepItems = s.checklistItems.filter((i) => i.card_id === c.id && i.stage_key === "orm_prepare_data");
+        const prepDone = !!c.meeting_date && prepItems.every((i) => i.checked);
+        const spec = specDone ? (c.specialist_handover_done_at ?? now) : specialistHandoverOpen(c) ? null : (c.specialist_handover_done_at ?? null);
+        const prep = prepDone ? (c.orm_prep_done_at ?? now) : null;
+        if (spec === (c.specialist_handover_done_at ?? null) && prep === (c.orm_prep_done_at ?? null)) return c;
+        changed = true;
+        return { ...c, specialist_handover_done_at: spec, orm_prep_done_at: prep };
+      });
+      return changed ? { ...s, cards } : s;
+    });
+  }, [hydrated, state.handover, state.credentials, state.roomMappings, state.checklistItems, state.cards]);
   /* scheduled check: flip pending → expired after the 7-day window */
   useEffect(() => {
     if (!hydrated) return;
