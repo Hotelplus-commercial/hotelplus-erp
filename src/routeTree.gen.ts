@@ -35,6 +35,7 @@ import { Route as BdQuotesRouteImport } from './routes/bd.quotes'
 import { Route as BdRegisterDealRouteImport } from './routes/bd.register-deal'
 import { Route as FTokenRouteImport } from './routes/f.$token'
 import { Route as HrIndexRouteImport } from './routes/hr.index'
+import { Route as HrMembersRouteImport } from './routes/hr.members'
 import { Route as LTokenRouteImport } from './routes/l.$token'
 import { Route as MarcomIndexRouteImport } from './routes/marcom.index'
 import { Route as MarcomDashboardRouteImport } from './routes/marcom.dashboard'
@@ -212,6 +213,11 @@ const FTokenRoute = FTokenRouteImport.update({
 const HrIndexRoute = HrIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => HrRoute,
+} as any)
+const HrMembersRoute = HrMembersRouteImport.update({
+  id: '/members',
+  path: '/members',
   getParentRoute: () => HrRoute,
 } as any)
 const LTokenRoute = LTokenRouteImport.update({
@@ -483,6 +489,7 @@ export interface FileRoutesByFullPath {
   '/bd/quotes': typeof BdQuotesRouteWithChildren
   '/bd/register-deal': typeof BdRegisterDealRoute
   '/f/$token': typeof FTokenRoute
+  '/hr/members': typeof HrMembersRoute
   '/l/$token': typeof LTokenRoute
   '/marcom/dashboard': typeof MarcomDashboardRoute
   '/orm/action-a': typeof OrmActionARouteWithChildren
@@ -550,6 +557,7 @@ export interface FileRoutesByTo {
   '/bd/deals': typeof BdDealsRoute
   '/bd/register-deal': typeof BdRegisterDealRoute
   '/f/$token': typeof FTokenRoute
+  '/hr/members': typeof HrMembersRoute
   '/l/$token': typeof LTokenRoute
   '/marcom/dashboard': typeof MarcomDashboardRoute
   '/orm/dashboard': typeof OrmDashboardRoute
@@ -624,6 +632,7 @@ export interface FileRoutesById {
   '/bd/quotes': typeof BdQuotesRouteWithChildren
   '/bd/register-deal': typeof BdRegisterDealRoute
   '/f/$token': typeof FTokenRoute
+  '/hr/members': typeof HrMembersRoute
   '/l/$token': typeof LTokenRoute
   '/marcom/dashboard': typeof MarcomDashboardRoute
   '/orm/action-a': typeof OrmActionARouteWithChildren
@@ -702,6 +711,7 @@ export interface FileRouteTypes {
     | '/bd/quotes'
     | '/bd/register-deal'
     | '/f/$token'
+    | '/hr/members'
     | '/l/$token'
     | '/marcom/dashboard'
     | '/orm/action-a'
@@ -769,6 +779,7 @@ export interface FileRouteTypes {
     | '/bd/deals'
     | '/bd/register-deal'
     | '/f/$token'
+    | '/hr/members'
     | '/l/$token'
     | '/marcom/dashboard'
     | '/orm/dashboard'
@@ -842,6 +853,7 @@ export interface FileRouteTypes {
     | '/bd/quotes'
     | '/bd/register-deal'
     | '/f/$token'
+    | '/hr/members'
     | '/l/$token'
     | '/marcom/dashboard'
     | '/orm/action-a'
@@ -1094,6 +1106,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/hr/'
       preLoaderRoute: typeof HrIndexRouteImport
+      parentRoute: typeof HrRoute
+    }
+    '/hr/members': {
+      id: '/hr/members'
+      path: '/members'
+      fullPath: '/hr/members'
+      preLoaderRoute: typeof HrMembersRouteImport
       parentRoute: typeof HrRoute
     }
     '/l/$token': {
@@ -1520,10 +1539,12 @@ const BdRouteChildren: BdRouteChildren = {
 const BdRouteWithChildren = BdRoute._addFileChildren(BdRouteChildren)
 
 interface HrRouteChildren {
+  HrMembersRoute: typeof HrMembersRoute
   HrIndexRoute: typeof HrIndexRoute
 }
 
 const HrRouteChildren: HrRouteChildren = {
+  HrMembersRoute: HrMembersRoute,
   HrIndexRoute: HrIndexRoute,
 }
 
