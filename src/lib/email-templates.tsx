@@ -12,6 +12,8 @@ export type EmailSent = {
   id: string; email_key: EmailKey; email_template_version: number; rendered_subject: string; rendered_body: string;
   card_id: string | null; property_id: string; sent_by: string; sent_at: string;
 };
+const SEED_AT = "2026-10-01T00:00:00.000Z";
+
 /** P3 · Monthly-meeting survey definitions (B-lite: display text only; scale 1–10, question count/type, sections, Take-Notes locked). */
 export type SurveyKey = "ORM_MONTHLY" | "MARCOM_MONTHLY";
 export type SurveyText = { section_label: string; overall_label: string; comment_placeholder: string; open_placeholder: string; help: string; q: Record<string, string> };
@@ -38,7 +40,6 @@ export type ChecklistMeta = { version: number; published_at: string; published_b
 export const canManageTemplates = (role: string) => role === "pm" || role === "management";
 export const ROLE_DISPLAY: Record<string, string> = { ae: "AE", specialist: "Specialist", pm: "PM", service: "Service (ORM/Marcom)", management: "System Admin (HOC · MD · Automation)" };
 
-const SEED_AT = "2026-10-01T00:00:00.000Z";
 const seed = (key: EmailKey, name: string, placeholders: string, wiring: string, subject: string, body: string): EmailTemplate => ({
   key, name, placeholders, wiring, draft: null, updated_by: "System", updated_at: SEED_AT,
   versions: [{ version: 1, subject, body, published_at: SEED_AT, published_by: "System" }],
