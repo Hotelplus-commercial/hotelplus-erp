@@ -60,7 +60,7 @@ import { cn } from "@/lib/utils";
 import { Ws2Panel } from "@/components/ps/ws2-panel";
 import { ROLE_DISPLAY, useTemplateMgmt } from "@/lib/email-templates";
 
-const emailVars = (card: OnboardingCard): Record<string, string> => ({ hotel_name: card.property_name, contact_name: card.property_name, service_name: card.service_variant === "ORM" ? "ORM" : card.service_variant === "MARCOM_GMB" ? "Google My Business" : "Marcom (Meta / TikTok)", survey_link: `${typeof window === "undefined" ? "" : window.location.origin}/survey/${card.id}`, team: card.service_variant === "ORM" ? "ORM" : "Marcom" });
+const emailVars = (card: OnboardingCard): Record<string, string> => ({ hotel_name: card.property_name, contact_name: card.property_name, service_name: card.service_variant === "ORM" ? "ORM" : card.service_variant === "MARCOM_GMB" ? "Google My Business" : "Marcom (Meta / TikTok)", survey_link: `ลิงก์แบบประเมิน (${card.id})`, team: card.service_variant === "ORM" ? "ORM" : "Marcom" });
 
 const TRACK_COLOR: Record<OwnerTrack, string> = {
   AE: "var(--color-primary)",
