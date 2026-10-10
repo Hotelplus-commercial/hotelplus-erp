@@ -10,9 +10,9 @@ import { useServicing } from "@/lib/ps-servicing";
 import { IDENTITY_FIELDS, MARCOM_VIEWERS, SERVICE_LABEL, STATUS_LABEL, canSeeRestricted, serviceForVariant, useWs2, type Ws2Service } from "@/lib/ws2-store";
 
 export const Route = createFileRoute("/ps/property-content/$hotelId")({
-  validateSearch: (s: Record<string, unknown>) => ({
-    card: typeof s.card === "string" ? s.card : undefined,
-    viewer: typeof s.viewer === "string" ? s.viewer : undefined,
+  validateSearch: (s: Record<string, unknown>): { card?: string; viewer?: string } => ({
+    ...(typeof s["card"] === "string" ? { card: s["card"] } : {}),
+    ...(typeof s["viewer"] === "string" ? { viewer: s["viewer"] } : {}),
   }),
   head: () => ({
     meta: [
