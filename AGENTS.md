@@ -29,3 +29,4 @@
 - AC reporting views project the canonical CRM and Hotel Profile documents with service/period attribution; deterministic UUID aliases preserve legacy view column types without duplicating source entities.
 - Canonical document saves use revision compare-and-swap with a retained local backup; conflicts stop synchronization rather than overwrite another writer's changes.
 - The legacy /ac/operations URL redirects to the original /ac/billing page so saved links do not open a removed console.
+- BD-AC charts consume only existing view projections and use a scoped theme backed by global CSS tokens; this preserves analytics, workflow writes and unrelated module styling.

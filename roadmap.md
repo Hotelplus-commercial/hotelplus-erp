@@ -1,4 +1,3 @@
-# Servicing v5.1 Phase 1
 # BD-AC visual refresh v1.0
 - [ ] Apply scoped Teal + Graphite tokens and Thai fonts; restyle headline and six existing sections.
 - [ ] Visualize existing funnel, cohort, stage, cycle and aging outputs without data changes.
