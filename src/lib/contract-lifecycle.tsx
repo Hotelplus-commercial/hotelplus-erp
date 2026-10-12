@@ -186,7 +186,9 @@ export function ContractLifecycleProvider({ children }: { children: ReactNode })
                   ? { current_stage: 5 }
                   : { current_stage: 11, live_link_token: rid(), live_link_sent_at: new Date(Date.now() - 2 * DAY).toISOString() }
               : {};
-          return fromQuote(q, stage, demo);
+          // BD-AC: card enters display stage 6 (Approved QT) on creation; demo rows seeded mid-pipeline stay null (no history).
+          const approved = "current_stage" in demo ? {} : { approved_at: q.approved_at ?? new Date().toISOString() };
+          return fromQuote(q, stage, { ...demo, ...approved });
         });
       return add.length ? [...prev, ...add] : prev;
     });
@@ -288,6 +290,8 @@ export function ContractLifecycleProvider({ children }: { children: ReactNode })
           current_stage: to, updated_at: now,
           live_link_token: to >= 7 ? (row.live_link_token ?? rid()) : row.live_link_token,
           live_link_sent_at: to === 7 ? now : row.live_link_sent_at,
+          // BD-AC: write stage-entry timestamp once, forward-only; stage-6 sub-steps get none.
+          ...(STAGE_TS[to] && to > row.current_stage && !row[STAGE_TS[to]] ? { [STAGE_TS[to]]: now } : {}),
           ...(enteringPropInfo ? { handed_off_to_onboarding: handedOff, ...(handedOff ? { handed_off_at: row.handed_off_at ?? now } : {}) } : {}),
         }));
       },
