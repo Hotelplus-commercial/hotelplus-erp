@@ -93,7 +93,8 @@ export function recomputeAccounting<T extends AccountingData>(data: T, t = bangk
   }
   const gradeRecords = [...records.values()].map(r => {
     const old = data.gradeRecords?.find(g => g.customer_id === r.customer_id && g.billing_period === r.billing_period);
-    return old && old.grade > r.grade ? {...r,grade:old.grade} : r;
+    const validBasis = old?.basis.every(id => r.basis.includes(id));
+    return old && validBasis && old.grade > r.grade ? {...r,grade:old.grade} : r;
   });
   let contracts = data.contracts;
   const events = [...(data.collectionEvents ?? [])];

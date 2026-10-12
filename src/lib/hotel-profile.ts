@@ -101,7 +101,6 @@ export const statusMeta: Record<HotelStatus, { label: string; className: string 
 export function detectStatus(input: {
   contractEnd?: Date | undefined;
   terminated: boolean;
-  overdueMonths: number;
 }): HotelStatus {
   if (input.terminated) return "terminated";
   if (input.contractEnd && input.contractEnd.getTime() < Date.now()) return "contract-end";
