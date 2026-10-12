@@ -107,6 +107,27 @@ export type Database = {
         }
         Relationships: []
       }
+      crm_documents: {
+        Row: {
+          namespace: string
+          payload: Json
+          revision: number
+          updated_at: string
+        }
+        Insert: {
+          namespace: string
+          payload?: Json
+          revision?: number
+          updated_at?: string
+        }
+        Update: {
+          namespace?: string
+          payload?: Json
+          revision?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       customer: {
         Row: {
           id: string
@@ -837,6 +858,10 @@ export type Database = {
       ac_verify: {
         Args: { p_payment: string; p_receipt: string }
         Returns: undefined
+      }
+      crm_compare_swap: {
+        Args: { p_namespace: string; p_payload: Json; p_revision: number }
+        Returns: number
       }
     }
     Enums: {
