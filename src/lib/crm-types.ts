@@ -175,6 +175,9 @@ export type ContractLine = {
 };
 
 export type Contract = {
+  billing_status?: 'ACTIVE' | 'PAUSED' | 'SUSPENDED' | 'TERMINATED';
+  orm_team_id?: string;
+  marcom_member_id?: string;
   contract_id: string;
   from_quote_id: string;
   customer_snapshot: CustomerSnapshot;
@@ -209,7 +212,7 @@ export type ProductionReport = {
 
 /* ---------------- invoice / tax receipt ---------------- */
 
-export type InvoiceStatus = "draft" | "sent_via_live_link" | "paid" | "void";
+export type InvoiceStatus = "draft" | "issued" | "sent_via_live_link" | "partially_paid" | "paid" | "void" | "written_off";
 
 export type InvoiceLine = {
   line_id: string;
@@ -224,6 +227,14 @@ export type InvoiceLine = {
 };
 
 export type Invoice = {
+  customer_segment?: 'NEW' | 'EXISTING';
+  service_line?: 'ORM' | 'Marcom';
+  issue_date?: string;
+  due_date?: string;
+  settled_date?: string | null;
+  paid_amount?: number;
+  gateway_paid_at?: string;
+  payment_records?: { id: string; amount: number; method: string; confirmed_at: string; actor: string }[];
   invoice_id: string;
   case_number: string;
   contract_ids: string[];
