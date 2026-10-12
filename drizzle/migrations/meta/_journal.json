@@ -43,6 +43,13 @@
       "when": 1791816773427,
       "tag": "0005_canonical_crm_documents",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791817081314,
+      "tag": "0006_canonical_ac_reports",
+      "breakpoints": true
     }
   ]
 }
