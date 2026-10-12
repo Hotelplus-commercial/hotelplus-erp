@@ -14,16 +14,28 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { contractorTypes, emptyContact, statusMeta } from "@/lib/hotel-profile";
-import { hotelScore, hotelStatus, useHotelStore, type HotelProfile } from "@/lib/hotel-store";
+import { hotelStatus, useHotelStore, type HotelProfile } from "@/lib/hotel-store";
 import { cn } from "@/lib/utils";
+import { crmUsers, useCrm } from '@/lib/crm-store';
+import { bangkokDate, invoiceGrade, outstandingOf } from '@/lib/ac-v2-engine';
 
 export function AcProfileForm() {
-  const { selected: h, patch } = useHotelStore();
+  const { selected: h, patch,cloudStatus,migrateToCloud } = useHotelStore();
+  const crm=useCrm();
+  const customer=crm.customers.find(c=>c.hotels.some(hotel=>hotel.hotel_id===h.id || hotel.name===h.name));
+  const rows=crm.invoices.filter(i=>customer?i.customer_snapshot.customer_id===customer.customer_id:i.customer_snapshot.hotel_name===h.name);
+  const customerId=customer?.customer_id??rows[0]?.customer_snapshot.customer_id;
+  const today=bangkokDate();
+  const current=rows.filter(i=>i.billing_period_start.slice(0,7)===today.slice(0,7) && !['draft','void','written_off'].includes(i.status));
+  const grade=crm.gradeRecords?.find(g=>g.customer_id===customerId && g.billing_period.slice(0,7)===today.slice(0,7))?.grade ?? (current.length?current.map(i=>invoiceGrade(i)).sort().at(-1)??'A':'—');
+  const score=grade==='A'?100:grade==='B'?75:grade==='C'?50:grade==='D'?25:0;
+  const late=crm.gradeRecords?.filter(g=>g.customer_id===customerId && g.billing_period>=new Date(Date.UTC(Number(today.slice(0,4)),Number(today.slice(5,7))-12,1)).toISOString().slice(0,10) && g.billing_period<=today && g.grade!=='A').length??0;
+  const unpaidMonths=new Set(rows.filter(i=>outstandingOf(i)>0 && (i.due_date??i.billing_period_start.slice(0,7)+'-15')<today).map(i=>i.billing_period_start.slice(0,7))).size;
+  const collection=crm.collectionEvents?.find(e=>e.customer_id===customerId);
   const set = (next: Partial<HotelProfile>) => patch(h.id, next);
 
   const status = hotelStatus(h);
   const sm = statusMeta[status];
-  const { score, grade } = hotelScore(h);
 
   const save = () => {
     if (!h.code.trim() || !h.name.trim() || !h.contractorType) {
@@ -73,8 +85,8 @@ export function AcProfileForm() {
             type="number"
             min={0}
             max={24}
-            value={h.overdueMonths}
-            onChange={(e) => set({ overdueMonths: Math.max(0, Number(e.target.value) || 0) })}
+            value={unpaidMonths}
+            readOnly
           />
         </Field>
         <Field label="จำนวนครั้งที่ชำระล่าช้า (12 เดือน)" hint="ใช้คำนวณ Score การชำระเงิน">
@@ -82,8 +94,8 @@ export function AcProfileForm() {
             type="number"
             min={0}
             max={24}
-            value={h.latePayments}
-            onChange={(e) => set({ latePayments: Math.max(0, Number(e.target.value) || 0) })}
+            value={late}
+            readOnly
           />
         </Field>
         <Field
@@ -92,9 +104,9 @@ export function AcProfileForm() {
         >
           <div className="flex h-9 items-center gap-2 rounded-md border bg-muted/40 px-3">
             <span
-              className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", sm.className)}
+              className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", collection && !['NORMAL','REACTIVATED'].includes(collection.event_type)?'bg-warning/20 text-warning-foreground':sm.className)}
             >
-              {sm.label}
+              {collection && !['NORMAL','REACTIVATED'].includes(collection.event_type)?collection.event_type:sm.label}
             </span>
           </div>
         </Field>
@@ -144,6 +156,9 @@ export function AcProfileForm() {
       </div>
 
       <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
+        {import.meta.env.DEV && cloudStatus==='local' && <Button variant="outline" onClick={()=>migrateToCloud()}>ย้าย Hotel Profile ไป Cloud</Button>}
+        <Select value={crm.actor} onValueChange={crm.setActor}><SelectTrigger className="w-48" aria-label="ผู้บันทึกบัญชี"><SelectValue /></SelectTrigger><SelectContent>{crmUsers.map(u=><SelectItem key={u.email} value={u.email}>{u.name}</SelectItem>)}</SelectContent></Select>
+        {customerId && <>{(['LEGAL','WRITTEN_OFF','REACTIVATED'] as const).map(event=><Button key={event} variant="outline" size="sm" onClick={()=>{const note=window.prompt('หมายเหตุ '+event);if(note)crm.collectionAction(customerId,event,note);}}>{event==='LEGAL'?'ส่งฟ้อง':event==='WRITTEN_OFF'?'ตัดหนี้สูญ':'คืนบริการ'}</Button>)}</>}
         {h.acSaved && (
           <span className="rounded-full bg-success/12 px-2.5 py-1 text-xs font-semibold text-success">
             บันทึกแล้ว — ส่งต่อให้ PS App

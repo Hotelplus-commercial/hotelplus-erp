@@ -1,4 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useAccountingCloud } from './use-accounting-cloud';
+import { bangkokDate, confirmPayment, recomputeAccounting, runDailyBilling, type GradeRecord, type CollectionEvent } from './ac-v2-engine';
 
 import {
   lastPeriod,
@@ -54,6 +56,9 @@ export const crmUsers: CrmUser[] = [
 ];
 
 type CrmData = {
+  gradeRecords?: GradeRecord[];
+  collectionEvents?: CollectionEvent[];
+  billingWaiting?: { contract_id: string; service_line: string; billing_period: string }[];
   products: Product[];
   customers: Customer[];
   deals: Deal[];
@@ -82,7 +87,7 @@ const initial = (): CrmData => ({
   taxReceipts: [],
   liveLinks: seedLiveLinks,
   audit: [],
-  actor: crmUsers[0]!.email,
+  actor: crmUsers[0]?.email ?? 'ac.team@hotelplus.asia',
 });
 
 function load(): CrmData | null {
@@ -98,6 +103,11 @@ function load(): CrmData | null {
 }
 
 type Store = CrmData & {
+  cloudStatus: 'local'|'loading'|'cloud'|'error';
+  migrateToCloud: () => Promise<void>;
+  refreshCloud: () => Promise<void>;
+  recordPayment: (invoiceId:string, method:string, amount:number) => void;
+  collectionAction: (customerId:string, event:'LEGAL'|'WRITTEN_OFF'|'REACTIVATED', note:string) => void;
   hydrated: boolean;
   setActor: (email: string) => void;
   reset: () => void;
@@ -137,6 +147,8 @@ const Ctx = createContext<Store | null>(null);
 export function CrmStoreProvider({ children }: { children: React.ReactNode }) {
   const [data, setData] = useState<CrmData>(initial);
   const [hydrated, setHydrated] = useState(false);
+  const applyCloud = useCallback((next:CrmData)=>setData({...initial(),...next}),[]);
+  const cloud = useAccountingCloud('crm',data,hydrated,applyCloud);
 
   useEffect(() => {
     const stored = load();
@@ -172,6 +184,16 @@ export function CrmStoreProvider({ children }: { children: React.ReactNode }) {
 
     return {
       ...data,
+      cloudStatus:cloud.status,
+      migrateToCloud:cloud.migrate,
+      refreshCloud:cloud.refresh,
+      recordPayment:(invoiceId,method,amount)=>upd(d=>confirmPayment(d,invoiceId,method,amount,d.actor)),
+      collectionAction:(customerId,event,note)=>upd(d=>{
+        const debt=d.invoices.filter(i=>i.customer_snapshot.customer_id===customerId && !['draft','void','paid','written_off'].includes(i.status)).reduce((n,i)=>n+i.totals.total-(i.paid_amount??0),0);
+        if(!note.trim() || (event==='REACTIVATED'?debt>0:debt<=0)) return d;
+        const inv=d.invoices.find(i=>i.customer_snapshot.customer_id===customerId);
+        return recomputeAccounting({...d,invoices:event==='WRITTEN_OFF'?d.invoices.map(i=>i.customer_snapshot.customer_id===customerId && !['draft','void','paid'].includes(i.status)?{...i,status:'written_off' as const}:i):d.invoices,contracts:d.contracts.map(c=>c.customer_snapshot.customer_id===customerId && event==='REACTIVATED' && c.billing_status==='SUSPENDED'?{...c,billing_status:'ACTIVE' as const}:c),collectionEvents:[{id:crypto.randomUUID(),customer_id:customerId,hotel_name:inv?.customer_snapshot.hotel_name??'',event_type:event,occurred_at:bangkokDate(),by_member:d.actor,amount_outstanding:debt,note},...(d.collectionEvents??[])]});
+      }),
       hydrated,
       setActor: (email) => upd((d) => ({ ...d, actor: email })),
       reset: () => {
@@ -287,7 +309,8 @@ export function CrmStoreProvider({ children }: { children: React.ReactNode }) {
         }),
 
       reviseQuote: (id) => {
-        const src = data.quotations.find((q) => q.quote_id === id)!;
+        const src = data.quotations.find((q) => q.quote_id === id);
+        if(!src) return id;
         const newId = revisionIdFor(id);
         upd((d) => ({
           ...d,
@@ -355,7 +378,7 @@ export function CrmStoreProvider({ children }: { children: React.ReactNode }) {
       },
 
       addReports: (list) =>
-        upd((d) => ({
+        upd((d) => runDailyBilling({
           ...d,
           reports: [
             ...list,
@@ -380,6 +403,7 @@ export function CrmStoreProvider({ children }: { children: React.ReactNode }) {
           const contract = d.contracts.find((c) => c.case_number === caseNumber);
           const snapshot = contract?.customer_snapshot;
           if (!snapshot) return d;
+          if(req?.invoice_id) return d;
           return {
             ...d,
             invoices: [
@@ -393,6 +417,11 @@ export function CrmStoreProvider({ children }: { children: React.ReactNode }) {
                 lines,
                 totals: computeTotals(lines, snapshot.type),
                 status: "draft",
+                customer_segment:d.invoices.some(i=>i.customer_snapshot.customer_id===snapshot.customer_id && i.status!=='void')?'EXISTING':'NEW',
+                paid_amount:0,
+                settled_date:null,
+                issue_date:bangkokDate(),
+                due_date:period.start.slice(0,7)+'-15',
                 issued_at: null,
                 issued_by: null,
                 paid_at: null,
@@ -412,7 +441,9 @@ export function CrmStoreProvider({ children }: { children: React.ReactNode }) {
       },
 
       issueInvoice: (id) => {
-        const token = crypto.randomUUID().slice(0, 8);
+        const existing = data.liveLinks.find(l=>l.invoice_id===id);
+        if(existing) return existing.token;
+        const token = crypto.randomUUID();
         upd((d) => {
           const inv = d.invoices.find((i) => i.invoice_id === id);
           if (!inv) return d;
@@ -423,7 +454,7 @@ export function CrmStoreProvider({ children }: { children: React.ReactNode }) {
                 ? {
                     ...i,
                     status: "sent_via_live_link" as const,
-                    issued_at: new Date().toISOString(),
+                    issued_at: i.issued_at ?? new Date().toISOString(),
                     issued_by: d.actor,
                   }
                 : i,
@@ -453,41 +484,11 @@ export function CrmStoreProvider({ children }: { children: React.ReactNode }) {
         const inv = data.invoices.find((i) => i.invoice_id === invoiceId);
         if (!inv) return null;
         const reId = taxReceiptIdFor(invoiceId);
-        const at = new Date().toISOString();
-        upd((d) => ({
-          ...d,
-          invoices: d.invoices.map((i) =>
-            i.invoice_id === invoiceId ? { ...i, status: "paid" as const, paid_at: at } : i,
-          ),
-          taxReceipts: d.taxReceipts.some((t) => t.tax_receipt_id === reId)
-            ? d.taxReceipts
-            : [
-                {
-                  tax_receipt_id: reId,
-                  from_invoice_id: invoiceId,
-                  customer_snapshot: inv.customer_snapshot,
-                  lines: inv.lines,
-                  totals: inv.totals,
-                  payment_method: method,
-                  paid_at: at,
-                  issued_at: at,
-                  status: "issued" as const,
-                },
-                ...d.taxReceipts,
-              ],
-          contracts: d.contracts.map((c) =>
-            inv.contract_ids.includes(c.contract_id)
-              ? { ...c, status: "contract_completed" as const }
-              : c,
-          ),
-          invRequests: d.invRequests.map((r) =>
-            r.case_number === inv.case_number ? { ...r, status: "completed" as const } : r,
-          ),
-          audit: log(d, "invoice.paid", `${invoiceId} → ${reId}`),
-        }));
+        upd((d) => confirmPayment(d,invoiceId,method,Math.max(0,inv.totals.total-(inv.paid_amount??0)),d.actor));
         return reId;
       },
 
+      /* Receipt voiding keeps the existing immutable invoice history. */
       voidTaxReceipt: (id, reason) =>
         upd((d) => ({
           ...d,
@@ -530,44 +531,20 @@ export function CrmStoreProvider({ children }: { children: React.ReactNode }) {
           const inv = d.invoices.find((i) => i.invoice_id === link?.invoice_id);
           if (!link || !inv) return d;
           const at = new Date().toISOString();
-          const reId = taxReceiptIdFor(inv.invoice_id);
+          if(link.events.some(e=>e.type==='paid')) return d;
           return {
             ...d,
             liveLinks: d.liveLinks.map((l) =>
               l.token === token ? { ...l, events: [...l.events, { type: "paid" as const, at }] } : l,
             ),
             invoices: d.invoices.map((i) =>
-              i.invoice_id === inv.invoice_id ? { ...i, status: "paid" as const, paid_at: at } : i,
-            ),
-            taxReceipts: d.taxReceipts.some((t) => t.tax_receipt_id === reId)
-              ? d.taxReceipts
-              : [
-                  {
-                    tax_receipt_id: reId,
-                    from_invoice_id: inv.invoice_id,
-                    customer_snapshot: inv.customer_snapshot,
-                    lines: inv.lines,
-                    totals: inv.totals,
-                    payment_method: "LIVE Link (จำลอง)",
-                    paid_at: at,
-                    issued_at: at,
-                    status: "issued" as const,
-                  },
-                  ...d.taxReceipts,
-                ],
-            contracts: d.contracts.map((c) =>
-              link.contract_ids.includes(c.contract_id)
-                ? { ...c, status: "contract_completed" as const }
-                : c,
-            ),
-            invRequests: d.invRequests.map((r) =>
-              r.case_number === link.case_number ? { ...r, status: "completed" as const } : r,
+              i.invoice_id === inv.invoice_id ? { ...i, gateway_paid_at: at } : i,
             ),
             audit: log(d, "live_link.paid", token),
           };
         }),
     };
-  }, [data, hydrated, log]);
+  }, [data, hydrated, log, cloud.status, cloud.migrate, cloud.refresh]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

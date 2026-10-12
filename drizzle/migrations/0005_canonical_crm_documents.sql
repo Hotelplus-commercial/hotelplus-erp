@@ -1,0 +1,7 @@
+CREATE TABLE public.crm_documents (namespace text PRIMARY KEY CHECK (namespace IN ('crm','hotels')), payload jsonb NOT NULL DEFAULT '{}'::jsonb, revision bigint NOT NULL DEFAULT 1, updated_at timestamptz NOT NULL DEFAULT now());
+GRANT ALL ON public.crm_documents TO service_role;
+ALTER TABLE public.crm_documents ENABLE ROW LEVEL SECURITY;
+COMMENT ON TABLE public.crm_documents IS 'Canonical persistence of original browser CRM and Hotel Profile entities, preserving their original IDs and shapes; no parallel subscription ledger.';
+CREATE OR REPLACE FUNCTION public.crm_compare_swap(p_namespace text,p_revision bigint,p_payload jsonb) RETURNS bigint LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$ DECLARE r bigint; BEGIN IF p_revision=0 THEN INSERT INTO crm_documents(namespace,payload) VALUES(p_namespace,p_payload) ON CONFLICT DO NOTHING RETURNING revision INTO r; ELSE UPDATE crm_documents SET payload=p_payload,revision=revision+1,updated_at=now() WHERE namespace=p_namespace AND revision=p_revision RETURNING revision INTO r; END IF; IF r IS NULL THEN RAISE EXCEPTION 'Accounting data changed; reload before saving'; END IF; RETURN r; END $$;
+REVOKE ALL ON FUNCTION public.crm_compare_swap(text,bigint,jsonb) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.crm_compare_swap(text,bigint,jsonb) TO service_role;

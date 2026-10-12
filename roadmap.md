@@ -92,3 +92,4 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [ ] Physically delete retired v1 tables — blocked by backward-incompatible migration permissions; retire them without deleting original browser data meanwhile.
 - [ ] Extend existing Inquiry INV / Invoice / Receipt / Hotel Profile / Live Link with hybrid billing, AC-confirmed grades and collection lifecycle.
 - [ ] Provide daily scheduling and eight read-only views over the original entities; preserve non-AC workflows and public testing access.
+- [ ] User approved migrating original accounting data to Cloud: preserve original IDs and browser records, use one canonical persistence document with transactional mutations, and keep prototype access development-only.
