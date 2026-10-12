@@ -10,6 +10,8 @@ import { ServicingDashboardView } from "@/components/ps/servicing-dashboard";
 import { NewContractUpdates } from "@/components/ps/renewal-ui";
 import { ActivityFeedList, useAutoRefresh } from "@/components/ps/v4-ui";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { BdacHeadline, BdacTab } from "@/components/ps/bdac-tab";
 import {
   Select,
   SelectContent,
@@ -49,15 +51,27 @@ function PsDashboardPage() {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader eyebrow="PS App · Dashboard" title="PS Dashboard" description={description} />
-      <PsDashboardFilters value={filter} onChange={setFilter} />
-      {role === "Partner Manager" && (
-        <>
-          <NewContractUpdates />
-          <TeamActivityFeed />
-        </>
-      )}
-      <PsDashboard assignment={filter} />
-      <ServicingDashboardView />
+      <BdacHeadline />
+      <Tabs defaultValue="overview">
+        <TabsList>
+          <TabsTrigger value="overview">ภาพรวม</TabsTrigger>
+          <TabsTrigger value="bdac">BD-AC</TabsTrigger>
+        </TabsList>
+        <TabsContent value="overview" className="flex flex-col gap-4">
+          <PsDashboardFilters value={filter} onChange={setFilter} />
+          {role === "Partner Manager" && (
+            <>
+              <NewContractUpdates />
+              <TeamActivityFeed />
+            </>
+          )}
+          <PsDashboard assignment={filter} />
+          <ServicingDashboardView />
+        </TabsContent>
+        <TabsContent value="bdac">
+          <BdacTab />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
