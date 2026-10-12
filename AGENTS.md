@@ -27,3 +27,4 @@
 - AC access comes only from protected user_roles rows; all billing writes run through role-checked transactional functions, with no browser direct-write grants, to prevent simulated role escalation.
 - AC setup invoices retain a null billing_period and use issue-month only for grade grouping because the specification includes setup in grading without assigning it a billing month.
 - The AC daily task uses a managed authenticated HTTP callback and Bangkok business dates; mutable settlement and collection state remains in Postgres for idempotency.
+- All AC mutation functions acquire the same transaction advisory lock before customer or invoice locks to prevent cross-customer deadlocks during grade and collection recomputation.
