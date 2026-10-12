@@ -55,8 +55,23 @@ export type ContractLifecycle = {
   /** Hand-off guard: set once the On-boarding "New Property" card exists. */
   handed_off_to_onboarding?: boolean;
   handed_off_at?: string | null;
+  /* BD-AC v1.0 — stage-entry timestamps (display stages 6–10), forward-only, null for legacy rows. */
+  approved_at?: string | null;
+  send_contract_at?: string | null;
+  signed_at?: string | null;
+  payment_at?: string | null;
+  won_at?: string | null;
+  ac_owner_id?: string | null;
   created_at: string;
   updated_at: string;
+};
+
+/** Lifecycle step → BD-AC timestamp field (visible stage 7 = step 7, 8 = 8, 9 = 9, 10 Prop Info = 11). */
+const STAGE_TS: Record<number, "send_contract_at" | "signed_at" | "payment_at" | "won_at"> = {
+  7: "send_contract_at",
+  8: "signed_at",
+  9: "payment_at",
+  11: "won_at",
 };
 
 export type StageHistory = {
