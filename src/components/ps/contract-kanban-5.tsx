@@ -98,7 +98,7 @@ function Card({ l }: { l: ContractLifecycle }) {
   };
 
   return (
-    <div className="space-y-2 rounded-xl border bg-card p-3 shadow-sm">
+    <div id={`contract-card-${l.id}`} className="scroll-mt-40 space-y-2 rounded-xl border bg-card p-3 shadow-sm target:ring-2 target:ring-primary">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="truncate text-sm font-bold">{l.hotel_name}</p>

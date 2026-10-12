@@ -55,8 +55,23 @@ export type ContractLifecycle = {
   /** Hand-off guard: set once the On-boarding "New Property" card exists. */
   handed_off_to_onboarding?: boolean;
   handed_off_at?: string | null;
+  /* BD-AC v1.0 — stage-entry timestamps (display stages 6–10), forward-only, null for legacy rows. */
+  approved_at?: string | null;
+  send_contract_at?: string | null;
+  signed_at?: string | null;
+  payment_at?: string | null;
+  won_at?: string | null;
+  ac_owner_id?: string | null;
   created_at: string;
   updated_at: string;
+};
+
+/** Lifecycle step → BD-AC timestamp field (visible stage 7 = step 7, 8 = 8, 9 = 9, 10 Prop Info = 11). */
+const STAGE_TS: Record<number, "send_contract_at" | "signed_at" | "payment_at" | "won_at"> = {
+  7: "send_contract_at",
+  8: "signed_at",
+  9: "payment_at",
+  11: "won_at",
 };
 
 export type StageHistory = {
@@ -171,7 +186,9 @@ export function ContractLifecycleProvider({ children }: { children: ReactNode })
                   ? { current_stage: 5 }
                   : { current_stage: 11, live_link_token: rid(), live_link_sent_at: new Date(Date.now() - 2 * DAY).toISOString() }
               : {};
-          return fromQuote(q, stage, demo);
+          // BD-AC: card enters display stage 6 (Approved QT) on creation; demo rows seeded mid-pipeline stay null (no history).
+          const approved = "current_stage" in demo ? {} : { approved_at: q.approved_at ?? new Date().toISOString() };
+          return fromQuote(q, stage, { ...demo, ...approved });
         });
       return add.length ? [...prev, ...add] : prev;
     });
@@ -273,6 +290,8 @@ export function ContractLifecycleProvider({ children }: { children: ReactNode })
           current_stage: to, updated_at: now,
           live_link_token: to >= 7 ? (row.live_link_token ?? rid()) : row.live_link_token,
           live_link_sent_at: to === 7 ? now : row.live_link_sent_at,
+          // BD-AC: write stage-entry timestamp once, forward-only; stage-6 sub-steps get none.
+          ...(STAGE_TS[to] && to > row.current_stage && !row[STAGE_TS[to]] ? { [STAGE_TS[to]]: now } : {}),
           ...(enteringPropInfo ? { handed_off_to_onboarding: handedOff, ...(handedOff ? { handed_off_at: row.handed_off_at ?? now } : {}) } : {}),
         }));
       },
