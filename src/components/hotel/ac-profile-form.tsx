@@ -18,21 +18,12 @@ import { contractorTypes, emptyContact, statusMeta } from "@/lib/hotel-profile";
 import { hotelStatus, useHotelStore, type HotelProfile } from "@/lib/hotel-store";
 import { cn } from "@/lib/utils";
 import { crmUsers, useCrm } from '@/lib/crm-store';
-import { bangkokDate, invoiceGrade, outstandingOf } from '@/lib/ac-v2-engine';
+import { paymentSummary } from '@/lib/ac-v2-engine';
 
 export function AcProfileForm() {
   const { selected: h, patch,cloudStatus,migrateToCloud } = useHotelStore();
   const crm=useCrm();
-  const customer=crm.customers.find(c=>c.hotels.some(hotel=>hotel.hotel_id===h.id || hotel.name===h.name));
-  const rows=crm.invoices.filter(i=>customer?i.customer_snapshot.customer_id===customer.customer_id:i.customer_snapshot.hotel_name===h.name);
-  const customerId=customer?.customer_id??rows[0]?.customer_snapshot.customer_id;
-  const today=bangkokDate();
-  const current=rows.filter(i=>i.billing_period_start.slice(0,7)===today.slice(0,7) && !['draft','void','written_off'].includes(i.status));
-  const grade=crm.gradeRecords?.find(g=>g.customer_id===customerId && g.billing_period.slice(0,7)===today.slice(0,7))?.grade ?? (current.length?current.map(i=>invoiceGrade(i)).sort().at(-1)??'A':'—');
-  const score=grade==='A'?100:grade==='B'?75:grade==='C'?50:grade==='D'?25:0;
-  const late=crm.gradeRecords?.filter(g=>g.customer_id===customerId && g.billing_period>=new Date(Date.UTC(Number(today.slice(0,4)),Number(today.slice(5,7))-12,1)).toISOString().slice(0,10) && g.billing_period<=today && g.grade!=='A').length??0;
-  const unpaidMonths=new Set(rows.filter(i=>outstandingOf(i)>0 && (i.due_date??i.billing_period_start.slice(0,7)+'-15')<today).map(i=>i.billing_period_start.slice(0,7))).size;
-  const collection=crm.collectionEvents?.find(e=>e.customer_id===customerId);
+  const { customerId, grade, score, late, unpaidMonths, collection } = paymentSummary(crm, h);
   const set = (next: Partial<HotelProfile>) => patch(h.id, next);
   useEffect(()=>{
     if(!crm.hydrated || !customerId) return;
@@ -104,17 +95,17 @@ export function AcProfileForm() {
           />
         </Field>
         <Field
-          label="Status (auto detect)"
-          hint="อ้างอิงจาก PS App (contract end / terminate) และ AC App (ค้างชำระ 2 เดือน)"
+          label="PS Lifecycle"
         >
           <div className="flex h-9 items-center gap-2 rounded-md border bg-muted/40 px-3">
             <span
-              className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", collection && !['NORMAL','REACTIVATED'].includes(collection.event_type)?'bg-warning/20 text-warning-foreground':sm.className)}
+              className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", sm.className)}
             >
-              {collection && !['NORMAL','REACTIVATED'].includes(collection.event_type)?collection.event_type:sm.label}
+              {sm.label}
             </span>
           </div>
         </Field>
+        <Field label="AC Collection"><div className="flex h-9 items-center rounded-md border bg-muted/40 px-3"><span className={cn('rounded-full px-2 py-0.5 text-xs font-semibold', collection === 'NORMAL' ? 'bg-muted text-muted-foreground' : 'bg-warning/20 text-warning-foreground')}>{collection}</span></div></Field>
       </div>
 
       <div className="mt-4 rounded-lg border bg-surface/50 p-4">
