@@ -12,7 +12,6 @@ export const acTabs = [
   { label: "Product Catalog", to: "/ac/products" },
   { label: "Customer Master", to: "/ac/customers" },
   { label: "Invoice & ใบเสร็จ", to: "/ac/billing" },
-  { label: "AC Operations", to: "/ac/operations" },
 ];
 
 export const Route = createFileRoute("/ac")({

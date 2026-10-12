@@ -1,0 +1,14 @@
+COMMENT ON TABLE public.service_subscription IS 'DEPRECATED: AC v1 duplicate ledger retired by v2. Original AC entities remain in the browser CRM store; pending approved removal.';
+COMMENT ON TABLE public.invoice IS 'DEPRECATED: AC v1 duplicate ledger retired by v2; not the original CRM Invoice entity.';
+COMMENT ON TABLE public.payment IS 'DEPRECATED: AC v1 duplicate ledger retired by v2; not the original CRM payment flow.';
+COMMENT ON TABLE public.payment_grade_record IS 'DEPRECATED: AC v1 ledger retired; pending v2 canonical entity migration.';
+COMMENT ON TABLE public.collection_event IS 'DEPRECATED: AC v1 ledger retired; pending v2 canonical entity migration.';
+COMMENT ON TABLE public.hotel IS 'DEPRECATED: AC v1 stub; original Hotel Profile is browser-local.';
+COMMENT ON TABLE public.customer IS 'DEPRECATED: AC v1 stub; original Customer Master is browser-local.';
+COMMENT ON TABLE public.contract IS 'DEPRECATED: AC v1 stub; original Contract is browser-local.';
+COMMENT ON TABLE public.member IS 'DEPRECATED: AC v1 actor stub; console retired.';
+REVOKE EXECUTE ON FUNCTION public.ac_operate_as(uuid,text,text,jsonb) FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.ac_daily(date) FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.ac_recompute(date) FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.ac_operate(jsonb) FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.ac_verify(uuid,text) FROM PUBLIC, anon, authenticated;

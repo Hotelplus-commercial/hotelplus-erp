@@ -29,6 +29,13 @@
       "when": 1791812253878,
       "tag": "0003_migration",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791816549737,
+      "tag": "0004_retire_ac_v1_duplicate_ledger",
+      "breakpoints": true
     }
   ]
 }

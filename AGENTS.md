@@ -23,8 +23,5 @@
 - ORM handover uses one per-card OTA scope; Specialist row-1 (4 parts) runs in parallel from Approved to Final Setup (ceiling), Completed (Handover) sits after Final Setup for row-2 acceptance + Survey #1 before System Training; Marcom has no Completed stage. Billing start and Survey #2 fire only from the explicit customer-email action.
 - WS-2 property form data lives in its own browser-local store (src/lib/ws2-store.tsx) keyed by Hotel ID, with templates generated as JSON field dictionaries under src/lib/ws2/templates; it only reads cards and never gates Servicing stages, keeping the pipeline engine untouched.
 - Template Management lives only in the PS Templates menu (src/components/ps/template-catalogue.tsx + src/lib/email-templates.tsx); cards show checklists tick-only, and emails snapshot rendered text at send so past sends never change.
-- AC Billing uses protected Cloud tables and transactional SQL functions, not the browser-local CRM/Servicing stores, to preserve ledger consistency without migrating PS workflows.
-- AC access comes only from protected user_roles rows; all billing writes run through role-checked transactional functions, with no browser direct-write grants, to prevent simulated role escalation.
-- AC setup invoices retain a null billing_period and use issue-month only for grade grouping because the specification includes setup in grading without assigning it a billing month.
-- The AC daily task uses a managed authenticated HTTP callback and Bangkok business dates; mutable settlement and collection state remains in Postgres for idempotency.
-- All AC mutation functions acquire the same transaction advisory lock before customer or invoice locks to prevent cross-customer deadlocks during grade and collection recomputation.
+- AC v1 duplicate Cloud ledger is retired and its console/endpoints are removed; the original browser-local CRM and Hotel Profile entities remain authoritative until a shared persistence migration is scoped, preventing two competing ledgers.
+- The legacy /ac/operations URL redirects to the original /ac/billing page so saved links do not open a removed console.
