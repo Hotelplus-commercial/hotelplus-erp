@@ -1,7 +1,7 @@
 # BD-AC visual refresh v1.0
-- [ ] Apply scoped Teal + Graphite tokens and Thai fonts; restyle headline and six existing sections.
-- [ ] Visualize existing funnel, cohort, stage, cycle and aging outputs without data changes.
-- [ ] Verify unchanged counts, filters, read-only card navigation, desktop and mobile layout.
+- [x] Apply scoped Teal + Graphite tokens and Thai fonts; restyle headline and six existing sections.
+- [x] Visualize existing funnel, cohort, stage, cycle and aging outputs without data changes.
+- [x] Verify unchanged counts, filters, read-only card navigation, desktop and mobile layout; exercise nonempty scatter/owner/paid charts in isolated browser fixtures and restore originals.
 
 # Servicing v5.1 Phase 1
 - [x] Append a view-only Servicing section after the unchanged PS Contract Overview.
