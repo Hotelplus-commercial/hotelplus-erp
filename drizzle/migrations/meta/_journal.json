@@ -15,6 +15,13 @@
       "when": 1791811027960,
       "tag": "0001_ac_operations_transactions",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791811639712,
+      "tag": "0002_ac_transaction_lock_order",
+      "breakpoints": true
     }
   ]
 }
