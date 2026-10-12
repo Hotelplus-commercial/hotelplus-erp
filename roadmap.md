@@ -90,6 +90,8 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [x] Verify billing idempotency, settlement, grades, suspension/reactivation and the console end to end; remove all temporary ledger test rows.
 - [x] v2.0: check retained data (all v1 Cloud tables empty), remove AC Operations and its public server functions, stop the v1 daily schedule, redirect legacy links to existing Invoice & Receipt.
 - [ ] Physically delete retired v1 tables — blocked by backward-incompatible migration permissions; retire them without deleting original browser data meanwhile.
-- [ ] Extend existing Inquiry INV / Invoice / Receipt / Hotel Profile / Live Link with hybrid billing, AC-confirmed grades and collection lifecycle.
-- [ ] Provide daily scheduling and eight read-only views over the original entities; preserve non-AC workflows and public testing access.
-- [ ] User approved migrating original accounting data to Cloud: preserve original IDs and browser records, use one canonical persistence document with transactional mutations, and keep prototype access development-only.
+- [x] Extend existing Inquiry INV / Invoice / Receipt / Hotel Profile / Live Link with hybrid billing, AC-confirmed grades and collection lifecycle; verify partial/full confirmation and receipt readback.
+- [x] Create authenticated daily callback and managed daily schedule, plus eight read-only views over canonical original entities; preserve public test routes and non-AC screens.
+- [x] Provide explicit original-record migration with retained browser backup, Cloud loading and revision-safe saves; restrict privileged public prototype operations to development.
+- [ ] Migrate the user's actual browser records — user must use “ย้ายข้อมูลเดิมไป Cloud” and “ย้าย Hotel Profile ไป Cloud” in their preview; sandbox cannot access their local records.
+- [ ] Verify scheduled callback delivery after publication — requires user-requested publication; app is currently unpublished.
