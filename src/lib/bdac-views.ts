@@ -68,7 +68,7 @@ export const v_bdac_special_deal = () => ({ rows: [] as never[], pending_sync: t
 
 const entryOf = (l: ContractLifecycle) => {
   const d = displayStage(l.current_stage);
-  return d === 6 ? l.approved_at : d === 7 ? l.send_contract_at : d === 8 ? l.signed_at : d === 9 ? l.payment_at ?? l.signed_at && null : l.won_at;
+  return d === 6 ? l.approved_at : d === 7 ? l.send_contract_at : d === 8 ? l.signed_at : d === 9 ? l.payment_at : l.won_at;
 };
 
 export function v_bdac_stage_current(rows: ContractLifecycle[], now = Date.now()) {
