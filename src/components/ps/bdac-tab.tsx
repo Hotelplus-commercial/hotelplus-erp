@@ -23,7 +23,7 @@ const rangeOf = (k: RangeKey): Range => {
   const m = k === "3m" ? -2 : -5;
   return { from: monthRange(m).from, to: monthRange(0).to };
 };
-const owner = (id: string | null | undefined) => (id ? id.split("@")[0] : "—");
+const owner = (id: string | null | undefined) => (id ? id.split("@")[0] ?? "—" : "—");
 const fmt = (n: number | null) => (n == null ? "—" : n.toFixed(1));
 
 function Section({ n, title, sub, children, className }: { n: string; title: string; sub?: string; children: React.ReactNode; className?: string }) {
@@ -57,7 +57,7 @@ export function BdacHeadline() {
   </div>;
 }
 
-function OwnerCell({ id }: { id?: string | null }) {
+function OwnerCell({ id }: { id: string | null | undefined }) {
   const name = owner(id);
   return <span className="inline-flex items-center gap-2 whitespace-nowrap">
     {id && <span className="bdac-avatar">{name.split(/[. _-]/).map((part) => part[0]).slice(0, 2).join("").toUpperCase()}</span>}{name}
