@@ -187,7 +187,10 @@ export function CrmStoreProvider({ children }: { children: React.ReactNode }) {
       cloudStatus:cloud.status,
       migrateToCloud:cloud.migrate,
       refreshCloud:cloud.refresh,
-      recordPayment:(invoiceId,method,amount)=>upd(d=>confirmPayment(d,invoiceId,method,amount,d.actor)),
+      recordPayment:(invoiceId,method,amount)=>upd(d=>{
+        const next=confirmPayment(d,invoiceId,method,amount,d.actor);
+        return next===d?d:{...next,audit:log(d,'payment.confirm',invoiceId)};
+      }),
       collectionAction:(customerId,event,note)=>upd(d=>{
         const debt=d.invoices.filter(i=>i.customer_snapshot.customer_id===customerId && !['draft','void','paid','written_off'].includes(i.status)).reduce((n,i)=>n+i.totals.total-(i.paid_amount??0),0);
         if(!note.trim() || (event==='REACTIVATED'?debt>0:debt<=0)) return d;
@@ -484,7 +487,7 @@ export function CrmStoreProvider({ children }: { children: React.ReactNode }) {
         const inv = data.invoices.find((i) => i.invoice_id === invoiceId);
         if (!inv) return null;
         const reId = taxReceiptIdFor(invoiceId);
-        upd((d) => confirmPayment(d,invoiceId,method,Math.max(0,inv.totals.total-(inv.paid_amount??0)),d.actor));
+        upd((d) => ({...confirmPayment(d,invoiceId,method,Math.max(0,inv.totals.total-(inv.paid_amount??0)),d.actor),audit:log(d,'payment.confirm',invoiceId)}));
         return reId;
       },
 

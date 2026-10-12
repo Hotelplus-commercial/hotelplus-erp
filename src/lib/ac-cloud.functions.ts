@@ -15,6 +15,8 @@ export const readAccountingCloud = createServerFn({method:'GET'}).inputValidator
 export const saveAccountingCloud = createServerFn({method:'POST'}).inputValidator(v=>schema.parse(v)).handler(async({data})=>{
   if (!import.meta.env.DEV) throw new Error('ข้อมูลบัญชีทดสอบเปิดได้เฉพาะโหมดพัฒนา');
   if(JSON.stringify(data.payload).length>8_000_000) throw new Error('ข้อมูลเกินขนาดที่รองรับ');
+  const fields=data.namespace==='hotels'?['hotels']:['contracts','invoices','reports','products','customers','taxReceipts','liveLinks','invRequests'];
+  if(fields.some(field=>!Array.isArray(data.payload[field]))) throw new Error('ข้อมูลบัญชีไม่ครบ');
   const {supabaseAdmin}=await import('@/integrations/supabase/client.server');
   const result=await supabaseAdmin.rpc('crm_compare_swap',{p_namespace:data.namespace,p_revision:data.revision,p_payload:data.payload as Json});
   if(result.error) throw new Error('ข้อมูล Cloud เปลี่ยนหรือบันทึกไม่สำเร็จ กรุณาโหลดใหม่ก่อนแก้ไข');
