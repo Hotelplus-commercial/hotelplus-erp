@@ -1,4 +1,10 @@
 # Servicing v5.1 Phase 1
+# BD-AC visual refresh v1.0
+- [ ] Apply scoped Teal + Graphite tokens and Thai fonts; restyle headline and six existing sections.
+- [ ] Visualize existing funnel, cohort, stage, cycle and aging outputs without data changes.
+- [ ] Verify unchanged counts, filters, read-only card navigation, desktop and mobile layout.
+
+# Servicing v5.1 Phase 1
 - [x] Append a view-only Servicing section after the unchanged PS Contract Overview.
 - [x] Add independent dashboard stats, filters and Pipeline/Tracking/Disparity/KPI switcher.
 - [x] Keep create, full Pipeline, independent filters, guided drawer and history on On-boarding Process.
