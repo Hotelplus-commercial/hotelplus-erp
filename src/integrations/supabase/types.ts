@@ -824,6 +824,15 @@ export type Database = {
         Returns: Database["public"]["Enums"]["payment_grade"]
       }
       ac_operate: { Args: { payload: Json }; Returns: string }
+      ac_operate_as: {
+        Args: {
+          p_name: string
+          p_persona: string
+          p_role: string
+          payload: Json
+        }
+        Returns: Json
+      }
       ac_recompute: { Args: { t?: string }; Returns: undefined }
       ac_verify: {
         Args: { p_payment: string; p_receipt: string }

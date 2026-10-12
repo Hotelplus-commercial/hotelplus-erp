@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
 import { useState } from 'react';
-import { CheckCheck, Plus, RefreshCw, LogOut, Receipt, Pencil, Pause, Play, Ban } from 'lucide-react';
+import { CheckCheck, Plus, RefreshCw, Receipt, Pencil, Pause, Play, Ban } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,9 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Chip } from '@/components/crm/crm-ui';
-import { supabase } from '@/integrations/supabase/client';
-import { lovable } from '@/integrations/lovable';
-import { getAcLedger, mutateAcLedger, type AcAction } from '@/lib/ac-billing.functions';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { getAcLedger, mutateAcLedger, AC_PERSONAS, type AcAction } from '@/lib/ac-billing.functions';
 import type { Tables } from '@/integrations/supabase/types';
 
 const money = (n: number | null | undefined) => new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB' }).format(n ?? 0);
@@ -40,8 +39,9 @@ export function AcOperations() {
   const queryClient = useQueryClient();
   const fetchLedger = useServerFn(getAcLedger);
   const mutateLedger = useServerFn(mutateAcLedger);
-  const session = useQuery({ queryKey: ['ac-session'], queryFn: async () => (await supabase.auth.getUser()).data.user, retry: false });
-  const query = useQuery({ queryKey: ['ac-ledger', session.data?.id], queryFn: () => fetchLedger(), enabled: !!session.data, retry: false });
+  const [role, setRole] = useState<(typeof AC_PERSONAS)[number]['role']>('ac');
+  const user = AC_PERSONAS.find(p => p.role === role)!;
+  const query = useQuery({ queryKey: ['ac-ledger', role], queryFn: () => fetchLedger({ data: { role } }), retry: false });
   const [mode, setMode] = useState<FormMode | null>(null);
   const [detail, setDetail] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -57,24 +57,13 @@ export function AcOperations() {
   const nameOf = (list: { id: string; name: string }[], id: string) => list.find(x => x.id === id)?.name ?? '—';
   const run = async (action: AcAction) => {
     setSaving(true);
-    try { await mutateLedger({ data: action }); await queryClient.invalidateQueries({ queryKey: ['ac-ledger'] }); toast.success('บันทึกแล้ว'); setMode(null); }
+    try { await mutateLedger({ data: { role, action } }); await queryClient.invalidateQueries({ queryKey: ['ac-ledger'] }); toast.success('บันทึกแล้ว'); setMode(null); }
     catch (e) { toast.error(e instanceof Error ? e.message : 'ไม่สามารถบันทึกได้'); }
     finally { setSaving(false); }
   };
-  const login = async () => {
-    const result = await lovable.auth.signInWithOAuth('google', { redirect_uri: `${window.location.origin}/ac/operations` });
-    if (result.error) toast.error(result.error.message);
-    await queryClient.invalidateQueries({ queryKey: ['ac-session'] });
-  };
-  const logout = async () => {
-    await queryClient.cancelQueries(); queryClient.clear(); await supabase.auth.signOut();
-    setDetail(null); setMode(null); await queryClient.invalidateQueries({ queryKey: ['ac-session'] });
-  };
-  if (session.isPending) return <p className="py-10 text-muted-foreground">กำลังตรวจสอบบัญชี…</p>;
-  if (!session.data) return <section className="space-y-4 border-y py-10"><h1 className="font-display text-2xl font-semibold">AC Operations</h1><p className="text-muted-foreground">เข้าสู่ระบบบัญชี</p><Button onClick={login}>เข้าสู่ระบบด้วย Google</Button></section>;
   if (query.isPending) return <p className="py-10 text-muted-foreground">กำลังโหลดงานบัญชี…</p>;
-  if (query.isError) return <section className="space-y-3 py-8"><p>{query.error.message}</p><Button variant="outline" onClick={() => query.refetch()}>ลองอีกครั้ง</Button><Button variant="ghost" onClick={logout}>ออกจากระบบ</Button></section>;
-  if (!data?.authorized) return <section className="space-y-3 py-8"><h1 className="font-display text-2xl font-semibold">AC Operations</h1><p className="text-muted-foreground">บัญชีนี้ยังไม่มีสิทธิ์งานบัญชี</p><Button variant="outline" onClick={logout}>ออกจากระบบ</Button></section>;
+  if (query.isError) return <section className="space-y-3 py-8"><p>{query.error.message}</p><Button variant="outline" onClick={() => query.refetch()}>ลองอีกครั้ง</Button></section>;
+  if (!data) return null;
   const matches = (hotel: string, customer: string) => `${hotel} ${customer}`.toLowerCase().includes(search.toLowerCase());
   const subscriptions = data.subscriptions.filter(s => (service === 'ALL' || s.service_line === service) && (status === 'ALL' || s.status === status) && matches(nameOf(data.hotels,s.hotel_id),nameOf(data.customers,s.customer_id)));
   const invoices = data.invoices.filter(i => (service === 'ALL' || i.service_line === service) && (status === 'ALL' || i.status === status) && (invoiceType === 'ALL' || i.invoice_type === invoiceType) && (!period || i.billing_period === `${period}-01`) && matches(i.hotel_name ?? '',i.customer_name ?? ''));
@@ -85,7 +74,7 @@ export function AcOperations() {
   const statuses = tab === 'subscriptions' ? ['ACTIVE','PAUSED','SUSPENDED','TERMINATED'] : tab === 'collection' ? ['NORMAL','OVERDUE','SUSPENDED','LEGAL','WRITTEN_OFF'] : ['ISSUED','PARTIALLY_PAID','PAID','OVERDUE','WRITTEN_OFF','VOID'];
   const invoiceRows = (rows: Invoice[], payments = false) => rows.map(i => <tr key={i.id}><td className={cell}><Button variant="link" className="h-auto p-0" onClick={() => setDetail(i.id ?? null)}>{i.hotel_name}</Button><p className="text-xs text-muted-foreground">{i.customer_name}</p></td><td className={cell}>{i.invoice_type}<p className="text-xs text-muted-foreground">{i.service_line} · {i.customer_segment}</p></td><td className={cell}>{i.billing_period?.slice(0,7) ?? '—'}</td><td className={`${cell} whitespace-nowrap text-right tabular-nums`}>{money(i.amount)}<p className="text-xs text-muted-foreground">รับแล้ว {money(i.paid_amount)}</p></td><td className={cell}><Status value={i.status} /></td><td className={`${cell} whitespace-nowrap`}>{displayDate(i.due_date)}<p className="text-xs text-muted-foreground">ยืนยัน {displayDate(i.settled_date)}</p></td><td className={cell}>{i.tax_receipt_no ?? '—'}</td>{payments && <td className={cell}><div className="flex flex-col items-start gap-1">{canEdit && <Button size="sm" variant="outline" onClick={() => setMode({ kind: 'payment', invoice: i })}><Plus className="size-3.5" />รับชำระ</Button>}{data.payments.filter(p => p.invoice_id === i.id && !p.verified_by_ac).map(p => <Button key={p.id} size="sm" variant="outline" disabled={!canEdit || saving} onClick={() => setMode({ kind: 'verify', payment: p })}><CheckCheck className="size-3.5" /> AC Verify {money(p.amount)}</Button>)}</div></td>}</tr>);
   return <div className="space-y-5">
-    <header className="flex flex-wrap items-center justify-between gap-3"><div><h1 className="font-display text-2xl font-semibold">AC Operations</h1><p className="mt-1 text-sm text-muted-foreground">บัญชีเรียกเก็บเงิน · {session.data.email}</p></div><div className="flex gap-2"><Button variant="outline" size="icon" aria-label="โหลดใหม่" onClick={() => query.refetch()}><RefreshCw className="size-4" /></Button><Button variant="outline" size="icon" aria-label="ออกจากระบบ" onClick={logout}><LogOut className="size-4" /></Button></div></header>
+    <header className="flex flex-wrap items-center justify-between gap-3"><div><h1 className="font-display text-2xl font-semibold">AC Operations</h1><p className="mt-1 text-sm text-muted-foreground">บัญชีเรียกเก็บเงิน · โหมดทดสอบ (ไม่ต้องเข้าสู่ระบบ)</p></div><div className="flex gap-2"><Button variant="outline" size="icon" aria-label="โหลดใหม่" onClick={() => query.refetch()}><RefreshCw className="size-4" /></Button><Select value={role} onValueChange={v => { setRole(v as typeof role); setDetail(null); setMode(null); }}><SelectTrigger className="w-52" aria-label="ผู้ใช้งาน"><SelectValue>{user.name}</SelectValue></SelectTrigger><SelectContent>{AC_PERSONAS.map(p => <SelectItem key={p.role} value={p.role}>{p.name}</SelectItem>)}</SelectContent></Select></div></header>
     <div className="grid grid-cols-2 gap-4 border-y py-4 lg:grid-cols-5">{[['ยอดค้างทั้งหมด',money(data.collections.reduce((n,c) => n+(c.outstanding ?? 0),0))],['รอ AC ยืนยัน',pending],['ACTIVE',data.subscriptions.filter(s => s.status==='ACTIVE').length],['PAUSED',data.subscriptions.filter(s => s.status==='PAUSED').length],['SUSPENDED',data.subscriptions.filter(s => s.status==='SUSPENDED').length]].map(([label,value]) => <div key={label}><p className="text-xs text-muted-foreground">{label}</p><p className="mt-1 text-xl font-semibold tabular-nums">{value}</p></div>)}</div>
     <Tabs value={tab} onValueChange={value => { setTab(value); setStatus('ALL'); }}><TabsList className="max-w-full overflow-x-auto"><TabsTrigger value="subscriptions">Subscriptions</TabsTrigger><TabsTrigger value="invoices">Invoices</TabsTrigger><TabsTrigger value="payments">AC Worklist</TabsTrigger><TabsTrigger value="collection">Collection</TabsTrigger></TabsList>
       <div className="my-4 flex flex-wrap items-end gap-3"><div className="min-w-48 flex-1"><Label htmlFor="search">ค้นหาโรงแรม / ลูกค้า</Label><Input id="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="ค้นหา" /></div><div><Label htmlFor="service-filter">บริการ</Label><select id="service-filter" className="h-10 rounded-md border bg-background px-3 text-sm" value={service} onChange={e => setService(e.target.value)}><option value="ALL">ทั้งหมด</option><option>ORM</option><option>Marcom</option></select></div><div><Label htmlFor="status-filter">สถานะ</Label><select id="status-filter" className="h-10 rounded-md border bg-background px-3 text-sm" value={status} onChange={e => setStatus(e.target.value)}><option value="ALL">ทั้งหมด</option>{statuses.map(s => <option key={s}>{s}</option>)}</select></div>{['invoices','payments'].includes(tab) && <><div><Label htmlFor="type-filter">ประเภท</Label><select id="type-filter" className="h-10 rounded-md border bg-background px-3 text-sm" value={invoiceType} onChange={e => setInvoiceType(e.target.value)}><option value="ALL">ทั้งหมด</option>{['SETUP','RECURRING','SYSTEM_FEE'].map(t => <option key={t}>{t}</option>)}</select></div><div><Label htmlFor="period-filter">รอบเดือน</Label><Input id="period-filter" type="month" value={period} onChange={e => setPeriod(e.target.value)} /></div></>}{canEdit && ['subscriptions','invoices'].includes(tab) && <Button onClick={() => setMode({ kind: tab === 'subscriptions' ? 'subscription' : 'invoice' })}><Plus className="size-4" />{tab === 'subscriptions' ? 'เพิ่ม Subscription' : 'สร้างใบแจ้งหนี้'}</Button>}</div>

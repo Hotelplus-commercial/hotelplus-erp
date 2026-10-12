@@ -22,6 +22,13 @@
       "when": 1791811639712,
       "tag": "0002_ac_transaction_lock_order",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791812253878,
+      "tag": "0003_migration",
+      "breakpoints": true
     }
   ]
 }

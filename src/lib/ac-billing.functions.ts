@@ -1,6 +1,15 @@
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
-import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
+
+// TEST MODE: no sign-in. A simulated persona from the user dropdown drives permissions.
+export const AC_PERSONAS = [
+  { id: '00000000-0000-4000-a000-000000000001', name: 'AC · บัญชี', role: 'ac' },
+  { id: '00000000-0000-4000-a000-000000000002', name: 'Admin', role: 'admin' },
+  { id: '00000000-0000-4000-a000-000000000003', name: 'Legal · กฎหมาย', role: 'legal' },
+  { id: '00000000-0000-4000-a000-000000000004', name: 'Viewer · ดูอย่างเดียว', role: 'billing_reader' },
+] as const;
+const persona = z.enum(['ac', 'admin', 'legal', 'billing_reader']);
+const admin = async () => (await import('@/integrations/supabase/client.server')).supabaseAdmin;
 
 const id = z.string().uuid();
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -16,13 +25,10 @@ const input = z.discriminatedUnion('action', [
 ]);
 export type AcAction = z.infer<typeof input>;
 
-export const getAcLedger = createServerFn({ method: 'GET' }).middleware([requireSupabaseAuth]).handler(async ({ context }) => {
-  const { data: roles, error: roleError } = await context.supabase.from('user_roles').select('role').eq('user_id', context.userId);
-  if (roleError) throw new Error('ไม่สามารถตรวจสอบสิทธิ์บัญชี');
-  const granted = roles?.map(r => r.role) ?? [];
-  if (!granted.some(r => ['ac', 'admin', 'legal', 'billing_reader'].includes(r))) {
-    return { authorized: false as const, roles: granted, subscriptions: [], invoices: [], payments: [], grades: [], collections: [], events: [], hotels: [], customers: [], contracts: [], members: [] };
-  }
+export const getAcLedger = createServerFn({ method: 'GET' }).inputValidator(v => z.object({ role: persona }).parse(v)).handler(async ({ data: input }) => {
+  const granted: string[] = [input.role];
+  const db = await admin();
+  const context = { supabase: db };
   const [s, i, p, g, c, e, h, cu, co, m] = await Promise.all([
     context.supabase.from('service_subscription').select('*').order('created_at', { ascending: false }),
     context.supabase.from('ac_invoice_attributed').select('*').order('created_at', { ascending: false }),
@@ -37,10 +43,10 @@ export const getAcLedger = createServerFn({ method: 'GET' }).middleware([require
   return { authorized: true as const, roles: granted, subscriptions: s.data ?? [], invoices: i.data ?? [], payments: p.data ?? [], grades: g.data ?? [], collections: c.data ?? [], events: e.data ?? [], hotels: h.data ?? [], customers: cu.data ?? [], contracts: co.data ?? [], members: m.data ?? [] };
 });
 
-export const mutateAcLedger = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth]).inputValidator(value => input.parse(value)).handler(async ({ data, context }) => {
-  const result = data.action === 'verify'
-    ? await context.supabase.rpc('ac_verify', { p_payment: data.payment_id, p_receipt: data.tax_receipt_no })
-    : await context.supabase.rpc('ac_operate', { payload: data });
+export const mutateAcLedger = createServerFn({ method: 'POST' }).inputValidator(value => z.object({ role: persona, action: input }).parse(value)).handler(async ({ data }) => {
+  const p = AC_PERSONAS.find(x => x.role === data.role)!;
+  const db = await admin();
+  const result = await db.rpc('ac_operate_as', { p_persona: p.id, p_role: p.role, p_name: p.name, payload: data.action });
   if (result.error) throw new Error(result.error.message);
   return { ok: true };
 });
