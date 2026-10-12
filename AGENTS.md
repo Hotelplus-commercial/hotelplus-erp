@@ -26,7 +26,9 @@
 - AC v1 duplicate ledger is retired; original CRM entities and IDs are persisted in one versioned Cloud document with compare-and-swap transactions, preserving existing entity shapes and avoiding a second parallel accounting model.
 - Public accounting migration/access is development-only on the server; published routes stay public but privileged prototype data operations are rejected to prevent public access to real financial records.
 - AC billing uses one pure accounting engine for report arrival, AC confirmation and the authenticated daily callback; this keeps tax, grade and idempotency rules consistent across entry points.
-- AC reporting views project the canonical CRM and Hotel Profile documents with service/period attribution; deterministic UUID aliases preserve legacy view column types without duplicating source entities.
+- AC reporting views project canonical invoices with stable hotel IDs and service-aware WS-2 profile owners; retain legacy view column types, and never use contract/subscription owner snapshots as the assignment master. WS-2 SQL projection awaits a future snapshot within the hotels document; this pass never adds sync.
+- AC payment summaries use one pure recurring-grade selector; lifecycle ignores debt and collection derivation preserves manual terminal events until explicit reactivation, preventing contradictory scores and statuses.
+- Stable hotel IDs are resolved uniquely at canonical contract ingestion/backfill and copied to invoices; unresolved or ambiguous identity is never guessed in attribution.
 - Canonical document saves use revision compare-and-swap with a retained local backup; conflicts stop synchronization rather than overwrite another writer's changes.
 - The legacy /ac/operations URL redirects to the original /ac/billing page so saved links do not open a removed console.
 - BD-AC charts consume only existing view projections and use a scoped theme backed by global CSS tokens; this preserves analytics, workflow writes and unrelated module styling.

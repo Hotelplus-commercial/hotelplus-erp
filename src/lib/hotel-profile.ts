@@ -101,14 +101,13 @@ export const statusMeta: Record<HotelStatus, { label: string; className: string 
 export function detectStatus(input: {
   contractEnd?: Date | undefined;
   terminated: boolean;
-  overdueMonths: number;
 }): HotelStatus {
   if (input.terminated) return "terminated";
   if (input.contractEnd && input.contractEnd.getTime() < Date.now()) return "contract-end";
-  if (input.overdueMonths >= 2) return "overdue";
   return "active";
 }
 
+/** @deprecated Displayed payment scores must use the canonical grade engine. */
 export function paymentScore(overdueMonths: number, latePayments: number) {
   const score = Math.max(0, 100 - overdueMonths * 25 - latePayments * 5);
   const grade = score >= 85 ? "A" : score >= 70 ? "B" : score >= 50 ? "C" : "D";

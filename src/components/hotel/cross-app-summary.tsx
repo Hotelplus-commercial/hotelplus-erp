@@ -3,13 +3,14 @@ import {
   activeTermOf,
   avgMonthlyFee,
   contractRange,
-  hotelScore,
   hotelStatus,
   useHotelStore,
 } from "@/lib/hotel-store";
 import { money } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import { Section } from "@/components/hotel-form";
+import { useCrm } from '@/lib/crm-store';
+import { paymentSummary } from '@/lib/ac-v2-engine';
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -26,7 +27,8 @@ export function CrossAppSummary({ source }: { source: "ac" | "ps" }) {
   const sm = statusMeta[hotelStatus(h)];
   const { start, end } = contractRange(h);
   const { index, term } = activeTermOf(h);
-  const { score, grade } = hotelScore(h);
+  const crm = useCrm();
+  const { score, grade } = paymentSummary(crm, h);
 
   if (source === "ac") {
     return (

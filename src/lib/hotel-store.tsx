@@ -83,7 +83,6 @@ export function hotelStatus(h: HotelProfile): HotelStatus {
   return detectStatus({
     contractEnd: contractRange(h).end,
     terminated: h.termination.active,
-    overdueMonths: h.overdueMonths,
   });
 }
 

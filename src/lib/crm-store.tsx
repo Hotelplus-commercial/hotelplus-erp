@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useAccountingCloud } from './use-accounting-cloud';
-import { bangkokDate, confirmPayment, recomputeAccounting, runDailyBilling, type GradeRecord, type CollectionEvent } from './ac-v2-engine';
+import { bangkokDate, confirmPayment, recomputeAccounting, runDailyBilling, type GradeRecord, type CollectionEvent, manualCollection } from './ac-v2-engine';
+import { resolveContractHotel, stampInvoiceHotel } from './ac-attribution';
 
 import {
   lastPeriod,
@@ -152,7 +153,12 @@ export function CrmStoreProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const stored = load();
-    if (stored) setData(stored);
+    if (stored) {
+      let hotels: {id:string;name:string}[] = [];
+      try { const raw = window.localStorage.getItem('meridia.hotel-profiles.v1'); if(raw) hotels = JSON.parse(raw); } catch { /* retain unresolved legacy IDs */ }
+      const contracts = stored.contracts.map(c => resolveContractHotel(c,stored.customers,hotels));
+      setData({...stored, contracts, invoices: stored.invoices.map(i => stampInvoiceHotel(i,contracts))});
+    }
     setHydrated(true);
   }, []);
 
@@ -191,12 +197,7 @@ export function CrmStoreProvider({ children }: { children: React.ReactNode }) {
         const next=confirmPayment(d,invoiceId,method,amount,d.actor);
         return next===d?d:{...next,audit:log(d,'payment.confirm',invoiceId)};
       }),
-      collectionAction:(customerId,event,note)=>upd(d=>{
-        const debt=d.invoices.filter(i=>i.customer_snapshot.customer_id===customerId && !['draft','void','paid','written_off'].includes(i.status)).reduce((n,i)=>n+i.totals.total-(i.paid_amount??0),0);
-        if(!note.trim() || (event==='REACTIVATED'?debt>0:debt<=0)) return d;
-        const inv=d.invoices.find(i=>i.customer_snapshot.customer_id===customerId);
-        return recomputeAccounting({...d,invoices:event==='WRITTEN_OFF'?d.invoices.map(i=>i.customer_snapshot.customer_id===customerId && !['draft','void','paid'].includes(i.status)?{...i,status:'written_off' as const}:i):d.invoices,contracts:d.contracts.map(c=>c.customer_snapshot.customer_id===customerId && event==='REACTIVATED' && c.billing_status==='SUSPENDED'?{...c,billing_status:'ACTIVE' as const}:c),collectionEvents:[{id:crypto.randomUUID(),customer_id:customerId,hotel_name:inv?.customer_snapshot.hotel_name??'',event_type:event,occurred_at:bangkokDate(),by_member:d.actor,amount_outstanding:debt,note},...(d.collectionEvents??[])]});
-      }),
+      collectionAction:(customerId,event,note)=>upd(d=>manualCollection(d,customerId,event,note,d.actor)),
       hydrated,
       setActor: (email) => upd((d) => ({ ...d, actor: email })),
       reset: () => {
@@ -344,7 +345,7 @@ export function CrmStoreProvider({ children }: { children: React.ReactNode }) {
       addContracts: (list) =>
         upd((d) => ({
           ...d,
-          contracts: [...list, ...d.contracts],
+          contracts: [...list.map(c => resolveContractHotel(c, d.customers)), ...d.contracts],
           audit: log(d, "contract.generate", list.map((c) => c.contract_id).join(", ")),
         })),
 
@@ -411,6 +412,8 @@ export function CrmStoreProvider({ children }: { children: React.ReactNode }) {
             ...d,
             invoices: [
               {
+                ...(contract.hotel_id ? {hotel_id:contract.hotel_id} : {}),
+                invoice_type:'SETUP',
                 invoice_id: id,
                 case_number: caseNumber,
                 contract_ids: req?.contract_ids ?? [],

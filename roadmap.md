@@ -1,3 +1,9 @@
+# AC v2.0 tightening T1–T4
+- [x] Consolidate grade-derived scores and separate lifecycle from collection.
+- [x] Stamp stable hotel identity and rewire service-aware WS-2 attribution without Cloud sync changes; SQL owners await the separate WS-2 snapshot workstream.
+- [x] Limit grades to due RECURRING invoices and enforce terminal/manual collection precedence.
+- [x] Deprecate remnants in comments; nine regression tests pass, all eight views query successfully, and AC Live Link/partial/full settlement/receipt/profile flow verified in browser.
+
 # BD-AC visual refresh v1.0
 - [x] Apply scoped Teal + Graphite tokens and Thai fonts; restyle headline and six existing sections.
 - [x] Visualize existing funnel, cohort, stage, cycle and aging outputs without data changes.
@@ -94,7 +100,7 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [x] Add AC Operations subscriptions, invoices, payment verification and collection console without altering PS workflows.
 - [x] Verify billing idempotency, settlement, grades, suspension/reactivation and the console end to end; remove all temporary ledger test rows.
 - [x] v2.0: check retained data (all v1 Cloud tables empty), remove AC Operations and its public server functions, stop the v1 daily schedule, redirect legacy links to existing Invoice & Receipt.
-- [ ] Physically delete retired v1 tables — blocked by backward-incompatible migration permissions; retire them without deleting original browser data meanwhile.
+- [x] Superseded by tightening scope: retain retired v1 tables/functions and mark deprecated; deletion is no longer requested.
 - [x] Extend existing Inquiry INV / Invoice / Receipt / Hotel Profile / Live Link with hybrid billing, AC-confirmed grades and collection lifecycle; verify partial/full confirmation and receipt readback.
 - [x] Create authenticated daily callback and managed daily schedule, plus eight read-only views over canonical original entities; preserve public test routes and non-AC screens.
 - [x] Provide explicit original-record migration with retained browser backup, Cloud loading and revision-safe saves; restrict privileged public prototype operations to development.

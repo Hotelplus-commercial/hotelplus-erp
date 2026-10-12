@@ -310,13 +310,6 @@ export type Database = {
             foreignKeyName: "payment_invoice_id_fkey"
             columns: ["invoice_id"]
             isOneToOne: false
-            referencedRelation: "ac_invoice_attributed"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "payment_invoice_id_fkey"
-            columns: ["invoice_id"]
-            isOneToOne: false
             referencedRelation: "invoice"
             referencedColumns: ["id"]
           },
@@ -534,6 +527,8 @@ export type Database = {
           amount: number | null
           billing_period: string | null
           cadence: string | null
+          canonical_status: string | null
+          collection_status: string | null
           created_at: string | null
           customer_id: string | null
           customer_name: string | null
@@ -548,6 +543,8 @@ export type Database = {
           invoice_type: Database["public"]["Enums"]["invoice_type"] | null
           issue_date: string | null
           marcom_member_id: string | null
+          original_customer_id: string | null
+          original_invoice_id: string | null
           orm_team_id: string | null
           paid_amount: number | null
           service_line: Database["public"]["Enums"]["service_line"] | null
@@ -556,50 +553,7 @@ export type Database = {
           subscription_id: string | null
           tax_receipt_no: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "invoice_customer_id_fkey"
-            columns: ["customer_id"]
-            isOneToOne: false
-            referencedRelation: "ac_collection_current"
-            referencedColumns: ["customer_id"]
-          },
-          {
-            foreignKeyName: "invoice_customer_id_fkey"
-            columns: ["customer_id"]
-            isOneToOne: false
-            referencedRelation: "customer"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "invoice_hotel_id_fkey"
-            columns: ["hotel_id"]
-            isOneToOne: false
-            referencedRelation: "hotel"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "invoice_subscription_id_fkey"
-            columns: ["subscription_id"]
-            isOneToOne: false
-            referencedRelation: "service_subscription"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "service_subscription_marcom_member_id_fkey"
-            columns: ["marcom_member_id"]
-            isOneToOne: false
-            referencedRelation: "member"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "service_subscription_orm_team_id_fkey"
-            columns: ["orm_team_id"]
-            isOneToOne: false
-            referencedRelation: "member"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       v_ac_debtors: {
         Row: {
