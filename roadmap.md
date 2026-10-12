@@ -85,6 +85,8 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [x] PS Dashboard 5th tile + list; ORM / Marcom Dashboard inboxes; card "ผู้ดูแล Account" block.
 
 ## AC Billing Ledger + Payment Grade v1.0
-- [ ] Create protected shared billing tables, engines, eight read-only views and daily schedule.
-- [ ] Add AC Operations subscriptions, invoices, payment verification and collection console without altering PS workflows.
-- [ ] Verify billing idempotency, settlement, grades, suspension/reactivation and the console end to end.
+- [x] Create protected shared billing tables, engines, eight read-only views and daily schedule.
+- [x] Add AC Operations subscriptions, invoices, payment verification and collection console without altering PS workflows.
+- [x] Verify billing idempotency, settlement, grades, suspension/reactivation and the console end to end; remove all temporary ledger test rows.
+- [ ] Enable a real Accounting user's access — blocked until that user signs in and the owner identifies the account to grant.
+- [ ] Activate the scheduled callback on the published app — blocked until the owner requests publication.
