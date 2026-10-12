@@ -1,6 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { FileText, Link2, Receipt } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useServerFn } from '@tanstack/react-start';
+import { runAccountingDaily } from '@/lib/ac-cloud.functions';
+import { bangkokDate, outstandingOf } from '@/lib/ac-v2-engine';
 import { toast } from "sonner";
 
 import { Chip, Kpi, PartyBlock, Panel, TotalsBlock, fmtDate } from "@/components/crm/crm-ui";
@@ -14,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { missingReports, monthName, thb } from "@/lib/crm-rules";
-import { lastPeriod, useCrm } from "@/lib/crm-store";
+import { crmUsers, lastPeriod, useCrm } from "@/lib/crm-store";
 import type { InvoiceLine } from "@/lib/crm-types";
 
 export const Route = createFileRoute("/ac/billing")({
@@ -24,6 +27,7 @@ export const Route = createFileRoute("/ac/billing")({
       { name: "description", content: "รับคำขอออกใบแจ้งหนี้จาก PS ออกเลข INV และใบเสร็จรับเงิน/ใบกำกับภาษี" },
       { property: "og:title", content: "Invoice & Tax Receipt — AC App" },
       { property: "og:description", content: "ออกใบแจ้งหนี้ ส่ง LIVE Link และออกใบเสร็จรับเงิน" },
+      { property:'og:type',content:'website' }, { name:'twitter:card',content:'summary_large_image' },
     ],
   }),
   component: BillingPage,
@@ -41,7 +45,10 @@ function BillingPage() {
     markPaid,
     voidTaxReceipt,
     liveLinks,
+    actor,setActor,cloudStatus,migrateToCloud,refreshCloud,billingWaiting,recordPayment,
   } = useCrm();
+  const daily=useServerFn(runAccountingDaily);
+  const [working,setWorking]=useState(false);
 
   const [year, setYear] = useState(String(lastPeriod.year));
   const [month, setMonth] = useState(String(lastPeriod.month));
@@ -95,6 +102,10 @@ function BillingPage() {
 
   return (
     <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Select value={actor} onValueChange={setActor}><SelectTrigger className="w-52" aria-label="ผู้บันทึกบัญชี"><SelectValue /></SelectTrigger><SelectContent>{crmUsers.map(u=><SelectItem key={u.email} value={u.email}>{u.name}</SelectItem>)}</SelectContent></Select>
+        <div className="flex flex-wrap items-center gap-2"><Chip tone={cloudStatus==='cloud'?'success':'warn'}>{cloudStatus==='cloud'?'Lovable Cloud':cloudStatus==='loading'?'กำลังโหลด':cloudStatus==='error'?'Cloud ต้องโหลดใหม่':'ข้อมูลในเบราว์เซอร์'}</Chip>{cloudStatus==='local' && <Button size="sm" disabled={working} onClick={async()=>{setWorking(true);try{await migrateToCloud();}finally{setWorking(false);}}}>ย้ายข้อมูลเดิมไป Cloud</Button>}{cloudStatus==='error' && <Button variant="outline" size="sm" onClick={()=>refreshCloud()}>โหลดข้อมูล Cloud ใหม่</Button>}{cloudStatus==='cloud' && <Button variant="outline" size="sm" disabled={working} onClick={async()=>{setWorking(true);try{await daily();await refreshCloud();toast.success('ประมวลผลบัญชี '+bangkokDate());}catch(e){toast.error(e instanceof Error?e.message:'ประมวลผลไม่สำเร็จ');}finally{setWorking(false);}}}>ประมวลผลงานรายวัน</Button>}</div>
+      </div>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Kpi label="คำขอออกใบแจ้งหนี้" value={invRequests.filter((r) => r.status !== "completed").length} />
         <Kpi label="ใบแจ้งหนี้ทั้งหมด" value={invoices.length} />
@@ -143,6 +154,7 @@ function BillingPage() {
             }
           >
             <div className="space-y-3">
+              {(billingWaiting??[]).map(w=><div key={w.contract_id+w.service_line+w.billing_period} className="border-l-2 border-warning bg-warning/10 p-3 text-sm"><p className="font-medium">{contracts.find(c=>c.contract_id===w.contract_id)?.customer_snapshot.hotel_name} · {w.service_line} · {w.billing_period.slice(0,7)}</p><p>awaiting Production Report</p></div>)}
               {invRequests.map((r) => {
                 const cs = contracts.filter((c) => r.contract_ids.includes(c.contract_id));
                 const gaps = missingReports(cs, reports, y, m);
@@ -210,7 +222,7 @@ function BillingPage() {
                     <Chip tone={inv.status === "paid" ? "success" : inv.status === "draft" ? "warn" : "info"}>
                       {inv.status}
                     </Chip>
-                    {inv.status === "draft" && (
+                    {['draft','issued'].includes(inv.status) && (
                       <Button
                         size="sm"
                         className="gap-1.5"
@@ -219,17 +231,21 @@ function BillingPage() {
                           toast.success("ออกใบแจ้งหนี้และส่ง LIVE Link แล้ว", { description: `/l/${token}` });
                         }}
                       >
-                        <Link2 className="size-4" /> ออกเลข & ส่ง LIVE Link
+                        <Link2 className="size-4" /> Create Live Link
                       </Button>
                     )}
-                    {inv.status === "sent_via_live_link" && (
+                    {['sent_via_live_link','issued','partially_paid'].includes(inv.status) && (
                       <Button
                         size="sm"
                         variant="outline"
                         className="gap-1.5"
                         onClick={() => {
-                          const re = markPaid(inv.invoice_id, "โอนเงินผ่านธนาคาร");
-                          toast.success(`บันทึกรับชำระ — ออกใบเสร็จ ${re}`);
+                          const raw=window.prompt('ยอดรับชำระที่ AC ยืนยัน',String(outstandingOf(inv)));
+                          if(raw===null) return;
+                          const amount=Number(raw);
+                          if(!Number.isFinite(amount) || amount<=0 || amount>outstandingOf(inv)){toast.error('ยอดรับชำระไม่ถูกต้อง');return;}
+                          recordPayment(inv.invoice_id,'โอนเงินผ่านธนาคาร',amount);
+                          toast.success(amount>=outstandingOf(inv)?'ยืนยันเต็มยอดและออกใบเสร็จแล้ว':'ยืนยันรับชำระบางส่วนแล้ว');
                         }}
                       >
                         <Receipt className="size-4" /> บันทึกรับชำระ
@@ -243,6 +259,7 @@ function BillingPage() {
                   </div>
                 }
               >
+                <p className="mb-3 text-xs text-muted-foreground">{inv.customer_segment??'EXISTING'} · {inv.service_line??'—'} · ครบกำหนด {inv.due_date??inv.billing_period_start.slice(0,7)+'-15'} · รับแล้ว {thb(inv.paid_amount??(inv.status==='paid'?inv.totals.total:0))} · AC ยืนยันเต็มยอด {inv.settled_date??'—'} {inv.gateway_paid_at?'· ลูกค้าชำระผ่าน Live Link แล้ว':''}</p>
                 <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
                   <div>
                     <div className="rounded-lg border bg-surface/40 p-3">

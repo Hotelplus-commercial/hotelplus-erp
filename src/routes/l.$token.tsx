@@ -16,6 +16,7 @@ export const Route = createFileRoute("/l/$token")({
       { name: "robots", content: "noindex" },
       { property: "og:title", content: "HotelPlus LIVE Link" },
       { property: "og:description", content: "ลงนามสัญญาและชำระเงินออนไลน์" },
+      { property:'og:type',content:'website' }, { name:'twitter:card',content:'summary_large_image' },
     ],
   }),
   component: LiveLinkPage,
@@ -173,7 +174,7 @@ function LiveLinkPage() {
           <h2 className="font-display text-base font-semibold">ชำระเงิน</h2>
           {paid ? (
             <div className="mt-3 flex items-center gap-2 rounded-xl bg-success/10 p-3 text-sm text-success">
-              <Check className="size-4" /> ได้รับการชำระเงินแล้ว — ระบบออกใบเสร็จ/ใบกำกับภาษีให้อัตโนมัติ
+              <Check className="size-4" /> {invoice.status==='paid'?'AC ยืนยันรับชำระแล้ว — ออกใบเสร็จ/ใบกำกับภาษีแล้ว':'ได้รับรายการชำระแล้ว — รอ AC ยืนยันและออกใบเสร็จ/ใบกำกับภาษี'}
             </div>
           ) : (
             <Button
