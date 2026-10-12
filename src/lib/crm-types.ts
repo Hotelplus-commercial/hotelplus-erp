@@ -175,6 +175,7 @@ export type ContractLine = {
 };
 
 export type Contract = {
+  hotel_id?: string;
   billing_status?: 'ACTIVE' | 'PAUSED' | 'SUSPENDED' | 'TERMINATED';
   orm_team_id?: string;
   marcom_member_id?: string;
@@ -227,6 +228,8 @@ export type InvoiceLine = {
 };
 
 export type Invoice = {
+  hotel_id?: string;
+  invoice_type?: 'SETUP' | 'RECURRING' | 'SYSTEM_FEE';
   customer_segment?: 'NEW' | 'EXISTING';
   service_line?: 'ORM' | 'Marcom';
   issue_date?: string;
