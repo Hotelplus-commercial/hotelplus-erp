@@ -123,18 +123,21 @@ function LiveLinkPage() {
               className="mt-3 w-full touch-none rounded-xl border bg-card"
               onPointerDown={(e) => {
                 drawing.current = true;
-                const ctx = canvasRef.current!.getContext("2d")!;
+                const ctx = canvasRef.current?.getContext("2d");
+                if(!ctx) return;
                 const { x, y } = pos(e);
                 ctx.beginPath();
                 ctx.moveTo(x, y);
               }}
               onPointerMove={(e) => {
                 if (!drawing.current) return;
-                const ctx = canvasRef.current!.getContext("2d")!;
+                const canvas=canvasRef.current;
+                const ctx = canvas?.getContext("2d");
+                if(!ctx || !canvas) return;
                 const { x, y } = pos(e);
                 ctx.lineWidth = 2;
                 ctx.lineCap = "round";
-                ctx.strokeStyle = "#0f172a";
+                ctx.strokeStyle = getComputedStyle(canvas).color;
                 ctx.lineTo(x, y);
                 ctx.stroke();
                 setDrawn(true);
@@ -147,8 +150,9 @@ function LiveLinkPage() {
                 variant="outline"
                 className="flex-1"
                 onClick={() => {
-                  const c = canvasRef.current!;
-                  c.getContext("2d")!.clearRect(0, 0, c.width, c.height);
+                  const c = canvasRef.current;
+                  if(!c) return;
+                  c.getContext("2d")?.clearRect(0, 0, c.width, c.height);
                   setDrawn(false);
                 }}
               >
@@ -158,7 +162,8 @@ function LiveLinkPage() {
                 className="flex-1 gap-1.5"
                 disabled={!drawn}
                 onClick={() => {
-                  signLiveLink(token, canvasRef.current!.toDataURL());
+                  if(!canvasRef.current) return;
+                  signLiveLink(token, canvasRef.current.toDataURL());
                   toast.success("บันทึกลายเซ็นเรียบร้อย");
                 }}
               >

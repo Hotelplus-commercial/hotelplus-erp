@@ -24,6 +24,7 @@ export function useAccountingCloud<T>(namespace:'crm'|'hotels', value:T, hydrate
       const row=await read({data:namespace});
       if(row) {
         const next=(namespace==='hotels' ? (row.payload as {hotels?:T})?.hotels : row.payload) as T;
+        if(!next || (namespace==='hotels' && !Array.isArray(next))) throw new Error('Invalid accounting document');
         revision.current=row.revision;
         const backupKey='meridia.accounting-cloud-backup.'+namespace;
         if(!window.localStorage.getItem(backupKey)) window.localStorage.setItem(backupKey,JSON.stringify(latest.current));
@@ -42,10 +43,11 @@ export function useAccountingCloud<T>(namespace:'crm'|'hotels', value:T, hydrate
     if(busy.current) return;
     busy.current=true;
     try {
-      const payload=namespace==='hotels'?{hotels:latest.current}:latest.current;
+      const source=latest.current;
+      const payload=namespace==='hotels'?{hotels:source}:source;
       const result=await save({data:{namespace,revision:revision.current,payload:payload as Record<string,unknown>}});
       revision.current=result.revision;
-      last.current=JSON.stringify(latest.current);
+      last.current=JSON.stringify(source);
       setStatus('cloud');
       toast.success('ย้ายข้อมูลเดิมไป Lovable Cloud แล้ว');
     } catch(e) {setStatus('error');toast.error(e instanceof Error?e.message:'ย้ายข้อมูลไม่สำเร็จ');}

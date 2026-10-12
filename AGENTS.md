@@ -25,4 +25,7 @@
 - Template Management lives only in the PS Templates menu (src/components/ps/template-catalogue.tsx + src/lib/email-templates.tsx); cards show checklists tick-only, and emails snapshot rendered text at send so past sends never change.
 - AC v1 duplicate ledger is retired; original CRM entities and IDs are persisted in one versioned Cloud document with compare-and-swap transactions, preserving existing entity shapes and avoiding a second parallel accounting model.
 - Public accounting migration/access is development-only on the server; published routes stay public but privileged prototype data operations are rejected to prevent public access to real financial records.
+- AC billing uses one pure accounting engine for report arrival, AC confirmation and the authenticated daily callback; this keeps tax, grade and idempotency rules consistent across entry points.
+- AC reporting views project the canonical CRM and Hotel Profile documents with service/period attribution; deterministic UUID aliases preserve legacy view column types without duplicating source entities.
+- Canonical document saves use revision compare-and-swap with a retained local backup; conflicts stop synchronization rather than overwrite another writer's changes.
 - The legacy /ac/operations URL redirects to the original /ac/billing page so saved links do not open a removed console.

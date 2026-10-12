@@ -1,4 +1,5 @@
 import { Save } from "lucide-react";
+import { useEffect } from 'react';
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 
@@ -33,6 +34,10 @@ export function AcProfileForm() {
   const unpaidMonths=new Set(rows.filter(i=>outstandingOf(i)>0 && (i.due_date??i.billing_period_start.slice(0,7)+'-15')<today).map(i=>i.billing_period_start.slice(0,7))).size;
   const collection=crm.collectionEvents?.find(e=>e.customer_id===customerId);
   const set = (next: Partial<HotelProfile>) => patch(h.id, next);
+  useEffect(()=>{
+    if(!crm.hydrated || !customerId) return;
+    if(h.overdueMonths!==unpaidMonths || h.latePayments!==late) patch(h.id,{overdueMonths:unpaidMonths,latePayments:late});
+  },[crm.hydrated,customerId,h.id,h.overdueMonths,h.latePayments,unpaidMonths,late,patch]);
 
   const status = hotelStatus(h);
   const sm = statusMeta[status];
@@ -80,7 +85,7 @@ export function AcProfileForm() {
             </SelectContent>
           </Select>
         </Field>
-        <Field label="จำนวนเดือนที่ค้างชำระ" hint="ใช้ auto detect สถานะ (≥ 2 เดือน)">
+        <Field label="จำนวนเดือนที่ค้างชำระ">
           <Input
             type="number"
             min={0}
@@ -89,7 +94,7 @@ export function AcProfileForm() {
             readOnly
           />
         </Field>
-        <Field label="จำนวนครั้งที่ชำระล่าช้า (12 เดือน)" hint="ใช้คำนวณ Score การชำระเงิน">
+        <Field label="จำนวนครั้งที่ชำระล่าช้า (12 เดือน)">
           <Input
             type="number"
             min={0}
@@ -169,6 +174,7 @@ export function AcProfileForm() {
           บันทึก Hotel Profile
         </Button>
       </div>
+      {crm.contracts.filter(c=>c.customer_snapshot.customer_id===customerId).map(c=><div key={c.contract_id} className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t pt-3 text-sm"><span>{c.contract_id}</span><Select value={c.billing_status??'ACTIVE'} onValueChange={v=>{if(!['ACTIVE','PAUSED','TERMINATED'].includes(v))return;if(c.billing_status==='SUSPENDED' && v!=='TERMINATED'){toast.error('ต้องชำระยอดค้างครบก่อนคืนบริการ');return;}crm.patchContract(c.contract_id,{billing_status:v as 'ACTIVE'|'PAUSED'|'TERMINATED'});}}><SelectTrigger className="w-48" aria-label={'สถานะเรียกเก็บ '+c.contract_id}><SelectValue /></SelectTrigger><SelectContent>{['ACTIVE','PAUSED','SUSPENDED','TERMINATED'].map(v=><SelectItem key={v} value={v} disabled={v==='SUSPENDED'}>{v}</SelectItem>)}</SelectContent></Select></div>)}
     </Section>
   );
 }
