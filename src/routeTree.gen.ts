@@ -53,6 +53,7 @@ import { Route as PsServicingTimelineRouteImport } from './routes/ps.servicing-t
 import { Route as PsSystemCostRouteImport } from './routes/ps.system-cost'
 import { Route as TheOfficeAppIndexRouteImport } from './routes/the-office-app.index'
 import { Route as TheOfficeAppOrmBonusRouteImport } from './routes/the-office-app.orm-bonus'
+import { Route as ApiPublicAcBillingDailyRouteImport } from './routes/api/public/ac-billing-daily'
 import { Route as BdCalculatorMarcomRouteImport } from './routes/bd.calculator.marcom'
 import { Route as BdCalculatorOrmRouteImport } from './routes/bd.calculator.orm'
 import { Route as BdQuotationsIndexRouteImport } from './routes/bd.quotations.index'
@@ -305,6 +306,11 @@ const TheOfficeAppOrmBonusRoute = TheOfficeAppOrmBonusRouteImport.update({
   path: '/orm-bonus',
   getParentRoute: () => TheOfficeAppRoute,
 } as any)
+const ApiPublicAcBillingDailyRoute = ApiPublicAcBillingDailyRouteImport.update({
+  id: '/api/public/ac-billing-daily',
+  path: '/api/public/ac-billing-daily',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BdCalculatorMarcomRoute = BdCalculatorMarcomRouteImport.update({
   id: '/marcom',
   path: '/marcom',
@@ -510,6 +516,7 @@ export interface FileRoutesByFullPath {
   '/orm/': typeof OrmIndexRoute
   '/ps/': typeof PsIndexRoute
   '/the-office-app/': typeof TheOfficeAppIndexRoute
+  '/api/public/ac-billing-daily': typeof ApiPublicAcBillingDailyRoute
   '/bd/calculator/marcom': typeof BdCalculatorMarcomRoute
   '/bd/calculator/orm': typeof BdCalculatorOrmRoute
   '/bd/quotations/$quoteId': typeof BdQuotationsQuoteIdRoute
@@ -575,6 +582,7 @@ export interface FileRoutesByTo {
   '/orm': typeof OrmIndexRoute
   '/ps': typeof PsIndexRoute
   '/the-office-app': typeof TheOfficeAppIndexRoute
+  '/api/public/ac-billing-daily': typeof ApiPublicAcBillingDailyRoute
   '/bd/calculator/marcom': typeof BdCalculatorMarcomRoute
   '/bd/calculator/orm': typeof BdCalculatorOrmRoute
   '/bd/quotations/$quoteId': typeof BdQuotationsQuoteIdRoute
@@ -653,6 +661,7 @@ export interface FileRoutesById {
   '/orm/': typeof OrmIndexRoute
   '/ps/': typeof PsIndexRoute
   '/the-office-app/': typeof TheOfficeAppIndexRoute
+  '/api/public/ac-billing-daily': typeof ApiPublicAcBillingDailyRoute
   '/bd/calculator/marcom': typeof BdCalculatorMarcomRoute
   '/bd/calculator/orm': typeof BdCalculatorOrmRoute
   '/bd/quotations/$quoteId': typeof BdQuotationsQuoteIdRoute
@@ -732,6 +741,7 @@ export interface FileRouteTypes {
     | '/orm/'
     | '/ps/'
     | '/the-office-app/'
+    | '/api/public/ac-billing-daily'
     | '/bd/calculator/marcom'
     | '/bd/calculator/orm'
     | '/bd/quotations/$quoteId'
@@ -797,6 +807,7 @@ export interface FileRouteTypes {
     | '/orm'
     | '/ps'
     | '/the-office-app'
+    | '/api/public/ac-billing-daily'
     | '/bd/calculator/marcom'
     | '/bd/calculator/orm'
     | '/bd/quotations/$quoteId'
@@ -874,6 +885,7 @@ export interface FileRouteTypes {
     | '/orm/'
     | '/ps/'
     | '/the-office-app/'
+    | '/api/public/ac-billing-daily'
     | '/bd/calculator/marcom'
     | '/bd/calculator/orm'
     | '/bd/quotations/$quoteId'
@@ -922,6 +934,7 @@ export interface RootRouteChildren {
   TheOfficeAppRoute: typeof TheOfficeAppRouteWithChildren
   FTokenRoute: typeof FTokenRoute
   LTokenRoute: typeof LTokenRoute
+  ApiPublicAcBillingDailyRoute: typeof ApiPublicAcBillingDailyRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1233,6 +1246,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/the-office-app/orm-bonus'
       preLoaderRoute: typeof TheOfficeAppOrmBonusRouteImport
       parentRoute: typeof TheOfficeAppRoute
+    }
+    '/api/public/ac-billing-daily': {
+      id: '/api/public/ac-billing-daily'
+      path: '/api/public/ac-billing-daily'
+      fullPath: '/api/public/ac-billing-daily'
+      preLoaderRoute: typeof ApiPublicAcBillingDailyRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/bd/calculator/marcom': {
       id: '/bd/calculator/marcom'
@@ -1709,6 +1729,7 @@ const rootRouteChildren: RootRouteChildren = {
   TheOfficeAppRoute: TheOfficeAppRouteWithChildren,
   FTokenRoute: FTokenRoute,
   LTokenRoute: LTokenRoute,
+  ApiPublicAcBillingDailyRoute: ApiPublicAcBillingDailyRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

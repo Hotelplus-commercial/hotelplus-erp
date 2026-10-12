@@ -25,6 +25,7 @@ import { Ws2Provider } from "@/lib/ws2-store";
 import { HrMembersProvider } from "@/lib/hr-members";
 import { TemplateMgmtProvider } from "@/lib/email-templates";
 import { ContractLifecycleProvider } from "@/lib/contract-lifecycle";
+import { supabase } from "@/integrations/supabase/client";
 
 
 
@@ -141,6 +142,17 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const router = useRouter();
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(event => {
+      if (!['SIGNED_IN', 'SIGNED_OUT', 'USER_UPDATED'].includes(event)) return;
+      if (event === 'SIGNED_OUT') queryClient.removeQueries({ queryKey: ['ac-ledger'] });
+      router.invalidate();
+      queryClient.invalidateQueries({ queryKey: ['ac-session'] });
+      if (event !== 'SIGNED_OUT') queryClient.invalidateQueries({ queryKey: ['ac-ledger'] });
+    });
+    return () => subscription.unsubscribe();
+  }, [queryClient, router]);
 
   return (
     <QueryClientProvider client={queryClient}>
