@@ -87,7 +87,7 @@ const initial = (): CrmData => ({
   taxReceipts: [],
   liveLinks: seedLiveLinks,
   audit: [],
-  actor: crmUsers[0]!.email,
+  actor: crmUsers[0]?.email ?? 'ac.team@hotelplus.asia',
 });
 
 function load(): CrmData | null {
@@ -147,7 +147,7 @@ const Ctx = createContext<Store | null>(null);
 export function CrmStoreProvider({ children }: { children: React.ReactNode }) {
   const [data, setData] = useState<CrmData>(initial);
   const [hydrated, setHydrated] = useState(false);
-  const applyCloud = useCallback((next:CrmData)=>setData(next),[]);
+  const applyCloud = useCallback((next:CrmData)=>setData({...initial(),...next}),[]);
   const cloud = useAccountingCloud('crm',data,hydrated,applyCloud);
 
   useEffect(() => {
@@ -309,7 +309,8 @@ export function CrmStoreProvider({ children }: { children: React.ReactNode }) {
         }),
 
       reviseQuote: (id) => {
-        const src = data.quotations.find((q) => q.quote_id === id)!;
+        const src = data.quotations.find((q) => q.quote_id === id);
+        if(!src) return id;
         const newId = revisionIdFor(id);
         upd((d) => ({
           ...d,
@@ -402,6 +403,7 @@ export function CrmStoreProvider({ children }: { children: React.ReactNode }) {
           const contract = d.contracts.find((c) => c.case_number === caseNumber);
           const snapshot = contract?.customer_snapshot;
           if (!snapshot) return d;
+          if(req?.invoice_id) return d;
           return {
             ...d,
             invoices: [
@@ -452,7 +454,7 @@ export function CrmStoreProvider({ children }: { children: React.ReactNode }) {
                 ? {
                     ...i,
                     status: "sent_via_live_link" as const,
-                    issued_at: new Date().toISOString(),
+                    issued_at: i.issued_at ?? new Date().toISOString(),
                     issued_by: d.actor,
                   }
                 : i,

@@ -46,7 +46,8 @@ export function recomputeAccounting<T extends AccountingData>(data: T, t = bangk
     const debt = invoices.reduce((n,i) => n + outstandingOf(i),0);
     const prev = events.find(e => e.customer_id === customer)?.event_type ?? 'NORMAL';
     const severe = invoices.some(i => outstandingOf(i)>0 && invoiceGrade(i,t)==='D');
-    const target = debt === 0 && ['SUSPENDED','LEGAL','OVERDUE'].includes(prev) ? 'REACTIVATED' : debt>0 && severe && !['SUSPENDED','LEGAL','WRITTEN_OFF'].includes(prev) ? 'SUSPENDED' : null;
+    const overdue = invoices.some(i=>outstandingOf(i)>0 && (i.due_date??i.billing_period_start.slice(0,7)+'-15')<t);
+    const target = debt === 0 && ['SUSPENDED','LEGAL','OVERDUE'].includes(prev) ? 'REACTIVATED' : debt>0 && severe && !['SUSPENDED','LEGAL','WRITTEN_OFF'].includes(prev) ? 'SUSPENDED' : overdue && !['SUSPENDED','LEGAL','WRITTEN_OFF','OVERDUE'].includes(prev) ? 'OVERDUE' : null;
     if (!target) continue;
     contracts = contracts.map(c => c.customer_snapshot.customer_id !== customer ? c : target==='SUSPENDED' && (c.billing_status ?? 'ACTIVE')==='ACTIVE' ? {...c,billing_status:'SUSPENDED'} : target==='REACTIVATED' && c.billing_status==='SUSPENDED' ? {...c,billing_status:'ACTIVE'} : c);
     events.unshift({id:crypto.randomUUID(),customer_id:customer,hotel_name:invoices[0]?.customer_snapshot.hotel_name ?? '',event_type:target,occurred_at:t,by_member:'daily',amount_outstanding:debt,note:'Automatic payment-grade evaluation'});
@@ -60,7 +61,7 @@ export function runDailyBilling<T extends AccountingData>(original: T, t = bangk
   const period = t.slice(0,7) + '-01';
   // Capture only today's eligible period on the 5th; waiting items persist for late reports.
   if (t.endsWith('-05')) for (const c of data.contracts) {
-    const end = monthShift(c.start_date,c.duration_months);
+    const end = monthShift(c.start_date,c.duration_months,Number(c.start_date.slice(8,10)));
     if ((c.billing_status ?? 'ACTIVE')!=='ACTIVE' || c.status!=='contract_completed' || c.start_date>t || end<=t) continue;
     if (!invoices.some(i => i.customer_snapshot.customer_id===c.customer_snapshot.customer_id && !['draft','void'].includes(i.status))) continue;
     for (const service of ['ORM','Marcom']) {
@@ -71,7 +72,7 @@ export function runDailyBilling<T extends AccountingData>(original: T, t = bangk
   const pending: NonNullable<AccountingData['billingWaiting']> = [];
   for (const item of waiting) {
     const c = data.contracts.find(c => c.contract_id===item.contract_id);
-    if (!c || (c.billing_status ?? 'ACTIVE')!=='ACTIVE') continue;
+    if (!c || (c.billing_status ?? 'ACTIVE')!=='ACTIVE' || monthShift(c.start_date,c.duration_months,Number(c.start_date.slice(8,10)))<=t) continue;
     if (invoices.some(i => i.contract_ids.includes(c.contract_id) && i.billing_period_start.slice(0,7)===item.billing_period.slice(0,7) && (i.service_line===item.service_line || i.lines.some(l=>serviceOf(l.sku_snapshot,data.products)===item.service_line)) && i.status!=='void')) continue;
     const relevant = c.lines.filter(l => l.billing==='monthly' && serviceOf(l.sku_snapshot,data.products)===item.service_line);
     const reports = data.reports.filter(r=>r.contract_id===c.contract_id && `${r.period_year}-${String(r.period_month).padStart(2,'0')}`===item.billing_period.slice(0,7) && serviceOf(r.sku,data.products)===item.service_line);
@@ -97,5 +98,5 @@ export function confirmPayment<T extends AccountingData>(data:T, id:string, meth
   const invoices=data.invoices.map(i=>i.invoice_id===id?{...i,paid_amount:paid,status:full?'paid' as const:'partially_paid' as const,settled_date:full?t:null,paid_at:full?at:null,payment_records:[...(i.payment_records??[]),{id:crypto.randomUUID(),amount,method,confirmed_at:t,actor}]}:i);
   const reId=taxReceiptIdFor(id);
   const receipt:TaxReceipt={tax_receipt_id:reId,from_invoice_id:id,customer_snapshot:invoice.customer_snapshot,lines:invoice.lines,totals:invoice.totals,payment_method:method,paid_at:at,issued_at:at,status:'issued'};
-  return recomputeAccounting({...data,invoices,taxReceipts:full&&!data.taxReceipts.some(r=>r.tax_receipt_id===reId)?[receipt,...data.taxReceipts]:data.taxReceipts,contracts:full?data.contracts.map(c=>invoice.contract_ids.includes(c.contract_id)?{...c,status:'contract_completed' as const}:c):data.contracts},t);
+  return recomputeAccounting({...data,invoices,taxReceipts:full&&!data.taxReceipts.some(r=>r.tax_receipt_id===reId)?[receipt,...data.taxReceipts]:data.taxReceipts,invRequests:full?data.invRequests.map(r=>r.invoice_id===id?{...r,status:'completed' as const}:r):data.invRequests,contracts:full?data.contracts.map(c=>invoice.contract_ids.includes(c.contract_id)?{...c,status:'contract_completed' as const}:c):data.contracts},t);
 }

@@ -42,7 +42,6 @@ function BillingPage() {
     reports,
     createInvoice,
     issueInvoice,
-    markPaid,
     voidTaxReceipt,
     liveLinks,
     actor,setActor,cloudStatus,migrateToCloud,refreshCloud,billingWaiting,recordPayment,
@@ -104,12 +103,12 @@ function BillingPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Select value={actor} onValueChange={setActor}><SelectTrigger className="w-52" aria-label="ผู้บันทึกบัญชี"><SelectValue /></SelectTrigger><SelectContent>{crmUsers.map(u=><SelectItem key={u.email} value={u.email}>{u.name}</SelectItem>)}</SelectContent></Select>
-        <div className="flex flex-wrap items-center gap-2"><Chip tone={cloudStatus==='cloud'?'success':'warn'}>{cloudStatus==='cloud'?'Lovable Cloud':cloudStatus==='loading'?'กำลังโหลด':cloudStatus==='error'?'Cloud ต้องโหลดใหม่':'ข้อมูลในเบราว์เซอร์'}</Chip>{cloudStatus==='local' && <Button size="sm" disabled={working} onClick={async()=>{setWorking(true);try{await migrateToCloud();}finally{setWorking(false);}}}>ย้ายข้อมูลเดิมไป Cloud</Button>}{cloudStatus==='error' && <Button variant="outline" size="sm" onClick={()=>refreshCloud()}>โหลดข้อมูล Cloud ใหม่</Button>}{cloudStatus==='cloud' && <Button variant="outline" size="sm" disabled={working} onClick={async()=>{setWorking(true);try{await daily();await refreshCloud();toast.success('ประมวลผลบัญชี '+bangkokDate());}catch(e){toast.error(e instanceof Error?e.message:'ประมวลผลไม่สำเร็จ');}finally{setWorking(false);}}}>ประมวลผลงานรายวัน</Button>}</div>
+        <div className="flex flex-wrap items-center gap-2"><Chip tone={cloudStatus==='cloud'?'success':'warn'}>{cloudStatus==='cloud'?'Lovable Cloud':cloudStatus==='loading'?'กำลังโหลด':cloudStatus==='error'?'Cloud ต้องโหลดใหม่':'ข้อมูลในเบราว์เซอร์'}</Chip>{import.meta.env.DEV && cloudStatus==='local' && <Button size="sm" disabled={working} onClick={async()=>{setWorking(true);try{await migrateToCloud();}finally{setWorking(false);}}}>ย้ายข้อมูลเดิมไป Cloud</Button>}{cloudStatus==='error' && <Button variant="outline" size="sm" onClick={()=>refreshCloud()}>โหลดข้อมูล Cloud ใหม่</Button>}{cloudStatus==='cloud' && <Button variant="outline" size="sm" disabled={working} onClick={async()=>{setWorking(true);try{await daily();await refreshCloud();toast.success('ประมวลผลบัญชี '+bangkokDate());}catch(e){toast.error(e instanceof Error?e.message:'ประมวลผลไม่สำเร็จ');}finally{setWorking(false);}}}>ประมวลผลงานรายวัน</Button>}</div>
       </div>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Kpi label="คำขอออกใบแจ้งหนี้" value={invRequests.filter((r) => r.status !== "completed").length} />
         <Kpi label="ใบแจ้งหนี้ทั้งหมด" value={invoices.length} />
-        <Kpi label="รอชำระ" value={invoices.filter((i) => i.status === "sent_via_live_link").length} />
+        <Kpi label="รอชำระ" value={invoices.filter((i) => outstandingOf(i)>0).length} />
         <Kpi label="ใบเสร็จ/ใบกำกับภาษี" value={taxReceipts.length} />
       </div>
 

@@ -14,12 +14,19 @@ export function useAccountingCloud<T>(namespace:'crm'|'hotels', value:T, hydrate
   const busy=useRef(false);
   const initialized=useRef(false);
   const refresh=useCallback(async()=>{
+    if(busy.current) return;
+    if(last.current && JSON.stringify(latest.current)!==last.current) {
+      toast.error('มีข้อมูลที่ยังไม่บันทึก กรุณารอการบันทึกก่อนโหลดใหม่');
+      return;
+    }
     setStatus('loading');
     try {
       const row=await read({data:namespace});
       if(row) {
         const next=(namespace==='hotels' ? (row.payload as {hotels?:T})?.hotels : row.payload) as T;
         revision.current=row.revision;
+        const backupKey='meridia.accounting-cloud-backup.'+namespace;
+        if(!window.localStorage.getItem(backupKey)) window.localStorage.setItem(backupKey,JSON.stringify(latest.current));
         last.current=JSON.stringify(next);
         apply(next);
         setStatus('cloud');
@@ -55,7 +62,7 @@ export function useAccountingCloud<T>(namespace:'crm'|'hotels', value:T, hydrate
         const result=await save({data:{namespace,revision:revision.current,payload:payload as Record<string,unknown>}});
         revision.current=result.revision;
         last.current=next;
-      } catch(e) {setStatus('error');toast.error(e instanceof Error?e.message:'บันทึก Cloud ไม่สำเร็จ');}
+      } catch(e) {last.current='';setStatus('error');toast.error(e instanceof Error?e.message:'บันทึก Cloud ไม่สำเร็จ');}
       finally {busy.current=false;}
     },600);
     return ()=>clearInterval(timer);
