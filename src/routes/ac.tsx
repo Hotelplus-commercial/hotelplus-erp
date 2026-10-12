@@ -12,6 +12,7 @@ export const acTabs = [
   { label: "Product Catalog", to: "/ac/products" },
   { label: "Customer Master", to: "/ac/customers" },
   { label: "Invoice & ใบเสร็จ", to: "/ac/billing" },
+  { label: "AC Operations", to: "/ac/operations" },
 ];
 
 export const Route = createFileRoute("/ac")({
@@ -21,6 +22,8 @@ export const Route = createFileRoute("/ac")({
       { name: "description", content: mod.description },
       { property: "og:title", content: "AC App — Accounting | Meridia Hotel ERP" },
       { property: "og:description", content: mod.description },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: () => <ModuleLayout tabs={acTabs} />,

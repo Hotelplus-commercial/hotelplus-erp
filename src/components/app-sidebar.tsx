@@ -71,6 +71,7 @@ const moduleChildren: Record<string, { title: string; url: string; icon: typeof 
     { title: "Product Catalog", url: "/ac/products", icon: Package },
     { title: "Customer Master", url: "/ac/customers", icon: Users },
     { title: "Invoice & ใบเสร็จ", url: "/ac/billing", icon: Receipt },
+    { title: "AC Operations", url: "/ac/operations", icon: Receipt },
   ],
   ps: [
     { title: "PS Dashboard", url: "/ps", icon: LayoutDashboard },

@@ -83,3 +83,8 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [x] HR Members roster (seeded, HR/Admin edit, deactivate keeps history).
 - [x] Assignment fields on hotel master + audit; Assign dialog (ORM team -> Rev/Ecom cascade), role-gated.
 - [x] PS Dashboard 5th tile + list; ORM / Marcom Dashboard inboxes; card "ผู้ดูแล Account" block.
+
+## AC Billing Ledger + Payment Grade v1.0
+- [ ] Create protected shared billing tables, engines, eight read-only views and daily schedule.
+- [ ] Add AC Operations subscriptions, invoices, payment verification and collection console without altering PS workflows.
+- [ ] Verify billing idempotency, settlement, grades, suspension/reactivation and the console end to end.

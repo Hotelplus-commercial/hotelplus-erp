@@ -25,6 +25,7 @@ import { Route as AcIndexRouteImport } from './routes/ac.index'
 import { Route as AcBillingRouteImport } from './routes/ac.billing'
 import { Route as AcCustomersRouteImport } from './routes/ac.customers'
 import { Route as AcHotelProfileRouteImport } from './routes/ac.hotel-profile'
+import { Route as AcOperationsRouteImport } from './routes/ac.operations'
 import { Route as AcProductsRouteImport } from './routes/ac.products'
 import { Route as AcSystemCostRouteImport } from './routes/ac.system-cost'
 import { Route as BdIndexRouteImport } from './routes/bd.index'
@@ -53,6 +54,7 @@ import { Route as PsServicingTimelineRouteImport } from './routes/ps.servicing-t
 import { Route as PsSystemCostRouteImport } from './routes/ps.system-cost'
 import { Route as TheOfficeAppIndexRouteImport } from './routes/the-office-app.index'
 import { Route as TheOfficeAppOrmBonusRouteImport } from './routes/the-office-app.orm-bonus'
+import { Route as ApiPublicAcBillingDailyRouteImport } from './routes/api/public/ac-billing-daily'
 import { Route as BdCalculatorMarcomRouteImport } from './routes/bd.calculator.marcom'
 import { Route as BdCalculatorOrmRouteImport } from './routes/bd.calculator.orm'
 import { Route as BdQuotationsIndexRouteImport } from './routes/bd.quotations.index'
@@ -163,6 +165,11 @@ const AcCustomersRoute = AcCustomersRouteImport.update({
 const AcHotelProfileRoute = AcHotelProfileRouteImport.update({
   id: '/hotel-profile',
   path: '/hotel-profile',
+  getParentRoute: () => AcRoute,
+} as any)
+const AcOperationsRoute = AcOperationsRouteImport.update({
+  id: '/operations',
+  path: '/operations',
   getParentRoute: () => AcRoute,
 } as any)
 const AcProductsRoute = AcProductsRouteImport.update({
@@ -304,6 +311,11 @@ const TheOfficeAppOrmBonusRoute = TheOfficeAppOrmBonusRouteImport.update({
   id: '/orm-bonus',
   path: '/orm-bonus',
   getParentRoute: () => TheOfficeAppRoute,
+} as any)
+const ApiPublicAcBillingDailyRoute = ApiPublicAcBillingDailyRouteImport.update({
+  id: '/api/public/ac-billing-daily',
+  path: '/api/public/ac-billing-daily',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const BdCalculatorMarcomRoute = BdCalculatorMarcomRouteImport.update({
   id: '/marcom',
@@ -481,6 +493,7 @@ export interface FileRoutesByFullPath {
   '/ac/billing': typeof AcBillingRoute
   '/ac/customers': typeof AcCustomersRoute
   '/ac/hotel-profile': typeof AcHotelProfileRoute
+  '/ac/operations': typeof AcOperationsRoute
   '/ac/products': typeof AcProductsRoute
   '/ac/system-cost': typeof AcSystemCostRoute
   '/bd/calculator': typeof BdCalculatorRouteWithChildren
@@ -510,6 +523,7 @@ export interface FileRoutesByFullPath {
   '/orm/': typeof OrmIndexRoute
   '/ps/': typeof PsIndexRoute
   '/the-office-app/': typeof TheOfficeAppIndexRoute
+  '/api/public/ac-billing-daily': typeof ApiPublicAcBillingDailyRoute
   '/bd/calculator/marcom': typeof BdCalculatorMarcomRoute
   '/bd/calculator/orm': typeof BdCalculatorOrmRoute
   '/bd/quotations/$quoteId': typeof BdQuotationsQuoteIdRoute
@@ -551,6 +565,7 @@ export interface FileRoutesByTo {
   '/ac/billing': typeof AcBillingRoute
   '/ac/customers': typeof AcCustomersRoute
   '/ac/hotel-profile': typeof AcHotelProfileRoute
+  '/ac/operations': typeof AcOperationsRoute
   '/ac/products': typeof AcProductsRoute
   '/ac/system-cost': typeof AcSystemCostRoute
   '/bd/calculator': typeof BdCalculatorRouteWithChildren
@@ -575,6 +590,7 @@ export interface FileRoutesByTo {
   '/orm': typeof OrmIndexRoute
   '/ps': typeof PsIndexRoute
   '/the-office-app': typeof TheOfficeAppIndexRoute
+  '/api/public/ac-billing-daily': typeof ApiPublicAcBillingDailyRoute
   '/bd/calculator/marcom': typeof BdCalculatorMarcomRoute
   '/bd/calculator/orm': typeof BdCalculatorOrmRoute
   '/bd/quotations/$quoteId': typeof BdQuotationsQuoteIdRoute
@@ -624,6 +640,7 @@ export interface FileRoutesById {
   '/ac/billing': typeof AcBillingRoute
   '/ac/customers': typeof AcCustomersRoute
   '/ac/hotel-profile': typeof AcHotelProfileRoute
+  '/ac/operations': typeof AcOperationsRoute
   '/ac/products': typeof AcProductsRoute
   '/ac/system-cost': typeof AcSystemCostRoute
   '/bd/calculator': typeof BdCalculatorRouteWithChildren
@@ -653,6 +670,7 @@ export interface FileRoutesById {
   '/orm/': typeof OrmIndexRoute
   '/ps/': typeof PsIndexRoute
   '/the-office-app/': typeof TheOfficeAppIndexRoute
+  '/api/public/ac-billing-daily': typeof ApiPublicAcBillingDailyRoute
   '/bd/calculator/marcom': typeof BdCalculatorMarcomRoute
   '/bd/calculator/orm': typeof BdCalculatorOrmRoute
   '/bd/quotations/$quoteId': typeof BdQuotationsQuoteIdRoute
@@ -703,6 +721,7 @@ export interface FileRouteTypes {
     | '/ac/billing'
     | '/ac/customers'
     | '/ac/hotel-profile'
+    | '/ac/operations'
     | '/ac/products'
     | '/ac/system-cost'
     | '/bd/calculator'
@@ -732,6 +751,7 @@ export interface FileRouteTypes {
     | '/orm/'
     | '/ps/'
     | '/the-office-app/'
+    | '/api/public/ac-billing-daily'
     | '/bd/calculator/marcom'
     | '/bd/calculator/orm'
     | '/bd/quotations/$quoteId'
@@ -773,6 +793,7 @@ export interface FileRouteTypes {
     | '/ac/billing'
     | '/ac/customers'
     | '/ac/hotel-profile'
+    | '/ac/operations'
     | '/ac/products'
     | '/ac/system-cost'
     | '/bd/calculator'
@@ -797,6 +818,7 @@ export interface FileRouteTypes {
     | '/orm'
     | '/ps'
     | '/the-office-app'
+    | '/api/public/ac-billing-daily'
     | '/bd/calculator/marcom'
     | '/bd/calculator/orm'
     | '/bd/quotations/$quoteId'
@@ -845,6 +867,7 @@ export interface FileRouteTypes {
     | '/ac/billing'
     | '/ac/customers'
     | '/ac/hotel-profile'
+    | '/ac/operations'
     | '/ac/products'
     | '/ac/system-cost'
     | '/bd/calculator'
@@ -874,6 +897,7 @@ export interface FileRouteTypes {
     | '/orm/'
     | '/ps/'
     | '/the-office-app/'
+    | '/api/public/ac-billing-daily'
     | '/bd/calculator/marcom'
     | '/bd/calculator/orm'
     | '/bd/quotations/$quoteId'
@@ -922,6 +946,7 @@ export interface RootRouteChildren {
   TheOfficeAppRoute: typeof TheOfficeAppRouteWithChildren
   FTokenRoute: typeof FTokenRoute
   LTokenRoute: typeof LTokenRoute
+  ApiPublicAcBillingDailyRoute: typeof ApiPublicAcBillingDailyRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1036,6 +1061,13 @@ declare module '@tanstack/react-router' {
       path: '/hotel-profile'
       fullPath: '/ac/hotel-profile'
       preLoaderRoute: typeof AcHotelProfileRouteImport
+      parentRoute: typeof AcRoute
+    }
+    '/ac/operations': {
+      id: '/ac/operations'
+      path: '/operations'
+      fullPath: '/ac/operations'
+      preLoaderRoute: typeof AcOperationsRouteImport
       parentRoute: typeof AcRoute
     }
     '/ac/products': {
@@ -1233,6 +1265,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/the-office-app/orm-bonus'
       preLoaderRoute: typeof TheOfficeAppOrmBonusRouteImport
       parentRoute: typeof TheOfficeAppRoute
+    }
+    '/api/public/ac-billing-daily': {
+      id: '/api/public/ac-billing-daily'
+      path: '/api/public/ac-billing-daily'
+      fullPath: '/api/public/ac-billing-daily'
+      preLoaderRoute: typeof ApiPublicAcBillingDailyRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/bd/calculator/marcom': {
       id: '/bd/calculator/marcom'
@@ -1458,6 +1497,7 @@ interface AcRouteChildren {
   AcBillingRoute: typeof AcBillingRoute
   AcCustomersRoute: typeof AcCustomersRoute
   AcHotelProfileRoute: typeof AcHotelProfileRoute
+  AcOperationsRoute: typeof AcOperationsRoute
   AcProductsRoute: typeof AcProductsRoute
   AcSystemCostRoute: typeof AcSystemCostRoute
   AcIndexRoute: typeof AcIndexRoute
@@ -1467,6 +1507,7 @@ const AcRouteChildren: AcRouteChildren = {
   AcBillingRoute: AcBillingRoute,
   AcCustomersRoute: AcCustomersRoute,
   AcHotelProfileRoute: AcHotelProfileRoute,
+  AcOperationsRoute: AcOperationsRoute,
   AcProductsRoute: AcProductsRoute,
   AcSystemCostRoute: AcSystemCostRoute,
   AcIndexRoute: AcIndexRoute,
@@ -1709,6 +1750,7 @@ const rootRouteChildren: RootRouteChildren = {
   TheOfficeAppRoute: TheOfficeAppRouteWithChildren,
   FTokenRoute: FTokenRoute,
   LTokenRoute: LTokenRoute,
+  ApiPublicAcBillingDailyRoute: ApiPublicAcBillingDailyRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
