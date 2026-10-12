@@ -1,5 +1,6 @@
 import type { Contract, Invoice, InvoiceLine, ProductionReport, Product, Customer, TaxReceipt, LiveLink, InvRequest } from './crm-types';
 import { computeTotals, nextInvoiceId, taxReceiptIdFor } from './crm-rules';
+import { resolveContractHotel, stampInvoiceHotel } from './ac-attribution';
 
 export type Grade = 'A' | 'B' | 'C' | 'D';
 export type GradeRecord = { customer_id: string; billing_period: string; grade: Grade; basis: string[]; computed_at: string };
@@ -24,10 +25,65 @@ export const serviceOf = (sku: string, products: Product[]): 'ORM' | 'Marcom' | 
   if (line === 'MARCOM' || sku.startsWith('MARCOM-')) return 'Marcom';
   return null;
 };
+export const isGradeInvoice = (i: Invoice) => i.invoice_type === 'RECURRING' && Boolean(i.due_date) && !['draft','void','written_off'].includes(i.status);
+export type CollectionStatus = 'NORMAL' | 'OVERDUE' | 'SUSPENDED' | 'LEGAL' | 'WRITTEN_OFF';
+
+export function collectionStatus(data: Pick<AccountingData, 'invoices' | 'collectionEvents' | 'gradeRecords'>, customer: string, t = bangkokDate()): CollectionStatus {
+  const events = (data.collectionEvents ?? []).filter(e => e.customer_id === customer);
+  // Reactivation is the only event that clears a manual terminal lane.
+  for (const event of events) {
+    if (event.event_type === 'REACTIVATED') break;
+    if (event.event_type === 'WRITTEN_OFF') return 'WRITTEN_OFF';
+  }
+  for (const event of events) {
+    if (event.event_type === 'REACTIVATED') break;
+    if (event.event_type === 'LEGAL') return 'LEGAL';
+  }
+  const invoices = data.invoices.filter(i => i.customer_snapshot.customer_id === customer);
+  if (invoices.reduce((n, i) => n + outstandingOf(i), 0) === 0) return 'NORMAL';
+  const grades = invoices.filter(i => isGradeInvoice(i) && outstandingOf(i) > 0).map(i => {
+    const period = i.billing_period_start.slice(0,7);
+    const old = data.gradeRecords?.find(g => g.customer_id === customer && g.billing_period.slice(0,7) === period && g.basis.includes(i.invoice_id))?.grade;
+    const current = invoiceGrade(i, t);
+    return old && old > current ? old : current;
+  });
+  if (grades.includes('D')) return 'SUSPENDED';
+  if (grades.includes('C')) return 'OVERDUE';
+  return 'NORMAL';
+}
+
+export function paymentSummary(data: Pick<AccountingData, 'customers' | 'invoices' | 'gradeRecords' | 'collectionEvents'>, hotel: {id: string; name: string}, t = bangkokDate()) {
+  const customer = data.customers.find(c => c.hotels.some(h => h.hotel_id === hotel.id))
+    ?? data.customers.find(c => c.hotels.some(h => h.name === hotel.name));
+  const rows = data.invoices.filter(i => customer ? i.customer_snapshot.customer_id === customer.customer_id : i.hotel_id === hotel.id || (!i.hotel_id && i.customer_snapshot.hotel_name === hotel.name));
+  const customerId = customer?.customer_id ?? rows[0]?.customer_snapshot.customer_id;
+  const current = rows.filter(i => isGradeInvoice(i) && i.billing_period_start.slice(0,7) === t.slice(0,7));
+  const record = data.gradeRecords?.find(g => g.customer_id === customerId && g.billing_period.slice(0,7) === t.slice(0,7) && g.basis.some(id => current.some(i => i.invoice_id === id)));
+  const grade: Grade | '—' = record?.grade ?? (current.length ? current.map(i => invoiceGrade(i,t)).sort().at(-1) ?? 'A' : '—');
+  const score = grade === 'A' ? 100 : grade === 'B' ? 75 : grade === 'C' ? 50 : grade === 'D' ? 25 : 0;
+  const start = monthShift(t, -11);
+  const late = data.gradeRecords?.filter(g => g.customer_id === customerId && g.billing_period >= start && g.billing_period <= t && g.grade !== 'A' && g.basis.some(id => rows.some(i => i.invoice_id === id && isGradeInvoice(i)))).length ?? 0;
+  const unpaidMonths = new Set(rows.filter(i => outstandingOf(i)>0 && i.due_date && i.due_date<t).map(i => i.billing_period_start.slice(0,7))).size;
+  return {customerId, rows, grade, score, late, unpaidMonths, collection: customerId ? collectionStatus(data,customerId,t) : 'NORMAL' as CollectionStatus};
+}
+
+export function manualCollection<T extends AccountingData>(data: T, customer: string, event: 'LEGAL' | 'WRITTEN_OFF' | 'REACTIVATED', note: string, actor: string, t = bangkokDate()): T {
+  const invoices = data.invoices.filter(i => i.customer_snapshot.customer_id === customer);
+  const debt = invoices.reduce((n,i) => n+outstandingOf(i),0);
+  const previous = collectionStatus(data,customer,t);
+  if (!note.trim() || (event === 'REACTIVATED' ? debt > 0 || previous === 'NORMAL' : debt <= 0) || previous === event || (previous === 'WRITTEN_OFF' && event !== 'REACTIVATED')) return data;
+  const updated = {...data,
+    invoices: event === 'WRITTEN_OFF' ? data.invoices.map(i => i.customer_snapshot.customer_id === customer && outstandingOf(i)>0 ? {...i,status:'written_off' as const} : i) : data.invoices,
+    contracts: event === 'REACTIVATED' ? data.contracts.map(c => c.customer_snapshot.customer_id === customer && c.billing_status === 'SUSPENDED' ? {...c,billing_status:'ACTIVE' as const} : c) : data.contracts,
+    collectionEvents: [{id:crypto.randomUUID(),customer_id:customer,hotel_name:invoices[0]?.customer_snapshot.hotel_name ?? '',event_type:event,occurred_at:t,by_member:actor,amount_outstanding:debt,note},...(data.collectionEvents ?? [])]
+  };
+  return recomputeAccounting(updated,t);
+}
+
 export function recomputeAccounting<T extends AccountingData>(data: T, t = bangkokDate()): T {
   const records = new Map<string, GradeRecord>();
   for (const i of data.invoices) {
-    if (['draft','void','written_off'].includes(i.status)) continue;
+    if (!isGradeInvoice(i)) continue;
     const customer = i.customer_snapshot.customer_id;
     const period = i.billing_period_start.slice(0,7) + '-01';
     const key = customer + ':' + period;
@@ -45,9 +101,10 @@ export function recomputeAccounting<T extends AccountingData>(data: T, t = bangk
     const invoices = data.invoices.filter(i => i.customer_snapshot.customer_id === customer);
     const debt = invoices.reduce((n,i) => n + outstandingOf(i),0);
     const prev = events.find(e => e.customer_id === customer)?.event_type ?? 'NORMAL';
-    const severe = invoices.some(i => outstandingOf(i)>0 && invoiceGrade(i,t)==='D');
-    const overdue = invoices.some(i=>outstandingOf(i)>0 && (i.due_date??i.billing_period_start.slice(0,7)+'-15')<t);
-    const target = debt === 0 && ['SUSPENDED','LEGAL','OVERDUE'].includes(prev) ? 'REACTIVATED' : debt>0 && severe && !['SUSPENDED','LEGAL','WRITTEN_OFF'].includes(prev) ? 'SUSPENDED' : overdue && !['SUSPENDED','LEGAL','WRITTEN_OFF','OVERDUE'].includes(prev) ? 'OVERDUE' : null;
+    const derived = collectionStatus({...data, gradeRecords, collectionEvents: events}, customer, t);
+    const prior = prev === 'REACTIVATED' ? 'NORMAL' : prev;
+    const terminal = ['LEGAL','WRITTEN_OFF'].includes(derived);
+    const target = terminal ? null : debt === 0 && ['OVERDUE','SUSPENDED'].includes(prior) ? 'REACTIVATED' : derived !== prior ? derived : null;
     if (!target) continue;
     contracts = contracts.map(c => c.customer_snapshot.customer_id !== customer ? c : target==='SUSPENDED' && (c.billing_status ?? 'ACTIVE')==='ACTIVE' ? {...c,billing_status:'SUSPENDED'} : target==='REACTIVATED' && c.billing_status==='SUSPENDED' ? {...c,billing_status:'ACTIVE'} : c);
     events.unshift({id:crypto.randomUUID(),customer_id:customer,hotel_name:invoices[0]?.customer_snapshot.hotel_name ?? '',event_type:target,occurred_at:t,by_member:'daily',amount_outstanding:debt,note:'Automatic payment-grade evaluation'});
@@ -55,7 +112,8 @@ export function recomputeAccounting<T extends AccountingData>(data: T, t = bangk
   return {...data,contracts,gradeRecords,collectionEvents:events};
 }
 export function runDailyBilling<T extends AccountingData>(original: T, t = bangkokDate()): T {
-  let data = original;
+  const contracts = original.contracts.map(c => resolveContractHotel(c, original.customers));
+  let data = {...original, contracts, invoices: original.invoices.map(i => stampInvoiceHotel(i,contracts))};
   let invoices = [...data.invoices];
   const waiting = [...(data.billingWaiting ?? [])];
   const period = t.slice(0,7) + '-01';
@@ -84,7 +142,7 @@ export function runDailyBilling<T extends AccountingData>(original: T, t = bangk
       if (l.commission_rate!=null && r) lines.push({line_id:crypto.randomUUID(),contract_id:c.contract_id,sku_snapshot:l.sku_snapshot,name_snapshot:l.name_snapshot+' — Commission',line_type:'commission',quantity:1,unit_price:r.commission_thb,amount:r.commission_thb,production_report_id:r.report_id});
     }
     if (!lines.length) continue;
-    invoices.unshift({invoice_id:nextInvoiceId(invoices.map(i=>i.invoice_id)),case_number:c.case_number ?? '',contract_ids:[c.contract_id],customer_snapshot:c.customer_snapshot,billing_period_start:item.billing_period,billing_period_end:monthShift(item.billing_period,1,0),lines,totals:computeTotals(lines,c.customer_snapshot.type),status:'issued',issued_at:item.billing_period.slice(0,7)+'-05T00:00:00Z',issued_by:'daily',paid_at:null,created_at:t+'T00:00:00Z',issue_date:item.billing_period.slice(0,7)+'-05',due_date:item.billing_period.slice(0,7)+'-15',customer_segment:'EXISTING',service_line:item.service_line as 'ORM'|'Marcom',paid_amount:0,settled_date:null});
+    invoices.unshift({...(c.hotel_id ? {hotel_id:c.hotel_id} : {}),invoice_type:'RECURRING',invoice_id:nextInvoiceId(invoices.map(i=>i.invoice_id)),case_number:c.case_number ?? '',contract_ids:[c.contract_id],customer_snapshot:c.customer_snapshot,billing_period_start:item.billing_period,billing_period_end:monthShift(item.billing_period,1,0),lines,totals:computeTotals(lines,c.customer_snapshot.type),status:'issued',issued_at:item.billing_period.slice(0,7)+'-05T00:00:00Z',issued_by:'daily',paid_at:null,created_at:t+'T00:00:00Z',issue_date:item.billing_period.slice(0,7)+'-05',due_date:item.billing_period.slice(0,7)+'-15',customer_segment:'EXISTING',service_line:item.service_line as 'ORM'|'Marcom',paid_amount:0,settled_date:null});
   }
   data = {...data,invoices,billingWaiting:pending};
   return recomputeAccounting(data,t);
