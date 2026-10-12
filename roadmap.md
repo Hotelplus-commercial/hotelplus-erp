@@ -88,6 +88,7 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [x] Create protected shared billing tables, engines, eight read-only views and daily schedule.
 - [x] Add AC Operations subscriptions, invoices, payment verification and collection console without altering PS workflows.
 - [x] Verify billing idempotency, settlement, grades, suspension/reactivation and the console end to end; remove all temporary ledger test rows.
-- [ ] v2.0 supersedes v1.0: remove AC Operations and duplicate ledger tables after checking retained data and the original entity storage.
+- [x] v2.0: check retained data (all v1 Cloud tables empty), remove AC Operations and its public server functions, stop the v1 daily schedule, redirect legacy links to existing Invoice & Receipt.
+- [ ] Physically delete retired v1 tables — blocked by backward-incompatible migration permissions; retire them without deleting original browser data meanwhile.
 - [ ] Extend existing Inquiry INV / Invoice / Receipt / Hotel Profile / Live Link with hybrid billing, AC-confirmed grades and collection lifecycle.
 - [ ] Provide daily scheduling and eight read-only views over the original entities; preserve non-AC workflows and public testing access.
