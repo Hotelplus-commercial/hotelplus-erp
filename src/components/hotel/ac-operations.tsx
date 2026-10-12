@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
 import { useState } from 'react';
-import { CheckCheck, Plus, RefreshCw, LogOut, Receipt, Pencil, Pause, Play, Ban } from 'lucide-react';
+import { CheckCheck, Plus, RefreshCw, Receipt, Pencil, Pause, Play, Ban } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,8 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Chip } from '@/components/crm/crm-ui';
-import { supabase } from '@/integrations/supabase/client';
-import { lovable } from '@/integrations/lovable';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getAcLedger, mutateAcLedger, AC_PERSONAS, type AcAction } from '@/lib/ac-billing.functions';
 import type { Tables } from '@/integrations/supabase/types';
 
