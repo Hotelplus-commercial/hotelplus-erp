@@ -58,7 +58,7 @@ export function paymentSummary(data: Pick<AccountingData, 'customers' | 'invoice
   const rows = data.invoices.filter(i => customer ? i.customer_snapshot.customer_id === customer.customer_id : i.hotel_id === hotel.id || (!i.hotel_id && i.customer_snapshot.hotel_name === hotel.name));
   const customerId = customer?.customer_id ?? rows[0]?.customer_snapshot.customer_id;
   const current = rows.filter(i => isGradeInvoice(i) && i.billing_period_start.slice(0,7) === t.slice(0,7));
-  const record = data.gradeRecords?.find(g => g.customer_id === customerId && g.billing_period.slice(0,7) === t.slice(0,7) && g.basis.some(id => current.some(i => i.invoice_id === id)));
+  const record = data.gradeRecords?.find(g => g.customer_id === customerId && g.billing_period.slice(0,7) === t.slice(0,7) && g.basis.length > 0 && g.basis.every(id => current.some(i => i.invoice_id === id)));
   const grade: Grade | '—' = record?.grade ?? (current.length ? current.map(i => invoiceGrade(i,t)).sort().at(-1) ?? 'A' : '—');
   const score = grade === 'A' ? 100 : grade === 'B' ? 75 : grade === 'C' ? 50 : grade === 'D' ? 25 : 0;
   const start = monthShift(t, -11);

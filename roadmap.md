@@ -1,8 +1,8 @@
 # AC v2.0 tightening T1–T4
-- [ ] Consolidate grade-derived scores and separate lifecycle from collection.
-- [ ] Stamp stable hotel identity and rewire service-aware WS-2 attribution without Cloud sync changes.
-- [ ] Limit grades to due RECURRING invoices and enforce terminal/manual collection precedence.
-- [ ] Deprecate remnants in comments, verify views, regression tests and AC UI flow.
+- [x] Consolidate grade-derived scores and separate lifecycle from collection.
+- [x] Stamp stable hotel identity and rewire service-aware WS-2 attribution without Cloud sync changes; SQL owners await the separate WS-2 snapshot workstream.
+- [x] Limit grades to due RECURRING invoices and enforce terminal/manual collection precedence.
+- [x] Deprecate remnants in comments; nine regression tests pass, all eight views query successfully, and AC Live Link/partial/full settlement/receipt/profile flow verified in browser.
 
 # BD-AC visual refresh v1.0
 - [x] Apply scoped Teal + Graphite tokens and Thai fonts; restyle headline and six existing sections.
