@@ -78,6 +78,13 @@
       "when": 1791865142135,
       "tag": "0010_ps_dashboard_read_only_projections",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791867326462,
+      "tag": "0011_ps_risk_scorecard_view",
+      "breakpoints": true
     }
   ]
 }

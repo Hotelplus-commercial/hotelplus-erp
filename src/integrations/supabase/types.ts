@@ -757,6 +757,20 @@ export type Database = {
         }
         Relationships: []
       }
+      v_ps_risk_scorecard: {
+        Row: {
+          active_hotels: number | null
+          attached_hotels: number | null
+          dim_grade: number | null
+          dim_near_end: number | null
+          dim_survey: number | null
+          dim_ws2: number | null
+          high_risk: number | null
+          pending_sync: boolean | null
+          service_line: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       ac_daily: { Args: { t?: string }; Returns: number }

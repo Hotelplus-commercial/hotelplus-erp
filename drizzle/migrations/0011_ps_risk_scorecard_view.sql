@@ -1,0 +1,3 @@
+CREATE VIEW public.v_ps_risk_scorecard WITH (security_invoker=true) AS SELECT null::text AS service_line, null::bigint AS active_hotels, null::bigint AS high_risk, null::bigint AS attached_hotels, null::bigint AS dim_grade, null::bigint AS dim_survey, null::bigint AS dim_ws2, null::bigint AS dim_near_end, true AS pending_sync WHERE false;
+COMMENT ON VIEW public.v_ps_risk_scorecard IS 'PS v1.1 panel 7a summary. Pending attributed worst-grade, Survey #2, WS-2 and contract-end sources; returns empty until Cloud Sync seed. Flag dimension excluded.';
+GRANT SELECT ON public.v_ps_risk_scorecard TO service_role;
