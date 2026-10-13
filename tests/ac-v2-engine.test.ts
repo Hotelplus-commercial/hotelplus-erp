@@ -107,3 +107,13 @@ describe('AC tightening T1–T4', () => {
     expect(attributedOwner({...i,service_line:'ORM'},[])).toBeNull();
   });
 });
+describe('Daily job rewire (split docs)', () => {
+  test('re-running daily processing on the same data is idempotent', async () => {
+    const { runDailyBilling } = await import('../src/lib/ac-v2-engine');
+    const seed = await import('../src/lib/crm-seed');
+    const base = { products: seed.seedProducts, customers: seed.seedCustomers, contracts: seed.seedContracts, reports: seed.seedReports, invoices: seed.seedInvoices, taxReceipts: [], liveLinks: seed.seedLiveLinks, invRequests: seed.seedInvRequests, audit: [] } as never;
+    const once = runDailyBilling(base, '2026-10-13');
+    const twice = runDailyBilling(once, '2026-10-13');
+    expect(JSON.stringify(twice)).toBe(JSON.stringify(once));
+  });
+});

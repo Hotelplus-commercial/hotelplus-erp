@@ -1,6 +1,5 @@
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
-import { runDailyBilling, type AccountingData } from './ac-v2-engine';
 import type { Json } from '@/integrations/supabase/types';
 import { CLOUD_DOC_KEYS } from './cloud-sync-keys';
 
@@ -44,13 +43,3 @@ export const pushCloudDoc = createServerFn({ method: 'POST' })
     return { ok: false as const, cloudRevision: cur.data ? Number(cur.data.revision) : 0 };
   });
 
-export const runAccountingDaily = createServerFn({method:'POST'}).handler(async()=>{
-  if (!import.meta.env.DEV) throw new Error('ข้อมูลบัญชีทดสอบเปิดได้เฉพาะโหมดพัฒนา');
-  const {supabaseAdmin}=await import('@/integrations/supabase/client.server');
-  const current=await supabaseAdmin.from('crm_documents').select('*').eq('namespace','crm').single();
-  if(current.error || !current.data) throw new Error('กรุณาย้ายข้อมูลบัญชีไป Cloud ก่อน');
-  const updated=runDailyBilling(current.data.payload as unknown as AccountingData);
-  const saved=await supabaseAdmin.rpc('crm_compare_swap',{p_namespace:'crm',p_revision:current.data.revision,p_payload:updated as unknown as Json});
-  if(saved.error) throw new Error('ข้อมูลเปลี่ยนระหว่างคำนวณ กรุณาลองใหม่');
-  return {payload:updated as unknown as Json,revision:saved.data};
-});

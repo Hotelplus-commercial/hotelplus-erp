@@ -57,7 +57,7 @@ export const crmUsers: CrmUser[] = [
   { email: "ac.team@hotelplus.asia", name: "อรวรรณ (AC)", app: "AC" },
 ];
 
-type CrmData = {
+export type CrmData = {
   gradeRecords?: GradeRecord[];
   collectionEvents?: CollectionEvent[];
   billingWaiting?: { contract_id: string; service_line: string; billing_period: string }[];
@@ -107,6 +107,8 @@ function load(): CrmData | null {
 type Store = CrmData & {
   recordPayment: (invoiceId:string, method:string, amount:number) => void;
   collectionAction: (customerId:string, event:'LEGAL'|'WRITTEN_OFF'|'REACTIVATED', note:string) => void;
+  /** Manual daily processing on the browser split docs; no cloud I/O (debounced sync carries changes). */
+  runDaily: () => CrmData;
   hydrated: boolean;
   setActor: (email: string) => void;
   reset: () => void;
@@ -192,6 +194,7 @@ export function CrmStoreProvider({ children }: { children: React.ReactNode }) {
         return next===d?d:{...next,audit:log(d,'payment.confirm',invoiceId)};
       }),
       collectionAction:(customerId,event,note)=>upd(d=>manualCollection(d,customerId,event,note,d.actor)),
+      runDaily: () => { const next = runDailyBilling(data); setData(next); return next; },
       hydrated,
       setActor: (email) => upd((d) => ({ ...d, actor: email })),
       reset: () => {
