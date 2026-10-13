@@ -33,4 +33,4 @@
 - The legacy /ac/operations URL redirects to the original /ac/billing page so saved links do not open a removed console.
 - BD-AC charts consume only existing view projections and use a scoped theme backed by global CSS tokens; this preserves analytics, workflow writes and unrelated module styling.
 
-- Cloud Sync Level A: browser stores push one crm_documents row per collection (namespace = crm:<collection> | hotels | ws2, PK stays namespace) via src/lib/cloud-sync.ts with revision optimistic lock; server fns never return payloads so data-entry apps never pull cloud. Test-mode no-auth writes must be closed (auth+RLS, Level B) before production. ws2 mirror excludes restricted credentials.
+- Cloud Sync Level A: stores push one crm_documents row per collection (namespace crm:<collection>|hotels|ws2) via src/lib/cloud-sync.ts with revision lock; server fns never return payloads (no pull). ws2 mirror excludes restricted credentials.
