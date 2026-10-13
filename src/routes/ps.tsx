@@ -24,6 +24,8 @@ export const Route = createFileRoute("/ps")({
       { name: "description", content: mod.description },
       { property: "og:title", content: "PS App — Partner Success | Meridia Hotel ERP" },
       { property: "og:description", content: mod.description },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: () => <ModuleLayout tabs={psTabs} />,

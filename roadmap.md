@@ -1,7 +1,10 @@
 # Meeting & Analyzer v1.0
-- [ ] Add safe read-only meeting views against existing sources; no tables, fields or source sync changes.
-- [ ] Build six sections, global filters/compare, completion headline and shared-spine demo.
-- [ ] Verify counts, attribution, source navigation, empty states and unchanged workflow tests.
+- [x] Add seven safe empty v_meeting_* projections with pending columns; no tables, fields or source sync changes.
+- [x] Build six sections, global filters/compare, completion headline and shared-spine demo.
+- [x] Verify fixture counts, source navigation, empty states, narrow viewport and 24 PS/AC/Meeting tests; build OK.
+- [ ] Live operational/survey/flag reporting and historical caretaker attribution blocked by absent Cloud meeting/survey/flag mirrors and hotel-month caretaker history. Existing actor/source fields are names and date strings, not canonical IDs/history; no current-owner fallback or guessed joins.
+- [ ] Topic-filtered native Coaching/Survey drill-through blocked by existing source pages not consuming deep-link context; links open the existing queue/page and dashboard shows Q9, without modifying prohibited AE Workspace screens.
+- [ ] Persisted warning-window/aging configuration and real flag escalation blocked by absent existing config source; no new fields/tables or upstream engine changes allowed. Rubric intentionally empty.
 
 # PS Dashboard v1.2 patch
 - [x] Consolidate sticky global filters and ownership scoping across reporting surfaces.
