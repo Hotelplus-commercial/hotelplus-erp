@@ -12,7 +12,8 @@ import { Chip, Panel } from "@/components/crm/crm-ui";
 import { BdacTab } from "@/components/ps/bdac-tab";
 import { PsReportTab } from '@/components/ps/ps-report-tab';
 import { readPsDashboard } from '@/lib/ps-dashboard.functions';
-import { psScope, ratio, type PsReport } from '@/lib/ps-dashboard-types';
+import { latestPeriod, psScope, ratio, type PsReport } from '@/lib/ps-dashboard-types';
+import { buildDemoReport, DEMO_ENABLED } from '@/lib/ps-demo-fixture';
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { readAcDashboard } from "@/lib/ac-dashboard.functions";
@@ -73,15 +74,21 @@ const Empty = ({ text = "รอ Cloud Sync seed — ยังไม่มีข�
   <p className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">{text}</p>
 );
 
-export function DashboardShell({ servicing, overview }: { servicing: ReactNode; overview?: ReactNode }) {
+export function DashboardShell({ servicing, overview, header }: { servicing: ReactNode; overview?: ReactNode; header?: ReactNode }) {
   const read = useServerFn(readPsDashboard);
   const ps = useQuery({ queryKey: ['ps-dashboard-views'], queryFn: () => read(), staleTime: 60_000 });
   const [filter, setFilter] = useState<Filter>({ service: "ALL", range: "6m" });
   const [tab, setTab] = useState("bdac");
+  const [demo, setDemo] = useState(false); // build-only DEMO fixture (DP11), default OFF
+  const demoReport = useMemo(() => (demo ? buildDemoReport() : undefined), [demo]);
+  const report = demoReport ? { data: demoReport, isLoading: false, isError: false } : ps;
+  const { lifecycles } = useContractLifecycle();
+  const wonMtd = demoReport ? demoReport.wonMtd : v_bdac_flow(filterLine(lifecycles, "ALL"), monthRange(0)).won;
   return (
     <FilterCtx.Provider value={filter}>
-      <PsReportCtx.Provider value={ps}>
+      <PsReportCtx.Provider value={report}>
       <div className="flex flex-col gap-4">
+        {header /* Portfolio snapshot — global header, all tabs (relocated, logic unchanged) */}
         <HeadlineStrip />
         <div className="flex flex-wrap items-center gap-2 rounded-xl border bg-card p-2">
           <span className="text-xs text-muted-foreground">บริการ</span>
@@ -93,6 +100,7 @@ export function DashboardShell({ servicing, overview }: { servicing: ReactNode; 
             <SelectContent>{(Object.keys(RANGES) as RangeKey[]).map((k) => <SelectItem key={k} value={k}>{RANGES[k]}</SelectItem>)}</SelectContent>
           </Select>
           <span className="text-[11px] text-muted-foreground">"ไม่ระบุบริการ" นับเฉพาะ "ทั้งหมด"</span>
+          {DEMO_ENABLED && <Button size="sm" variant={demo ? "default" : "outline"} className="ml-auto" onClick={() => { const on = !demo; setDemo(on); if (on) setFilter({ ...filter, range: "3m" }); }}>ดูข้อมูลตัวอย่าง (DEMO){demo ? " · เปิด" : ""}</Button>}
         </div>
         <div className="flex gap-1 overflow-x-auto rounded-xl border bg-card p-1" role="tablist">
           {[["bdac", "BD-AC"], ["ac", "AC"], ["ps", "PS"], ["meeting", "Meeting·"], ["task", "Task·"], ["servicing", "Servicing"]].map(([k, l]) => (
@@ -102,7 +110,7 @@ export function DashboardShell({ servicing, overview }: { servicing: ReactNode; 
         </div>
         {tab === "bdac" && <BdacTab />}
         {tab === "ac" && <AcTab />}
-        {tab === "ps" && <><PsReportTab report={ps.data} filter={filter} loading={ps.isLoading} error={ps.isError} />{overview}</>}
+        {tab === "ps" && <><PsReportTab report={report.data} filter={filter} loading={report.isLoading} error={report.isError} wonMtd={wonMtd} />{overview}</>}
         {(tab === "meeting" || tab === "task") && <Empty text="เร็วๆ นี้ (ตาม IA)" />}
         {tab === "servicing" && servicing}
       </div>
@@ -115,10 +123,12 @@ export function DashboardShell({ servicing, overview }: { servicing: ReactNode; 
 function HeadlineStrip() {
   const f = useContext(FilterCtx);
   const ps = useContext(PsReportCtx);
-  const churnNow = ratio(psScope(ps.data?.views.v_ps_churn_monthly ?? [], f), 'out_count', 'active_at_start');
-  const churnPrev = ratio(psScope(ps.data?.views.v_ps_churn_monthly ?? [], f, 'billing_period', -1), 'out_count', 'active_at_start');
+  const now = ps.data?.now ? new Date(ps.data.now) : new Date();
+  const demoMark = ps.data?.demo ? ' · DEMO' : '';
+  const churnNow = ratio(latestPeriod(psScope(ps.data?.views.v_ps_churn_monthly ?? [], f, 'billing_period', 0, now)), 'out_count', 'active_at_start');
+  const churnPrev = ratio(latestPeriod(psScope(ps.data?.views.v_ps_churn_monthly ?? [], f, 'billing_period', -1, now)), 'out_count', 'active_at_start');
   const npsValue = (shift: number) => {
-    const rows = psScope(ps.data?.views.v_ps_nps ?? [], f, 'billing_period', shift);
+    const rows = psScope(ps.data?.views.v_ps_nps ?? [], f, 'billing_period', shift, now);
     const count = rows.reduce((s,r) => s + Number(r.responses ?? 0), 0);
     return count > 0 ? rows.reduce((s,r) => s + Number(r.promoters ?? 0) - Number(r.detractors ?? 0), 0) / count * 100 : null;
   };
@@ -146,8 +156,8 @@ function HeadlineStrip() {
       <Tile label="Signed MTD" value={String(cur.signed)} mom={<Mom cur={cur.signed} prev={prev.signed} />} />
       <Tile label="Won MTD" value={String(cur.won)} mom={<Mom cur={cur.won} prev={prev.won} />} />
       <Tile label="MRR" placeholder="รอนิยาม" />
-      {churnNow === null ? <Tile label="Churn %" placeholder={ps.isError ? 'อ่านรายงานไม่ได้' : 'รอ Cloud Sync seed'} /> : <Tile label="Churn %" tone="warn" value={`${churnNow.toFixed(1)}%`} mom={<Mom cur={churnNow} prev={churnPrev} />} />}
-      {npsNow === null ? <Tile label="NPS" placeholder={ps.isError ? 'อ่านรายงานไม่ได้' : 'รอ Cloud Sync seed'} /> : <Tile label="NPS" value={npsNow.toFixed(1)} mom={<Mom cur={npsNow} prev={npsPrev} />} />}
+      {churnNow === null ? <Tile label="Churn %" placeholder={ps.isError ? 'อ่านรายงานไม่ได้' : 'รอ Cloud Sync seed'} /> : <Tile label={'Churn %' + demoMark} tone="warn" value={`${churnNow.toFixed(1)}%`} mom={<Mom cur={churnNow} prev={churnPrev} />} />}
+      {npsNow === null ? <Tile label="NPS" placeholder={ps.isError ? 'อ่านรายงานไม่ได้' : 'รอ Cloud Sync seed'} /> : <Tile label={'NPS' + demoMark} value={npsNow.toFixed(1)} mom={<Mom cur={npsNow} prev={npsPrev} />} />}
       <Tile label="Pipeline health" placeholder="รอ PipeDrive" />
     </div>
   );
