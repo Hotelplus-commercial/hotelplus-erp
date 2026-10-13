@@ -24,7 +24,8 @@ const MONTHS: Record<RangeKey, number | null> = { mtd: 1, "3m": 3, "6m": 6, "12m
 type Filter = { service: Service; range: RangeKey };
 const FilterCtx = createContext<Filter>({ service: "ALL", range: "6m" });
 
-type Row = Record<string, string | number | boolean | null>;
+type RowKey = "billing_period" | "service_line" | "outstanding" | "customer_count" | "invoice_count" | "grade" | "customer_id" | "customer_segment" | "hotel_id" | "amount" | "rank" | "previous_month_rank" | "lifetime_average_rank";
+type Row = Partial<Record<RowKey, string | number | boolean | null>>;
 const ym = (offset: number) => { const d = new Date(); return new Date(Date.UTC(d.getFullYear(), d.getMonth() + offset, 1)).toISOString().slice(0, 7); };
 const num = (v: unknown) => Number(v ?? 0) || 0;
 const baht = (n: number) => "฿" + n.toLocaleString("th-TH", { maximumFractionDigits: 0 });
@@ -110,8 +111,8 @@ function HeadlineStrip() {
   const lines = filterLine(lifecycles, f.service === "ALL" ? "ALL" : f.service === "ORM" ? "ORM" : "MARCOM");
   const cur = v_bdac_flow(lines, monthRange(0));
   const prev = v_bdac_flow(lines, monthRange(-1));
-  const od = q.data?.v_ac_overdue ?? [];
-  const gd = q.data?.v_ac_grade_distribution ?? [];
+  const od = (q.data?.v_ac_overdue ?? []) as Row[];
+  const gd = (q.data?.v_ac_grade_distribution ?? []) as Row[];
   const sumOut = (rows: Row[]) => rows.reduce((s, r) => s + num(r.outstanding), 0);
   const abShare = (rows: Row[]) => {
     const t = rows.reduce((s, r) => s + num(r.customer_count), 0);
@@ -144,14 +145,14 @@ function AcTab() {
   const open = () => navigate({ to: "/ac/hotel-profile" });
   const v = useMemo(() => {
     const d = q.data;
-    const s = (k: keyof NonNullable<typeof d>) => scope(d?.[k] ?? [], f);
-    return { debt: s("v_ac_debtors"), br: s("v_ac_invoices_breakdown"), rank: s("v_ac_invoice_ranking"), grade: s("v_ac_grade_distribution"), gradePrev: scope(d?.v_ac_grade_distribution ?? [], f, -1), od: s("v_ac_overdue"), sus: s("v_ac_suspended"), legal: s("v_ac_legal") };
+    const s = (k: "v_ac_debtors" | "v_ac_invoices_breakdown" | "v_ac_invoice_ranking" | "v_ac_grade_distribution" | "v_ac_overdue" | "v_ac_suspended" | "v_ac_legal") => scope((d?.[k] ?? []) as Row[], f);
+    return { debt: s("v_ac_debtors"), br: s("v_ac_invoices_breakdown"), rank: s("v_ac_invoice_ranking"), grade: s("v_ac_grade_distribution"), gradePrev: scope((d?.v_ac_grade_distribution ?? []) as Row[], f, -1), od: s("v_ac_overdue"), sus: s("v_ac_suspended"), legal: s("v_ac_legal") };
   }, [q.data, f]);
   if (q.isLoading) return <Empty text="กำลังโหลดรายงาน…" />;
   if (q.isError) return <Empty text="อ่านรายงาน AC ไม่ได้ — ลองโหลดหน้าใหม่" />;
   const outstanding = v.od.reduce((s, r) => s + num(r.outstanding), 0);
   const debtors = new Set(v.debt.map((r) => r.customer_id)).size;
-  const cnt = (rows: Row[], k = "customer_count") => rows.reduce((s, r) => s + num(r[k]), 0);
+  const cnt = (rows: Row[], k: RowKey = "customer_count") => rows.reduce((s, r) => s + num(r[k]), 0);
   const gradeAgg = ["A", "B", "C", "D"].map((g) => ({ g, n: cnt(v.grade.filter((r) => r.grade === g)), p: cnt(v.gradePrev.filter((r) => r.grade === g)) }));
   const gTotal = gradeAgg.reduce((s, x) => s + x.n, 0), pTotal = gradeAgg.reduce((s, x) => s + x.p, 0);
   const latest = [...new Set(v.rank.map((r) => String(r.billing_period)))].sort().at(-1);
