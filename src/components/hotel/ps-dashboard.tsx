@@ -92,7 +92,8 @@ function matchAssignment(
   return true;
 }
 
-export function PsDashboard({ assignment }: { assignment?: AssignmentFilter }) {
+/** part: "overview" = Portfolio snapshot header (relocated, same logic) · "table" = hotel search table. */
+export function PsDashboard({ assignment, part = "all" }: { assignment?: AssignmentFilter; part?: "all" | "overview" | "table" }) {
   const { hotels, select } = useHotelStore();
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<"all" | HotelStatus>("all");
@@ -148,7 +149,7 @@ export function PsDashboard({ assignment }: { assignment?: AssignmentFilter }) {
 
   return (
     <div className="space-y-4">
-      <section className="card-elevated p-4 sm:p-5">
+      {part !== "table" && <section className="card-elevated p-4 sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="text-sm font-semibold">ภาพรวมสัญญา</p>
@@ -218,9 +219,9 @@ export function PsDashboard({ assignment }: { assignment?: AssignmentFilter }) {
             </div>
           </div>
         </div>
-      </section>
+      </section>}
 
-      <section className="card-elevated p-4 sm:p-5">
+      {part !== "overview" && <section className="card-elevated p-4 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="relative min-w-[14rem] flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -311,7 +312,7 @@ export function PsDashboard({ assignment }: { assignment?: AssignmentFilter }) {
             </tbody>
           </table>
         </div>
-      </section>
+      </section>}
     </div>
   );
 }

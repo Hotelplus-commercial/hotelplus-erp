@@ -51,6 +51,7 @@ function PsDashboardPage() {
     <div className="flex flex-col gap-4">
       <PageHeader eyebrow="PS App · Dashboard" title="PS Dashboard" description={description} />
       <DashboardShell
+        header={<PsDashboard part="overview" />}
         servicing={<ServicingDashboardView />}
         overview={
           <section className="flex flex-col gap-4">
@@ -61,7 +62,7 @@ function PsDashboardPage() {
                 <TeamActivityFeed />
               </>
             )}
-            <PsDashboard assignment={filter} />
+            <PsDashboard assignment={filter} part="table" />
           </section>
         }
       />
