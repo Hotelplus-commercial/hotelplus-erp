@@ -1,4 +1,5 @@
 # PS Dashboard tab v1.0
+- [ ] Add PM/System Admin risk governance with editable confirmed thresholds.
 - [ ] Map existing source entities and add forward-only inactivation stamp.
 - [ ] Add read-only v_ps_* projections without new tables or sync changes.
 - [ ] Build seven PS panels and wire Churn/NPS; preserve Contract Overview and other tabs.
