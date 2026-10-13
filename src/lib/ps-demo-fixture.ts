@@ -55,7 +55,7 @@ export function buildDemoReport(): PsReport {
   views.v_ps_renewal = RENEWALS.map(([rid, cid, due, outcome]) => { const c = contracts.find(x => x.id === cid)!; return { renewal_id: rid, contract_id: cid, hotel_id: hid(c.hotel), service_line: c.line, ae_owner_id: c.ae, renewal_due_date: due, outcome }; });
   views.v_ps_contract_lifetime = contracts.map(c => ({ contract_id: c.id, hotel_id: hid(c.hotel), service_line: c.line, status: c.status, end_date: c.end, age_days: c.status === 'INACTIVE' ? day(c.start, c.end) : day(c.start, now) }));
   for (const m of ['2026-08', '2026-09']) {
-    const cs = FINISHED.filter(f => f.go_live_month === undefined && f[1].startsWith(m));
+    const cs = FINISHED.filter(f => f[1].startsWith(m));
     const d = cs.map(f => day(f[0], f[1]));
     const sv = m === '2026-09' ? Object.values(SURVEY2) : [];
     views.v_ps_onboard_cohort.push({
