@@ -54,7 +54,6 @@ function PsDashboardPage() {
         servicing={<ServicingDashboardView />}
         overview={
           <section className="flex flex-col gap-4">
-            <h2 className="text-lg font-semibold">ภาพรวมสัญญา</h2>
             <PsDashboardFilters value={filter} onChange={setFilter} />
             {role === "Partner Manager" && (
               <>
