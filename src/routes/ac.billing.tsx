@@ -1,8 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { FileText, Link2, Receipt } from "lucide-react";
 import { useMemo, useState } from "react";
-import { useServerFn } from '@tanstack/react-start';
-import { runAccountingDaily } from '@/lib/ac-cloud.functions';
 import { bangkokDate, outstandingOf } from '@/lib/ac-v2-engine';
 import { toast } from "sonner";
 
@@ -44,10 +42,8 @@ function BillingPage() {
     issueInvoice,
     voidTaxReceipt,
     liveLinks,
-    actor,setActor,cloudStatus,migrateToCloud,refreshCloud,billingWaiting,recordPayment,
+    actor,setActor,billingWaiting,recordPayment,
   } = useCrm();
-  const daily=useServerFn(runAccountingDaily);
-  const [working,setWorking]=useState(false);
 
   const [year, setYear] = useState(String(lastPeriod.year));
   const [month, setMonth] = useState(String(lastPeriod.month));
@@ -103,7 +99,7 @@ function BillingPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Select value={actor} onValueChange={setActor}><SelectTrigger className="w-52" aria-label="ผู้บันทึกบัญชี"><SelectValue /></SelectTrigger><SelectContent>{crmUsers.map(u=><SelectItem key={u.email} value={u.email}>{u.name}</SelectItem>)}</SelectContent></Select>
-        <div className="flex flex-wrap items-center gap-2"><Chip tone={cloudStatus==='cloud'?'success':'warn'}>{cloudStatus==='cloud'?'Lovable Cloud':cloudStatus==='loading'?'กำลังโหลด':cloudStatus==='error'?'Cloud ต้องโหลดใหม่':'ข้อมูลในเบราว์เซอร์'}</Chip>{import.meta.env.DEV && cloudStatus==='local' && <Button size="sm" disabled={working} onClick={async()=>{setWorking(true);try{await migrateToCloud();}finally{setWorking(false);}}}>ย้ายข้อมูลเดิมไป Cloud</Button>}{cloudStatus==='error' && <Button variant="outline" size="sm" onClick={()=>refreshCloud()}>โหลดข้อมูล Cloud ใหม่</Button>}{cloudStatus==='cloud' && <Button variant="outline" size="sm" disabled={working} onClick={async()=>{setWorking(true);try{await daily();await refreshCloud();toast.success('ประมวลผลบัญชี '+bangkokDate());}catch(e){toast.error(e instanceof Error?e.message:'ประมวลผลไม่สำเร็จ');}finally{setWorking(false);}}}>ประมวลผลงานรายวัน</Button>}</div>
+        <p className="text-xs text-muted-foreground">ข้อมูลบันทึกในเบราว์เซอร์และส่งขึ้น Cloud อัตโนมัติ (ดูปุ่ม Cloud Sync มุมขวาบน)</p>
       </div>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Kpi label="คำขอออกใบแจ้งหนี้" value={invRequests.filter((r) => r.status !== "completed").length} />
