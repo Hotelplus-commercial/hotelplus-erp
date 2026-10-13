@@ -92,7 +92,8 @@ function matchAssignment(
   return true;
 }
 
-export function PsDashboard({ assignment }: { assignment?: AssignmentFilter }) {
+/** part: "overview" = Portfolio snapshot header (relocated, same logic) · "table" = hotel search table. */
+export function PsDashboard({ assignment, part = "all" }: { assignment?: AssignmentFilter; part?: "all" | "overview" | "table" }) {
   const { hotels, select } = useHotelStore();
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<"all" | HotelStatus>("all");
@@ -148,7 +149,7 @@ export function PsDashboard({ assignment }: { assignment?: AssignmentFilter }) {
 
   return (
     <div className="space-y-4">
-      <section className="card-elevated p-4 sm:p-5">
+      {part !== "table" && <section className="card-elevated p-4 sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="text-sm font-semibold">ภาพรวมสัญญา</p>
