@@ -4,4 +4,4 @@ export const CRM_COLLECTIONS = [
   'templates', 'invRequests', 'liveLinks', 'gradeRecords', 'collectionEvents', 'billingWaiting', 'audit',
 ] as const;
 export type CrmCollection = (typeof CRM_COLLECTIONS)[number];
-export const CLOUD_DOC_KEYS = [...CRM_COLLECTIONS.map((c) => `crm:${c}` as const), 'hotels', 'ws2'] as [string, ...string[]];
+export const CLOUD_DOC_KEYS = [...CRM_COLLECTIONS.map((c) => `crm:${c}` as const), 'hotels', 'ws2'] as unknown as [string, ...string[]];

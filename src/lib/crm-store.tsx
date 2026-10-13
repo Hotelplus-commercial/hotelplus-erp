@@ -544,7 +544,7 @@ export function CrmStoreProvider({ children }: { children: React.ReactNode }) {
           };
         }),
     };
-  }, [data, hydrated, log, cloud.status, cloud.migrate, cloud.refresh]);
+  }, [data, hydrated, log]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
