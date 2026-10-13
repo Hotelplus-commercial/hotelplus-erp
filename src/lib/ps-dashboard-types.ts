@@ -18,7 +18,7 @@ export function psScope(rows: PsReportRow[], filter: PsFilter, dateKey = 'billin
   const months = { mtd: 1, '3m': 3, '6m': 6, '12m': 12, all: null }[filter.range];
   const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + shift + 1, 1)).toISOString().slice(0, 10);
   const start = months === null ? '0000-01-01' : new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + shift - months + 1, 1)).toISOString().slice(0, 10);
-  return rows.filter(row => (filter.service === 'ALL' || row.service_line === filter.service) && (row[dateKey] === null || row[dateKey] === undefined || (String(row[dateKey]) >= start && String(row[dateKey]) < end)));
+  return rows.filter(row => (filter.service === 'ALL' || row.service_line === filter.service) && (dateKey === 'none' || (row[dateKey] != null && String(row[dateKey]) >= start && String(row[dateKey]) < end)));
 }
 export function ratio(rows: PsReportRow[], numerator: string, denominator: string): number | null {
   const total = rows.reduce((sum, row) => sum + Number(row[denominator] ?? 0), 0);

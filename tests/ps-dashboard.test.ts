@@ -15,6 +15,9 @@ describe('PS read-only reporting', () => {
     expect(ratio([],'out','base')).toBeNull();
     expect(ratio([{out:1,base:4},{out:1,base:6}],'out','base')).toBe(20);
   });
+  it('excludes missing historical event timestamps from period counts', () => {
+    expect(psScope([{service_line:'ORM',inactivated_at:null}],{service:'ALL',range:'mtd'},'inactivated_at')).toHaveLength(0);
+  });
   it('keeps per-service grain and unassigned only in ALL', () => {
     const rows = [{hotel_id:'same',service_line:'ORM',billing_period:'2026-10-01'}, {hotel_id:'same',service_line:'Marcom',billing_period:'2026-10-01'}, {service_line:null,billing_period:'2026-10-01'}, {service_line:'ORM',billing_period:'2026-09-01'}];
     const now = new Date('2026-10-13T00:00:00Z');
