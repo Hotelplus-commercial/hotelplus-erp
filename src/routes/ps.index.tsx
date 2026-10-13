@@ -10,8 +10,7 @@ import { ServicingDashboardView } from "@/components/ps/servicing-dashboard";
 import { NewContractUpdates } from "@/components/ps/renewal-ui";
 import { ActivityFeedList, useAutoRefresh } from "@/components/ps/v4-ui";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BdacHeadline, BdacTab } from "@/components/ps/bdac-tab";
+import { DashboardShell } from "@/components/ps/ps-dashboard-shell";
 import {
   Select,
   SelectContent,
@@ -51,27 +50,22 @@ function PsDashboardPage() {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader eyebrow="PS App · Dashboard" title="PS Dashboard" description={description} />
-      <BdacHeadline />
-      <Tabs defaultValue="overview">
-        <TabsList>
-          <TabsTrigger value="overview">ภาพรวม</TabsTrigger>
-          <TabsTrigger value="bdac">BD-AC</TabsTrigger>
-        </TabsList>
-        <TabsContent value="overview" className="flex flex-col gap-4">
-          <PsDashboardFilters value={filter} onChange={setFilter} />
-          {role === "Partner Manager" && (
-            <>
-              <NewContractUpdates />
-              <TeamActivityFeed />
-            </>
-          )}
-          <PsDashboard assignment={filter} />
-          <ServicingDashboardView />
-        </TabsContent>
-        <TabsContent value="bdac">
-          <BdacTab />
-        </TabsContent>
-      </Tabs>
+      <DashboardShell
+        servicing={<ServicingDashboardView />}
+        overview={
+          <section className="flex flex-col gap-4">
+            <h2 className="text-lg font-semibold">ภาพรวมสัญญา</h2>
+            <PsDashboardFilters value={filter} onChange={setFilter} />
+            {role === "Partner Manager" && (
+              <>
+                <NewContractUpdates />
+                <TeamActivityFeed />
+              </>
+            )}
+            <PsDashboard assignment={filter} />
+          </section>
+        }
+      />
     </div>
   );
 }

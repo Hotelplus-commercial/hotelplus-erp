@@ -9,6 +9,7 @@ import { createContext, useContext, useMemo, useState, type ReactNode } from "re
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 
 import { Chip, Panel } from "@/components/crm/crm-ui";
+import { BdacTab } from "@/components/ps/bdac-tab";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { readAcDashboard } from "@/lib/ac-dashboard.functions";
@@ -91,7 +92,7 @@ export function DashboardShell({ servicing, overview }: { servicing: ReactNode; 
               className={cn("shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium", tab === k ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted")}>{l}</button>
           ))}
         </div>
-        {tab === "bdac" && <BdacSlot />}
+        {tab === "bdac" && <BdacTab />}
         {tab === "ac" && <AcTab />}
         {(tab === "ps" || tab === "meeting" || tab === "task") && <Empty text="เร็วๆ นี้ (ตาม IA)" />}
         {tab === "servicing" && servicing}
@@ -101,9 +102,6 @@ export function DashboardShell({ servicing, overview }: { servicing: ReactNode; 
   );
 }
 
-let BdacTabLazy: ReactNode = null;
-export function registerBdacTab(node: ReactNode) { BdacTabLazy = node; }
-function BdacSlot() { return <>{BdacTabLazy}</>; }
 
 function HeadlineStrip() {
   const f = useContext(FilterCtx);
