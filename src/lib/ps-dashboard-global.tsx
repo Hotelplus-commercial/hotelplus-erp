@@ -3,7 +3,7 @@ import type { AssignmentFilter } from './ps-renewal';
 import type { PsFilter, PsReportRow } from './ps-dashboard-types';
 
 export type Period = { from: string; to: string };
-export type GlobalFilter = PsFilter & AssignmentFilter & { search: string; hotelStatus: string; compare: boolean; periodA: Period; periodB: Period };
+export type GlobalFilter = PsFilter & AssignmentFilter & { search: string; hotelStatus: string; compare: boolean; periodA: Period; periodB: Period; ownerAliases?: Record<string,string[]> };
 export const defaultGlobalFilter: GlobalFilter = { service: 'ALL', range: '6m', role: 'none', teams: [], people: [], search: '', hotelStatus: 'all', compare: false, periodA: { from: '2026-09-01', to: '2026-09-30' }, periodB: { from: '2026-08-01', to: '2026-08-31' } };
 export const DashboardGlobal = createContext<{ filter: GlobalFilter; demo: boolean; now: string }>({ filter: defaultGlobalFilter, demo: false, now: '' });
 export const useDashboardGlobal = () => useContext(DashboardGlobal);
@@ -19,7 +19,7 @@ export function matchesBook(row: PsReportRow, f: GlobalFilter, hotelLevel = fals
   if (f.service !== 'ALL' && row.service_line !== f.service) return false;
   const owners = { AE: [row['ae_owner_id'], row['assigned_ae_id'], row['owner_ae']], ORM: [row['orm_team'], row['orm_owner_id'], row['assigned_service_owner_id'], row['orm_revenue_id'], row['orm_ecommerce_id']], Marcom: [row['marcom_owner_id'], row['marcom_id'], row['assigned_service_owner_id']] };
   const chosen = f.role === 'none' ? Object.values(owners).flat() : owners[f.role];
-  const values = chosen.filter(v => v != null).map(String);
+  const values = chosen.filter(v => v != null).flatMap(v => [String(v), ...(f.ownerAliases?.[String(v)] ?? [])]);
   if (f.role !== 'none' && !values.length) return false;
   if (f.teams.length && !f.teams.some(v => values.includes(v))) return false;
   if (f.people.length && !f.people.some(v => values.includes(v))) return false;

@@ -21,6 +21,7 @@ import { useContractLifecycle } from "@/lib/contract-lifecycle";
 import { DashboardGlobal, defaultGlobalFilter, matchesBook, scopePeriod, selectedPeriod, periodRange, deltaText, useDashboardGlobal, type GlobalFilter } from '@/lib/ps-dashboard-global';
 import { DashboardGlobalFilters } from './dashboard-global-filters';
 import { DashboardCompare } from './dashboard-compare';
+import { useHrMembers, teamLabel } from '@/lib/hr-members';
 import { cn } from "@/lib/utils";
 
 type Filter = GlobalFilter;
@@ -72,7 +73,9 @@ const Empty = ({ text = "รอ Cloud Sync seed — ยังไม่มีข�
 
 export function DashboardShell({ servicing, overview, header }: { servicing: ReactNode; overview?: ReactNode; header?: ReactNode }) {
   const read = useServerFn(readPsDashboard);
-  const [filter, setFilter] = useState<Filter>(defaultGlobalFilter);
+  const [filterState, setFilter] = useState<Filter>(defaultGlobalFilter);
+  const { members } = useHrMembers();
+  const filter = useMemo(() => ({ ...filterState, ownerAliases:Object.fromEntries(members.map(m => [m.id,[m.nickname,teamLabel(m.orm_team)].filter(Boolean)])) }),[filterState,members]);
   const [tab, setTab] = useState("bdac");
   const [demo, setDemo] = useState(false);
   const [ready, setReady] = useState(false);
