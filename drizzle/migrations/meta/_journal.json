@@ -71,6 +71,13 @@
       "when": 1791855814415,
       "tag": "0009_cloud_sync_level_a_per_collection_docs",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791865142135,
+      "tag": "0010_ps_dashboard_read_only_projections",
+      "breakpoints": true
     }
   ]
 }

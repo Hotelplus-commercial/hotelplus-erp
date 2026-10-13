@@ -650,6 +650,113 @@ export type Database = {
         }
         Relationships: []
       }
+      v_ps_account_health: {
+        Row: {
+          active_services: number | null
+          completeness: string | null
+          flag: string | null
+          hotel_id: string | null
+          hotel_name: string | null
+          latest_grade: string | null
+          monthly_billing: number | null
+          monthly_survey_score: number | null
+          nps: number | null
+          service_line: string | null
+          survey2: number | null
+          worst_grade: string | null
+        }
+        Relationships: []
+      }
+      v_ps_attach_rate: {
+        Row: {
+          active_hotels: number | null
+          attached_hotels: number | null
+          service_line: string | null
+        }
+        Relationships: []
+      }
+      v_ps_churn_monthly: {
+        Row: {
+          active_at_start: number | null
+          billing_period: string | null
+          out_count: number | null
+          service_line: string | null
+        }
+        Relationships: []
+      }
+      v_ps_contract_lifetime: {
+        Row: {
+          age_days: number | null
+          contract_id: string | null
+          end_date: string | null
+          hotel_id: string | null
+          service_line: string | null
+          status: string | null
+        }
+        Relationships: []
+      }
+      v_ps_lifecycle_flow: {
+        Row: {
+          ae_owner_id: string | null
+          contract_id: string | null
+          created_at: string | null
+          hotel_id: string | null
+          inactivated_at: string | null
+          service_line: string | null
+          start_date: string | null
+          status: string | null
+        }
+        Relationships: []
+      }
+      v_ps_nps: {
+        Row: {
+          billing_period: string | null
+          detractors: number | null
+          promoters: number | null
+          responses: number | null
+          service_line: string | null
+        }
+        Relationships: []
+      }
+      v_ps_offboard: {
+        Row: {
+          hotel_id: string | null
+          pending_sync: boolean | null
+        }
+        Relationships: []
+      }
+      v_ps_onboard_cohort: {
+        Row: {
+          ae_days: number | null
+          billing_period: string | null
+          detractors: number | null
+          marcom_days: number | null
+          median_days: number | null
+          orm_days: number | null
+          overall_days: number | null
+          p25_days: number | null
+          p75_days: number | null
+          promoters: number | null
+          responses: number | null
+          service_line: string | null
+          specialist_days: number | null
+          survey1: number | null
+          survey2: number | null
+        }
+        Relationships: []
+      }
+      v_ps_renewal: {
+        Row: {
+          ae_owner_id: string | null
+          decided_at: string | null
+          hotel_id: string | null
+          outcome: string | null
+          renewal_due_date: string | null
+          renewal_id: string | null
+          service_line: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       ac_daily: { Args: { t?: string }; Returns: number }
