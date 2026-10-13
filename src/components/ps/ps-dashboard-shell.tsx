@@ -95,9 +95,9 @@ export function DashboardShell({ servicing, overview }: { servicing: ReactNode; 
         </div>
         {tab === "bdac" && <BdacTab />}
         {tab === "ac" && <AcTab />}
-        {(tab === "ps" || tab === "meeting" || tab === "task") && <Empty text="เร็วๆ นี้ (ตาม IA)" />}
+        {tab === "ps" && overview}
+        {(tab === "meeting" || tab === "task") && <Empty text="เร็วๆ นี้ (ตาม IA)" />}
         {tab === "servicing" && servicing}
-        {overview}
       </div>
     </FilterCtx.Provider>
   );

@@ -668,7 +668,7 @@
 /* BD-AC presentation-only theme; preserve other module styles. */
 .bdac-theme { --background:var(--bg-app); --card:var(--bg-card); --foreground:var(--text-primary); --primary:var(--bdac-accent); --primary-foreground:var(--bg-card); --muted:var(--bg-app); --muted-foreground:var(--text-secondary); --border:var(--border-subtle); --input:var(--border-subtle); --accent:var(--bdac-accent); --accent-foreground:var(--bg-card); --ring:var(--bdac-accent); color:var(--text-primary); font-family:var(--font-bdac); font-variant-numeric:tabular-nums; font-size:14px; letter-spacing:0; }
 .bdac-theme h3 { font-family:var(--font-bdac); letter-spacing:0; font-size:15px; font-weight:600; }
-.bdac-dashboard { display:flex; flex-direction:column; gap:16px; max-width:1280px; margin:auto; min-width:0; padding:4px; background:var(--bg-app); }
+.bdac-dashboard { display:flex; flex-direction:column; gap:16px; width:100%; min-width:0; background:var(--bg-app); }
 .bdac-section,.bdac-kpi { border:1px solid var(--border-subtle); border-radius:12px; background:var(--bg-card); box-shadow:var(--bdac-shadow); padding:20px; }
 .bdac-kpi { border-top:3px solid var(--bdac-accent); }
 .bdac-caption { font-size:12px; font-weight:500; color:var(--text-secondary); }
@@ -721,5 +721,5 @@
 .bdac-aging-number { position:relative; min-width:80px; padding:5px 8px; }
 .bdac-aging-bar { position:absolute; right:0; top:0; bottom:0; background:var(--accent-soft); border-radius:3px; }
 .bdac-avatar { display:grid; place-items:center; width:28px; height:28px; border-radius:50%; background:var(--accent-soft); color:var(--bdac-accent); font-size:10px; font-weight:600; }
-@media(max-width:640px) { .bdac-section,.bdac-kpi { padding:16px; } .bdac-stage-legend { grid-template-columns:repeat(2,minmax(0,1fr)); } .bdac-filterbar { gap:8px; } .bdac-dashboard { padding:0; } }
+@media(max-width:640px) { .bdac-section,.bdac-kpi { padding:16px; } .bdac-stage-legend { grid-template-columns:repeat(2,minmax(0,1fr)); } .bdac-filterbar { gap:8px; } }
 @media(prefers-reduced-motion:reduce) { .bdac-table tbody tr { transition:none; transform:none; } }
