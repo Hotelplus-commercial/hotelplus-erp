@@ -41,3 +41,5 @@
 
 - Dashboard filters and A/B periods share one React context and pure selectors; ownershipless aggregates stay empty under ownership lenses rather than imply attribution.
 - Preview demo adapters derive PS/AC/BD-AC/portfolio/servicing from one bundled spine, with URL/state switching and no provider writes; this keeps cross-tab invariants and fresh-share rendering deterministic.
+- Meeting reporting uses a publishable server client over narrow v_meeting_* projections and pure read-only selectors; absent meeting mirrors/monthly caretaker history stay empty rather than exposing private documents or guessing current attribution.
+- Meeting demo derives hotel/service identities from the existing contract spine and keeps rubric empty; reporting fixtures never mutate upstream meeting, survey or coaching stores.

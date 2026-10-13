@@ -650,6 +650,136 @@ export type Database = {
         }
         Relationships: []
       }
+      v_meeting_completion: {
+        Row: {
+          ae_owner_id: string | null
+          completed: number | null
+          hotel_id: string | null
+          hotel_name: string | null
+          marcom_owner_id: string | null
+          meeting_date: string | null
+          meeting_id: string | null
+          orm_owner_id: string | null
+          orm_team: string | null
+          pending_sync: boolean | null
+          postponed_next_month: number | null
+          scheduled: number | null
+          service_line: string | null
+          status: string | null
+        }
+        Relationships: []
+      }
+      v_meeting_count_by_ae: {
+        Row: {
+          ae_owner_id: string | null
+          hotel_id: string | null
+          hotel_name: string | null
+          marcom_owner_id: string | null
+          meeting_count: number | null
+          meeting_date: string | null
+          meeting_id: string | null
+          orm_owner_id: string | null
+          orm_team: string | null
+          pending_sync: boolean | null
+          service_line: string | null
+          status: string | null
+        }
+        Relationships: []
+      }
+      v_meeting_flags: {
+        Row: {
+          ae_owner_id: string | null
+          age_days: number | null
+          comment: string | null
+          hotel_id: string | null
+          hotel_name: string | null
+          marcom_owner_id: string | null
+          meeting_date: string | null
+          meeting_id: string | null
+          orm_owner_id: string | null
+          orm_team: string | null
+          pending_sync: boolean | null
+          red_count: number | null
+          resolved_at: string | null
+          route_target: string | null
+          service_line: string | null
+          status: string | null
+          topic: string | null
+          warn_count: number | null
+          warning_progress: number | null
+        }
+        Relationships: []
+      }
+      v_meeting_funnel: {
+        Row: {
+          ae_owner_id: string | null
+          completed: number | null
+          confirmed: number | null
+          hotel_id: string | null
+          hotel_name: string | null
+          marcom_owner_id: string | null
+          meeting_date: string | null
+          meeting_id: string | null
+          orm_owner_id: string | null
+          orm_team: string | null
+          pending_sync: boolean | null
+          postponed_next_month: number | null
+          scheduled: number | null
+          service_line: string | null
+          status: string | null
+          survey: number | null
+          tier: string | null
+        }
+        Relationships: []
+      }
+      v_meeting_rubric_summary: {
+        Row: {
+          average_score: number | null
+          category_breakdown: Json | null
+          pending_engine: boolean | null
+          verdict_tier: string | null
+        }
+        Relationships: []
+      }
+      v_meeting_survey_collection: {
+        Row: {
+          ae_owner_id: string | null
+          completed: number | null
+          hotel_id: string | null
+          hotel_name: string | null
+          marcom_owner_id: string | null
+          meeting_date: string | null
+          meeting_id: string | null
+          orm_owner_id: string | null
+          orm_team: string | null
+          pending_sync: boolean | null
+          queue: number | null
+          service_line: string | null
+          status: string | null
+          submitted: number | null
+        }
+        Relationships: []
+      }
+      v_meeting_survey_scores: {
+        Row: {
+          ae_owner_id: string | null
+          comment: string | null
+          hotel_id: string | null
+          hotel_name: string | null
+          marcom_owner_id: string | null
+          meeting_date: string | null
+          meeting_id: string | null
+          orm_owner_id: string | null
+          orm_team: string | null
+          pending_sync: boolean | null
+          question: string | null
+          score: number | null
+          service_line: string | null
+          status: string | null
+          subject_owner_id: string | null
+        }
+        Relationships: []
+      }
       v_ps_account_health: {
         Row: {
           active_services: number | null

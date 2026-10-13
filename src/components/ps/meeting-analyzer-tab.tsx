@@ -1,0 +1,723 @@
+import { useState, type ReactNode } from "react";
+import { Link } from "@tanstack/react-router";
+import { ArrowUpRight, MessageSquare } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
+import { Chip } from "@/components/crm/crm-ui";
+import {
+  useDashboardGlobal,
+  selectedPeriod,
+  monthPeriod,
+  deltaText,
+} from "@/lib/ps-dashboard-global";
+import {
+  QUESTIONS,
+  RUBRIC_CATEGORIES,
+  meetingScope,
+  meetingSum,
+  meetingPercent,
+  questionAverage,
+  type MeetingReport,
+  type MeetingRow,
+} from "@/lib/meeting-dashboard-types";
+
+const fmt = (value: number | null, suffix = "") =>
+  value == null ? "—" : value.toLocaleString("th-TH", { maximumFractionDigits: 1 }) + suffix;
+const Empty = ({ text = "รอ Cloud Sync seed — ยังไม่มีข้อมูลประชุม" }: { text?: string }) => (
+  <p className="border border-dashed rounded-lg p-6 text-center text-sm text-muted-foreground">
+    {text}
+  </p>
+);
+function Section({
+  title,
+  children,
+  right,
+}: {
+  title: string;
+  children: ReactNode;
+  right?: ReactNode;
+}) {
+  return (
+    <section className="min-w-0 space-y-4 border-t pt-5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-base font-semibold">{title}</h2>
+        {right}
+      </div>
+      {children}
+    </section>
+  );
+}
+function Choice({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: string[];
+}) {
+  return (
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger aria-label={label} className="h-9 w-44">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="all">{label}: ทั้งหมด</SelectItem>
+        {options.map((option) => (
+          <SelectItem key={option} value={option}>
+            {option}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+function Trend({ a, b }: { a: number | null; b: number | null }) {
+  if (a == null || b == null)
+    return <div className="h-8 text-xs text-muted-foreground">Trend · —</div>;
+  return (
+    <svg
+      viewBox="0 0 120 32"
+      className="h-8 w-full text-primary"
+      role="img"
+      aria-label={`Trend ${fmt(b)} → ${fmt(a)}`}
+    >
+      <polyline
+        points={`6,${30 - b * 2.6} 114,${30 - a * 2.6}`}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <circle cx="6" cy={30 - b * 2.6} r="2" fill="currentColor" />
+      <circle cx="114" cy={30 - a * 2.6} r="2" fill="currentColor" />
+    </svg>
+  );
+}
+const values = (rows: MeetingRow[], key: string) => [
+  ...new Set(rows.flatMap((row) => (row[key] == null ? [] : [String(row[key])]))),
+];
+function Source({ row, survey = false }: { row: MeetingRow; survey?: boolean }) {
+  return (
+    <Button asChild variant="ghost" size="sm">
+      <Link
+        to={survey ? "/ps/ae-workspace/surveys" : "/ps/ae-workspace/meetings"}
+        hash={String(row["meeting_id"] ?? "")}
+      >
+        <ArrowUpRight className="size-3.5" />
+        {String(row.hotel_name ?? "เปิดต้นทาง")}
+      </Link>
+    </Button>
+  );
+}
+
+export function MeetingAnalyzerTab({
+  report,
+  loading,
+  error,
+}: {
+  report: MeetingReport | undefined;
+  loading: boolean;
+  error: boolean;
+}) {
+  const { filter, demo, now: clock } = useDashboardGlobal();
+  const now = new Date(clock);
+  const [orm, setOrm] = useState("all"),
+    [marcom, setMarcom] = useState("all"),
+    [ae, setAe] = useState("all"),
+    [hotel, setHotel] = useState("all"),
+    [severity, setSeverity] = useState("all"),
+    [aging, setAging] = useState(""),
+    [breakdown, setBreakdown] = useState("all"),
+    [actor, setActor] = useState("all");
+  const periodA = selectedPeriod(filter, now),
+    periodB = filter.compare ? selectedPeriod(filter, now, "B") : monthPeriod(now, -1);
+  const rows = (view: keyof MeetingReport["views"], side: "A" | "B" = "A") =>
+    meetingScope(report?.views[view] ?? [], filter, side === "A" ? periodA : periodB);
+  const compare = (a: number | null, b: number | null, unit: "" | "pp" = "") => (
+    <span className="block text-[11px] text-muted-foreground">
+      {filter.compare ? `A ${fmt(a)} · B ${fmt(b)} · ` : ""}
+      {deltaText(a, b, unit)}
+    </span>
+  );
+  const totals = rows("v_meeting_funnel"),
+    previous = rows("v_meeting_funnel", "B");
+  const surveyA = rows("v_meeting_survey_scores"),
+    surveyB = rows("v_meeting_survey_scores", "B");
+  const flagsAll = rows("v_meeting_flags");
+  const flagFilter = (row: MeetingRow) =>
+    (orm === "all" || row["orm_team"] === orm) &&
+    (marcom === "all" || row["marcom_owner_id"] === marcom) &&
+    (ae === "all" || row["ae_owner_id"] === ae) &&
+    (hotel === "all" || row.hotel_name === hotel) &&
+    (severity === "all" || Number(row[severity === "red" ? "red_count" : "warn_count"]) > 0) &&
+    (!aging || Number(row["age_days"]) >= Number(aging));
+  const flags = flagsAll.filter(flagFilter),
+    flagsB = rows("v_meeting_flags", "B").filter(flagFilter);
+  const countRows = rows("v_meeting_count_by_ae"),
+    countB = rows("v_meeting_count_by_ae", "B");
+  const owners = values(countRows, "ae_owner_id");
+  const maxCount = Math.max(
+    1,
+    ...owners.map((owner) =>
+      meetingSum(
+        countRows.filter((row) => row["ae_owner_id"] === owner),
+        "meeting_count",
+      ),
+    ),
+  );
+  const collect = rows("v_meeting_survey_collection"),
+    collectB = rows("v_meeting_survey_collection", "B");
+  if (loading) return <Empty text="กำลังโหลดรายงานประชุม…" />;
+  if (error) return <Empty text="อ่านรายงานประชุมไม่ได้ — ลองโหลดหน้าใหม่" />;
+  return (
+    <div data-testid="meeting-analyzer" className="min-w-0 space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-xl font-semibold">Meeting & Analyzer</h2>
+        <Choice
+          label="ผู้ดูรายงาน"
+          value={actor}
+          onChange={setActor}
+          options={values(countRows, "ae_owner_id")}
+        />
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <Chip tone={totals.length ? "success" : "muted"}>
+          Operational · {totals.length ? "พร้อมแสดง" : "รอข้อมูล"}
+        </Chip>
+        <Chip tone={surveyA.length ? "success" : "warn"}>
+          Survey & Flag · {surveyA.length ? "พร้อมแสดง" : "รอ sync"}
+        </Chip>
+        <Chip>Rubric · รอ engine</Chip>
+      </div>
+      <Section
+        title="① Meeting Funnel & Tier Completion"
+        right={
+          <Button asChild size="sm" variant="outline">
+            <Link to="/ps/ae-workspace/meetings">
+              <ArrowUpRight className="size-4" />
+              Meetings
+            </Link>
+          </Button>
+        }
+      >
+        {!totals.length ? (
+          <Empty />
+        ) : (
+          <div className="space-y-6">
+            {(["ORM", "Marcom"] as const)
+              .filter((service) => filter.service === "ALL" || filter.service === service)
+              .map((service) => {
+                const a = totals.filter((row) => row.service_line === service),
+                  b = previous.filter((row) => row.service_line === service),
+                  base = a.filter((row) => row["tier"] === "A");
+                const pct = meetingPercent(
+                  service === "ORM" ? base : a,
+                  "completed",
+                  "scheduled",
+                  "postponed_next_month",
+                );
+                return (
+                  <div key={service} className="space-y-3">
+                    <h3
+                      className={
+                        service === "ORM"
+                          ? "text-primary font-semibold"
+                          : "text-chart-4 font-semibold"
+                      }
+                    >
+                      {service}
+                    </h3>
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                      {[
+                        ["scheduled", "Scheduled"],
+                        ["confirmed", "Confirmed (leading)"],
+                        ["completed", "Completed"],
+                        ["survey", "Survey"],
+                      ].map(([key, label]) => (
+                        <div key={key} className="rounded-lg border bg-card p-3">
+                          <p className="text-xs text-muted-foreground">{label}</p>
+                          <p className="mt-1 text-2xl font-semibold tabular-nums">
+                            {meetingSum(a, key ?? "")}
+                          </p>
+                          {compare(
+                            meetingSum(a, key ?? ""),
+                            b.length ? meetingSum(b, key ?? "") : null,
+                          )}
+                          {key === "completed" && (
+                            <p className="mt-2 text-xs font-medium">
+                              {service === "ORM" ? "Tier A · target 100%" : "All"} {fmt(pct, "%")}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    {service === "ORM" ? (
+                      <div className="space-y-2">
+                        {["A", "B", "C"].map((tier) => {
+                          const numerator = meetingSum(
+                              a.filter((row) => row["tier"] === tier),
+                              "completed",
+                            ),
+                            denominator =
+                              meetingSum(base, "scheduled") -
+                              meetingSum(base, "postponed_next_month"),
+                            ratio = denominator > 0 ? (numerator / denominator) * 100 : null;
+                          return (
+                            <div
+                              key={tier}
+                              className="grid grid-cols-[56px_1fr_100px] items-center gap-3 text-xs"
+                            >
+                              <b>Tier {tier}</b>
+                              <Progress
+                                aria-label={`ORM Tier ${tier}`}
+                                value={Math.min(ratio ?? 0, 100)}
+                                className={
+                                  tier === "A" ? "h-2" : "h-1.5 [&>div]:bg-muted-foreground"
+                                }
+                              />
+                              <span className="text-right tabular-nums">
+                                {numerator}/{denominator} · {fmt(ratio, "%")}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <>
+                        <p className="bg-muted px-3 py-2 text-sm">
+                          Marcom Tier TBD — all: {meetingSum(a, "completed")}/
+                          {meetingSum(a, "scheduled") - meetingSum(a, "postponed_next_month")} (
+                          {fmt(pct, "%")})
+                        </p>
+                        {["A", "B", "C"].map((tier) => (
+                          <div
+                            key={tier}
+                            className="flex items-center gap-3 text-xs text-muted-foreground"
+                          >
+                            <span>Tier {tier}</span>
+                            <div className="h-1.5 flex-1 bg-muted" />—
+                          </div>
+                        ))}
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+          </div>
+        )}
+      </Section>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Section title="② Meetings per AE">
+          {!countRows.length ? (
+            <Empty />
+          ) : (
+            <div className="space-y-4">
+              <div className="flex gap-4 text-xs">
+                <span className="text-primary">● ORM</span>
+                <span className="text-chart-4">● Marcom</span>
+              </div>
+              {owners.map((owner) => {
+                const owned = countRows.filter((row) => row["ae_owner_id"] === owner);
+                return (
+                  <div key={owner} className="space-y-1">
+                    <div className="flex items-center justify-between gap-2 text-sm">
+                      <span>{owner}</span>
+                      <span>
+                        {meetingSum(owned, "meeting_count")}
+                        {compare(
+                          meetingSum(owned, "meeting_count"),
+                          countB.length
+                            ? meetingSum(
+                                countB.filter((row) => row["ae_owner_id"] === owner),
+                                "meeting_count",
+                              )
+                            : null,
+                        )}
+                      </span>
+                    </div>
+                    <div className="flex h-5 overflow-hidden rounded-sm bg-muted">
+                      {(["ORM", "Marcom"] as const).map((service) => {
+                        const n = meetingSum(
+                          owned.filter((row) => row.service_line === service),
+                          "meeting_count",
+                        );
+                        return (
+                          <svg
+                            key={service}
+                            className={service === "ORM" ? "text-primary" : "text-chart-4"}
+                            width={`${(n / maxCount) * 100}%`}
+                            height="20"
+                            aria-label={`${owner} ${service} ${n}`}
+                          >
+                            <rect width="100%" height="20" fill="currentColor" />
+                          </svg>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </Section>
+        <Section
+          title="⑤ Survey Collection"
+          right={
+            <Button asChild size="sm" variant="ghost">
+              <Link to="/ps/ae-workspace/surveys">
+                <ArrowUpRight className="size-4" />
+                Surveys
+              </Link>
+            </Button>
+          }
+        >
+          {!collect.length ? (
+            <Empty />
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                [
+                  "Queue",
+                  meetingSum(collect, "queue"),
+                  collectB.length ? meetingSum(collectB, "queue") : null,
+                  "",
+                ],
+                [
+                  "Collection %",
+                  meetingPercent(collect, "submitted", "completed"),
+                  meetingPercent(collectB, "submitted", "completed"),
+                  "%",
+                ],
+              ].map(([label, a, b, suffix]) => (
+                <div key={String(label)} className="rounded-lg border bg-card p-4">
+                  <p className="text-xs text-muted-foreground">{String(label)}</p>
+                  <p className="mt-2 text-3xl font-semibold">
+                    {fmt(a as number | null, String(suffix))}
+                  </p>
+                  {compare(a as number | null, b as number | null, suffix === "%" ? "pp" : "")}
+                </div>
+              ))}
+              <p className="col-span-2 text-xs text-muted-foreground">
+                ส่ง survey {meetingSum(collect, "submitted")} · ประชุมเสร็จ{" "}
+                {meetingSum(collect, "completed")}
+              </p>
+            </div>
+          )}
+        </Section>
+      </div>
+      <Section
+        title="③ Survey Analyzer"
+        right={
+          <Choice
+            label="Breakdown"
+            value={breakdown}
+            onChange={setBreakdown}
+            options={["ORM team", "ORM person", "Marcom person"]}
+          />
+        }
+      >
+        {!surveyA.length ? (
+          <Empty text="รอข้อมูล survey — sync แล้วจะแสดง" />
+        ) : (
+          <>
+            <div className="grid gap-6 md:grid-cols-3">
+              {["ORM", "Marcom", "Overall"].map((group, index) => (
+                <div key={group} className="space-y-4">
+                  <h3 className="font-semibold">{group}</h3>
+                  {QUESTIONS.slice(
+                    index === 0 ? 0 : index === 1 ? 3 : 6,
+                    index === 0 ? 3 : index === 1 ? 6 : 8,
+                  ).map(([question, label]) => {
+                    const a = surveyA.filter((row) => row["question"] === question),
+                      b = surveyB.filter((row) => row["question"] === question),
+                      key =
+                        breakdown === "ORM team"
+                          ? "orm_team"
+                          : breakdown === "ORM person"
+                            ? "orm_owner_id"
+                            : "subject_owner_id";
+                    return (
+                      <div key={question} className="space-y-2">
+                        <p className="text-xs text-muted-foreground">
+                          {question} · {label}
+                        </p>
+                        <p className="text-xl font-semibold">
+                          {fmt(questionAverage(a))}
+                          <span className="text-xs text-muted-foreground"> /10</span>
+                        </p>
+                        {compare(questionAverage(a), questionAverage(b))}
+                        <Trend a={questionAverage(a)} b={questionAverage(b)} />
+                        <div
+                          className="flex h-10 items-end gap-1"
+                          aria-label={`${question} score distribution 1–10`}
+                        >
+                          {Array.from({ length: 10 }, (_, i) => (
+                            <svg key={i} width="10%" height="40" className="text-primary">
+                              <title>
+                                {i + 1}: {a.filter((row) => Number(row["score"]) === i + 1).length}
+                              </title>
+                              <rect
+                                x="0"
+                                y={
+                                  40 -
+                                  (a.length
+                                    ? (a.filter((row) => Number(row["score"]) === i + 1).length /
+                                        a.length) *
+                                      40
+                                    : 0)
+                                }
+                                width="100%"
+                                height={
+                                  a.length
+                                    ? (a.filter((row) => Number(row["score"]) === i + 1).length /
+                                        a.length) *
+                                      40
+                                    : 0
+                                }
+                                fill="currentColor"
+                              />
+                            </svg>
+                          ))}
+                        </div>
+                        {breakdown !== "all" &&
+                          values(a, key).map((owner) => (
+                            <p key={owner} className="flex justify-between text-xs">
+                              <span>{owner}</span>
+                              <b>{fmt(questionAverage(a.filter((row) => row[key] === owner)))}</b>
+                            </p>
+                          ))}
+                        {breakdown !== "all" && a.some((row) => row[key] == null) && (
+                          <p className="text-xs text-muted-foreground">—</p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+            <details className="border-t pt-3">
+              <summary className="cursor-pointer text-sm font-medium">
+                <MessageSquare className="mr-2 inline size-4" />
+                Q9 · Comments
+              </summary>
+              <ul className="mt-3 space-y-3">
+                {[
+                  ...new Map(
+                    surveyA.filter((row) => row["comment"]).map((row) => [row["meeting_id"], row]),
+                  ).values(),
+                ].map((row) => (
+                  <li key={String(row["meeting_id"])} className="border-l-2 pl-3 text-sm">
+                    <p>{String(row["comment"])}</p>
+                    <Source row={row} survey />
+                  </li>
+                ))}
+              </ul>
+            </details>
+          </>
+        )}
+      </Section>
+      <Section title="④ Flag Board — topic-first">
+        <div className="flex flex-wrap gap-2">
+          <Choice
+            label="ORM team"
+            value={orm}
+            onChange={setOrm}
+            options={values(flagsAll, "orm_team")}
+          />
+          <Choice
+            label="Marcom person"
+            value={marcom}
+            onChange={setMarcom}
+            options={values(flagsAll, "marcom_owner_id")}
+          />
+          <Choice
+            label="AE follow-up"
+            value={ae}
+            onChange={setAe}
+            options={values(flagsAll, "ae_owner_id")}
+          />
+          <Choice
+            label="Hotel"
+            value={hotel}
+            onChange={setHotel}
+            options={values(flagsAll, "hotel_name")}
+          />
+          <Choice
+            label="Severity"
+            value={severity}
+            onChange={setSeverity}
+            options={["red", "warn"]}
+          />
+          <Input
+            aria-label="Aging days minimum"
+            type="number"
+            min="0"
+            value={aging}
+            onChange={(e) => setAging(e.target.value)}
+            placeholder="Aging ≥ วัน"
+            className="h-9 w-32"
+          />
+        </div>
+        {!flagsAll.length ? (
+          <Empty text="รอข้อมูล flag — sync แล้วจะแสดง" />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[610px] text-sm">
+              <thead>
+                <tr className="border-b text-left text-xs text-muted-foreground">
+                  <th className="pb-3">Topic / ส่งต่อ</th>
+                  <th>🔴</th>
+                  <th>🟡 · 2-in-3</th>
+                  <th>MoM</th>
+                  <th>Aging</th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                {QUESTIONS.map(([topic, label, group, target], index) => {
+                  const a = flags.filter((row) => row["topic"] === topic),
+                    b = flagsB.filter((row) => row["topic"] === topic);
+                  return (
+                    <tr key={topic} className="border-b">
+                      <td className="py-3">
+                        {(index === 0 || QUESTIONS[index - 1]?.[2] !== group) && (
+                          <p className="mb-2 text-xs font-semibold text-muted-foreground">
+                            {group}
+                          </p>
+                        )}
+                        <p>{label}</p>
+                        <p className="text-xs text-muted-foreground">{target}</p>
+                      </td>
+                      <td>
+                        <Chip tone="danger">{meetingSum(a, "red_count")}</Chip>
+                      </td>
+                      <td>
+                        <Chip tone="warn">{meetingSum(a, "warn_count")}</Chip>
+                        <span className="ml-2 text-xs">
+                          {Math.max(0, ...a.map((row) => Number(row["warning_progress"] ?? 0)))}/2
+                        </span>
+                      </td>
+                      <td className="text-xs">
+                        {deltaText(a.length, flagsB.length ? b.length : null)}
+                      </td>
+                      <td>
+                        {a.length
+                          ? Math.max(...a.map((row) => Number(row["age_days"] ?? 0))) + "d"
+                          : "—"}
+                      </td>
+                      <td>
+                        {a.length ? (
+                          <Button
+                            asChild
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`ไป Coaching ${topic}`}
+                          >
+                            <Link
+                              to="/ps/ae-workspace/coaching"
+                              hash={`${topic}-${String(a[0]?.["meeting_id"] ?? "")}`}
+                            >
+                              <ArrowUpRight className="size-4" />
+                            </Link>
+                          </Button>
+                        ) : null}
+                        <Button
+                          disabled={!a.length}
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`เปิด Coaching ${topic}`}
+                          onClick={() => {
+                            const detail = document.getElementById(`flag-${topic}`);
+                            if (detail instanceof HTMLDetailsElement) {
+                              detail.open = true;
+                              detail.scrollIntoView({ block: "center" });
+                            }
+                          }}
+                        >
+                          <ArrowUpRight className="size-4" />
+                        </Button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {QUESTIONS.map(([topic, label]) => {
+          const topicRows = flags.filter((row) => row["topic"] === topic);
+          return topicRows.length ? (
+            <details id={`flag-${topic}`} key={topic} className="border-b pb-3">
+              <summary className="cursor-pointer text-sm">
+                {label} · {topicRows.length}
+              </summary>
+              {topicRows.map((row, index) => (
+                <div
+                  key={index}
+                  className="mt-2 flex flex-wrap items-center justify-between gap-2 border-l-2 pl-3"
+                >
+                  <div>
+                    <p className="text-sm">
+                      {String(row.hotel_name)} · {String(row["route_target"] ?? "—")}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{String(row["comment"] ?? "—")}</p>
+                  </div>
+                  <Button asChild variant="outline" size="sm">
+                    <Link
+                      to="/ps/ae-workspace/coaching"
+                      hash={`${topic}-${String(row["meeting_id"])}`}
+                    >
+                      <ArrowUpRight className="size-3.5" />
+                      Coaching queue
+                    </Link>
+                  </Button>
+                </div>
+              ))}
+            </details>
+          ) : null;
+        })}
+      </Section>
+      <Section title="⑥ Meeting Analyzer summary">
+        <div className="flex flex-wrap gap-10">
+          <div>
+            <p className="text-xs text-muted-foreground">Avg score /100</p>
+            <p className="text-3xl font-semibold">—</p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Verdict tier</p>
+            <p className="text-3xl font-semibold">—</p>
+          </div>
+        </div>
+        <div className="grid gap-x-8 md:grid-cols-2">
+          {RUBRIC_CATEGORIES.map((category, index) => (
+            <div key={category} className="flex justify-between border-b py-3 text-sm">
+              <span>
+                {index + 1} {category}
+              </span>
+              <span className="text-muted-foreground">—</span>
+            </div>
+          ))}
+        </div>
+        <div className="grid gap-3 md:grid-cols-2">
+          <Empty text="Trend · —" />
+          <Empty text="By ORM · —" />
+        </div>
+        <p className="text-xs text-muted-foreground">
+          รอ rubric final + scoring engine (The Office App). ORM only —
+          ประชุมกลยุทธ์รายเดือนเท่านั้น (ไม่รวม Marcom / onboarding / renewal / complaint).
+        </p>
+      </Section>
+      {demo && <p className="text-xs text-muted-foreground">DEMO · 30 Sep 2026</p>}
+    </div>
+  );
+}
