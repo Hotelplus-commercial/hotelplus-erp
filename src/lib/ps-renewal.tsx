@@ -50,6 +50,8 @@ export type Activity = {
 };
 
 export type RenewalCard = {
+  /** Effective end for new decisions only; no historical backfill. */
+  inactivated_at?: string | null;
   id: string;
   hotelId: string;
   hotel: string;
@@ -346,6 +348,7 @@ type Ctx = {
     by: string,
     churnType?: ChurnType,
     reason?: string,
+    effectiveEnd?: string,
   ) => void;
   markAllRead: () => void;
 };
@@ -374,13 +377,17 @@ export function PsRenewalProvider({ children }: { children: ReactNode }) {
               : c,
           ),
         ),
-      markDone: (cardId, outcome, by, churnType, reason) => {
+      markDone: (cardId, outcome, by, churnType, reason, effectiveEnd) => {
+        const chosen = cards.find(c => c.id === cardId);
+        const end = new Date(effectiveEnd || chosen?.contractEnd || '');
+        if (outcome === 'CHURN' && !Number.isFinite(end.getTime())) return;
         setCards((prev) =>
           prev.map((c) =>
             c.id === cardId
               ? {
                   ...c,
                   status: outcome,
+                  ...(outcome === 'CHURN' ? { inactivated_at: end.toISOString(), contractEnd: effectiveEnd || c.contractEnd } : {}),
                   markedBy: by,
                   markedAt: "วันนี้",
                   churnType: outcome === "CHURN" ? churnType : undefined,

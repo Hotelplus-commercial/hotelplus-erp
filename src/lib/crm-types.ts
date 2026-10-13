@@ -175,6 +175,8 @@ export type ContractLine = {
 };
 
 export type Contract = {
+  /** Forward-only effective end; never backfill from signing/billing status. */
+  inactivated_at?: string | null;
   hotel_id?: string;
   billing_status?: 'ACTIVE' | 'PAUSED' | 'SUSPENDED' | 'TERMINATED';
   orm_team_id?: string;

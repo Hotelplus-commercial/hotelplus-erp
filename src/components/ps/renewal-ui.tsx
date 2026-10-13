@@ -188,6 +188,7 @@ export function RenewalCardModal({
   const [churnType, setChurnType] = useState<ChurnType>("ไม่ต่อ (Non-renewal)");
   const [reason, setReason] = useState("");
   const [confirmErr, setConfirmErr] = useState<string | null>(null);
+  const [effectiveEnd, setEffectiveEnd] = useState('');
 
   if (!card) return null;
   const owned = card.owner === currentUser || canOverride;
@@ -220,7 +221,8 @@ export function RenewalCardModal({
     if (outcome === "COMPLETED" && !card.signedFile)
       return setConfirmErr("ต้องมี Contract activity พร้อมไฟล์ที่เซ็นแล้วก่อน");
     if (outcome === "CHURN" && !reason.trim()) return setConfirmErr("กรอกเหตุผล");
-    markDone(card.id, outcome, currentUser, churnType, reason.trim());
+    if (outcome === 'CHURN' && !effectiveEnd) return setConfirmErr('ระบุวันสิ้นสุดสัญญา');
+    markDone(card.id, outcome, currentUser, churnType, reason.trim(), effectiveEnd);
     setConfirmOpen(false);
     onClose();
     toast.success(
@@ -491,6 +493,7 @@ export function RenewalCardModal({
               </Label>
               <Textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={3} />
             </div>
+            {outcome === 'CHURN' && <div className="space-y-1"><Label htmlFor="renewal-effective-end" className="text-xs">วันสิ้นสุดสัญญาที่มีผล *</Label><Input id="renewal-effective-end" type="date" value={effectiveEnd} onChange={e => setEffectiveEnd(e.target.value)} /><p className="text-xs text-muted-foreground">สิ้นสุดบริการตามวันที่นี้ ไม่ใช่ทันทีที่บันทึกผล</p></div>}
             {confirmErr && <p className="text-xs text-destructive">{confirmErr}</p>}
           </div>
           <DialogFooter>
