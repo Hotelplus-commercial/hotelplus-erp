@@ -3,7 +3,7 @@ import { demoLifecycles } from './ps-demo-fixture';
 import { MEETING_VIEWS, QUESTIONS, type MeetingReport, type MeetingRow } from './meeting-dashboard-types';
 
 export function demoMeetingReport(): MeetingReport {
-  const views = Object.fromEntries(MEETING_VIEWS.map(key => [key, []])) as MeetingReport['views'];
+  const views = Object.fromEntries(MEETING_VIEWS.map(key => [key, [] as MeetingRow[]])) as MeetingReport['views'];
   const spine = demoLifecycles().filter(row => !['C11','C12','C13','C14'].includes(row.id));
   for (const month of ['2026-08','2026-09']) spine.forEach((contract,index) => {
     const service = contract.service_line === 'ORM' ? 'ORM' : 'Marcom';
