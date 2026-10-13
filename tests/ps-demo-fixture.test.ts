@@ -1,5 +1,5 @@
 import { describe, expect, test as it } from 'bun:test';
-import { buildDemoReport, DEMO_NOW } from '../src/lib/ps-demo-fixture';
+import { buildDemoReport, demoLifecycles, demoAcViews, demoOnboarding, DEMO_NOW } from '../src/lib/ps-demo-fixture';
 import { DEFAULT_RISK_RULES, healthOf, latestPeriod, psScope, ratio } from '../src/lib/ps-dashboard-types';
 
 const r = buildDemoReport(); const v = r.views; const now = new Date(DEMO_NOW);
@@ -21,6 +21,26 @@ describe('PS demo fixture oracle (Demo Fixture Spec v1.0 §2)', () => {
     const hotels = new Map(v.v_ps_account_health.map(h => [h.hotel_id, h]));
     const tiers = [...hotels.values()].map(h => healthOf(h, DEFAULT_RISK_RULES, now).tier);
     expect([tiers.filter(t => t === 'high').length, tiers.filter(t => t === 'watch').length, tiers.filter(t => t === 'healthy').length]).toEqual([3, 2, 3]);
-    const n = v.v_ps_nps[0]!; expect((Number(n.promoters) - Number(n.detractors)) / Number(n.responses) * 100).toBe(40);
+    expect(ratio(v.v_ps_nps,'promoters','responses')! - ratio(v.v_ps_nps,'detractors','responses')!).toBe(40);
   });
+});
+
+import { defaultGlobalFilter, selectedPeriod, periodRange, scopePeriod, deltaText } from '../src/lib/ps-dashboard-global';
+import { v_bdac_flow } from '../src/lib/bdac-views';
+describe('v1.2 shared demo spine and comparison', () => {
+ it('shares Won/In and exact headline grade oracle', () => {
+  const flow=v_bdac_flow(demoLifecycles(),periodRange(selectedPeriod({...defaultGlobalFilter,range:'mtd'},now)));
+  expect(flow.signed).toBe(2); expect(flow.won).toBe(2);
+  const grades=demoAcViews()['v_ac_grade_distribution'] ?? [];
+  expect(grades.filter(r => r['grade'] === 'A' || r['grade'] === 'B').length).toBe(4);expect(grades.length).toBe(7);
+  expect(demoOnboarding().filter(c => !c.go_live_at)).toHaveLength(2);
+  expect(demoOnboarding().filter(c => c.go_live_at)).toHaveLength(4);
+ });
+ it('applies owner AND and period to both sides without inventing missing history', () => {
+  const f={...defaultGlobalFilter,role:'AE' as const,teams:['Nont'],people:['Nont'],compare:true};
+  const owned=buildDemoReport(f);expect(owned.views.v_ps_renewal).toHaveLength(2);
+  expect(owned.views.v_ps_lifecycle_flow.every(r => r['ae_owner_id'] === 'Nont')).toBe(true);
+  expect(scopePeriod(owned.views.v_ps_renewal,f,f.periodB,'renewal_due_date')).toHaveLength(0);
+  expect(deltaText(20,0,'pp')).toBe('Δ ▲ +20pp');expect(deltaText(20,null,'pp')).toBe('Δ —');
+ });
 });

@@ -55,14 +55,13 @@ function PsDashboardPage() {
         servicing={<ServicingDashboardView />}
         overview={
           <section className="flex flex-col gap-4">
-            <PsDashboardFilters value={filter} onChange={setFilter} />
             {role === "Partner Manager" && (
               <>
                 <NewContractUpdates />
                 <TeamActivityFeed />
               </>
             )}
-            <PsDashboard assignment={filter} part="table" />
+            <PsDashboard part="table" />
           </section>
         }
       />

@@ -30,7 +30,7 @@ const teamOptions: Record<Role, string[]> = {
   Marcom: marcomDirectory,
 };
 
-function MultiSelect({
+export function MultiSelect({
   label,
   options,
   value,
