@@ -723,3 +723,6 @@
 .bdac-avatar { display:grid; place-items:center; width:28px; height:28px; border-radius:50%; background:var(--accent-soft); color:var(--bdac-accent); font-size:10px; font-weight:600; }
 @media(max-width:640px) { .bdac-section,.bdac-kpi { padding:16px; } .bdac-stage-legend { grid-template-columns:repeat(2,minmax(0,1fr)); } .bdac-filterbar { gap:8px; } }
 @media(prefers-reduced-motion:reduce) { .bdac-table tbody tr { transition:none; transform:none; } }
+
+/* Preview demo watermark follows reporting sections, never workflow cards. */
+[data-testid="active-dashboard-tab"]:has(> .text-warning-foreground) section::after { content:"DEMO"; display:block; margin-top:12px; color:var(--warning-foreground); font-size:10px; font-weight:700; }

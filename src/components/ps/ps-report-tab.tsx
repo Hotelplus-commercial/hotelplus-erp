@@ -24,7 +24,7 @@ const TIER: Record<HealthTier, { dot: string; label: string; order: number }> = 
   high: { dot: '🔴', label: 'High-risk', order: 0 }, watch: { dot: '🟡', label: 'Watch', order: 1 }, healthy: { dot: '🟢', label: 'Healthy', order: 2 }, pending: { dot: '⚪', label: 'รอข้อมูล', order: 3 },
 };
 
-export function PsReportTab({ report, filter, loading, error, wonMtd }: { report?: PsReport | undefined; filter: PsFilter; loading: boolean; error: boolean; wonMtd?: number | undefined }) {
+export function PsReportTab({ report, filter, loading, error, wonMtd, compareSide }: { report?: PsReport | undefined; filter: PsFilter; loading: boolean; error: boolean; wonMtd?: number | undefined; compareSide?: 'A' | 'B' }) {
   const [groupBy, setGroupBy] = useState<'service_line' | 'ae_owner_id'>('service_line');
   const [tierFilter, setTierFilter] = useState<HealthTier | 'all'>('all');
   const [dimFilter, setDimFilter] = useState<HealthDim | null>(null);
@@ -40,17 +40,17 @@ export function PsReportTab({ report, filter, loading, error, wonMtd }: { report
   const renewals = psScope(views?.v_ps_renewal ?? [], filter, 'renewal_due_date', 0, now);
   const decided = renewals.filter(row => ['RENEWED','NOT_RENEWED','LOST'].includes(String(row.outcome)));
   const renewalSuccess = decided.length ? decided.filter(row => row.outcome === 'RENEWED').length / decided.length * 100 : null;
-  const lifetime = psScope(views?.v_ps_contract_lifetime ?? [], filter, 'none', 0, now);
+  const lifetime = psScope(views?.v_ps_contract_lifetime ?? [], filter, filter.period ? 'end_date' : 'none', 0, now);
   const ended = lifetime.filter(row => row.status === 'INACTIVE' && typeof row.age_days === 'number');
   const active = lifetime.filter(row => row.status === 'ACTIVE' && typeof row.age_days === 'number');
   const ages = ended.map(row => n(row, 'age_days'));
   const median = quantile(ages, .5), p25 = quantile(ages, .25), p75 = quantile(ages, .75);
   const cohort = psScope(views?.v_ps_onboard_cohort ?? [], filter, 'billing_period', 0, now).sort((a,b) => String(a.billing_period).localeCompare(String(b.billing_period)));
   const attach = psScope(views?.v_ps_attach_rate ?? [], filter, 'none');
-  const health = psScope(views?.v_ps_account_health ?? [], filter, 'none');
+  const health = compareSide === 'B' ? [] : psScope(views?.v_ps_account_health ?? [], filter, 'none');
   const hotels = useMemo(() => [...new Set(health.map(row => String(row.hotel_id)))].map(id => {
     const rows = health.filter(row => row.hotel_id === id);
-    const first = rows[0]!;
+    const first = rows[0] ?? {};
     const row: PsReportRow = { ...first, completeness: rows.some(r => r.completeness != null && r.completeness !== 'complete') ? 'incomplete' : first.completeness ?? null };
     return { row, ...healthOf(row, riskRules, now) };
   }).sort((a, b) => TIER[a.tier].order - TIER[b.tier].order), [health, riskRules, now.getTime()]);
@@ -64,7 +64,7 @@ export function PsReportTab({ report, filter, loading, error, wonMtd }: { report
   const scatterRows = (rows: PsReportRow[], today: boolean) => rows.map(row => ({ x: (today ? now : new Date(String(row.end_date))).getTime(), y: n(row,'age_days'), contract: row.contract_id }));
   const openProfile = () => navigate({ to: '/ac/hotel-profile' });
   const reconcileOk = wonMtd === undefined || filter.service !== 'ALL' || flow.length === wonMtd;
-  return <div className="grid min-w-0 gap-6 lg:grid-cols-2" data-testid="ps-report-tab">
+  return <div className={cn("grid min-w-0 gap-6", compareSide ? "grid-cols-1 [&>div]:col-span-1" : "lg:grid-cols-2")} data-testid="ps-report-tab">
     <Section demo={demo} title="① Lifecycle & Flow">
       {hasFlow ? <div className="grid grid-cols-3 gap-4"><Metric label="In · New Property" value={String(flow.length)} detail={`${new Set(flow.map(row => row.hotel_id)).size} โรงแรม`} /><Metric label="Out · บริการ→Inactive" value={String(out.length)} warn /><Metric label="Pause" value="—" warn detail="รอกลไก Pause ต้นทาง" /></div> : <>{empty}<div className="grid grid-cols-2 gap-4"><Metric label="In / Out" value="— / —" /><Metric label="Pause" value="—" warn detail="รอกลไก Pause ต้นทาง" /></div></>}
       {hasFlow && !reconcileOk && <p className="mt-3 text-xs text-warning-foreground">QA: In ({flow.length}) ≠ Won MTD ({wonMtd})</p>}
@@ -87,11 +87,11 @@ export function PsReportTab({ report, filter, loading, error, wonMtd }: { report
     <Section demo={demo} title="⑥ Off-board"><Empty text="รอ source" /></Section>
     <div className="min-w-0 lg:col-span-2"><Section demo={demo} title="⑦a Risk Scorecard" right={<Button asChild variant="ghost" size="sm"><Link to="/ps/templates">กฎความเสี่ยง<ArrowUpRight className="size-3.5" /></Link></Button>}>
       {tiered.length ? <div className="grid gap-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]"><div className="grid gap-4"><Metric label="Attach-rate · โรงแรม ≥2 บริการ" value={fmt(ratio(attach,'attached_hotels','active_hotels'),'%')} /><Metric label="🔴 High-risk / Active" value={`${tierCount('high')} / ${tiered.length}`} /></div>
-        <ul className="divide-y rounded-lg border text-sm">{dims.map(({ d, count }) => <li key={d}><button type="button" onClick={() => setDimFilter(dimFilter === d ? null : d)} className={cn('flex w-full items-center justify-between px-3 py-2 text-left hover:bg-muted', dimFilter === d && 'bg-muted font-semibold')}><span>{DIM_LABEL[d]}</span><span className="tabular-nums">{count} →</span></button></li>)}<li className="flex items-center justify-between px-3 py-2 text-muted-foreground"><span>Flag</span><span>🔴 รอ Meeting tab</span></li></ul></div> : empty}
+        <ul className="divide-y rounded-lg border text-sm">{dims.map(({ d, count }) => <li key={d}><Button onClick={() => setDimFilter(dimFilter === d ? null : d)} variant="ghost" className={cn('flex h-auto w-full items-center justify-between rounded-none px-3 py-2 text-left hover:bg-muted', dimFilter === d && 'bg-muted font-semibold')}><span>{DIM_LABEL[d]}</span><span className="tabular-nums">{count} →</span></Button></li>)}<li className="flex items-center justify-between px-3 py-2 text-muted-foreground"><span>Flag</span><span>🔴 รอ Meeting tab</span></li></ul></div> : empty}
     </Section></div>
-    <div className="min-w-0 lg:col-span-2"><Section demo={demo} title="⑦b Account Health" right={<div className="flex flex-wrap gap-1">{(['all','high','watch','healthy'] as const).map(t => <Button key={t} size="sm" variant={tierFilter === t ? 'default' : 'outline'} onClick={() => setTierFilter(t)}>{t === 'all' ? 'ทั้งหมด' : `${TIER[t].dot} ${TIER[t].label} ${tierCount(t)}`}</Button>)}</div>}>
+    {compareSide !== 'B' && <div className="min-w-0 lg:col-span-2"><Section demo={demo} title="⑦b Account Health" right={<div className="flex flex-wrap gap-1">{(['all','high','watch','healthy'] as const).map(t => <Button key={t} size="sm" variant={tierFilter === t ? 'default' : 'outline'} onClick={() => setTierFilter(t)}>{t === 'all' ? 'ทั้งหมด' : `${TIER[t].dot} ${TIER[t].label} ${tierCount(t)}`}</Button>)}</div>}>
       {dimFilter && <p className="mb-2 text-xs text-muted-foreground">กรองด้าน: {DIM_LABEL[dimFilter]} · <button type="button" className="underline" onClick={() => setDimFilter(null)}>ล้าง</button></p>}
       {hotels.length ? <div className="overflow-x-auto"><table className="w-full min-w-[640px] text-sm"><thead><tr className="text-left text-xs text-muted-foreground">{['โรงแรม','Tier','Grade ล่าสุด / แย่สุด','Survey #2','ด้านเสี่ยง','WS-2','Flag','#svc'].map(label => <th key={label} className="px-2 py-2">{label}</th>)}</tr></thead><tbody>{shown.map(({ row, dims: hit, tier }) => <tr key={String(row.hotel_id)} className="cursor-pointer border-t hover:bg-muted" onClick={openProfile}><td className="px-2 py-3"><span className="inline-flex items-center gap-1 text-primary">{String(row.hotel_name ?? row.hotel_id)}<ArrowUpRight className="size-3 shrink-0" /></span></td><td className="px-2 whitespace-nowrap">{TIER[tier].dot} {TIER[tier].label}</td><td className="px-2">{String(row.latest_grade ?? '—')} / {String(row.worst_grade ?? '—')}</td><td className="px-2">{row.survey2 == null ? '—' : String(row.survey2)}</td><td className="px-2"><div className="flex flex-wrap gap-1">{tier === 'pending' ? <Chip tone="muted">รอข้อมูล</Chip> : hit.length ? hit.map(d => <Chip key={d} tone="warn">{DIM_LABEL[d]}</Chip>) : <Chip tone="muted">ไม่เข้าเกณฑ์</Chip>}</div></td><td className="px-2 text-xs">{String(row.completeness ?? '—')}</td><td className="px-2 text-xs text-muted-foreground">🔴 รอ</td><td className="px-2">{String(row.active_services ?? '—')}</td></tr>)}</tbody></table></div> : empty}
-    </Section></div>
+    </Section></div>}
   </div>;
 }

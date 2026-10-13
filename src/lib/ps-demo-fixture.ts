@@ -1,8 +1,13 @@
-/* BUILD-ONLY demo fixture (DP11) — Demo Fixture Spec v1.0. Strip before production.
+/* Bundled preview demo fixture — Demo Fixture Spec v1.0. Remove before production release.
  * Raw entities are derived into v_ps_*-shaped rows here (view layer only); nothing is written to cloud or browser. */
 import { PS_VIEWS, type PsReport, type PsReportRow, type PsView } from './ps-dashboard-types';
+import type { ContractLifecycle } from './contract-lifecycle';
+import type { HotelProfile } from './hotel-store';
+import type { OnboardingCard } from './ps-servicing';
+import type { GlobalFilter } from './ps-dashboard-global';
+import { matchesBook } from './ps-dashboard-global';
 
-export const DEMO_ENABLED = Boolean(import.meta.env?.DEV); // hard-off outside development builds
+export const DEMO_ENABLED = true; // Preview-safe; default OFF is controlled by React state + URL.
 export const DEMO_NOW = '2026-09-30T00:00:00.000Z';
 
 type L = 'ORM' | 'Marcom';
@@ -41,7 +46,7 @@ const hid = (hotel: string) => 'DEMO-' + hotel.replace(/\s+/g, '-').toUpperCase(
 const q = (v: number[], f: number) => { const s = [...v].sort((a, b) => a - b); const at = (s.length - 1) * f; const lo = s[Math.floor(at)] ?? 0, hi = s[Math.ceil(at)] ?? 0; return lo + (hi - lo) * (at - Math.floor(at)); };
 const avg = (v: (number | null)[]) => { const x = v.filter((n): n is number => n != null); return x.length ? x.reduce((a, b) => a + b, 0) / x.length : null; };
 
-export function buildDemoReport(): PsReport {
+export function buildDemoReport(filter?: GlobalFilter): PsReport {
   const now = DEMO_NOW.slice(0, 10);
   const views = Object.fromEntries(PS_VIEWS.map(v => [v, [] as PsReportRow[]])) as Record<PsView, PsReportRow[]>;
   views.v_ps_lifecycle_flow = contracts.map(c => ({ contract_id: c.id, hotel_id: hid(c.hotel), hotel_name: c.hotel, service_line: c.line, ae_owner_id: c.ae, status: c.status, start_date: c.start, inactivated_at: c.inact, created_at: NEW_PROPERTY[c.id] ?? null }));
@@ -49,11 +54,11 @@ export function buildDemoReport(): PsReport {
     const next = new Date(Date.UTC(+m.slice(0, 4), +m.slice(5, 7), 1)).toISOString().slice(0, 10);
     for (const line of ['ORM', 'Marcom'] as L[]) {
       const cs = contracts.filter(c => c.line === line);
-      views.v_ps_churn_monthly.push({ billing_period: m, service_line: line, active_at_start: cs.filter(c => c.start <= m && (!c.inact || c.inact >= m)).length, out_count: cs.filter(c => c.inact && c.inact >= m && c.inact < next).length });
+      for (const c of cs) views.v_ps_churn_monthly.push({ billing_period: m, service_line: line, hotel_id: hid(c.hotel), hotel_name: c.hotel, ae_owner_id: c.ae, active_at_start: c.start <= m && (!c.inact || c.inact >= m) ? 1 : 0, out_count: c.inact && c.inact >= m && c.inact < next ? 1 : 0 });
     }
   }
-  views.v_ps_renewal = RENEWALS.map(([rid, cid, due, outcome]) => { const c = contracts.find(x => x.id === cid)!; return { renewal_id: rid, contract_id: cid, hotel_id: hid(c.hotel), service_line: c.line, ae_owner_id: c.ae, renewal_due_date: due, outcome }; });
-  views.v_ps_contract_lifetime = contracts.map(c => ({ contract_id: c.id, hotel_id: hid(c.hotel), service_line: c.line, status: c.status, end_date: c.end, age_days: c.status === 'INACTIVE' ? day(c.start, c.end) : day(c.start, now) }));
+  views.v_ps_renewal = RENEWALS.flatMap(([rid, cid, due, outcome]) => { const c = contracts.find(x => x.id === cid); return c ? [{ renewal_id: rid, contract_id: cid, hotel_id: hid(c.hotel), hotel_name: c.hotel, service_line: c.line, ae_owner_id: c.ae, renewal_due_date: due, outcome }] : []; });
+  views.v_ps_contract_lifetime = contracts.map(c => ({ contract_id: c.id, hotel_id: hid(c.hotel), hotel_name: c.hotel, ae_owner_id: c.ae, service_line: c.line, status: c.status, end_date: c.end, age_days: c.status === 'INACTIVE' ? day(c.start, c.end) : day(c.start, now) }));
   for (const m of ['2026-08', '2026-09']) {
     const cs = FINISHED.filter(f => f[1].startsWith(m));
     const d = cs.map(f => day(f[0], f[1]));
@@ -68,14 +73,57 @@ export function buildDemoReport(): PsReport {
     });
   }
   const sv = Object.values(SURVEY2);
-  views.v_ps_nps = [{ billing_period: '2026-09-01', service_line: null, responses: sv.length, promoters: sv.filter(x => x[1] >= 9).length, detractors: sv.filter(x => x[1] <= 6).length }];
+  views.v_ps_nps = Object.entries(SURVEY2).map(([hotel, scores]) => ({ billing_period: '2026-09-01', hotel_id: hid(hotel), hotel_name: hotel, ae_owner_id: contracts.find(c => c.hotel === hotel)?.ae ?? null, service_line: null, responses: 1, promoters: scores[1] >= 9 ? 1 : 0, detractors: scores[1] <= 6 ? 1 : 0 }));
   const active = contracts.filter(c => c.status === 'ACTIVE');
   const hotels = [...new Set(active.map(c => c.hotel))];
   views.v_ps_attach_rate = [{ service_line: null, active_hotels: hotels.length, attached_hotels: hotels.filter(h => active.filter(c => c.hotel === h).length >= 2).length }];
   views.v_ps_account_health = active.map(c => {
     const mine = active.filter(x => x.hotel === c.hotel);
     const [latest, worst] = GRADES[c.hotel] ?? [null, null];
-    return { hotel_id: hid(c.hotel), hotel_name: c.hotel, service_line: c.line, latest_grade: latest, worst_grade: worst, survey2: SURVEY2[c.hotel]?.[0] ?? null, completeness: WS2_INCOMPLETE.has(c.hotel) ? 'incomplete' : 'complete', end_date: mine.map(x => x.end).sort()[0] ?? null, active_services: mine.length };
+    return { hotel_id: hid(c.hotel), hotel_name: c.hotel, service_line: c.line, ae_owner_id: c.ae, status: c.status, latest_grade: latest, worst_grade: worst, survey2: SURVEY2[c.hotel]?.[0] ?? null, completeness: WS2_INCOMPLETE.has(c.hotel) ? 'incomplete' : 'complete', end_date: mine.map(x => x.end).sort()[0] ?? null, active_services: mine.length };
   });
+  if (filter) {
+    for (const view of PS_VIEWS) if (view !== 'v_ps_attach_rate') views[view] = views[view].filter(row => matchesBook(row, filter, view === 'v_ps_lifecycle_flow' || view === 'v_ps_account_health'));
+    const scopedActive = active.filter(c => matchesBook({ service_line: c.line, ae_owner_id: c.ae, hotel_id: hid(c.hotel), hotel_name: c.hotel, status: c.status }, filter, true));
+    const ids = [...new Set(scopedActive.map(c => c.hotel))];
+    views.v_ps_attach_rate = [{ service_line: filter.service === 'ALL' ? null : filter.service, active_hotels: ids.length, attached_hotels: ids.filter(h => scopedActive.filter(c => c.hotel === h).length >= 2).length }];
+  }
   return { views, pending: [], demo: true, now: DEMO_NOW, wonMtd: 2 };
+}
+
+/** Data-access adapters: same contracts, no second seed and no provider writes. */
+export function demoLifecycles(): ContractLifecycle[] {
+  return contracts.map(c => ({ id: c.id, quote_id: c.id, contract_id: c.id, contract_service_line: c.line === 'ORM' ? 'ORM' : 'MARCOM', customer_id: hid(c.hotel), invoice_number: null, property_name: c.hotel, hotel_id: hid(c.hotel), hotel_name: c.hotel, customer_legal_name: c.hotel, service_line: c.line === 'ORM' ? 'ORM' : 'MARCOM', bd_owner_id: c.ae, current_stage: 11, live_link_token: null, live_link_sent_at: null, sent_to_ac_at: null, approved_at: NEW_PROPERTY[c.id] ?? c.start, send_contract_at: NEW_PROPERTY[c.id] ?? c.start, signed_at: NEW_PROPERTY[c.id] ?? c.start, payment_at: NEW_PROPERTY[c.id] ?? c.start, won_at: NEW_PROPERTY[c.id] ?? c.start, created_at: c.start, updated_at: c.start }));
+}
+export function demoAcViews() {
+  const views: Record<string, PsReportRow[]> = Object.fromEntries(['v_ac_debtors','v_ac_invoices_breakdown','v_ac_invoice_ranking','v_ac_grade_distribution','v_ac_overdue','v_ac_suspended','v_ac_legal','v_ac_system_fee'].map(k => [k, []]));
+  for (const [hotel, grades] of Object.entries(GRADES)) {
+    const c = contracts.find(c => c.hotel === hotel);
+    if (!c || !grades[0]) continue;
+    const common = { billing_period: '2026-09-01', hotel_id: hid(hotel), hotel_name: hotel, customer_id: hid(hotel), service_line: c.line, ae_owner_id: c.ae };
+    // Hotel collection oracle uses existing worst grade (Chaba B/D counts as D).
+    const grade = grades[1] ?? grades[0];
+    views['v_ac_grade_distribution']?.push({ ...common, grade, customer_count: 1 });
+    if (grade === 'C' || grade === 'D') {
+      const outstanding = grade === 'D' ? 5000 : 2500;
+      views['v_ac_debtors']?.push({ ...common, outstanding });
+      views['v_ac_overdue']?.push({ ...common, outstanding, customer_count: 1 });
+      views['v_ac_invoices_breakdown']?.push({ ...common, customer_segment: 'EXISTING', invoice_count: 1 });
+      views['v_ac_invoice_ranking']?.push({ ...common, amount: outstanding, rank: grade === 'D' ? 1 : 2 });
+    }
+  }
+  return views;
+}
+export function demoOnboarding(): OnboardingCard[] {
+  const base = (id: string, hotel: string, line: L, created: string, live: string | null, ref: string, ae: string): OnboardingCard => ({ id, property_id: hid(hotel), property_name: hotel, service_line: line === 'ORM' ? 'ORM' : 'MARCOM', service_variant: line === 'ORM' ? 'ORM' : 'MARCOM_META_TIKTOK', contract_ref: ref, created_at: created, current_stage: live ? 'go_live' : 'new_property', assigned_ae_id: ae, assigned_specialist_id: 'Dao', assigned_service_owner_id: '', billing_start_at: null, billing_anchor_stage: 'go_live', go_live_at: live, meeting_record_url: null, pre_service_form_ref: null, form_completion_status: 'not_started', external_app: null, external_ref_url: null });
+  return [...contracts.filter(c => NEW_PROPERTY[c.id]).map(c => base(c.id === 'C11' ? 'N11' : 'N12', c.hotel, c.line, NEW_PROPERTY[c.id] ?? c.start, null, c.id, c.ae)), ...FINISHED.map((f, i) => base(`F-${String.fromCharCode(65+i)}`, '(demo)', f[2], f[0], f[1], '', ''))];
+}
+export function demoHotels(): HotelProfile[] {
+  return [...new Set(contracts.map(c => c.hotel))].map(hotel => ({ id: hid(hotel), code: hid(hotel), name: hotel, contractorType: '', overdueMonths: 0, latePayments: 0, mainContact: { id: hid(hotel), fullName: '', nickname: '', position: '', phone: '', email: '', permissions: [] }, acSaved: true, model: '', registration: '', rooms: '', terms: contracts.filter(c => c.hotel === hotel).map(c => ({ id: c.id, start: new Date(c.start), end: new Date(c.end), services: [{ id: c.id, category: c.line === 'ORM' ? 'orm' : 'marcom', serviceType: c.line, periodStart: new Date(c.start), periodEnd: new Date(c.end), monthlyFee: '', commission: '', platforms: [], guarantee: 'no', guaranteeAmount: '', marcomFee: '', productionItem: '', productionAmount: '', upsells: [] }] })), termination: { active: false, fee: '', reason: '' }, otherContacts: [], psSaved: true, system: { system: '', hplusPays: false, monthlyCost: '', payments: {} } }));
+}
+
+export function demoOnboardingSums(id: string) {
+  const index = ['F-A','F-B','F-C','F-D'].indexOf(id);
+  const f = FINISHED[index];
+  return f ? { ae:f[3], specialist:f[4], service:f[5] ?? f[6], overall:day(f[0],f[1]) } : { ae:null,specialist:null,service:null,overall:null };
 }

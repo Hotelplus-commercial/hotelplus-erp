@@ -1,15 +1,7 @@
 import { Link } from "@tanstack/react-router";
-import { AlertCircle, CalendarX, Clock, Pencil, Search } from "lucide-react";
-import { useMemo, useState } from "react";
+import { AlertCircle, CalendarX, Clock, Pencil } from "lucide-react";
+import { useMemo } from "react";
 
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { formatDate, statusMeta, type HotelStatus } from "@/lib/hotel-profile";
 import {
   aeDirectory,
@@ -26,6 +18,8 @@ import {
   useHotelStore,
   type HotelProfile,
 } from "@/lib/hotel-store";
+import { useDashboardGlobal, matchesBook, selectedPeriod } from '@/lib/ps-dashboard-global';
+import { demoHotels, buildDemoReport } from '@/lib/ps-demo-fixture';
 import { cn } from "@/lib/utils";
 
 const pct = (n: number, total: number) => (total ? Math.round((n / total) * 100) : 0);
@@ -94,48 +88,63 @@ function matchAssignment(
 
 /** part: "overview" = Portfolio snapshot header (relocated, same logic) · "table" = hotel search table. */
 export function PsDashboard({ assignment, part = "all" }: { assignment?: AssignmentFilter; part?: "all" | "overview" | "table" }) {
-  const { hotels, select } = useHotelStore();
-  const [q, setQ] = useState("");
-  const [status, setStatus] = useState<"all" | HotelStatus>("all");
+  const store = useHotelStore();
+  const { filter, demo, now:clock } = useDashboardGlobal();
+  const select = store.select;
+  const now = clock ? new Date(clock) : new Date();
+  const q = filter.search;
+  const status = filter.hotelStatus;
+  const demoSource = useMemo(() => demo ? demoHotels() : undefined,[demo]);
+  const candidates = demoSource ?? store.hotels;
+  const demoFlow = demo ? buildDemoReport().views.v_ps_lifecycle_flow : [];
+  const hotels = candidates.filter((h,i) => {
+    const assignees = hotelAssignees(i);
+    const owners = demo ? demoFlow.filter(r => r.hotel_id === h.id) : [];
+    const match = (line: string) => matchesBook({ hotel_id:h.id,hotel_name:h.name,service_line:line,ae_owner_id:demo ? owners.find(r => r.service_line === line)?.['ae_owner_id'] : assignees.AE, orm_team:demo ? null : assignees.ORM,marcom_owner_id:demo ? null : assignees.Marcom }, filter);
+    return (filter.service === 'ALL' ? (match('ORM') || match('Marcom')) : match(filter.service));
+  });
 
-  const rows = useMemo(
+  const allRows = useMemo(
     () =>
       hotels.map((h: HotelProfile, i: number) => ({
         h,
-        status: hotelStatus(h),
-        services: servicesByCategory(h),
+        status: demo ? (h.terms.some(t => t.start && t.end && t.start <= now && t.end >= now) ? "active" as const : "contract-end" as const) : hotelStatus(h),
+        services: demo ? { orm:h.terms.flatMap(t => t.services.filter(s => s.category === 'orm')),marcom:h.terms.flatMap(t => t.services.filter(s => s.category === 'marcom')),production:[] } : servicesByCategory(h),
         start: serviceStart(h),
         end: contractRange(h).end,
-        left: daysToEnd(h),
+        left: demo && contractRange(h).end ? Math.ceil(((contractRange(h).end?.getTime() ?? 0)-now.getTime())/864e5) : daysToEnd(h),
         assignees: hotelAssignees(i),
       })),
-    [hotels],
+    [hotels,clock,demo],
   );
 
-  const totalTerms = hotels.reduce((s, h) => s + h.terms.length, 0);
+  const window = selectedPeriod(filter,now);
+  const rows = allRows.filter(r => { const term=q.trim().toLowerCase(); return r.h.terms.some(t => (!t.start || t.start.toISOString().slice(0,10) <= window.to) && (!t.end || t.end.toISOString().slice(0,10) >= window.from)) && (!term || `${r.h.name} ${r.h.code}`.toLowerCase().includes(term)) && (status === 'all' || r.status === status) && matchAssignment(r.assignees,assignment); });
+  const scopedHotels = rows.map(r => r.h);
+  const totalTerms = scopedHotels.reduce((s, h) => s + h.terms.length, 0);
   const activeCount = rows.filter((r) => r.status === "active").length;
-  const upcoming = rows.filter((r) => r.start && r.start.getTime() > Date.now()).length;
+  const upcoming = rows.filter((r) => r.start && r.start.getTime() > now.getTime()).length;
   const inactive = rows.filter((r) => r.status === "contract-end" || r.status === "terminated").length;
   const draft = rows.filter((r) => !r.h.psSaved).length;
   const expiring60 = rows.filter((r) => r.left !== null && r.left >= 0 && r.left <= 60).length;
   const endingThisMonth = rows.filter(
     (r) =>
       r.end &&
-      r.end.getMonth() === new Date().getMonth() &&
-      r.end.getFullYear() === new Date().getFullYear(),
+      r.end.getMonth() === now.getMonth() &&
+      r.end.getFullYear() === now.getFullYear(),
   ).length;
   const noStart = rows.filter((r) => !r.start).length;
 
   const ormRows = rows.filter((r) => r.services.orm.length);
   const reg = {
-    corporate: hotels.filter((h) => h.registration === "corporate").length,
-    personal: hotels.filter((h) => h.registration === "personal").length,
-    none: hotels.filter((h) => !h.registration).length,
+    corporate: scopedHotels.filter((h) => h.registration === "corporate").length,
+    personal: scopedHotels.filter((h) => h.registration === "personal").length,
+    none: scopedHotels.filter((h) => !h.registration).length,
   };
   const model = {
-    flat: hotels.filter((h) => h.model === "flat").length,
-    commission: hotels.filter((h) => h.model === "commission").length,
-    none: hotels.filter((h) => !h.model).length,
+    flat: scopedHotels.filter((h) => h.model === "flat").length,
+    commission: scopedHotels.filter((h) => h.model === "commission").length,
+    none: scopedHotels.filter((h) => !h.model).length,
   };
 
   const filtered = rows.filter((r) => {
@@ -152,7 +161,7 @@ export function PsDashboard({ assignment, part = "all" }: { assignment?: Assignm
       {part !== "table" && <section className="card-elevated p-4 sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-sm font-semibold">ภาพรวมสัญญา</p>
+            <p className="text-sm font-semibold">ภาพรวมสัญญา{demo ? " · DEMO" : ""}</p>
             <p className="text-xs text-muted-foreground">
               นับสัญญาที่มีช่วงเวลาคาบเกี่ยวกับเดือนปัจจุบัน
             </p>
@@ -166,7 +175,7 @@ export function PsDashboard({ assignment, part = "all" }: { assignment?: Assignm
               / {totalTerms} ฉบับที่ใช้งานอยู่
             </span>
             <span className="rounded-full bg-warning/20 px-2 py-0.5 text-xs font-bold text-warning-foreground">
-              {pct(activeCount, hotels.length)}%
+              {pct(activeCount, scopedHotels.length)}%
             </span>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -176,17 +185,17 @@ export function PsDashboard({ assignment, part = "all" }: { assignment?: Assignm
             <span className="flex items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary">
               <AlertCircle className="size-3.5" /> {expiring60} ใกล้หมด 60 วัน
             </span>
-            <span className="flex items-center gap-1.5 rounded-lg bg-destructive/10 px-3 py-1.5 text-xs font-semibold text-destructive">
+            <span className="flex items-center gap-1.5 rounded-lg bg-warning/10 px-3 py-1.5 text-xs font-semibold text-warning-foreground">
               <CalendarX className="size-3.5" /> {endingThisMonth} สิ้นสัญญาเดือนนี้
             </span>
           </div>
         </div>
 
         <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          <Stat label="Active" value={activeCount} sub={`${pct(activeCount, hotels.length)}%`} />
+          <Stat label="Active" value={activeCount} sub={`${pct(activeCount, scopedHotels.length)}%`} />
           <Stat label="Upcoming" value={upcoming} muted={!upcoming} />
-          <Stat label="Inactive" value={inactive} sub={`${pct(inactive, hotels.length)}%`} />
-          <Stat label="Draft" value={draft} sub={`${pct(draft, hotels.length)}%`} />
+          <Stat label="Inactive" value={inactive} sub={`${pct(inactive, scopedHotels.length)}%`} />
+          <Stat label="Draft" value={draft} sub={`${pct(draft, scopedHotels.length)}%`} />
         </div>
 
         <div className="mt-4 border-t pt-4">
@@ -202,9 +211,9 @@ export function PsDashboard({ assignment, part = "all" }: { assignment?: Assignm
                 การจดทะเบียน
               </p>
               <div className="grid grid-cols-3 gap-2">
-                <Stat label="Corporate" value={reg.corporate} sub={`${pct(reg.corporate, hotels.length)}%`} />
-                <Stat label="Personal" value={reg.personal} sub={`${pct(reg.personal, hotels.length)}%`} />
-                <Stat label="ไม่ระบุ" value={reg.none} sub={`${pct(reg.none, hotels.length)}%`} />
+                <Stat label="Corporate" value={reg.corporate} sub={`${pct(reg.corporate, scopedHotels.length)}%`} />
+                <Stat label="Personal" value={reg.personal} sub={`${pct(reg.personal, scopedHotels.length)}%`} />
+                <Stat label="ไม่ระบุ" value={reg.none} sub={`${pct(reg.none, scopedHotels.length)}%`} />
               </div>
             </div>
             <div>
@@ -212,9 +221,9 @@ export function PsDashboard({ assignment, part = "all" }: { assignment?: Assignm
                 รูปแบบค่าบริการ
               </p>
               <div className="grid grid-cols-3 gap-2">
-                <Stat label="Flat Rate" value={model.flat} sub={`${pct(model.flat, hotels.length)}%`} />
-                <Stat label="Commission" value={model.commission} sub={`${pct(model.commission, hotels.length)}%`} />
-                <Stat label="ไม่ระบุ" value={model.none} sub={`${pct(model.none, hotels.length)}%`} />
+                <Stat label="Flat Rate" value={model.flat} sub={`${pct(model.flat, scopedHotels.length)}%`} />
+                <Stat label="Commission" value={model.commission} sub={`${pct(model.commission, scopedHotels.length)}%`} />
+                <Stat label="ไม่ระบุ" value={model.none} sub={`${pct(model.none, scopedHotels.length)}%`} />
               </div>
             </div>
           </div>
@@ -223,27 +232,6 @@ export function PsDashboard({ assignment, part = "all" }: { assignment?: Assignm
 
       {part !== "overview" && <section className="card-elevated p-4 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="relative min-w-[14rem] flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="ค้นหาชื่อหรือรหัสโรงแรม"
-              className="pl-9"
-            />
-          </div>
-          <Select value={status} onValueChange={(v) => setStatus(v as typeof status)}>
-            <SelectTrigger className="w-[13rem]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">สถานะโรงแรม: ทั้งหมด</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="overdue">ค้างชำระ 2 เดือน</SelectItem>
-              <SelectItem value="contract-end">Contract End</SelectItem>
-              <SelectItem value="terminated">Terminate</SelectItem>
-            </SelectContent>
-          </Select>
           <span className="text-xs text-muted-foreground">{filtered.length} รายการ</span>
         </div>
 
@@ -290,14 +278,14 @@ export function PsDashboard({ assignment, part = "all" }: { assignment?: Assignm
                       </span>
                     </td>
                     <td className="py-3">
-                      <Link
+                      {!demo && <Link
                         to="/ps/contracts"
                         onClick={() => select(r.h.id)}
                         aria-label={`แก้ไข ${r.h.name}`}
                         className="inline-grid size-8 place-items-center rounded-md border text-muted-foreground transition-colors hover:bg-muted"
                       >
                         <Pencil className="size-3.5" />
-                      </Link>
+                      </Link>}
                     </td>
                   </tr>
                 );

@@ -56,6 +56,8 @@ import {
   handoverOtas,
   handoverProgress,
 } from "@/lib/ps-servicing";
+import { useDashboardGlobal, matchesBook, selectedPeriod } from '@/lib/ps-dashboard-global';
+import { demoOnboarding, demoOnboardingSums } from '@/lib/ps-demo-fixture';
 import { cn } from "@/lib/utils";
 import { Ws2Panel } from "@/components/ps/ws2-panel";
 import { ROLE_DISPLAY, greetingName, useTemplateMgmt } from "@/lib/email-templates";
@@ -125,20 +127,24 @@ function ServicingWorkSurface() {
 
 function ServicingMonitor() {
   const s = useServicing();
+  const { filter:global, demo, now:clock } = useDashboardGlobal();
+  const source = demo ? demoOnboarding() : s.cards;
+  const period = selectedPeriod(global,clock ? new Date(clock) : new Date());
+  const book = source.filter(c => c.created_at.slice(0,10) <= period.to && (!c.go_live_at || c.go_live_at.slice(0,10) >= period.from) && matchesBook({ service_line:c.service_line === 'MARCOM' ? 'Marcom' : c.service_line, hotel_id:c.property_id,hotel_name:c.property_name, ae_owner_id:c.assigned_ae_id,assigned_service_owner_id:c.assigned_service_owner_id,status:c.go_live_at ? 'ACTIVE' : null },global,true));
   const [view, setView] = useState("pipeline");
   const [q, setQ] = useState("");
   const [line, setLine] = useState("ORM");
   const [status, setStatus] = useState("all");
   const [compare, setCompare] = useState<string | null>(null);
   const [openCard, setOpenCard] = useState<string | null>(null);
-  const filtered = useMemo(() => s.cards.filter((card) => {
+  const filtered = useMemo(() => book.filter((card) => {
     const term = q.trim().toLowerCase();
     const bucket = card.go_live_at ? "live" : AE_TRACK_STAGES.has(card.current_stage) ? "ae" : "servicing";
     return (!term || `${card.property_name} ${card.property_id} ${card.contract_ref}`.toLowerCase().includes(term))
-      && card.service_line === line
+      && (global.service === "ALL" || card.service_line === (global.service === "Marcom" ? "MARCOM" : global.service))
       && (status === "all" || status === bucket);
-  }), [s.cards, q, line, status]);
-  const live = s.cards.filter((card) => card.go_live_at).length;
+  }), [book, q, global.service, status]);
+  const live = filtered.filter((card) => card.go_live_at).length;
   const siblings = [...new Set(filtered.map((card) => card.property_id))]
     .map((id) => filtered.filter((card) => card.property_id === id))
     .filter((cards) => cards.length > 1);
@@ -147,33 +153,25 @@ function ServicingMonitor() {
     <section id="servicing-overview" className="scroll-mt-20 space-y-4 border-t pt-6" aria-label="Servicing overview">
       <div>
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Servicing</p>
-        <h2 className="font-display text-xl font-semibold">ภาพรวม On-boarding และบริการ</h2>
+        <h2 className="font-display text-xl font-semibold">ภาพรวม On-boarding และบริการ{demo ? " · DEMO" : ""}</h2>
       </div>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <Kpi label="การ์ดบริการทั้งหมด" value={s.cards.length} />
-        <Kpi label="โรงแรม" value={new Set(s.cards.map((card) => card.property_id)).size} />
+        <Kpi label="การ์ดบริการทั้งหมด" value={filtered.length} />
+        <Kpi label="โรงแรม" value={new Set(filtered.map((card) => card.property_id)).size} />
         <Kpi label="เปิดใช้งานแล้ว" value={live} />
-        <Kpi label="กำลังดำเนินการ" value={s.cards.length - live} />
-        <PendingAssignTile />
-      </div>
-      <div className="flex flex-wrap gap-2">
-        <div className="relative min-w-[14rem] flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input value={q} onChange={(event) => setQ(event.target.value)} placeholder="ค้นหาชื่อหรือรหัสโรงแรม" className="pl-9" />
-        </div>
-        <Select value={line} onValueChange={setLine}><SelectTrigger className="w-40"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">ทุกบริการ</SelectItem><SelectItem value="ORM">ORM</SelectItem><SelectItem value="MARCOM">Marcom</SelectItem></SelectContent></Select>
-        <Select value={status} onValueChange={setStatus}><SelectTrigger className="w-44"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">ทุกสถานะ</SelectItem><SelectItem value="ae">AE track</SelectItem><SelectItem value="servicing">Servicing</SelectItem><SelectItem value="live">Go Live</SelectItem></SelectContent></Select>
+        <Kpi label="กำลังดำเนินการ" value={filtered.length - live} />
+        {!demo && <PendingAssignTile />}
       </div>
       <Tabs value={view} onValueChange={setView}>
         <TabsList className="grid h-auto w-full grid-cols-2 sm:w-fit sm:grid-cols-4">
           <TabsTrigger value="pipeline">Pipeline</TabsTrigger><TabsTrigger value="tracking">Tracking</TabsTrigger><TabsTrigger value="disparity">Disparity</TabsTrigger><TabsTrigger value="kpi">KPI #4</TabsTrigger>
         </TabsList>
-        <TabsContent value="pipeline"><CondensedPipeline cards={filtered} onOpen={setOpenCard} /></TabsContent>
-        <TabsContent value="tracking"><TrackingView cards={filtered} onCompare={setCompare} onOpen={setOpenCard} /></TabsContent>
-        <TabsContent value="disparity"><div className="divide-y rounded-lg border px-4">{siblings.map((cards) => <div key={cards[0]?.property_id} className="flex flex-wrap items-center justify-between gap-2 py-3"><span className="text-sm font-medium">{cards[0]?.property_name}</span><div className="flex items-center gap-2"><DisparityBadge cards={cards} /><Button size="sm" variant="ghost" onClick={() => { const id = cards[0]?.property_id; if (id) setCompare(id); }}>Compare</Button></div></div>)}{!siblings.length && <p className="py-8 text-center text-sm text-muted-foreground">ไม่มีโรงแรมหลายบริการในผลลัพธ์นี้</p>}</div></TabsContent>
+        <TabsContent value="pipeline">{demo ? <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{filtered.map(c => <article key={c.id} className="rounded-lg border p-4"><p className="text-[10px] font-bold text-warning-foreground">DEMO</p><h3 className="mt-2 text-sm font-semibold">{c.property_name} · {c.service_line}</h3><p className="mt-1 text-xs text-muted-foreground">{c.id} · {c.current_stage === 'go_live' ? 'Go Live' : 'New Property'}</p><p className="mt-2 text-xs">{c.created_at} → {c.go_live_at ?? 'in-flight'}</p></article>)}</div> : <CondensedPipeline cards={filtered} onOpen={setOpenCard} globalLine={global.service} />}</TabsContent>
+        <TabsContent value="tracking"><TrackingView cards={filtered} onCompare={demo ? () => {} : setCompare} onOpen={demo ? () => {} : setOpenCard} /></TabsContent>
+        <TabsContent value="disparity"><div className="divide-y rounded-lg border px-4">{siblings.map((cards) => <div key={cards[0]?.property_id} className="flex flex-wrap items-center justify-between gap-2 py-3"><span className="text-sm font-medium">{cards[0]?.property_name}</span><div className="flex items-center gap-2">{!demo && <DisparityBadge cards={cards} />}<Button size="sm" variant="ghost" onClick={() => { const id = cards[0]?.property_id; if (id && !demo) setCompare(id); }}>Compare</Button></div></div>)}{!siblings.length && <p className="py-8 text-center text-sm text-muted-foreground">ไม่มีโรงแรมหลายบริการในผลลัพธ์นี้</p>}</div></TabsContent>
         <TabsContent value="kpi"><KpiView cards={filtered} /></TabsContent>
       </Tabs>
-      <CompareDialog propertyId={compare} onClose={() => setCompare(null)} />
+      {!demo && <CompareDialog propertyId={compare} onClose={() => setCompare(null)} />}
       <ServicingCardDrawer key={openCard ?? "closed"} id={openCard} readOnly onClose={() => setOpenCard(null)} />
     </section>
   );
@@ -186,13 +184,14 @@ function WorkLink({ card, onOpen, label = "ดูรายละเอียด�
 }
 
 /** View-only board: never advances a stage — advancing happens only inside ServicingCardDrawer. */
-function CondensedPipeline({ cards, onOpen }: { cards: OnboardingCard[]; onOpen: (id: string) => void }) {
+function CondensedPipeline({ cards, onOpen, globalLine }: { cards: OnboardingCard[]; onOpen: (id: string) => void; globalLine?: string }) {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [line, setLine] = useState<ServiceLine>("ORM");
-  const stages = lineSequence(line);
+  const visibleLine: ServiceLine = globalLine === 'Marcom' ? 'MARCOM' : globalLine === 'ORM' ? 'ORM' : line;
+  const stages = lineSequence(visibleLine);
   const all = cards;
-  cards = all.filter((card) => card.service_line === line);
-  return <div className="space-y-3"><LineToggle value={line} onChange={setLine} /><div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{stages.map((stage) => {
+  cards = all.filter((card) => card.service_line === visibleLine);
+  return <div className="space-y-3">{(!globalLine || globalLine === "ALL") && <LineToggle value={line} onChange={setLine} />}<div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{stages.map((stage) => {
     const stageCards = cards.filter((card) => card.current_stage === stage);
     const sample = stageCards[0];
     return <div key={stage} className="rounded-lg border p-4">
@@ -351,8 +350,9 @@ function ExternalAppButton({ card }: { card: OnboardingCard }) {
 }
 
 function TrackingView({ cards, onCompare, onOpen }: { cards: OnboardingCard[]; onCompare: (id: string) => void; onOpen: (id: string) => void }) {
+  const { demo, now } = useDashboardGlobal();
   const groups = [...new Set(cards.map((card) => card.property_id))].map((id) => ({ id, cards: cards.filter((card) => card.property_id === id) }));
-  return <div className="divide-y rounded-lg border">{groups.map(({ id, cards: group }) => <div key={id} className="p-4"><div className="flex flex-wrap items-center justify-between gap-2"><p className="font-semibold">{group[0]?.property_name}</p><div className="flex items-center gap-2"><DisparityBadge cards={group} />{group.length > 1 && <Button size="sm" variant="ghost" onClick={() => onCompare(id)}>Compare</Button>}</div></div><div className="mt-2 divide-y">{group.map((card) => <div key={card.id} className="flex flex-wrap items-center gap-3 py-2 text-sm"><Chip tone={card.service_line === "ORM" ? "info" : "muted"}>{card.service_line}</Chip><span className="flex-1">{STAGE_LABEL[card.current_stage]}</span><span className="font-mono text-xs text-muted-foreground">Day {currentDay(card)}</span><WorkLink card={card} onOpen={onOpen} /></div>)}</div></div>)}{!groups.length && <p className="p-8 text-center text-sm text-muted-foreground">ไม่พบการ์ด</p>}</div>;
+  return <div className="divide-y rounded-lg border">{groups.map(({ id, cards: group }) => <div key={id} className="p-4"><div className="flex flex-wrap items-center justify-between gap-2"><p className="font-semibold">{group[0]?.property_name}</p><div className="flex items-center gap-2">{!demo && <DisparityBadge cards={group} />}{!demo && group.length > 1 && <Button size="sm" variant="ghost" onClick={() => onCompare(id)}>Compare</Button>}</div></div><div className="mt-2 divide-y">{group.map((card) => <div key={card.id} className="flex flex-wrap items-center gap-3 py-2 text-sm"><Chip tone={card.service_line === "ORM" ? "info" : "muted"}>{card.service_line}</Chip><span className="flex-1">{STAGE_LABEL[card.current_stage]}</span><span className="font-mono text-xs text-muted-foreground">Day {demo ? daysBetween(card.created_at,card.go_live_at ?? now) : currentDay(card)}</span>{!demo && <WorkLink card={card} onOpen={onOpen} />}</div>)}</div></div>)}{!groups.length && <p className="p-8 text-center text-sm text-muted-foreground">ไม่พบการ์ด</p>}</div>;
 }
 
 function trackForStage(_card: OnboardingCard, stage: string): OwnerTrack {
@@ -740,12 +740,13 @@ function CompareDialog({ propertyId, onClose }: { propertyId: string | null; onC
 
 function KpiView({ cards }: { cards?: OnboardingCard[] }) {
   const s = useServicing();
+  const { demo, filter:global } = useDashboardGlobal();
   const [kpiOpen, setKpiOpen] = useState<string | null>(null);
   const [line, setLine] = useState<ServiceLine>("ORM");
   const rows = (cards ?? s.cards)
-    .filter((c) => c.service_line === line && c.go_live_at)
+    .filter((c) => c.service_line === (global.service === 'Marcom' ? 'MARCOM' : global.service === 'ORM' ? 'ORM' : line) && c.go_live_at)
     .map((c) => {
-      const v = sums(c, eventsOf(s, c.id));
+      const v = demo ? demoOnboardingSums(c.id) : sums(c, eventsOf(s, c.id));
       return { card: c, ...v, bottleneck: bottleneck(v), x: new Date(c.go_live_at ?? c.created_at).getTime(), y: v.overall ?? 0 };
     });
   const ys = rows.map((r) => r.y).sort((a, b) => a - b);
@@ -760,12 +761,12 @@ function KpiView({ cards }: { cards?: OnboardingCard[] }) {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
-        <Tabs value={line} onValueChange={(v) => setLine(v as ServiceLine)}>
+        {global.service === "ALL" && <Tabs value={line} onValueChange={(v) => setLine(v as ServiceLine)}>
           <TabsList>
             <TabsTrigger value="ORM">ORM</TabsTrigger>
             <TabsTrigger value="MARCOM">Marcom</TabsTrigger>
           </TabsList>
-        </Tabs>
+        </Tabs>}
         <p className="font-display text-lg font-bold">
           median D{Math.round(med)} · {outliers} outliers
         </p>
@@ -846,13 +847,13 @@ function KpiView({ cards }: { cards?: OnboardingCard[] }) {
                   <td className="tabular-nums">{d(r.overall)}</td>
                   <td>{r.bottleneck ? TRACK_LABEL[r.bottleneck] : "—"}</td>
                   <td>{r.outlier ? "✕ Outlier" : "In range"}</td>
-                  <td><WorkLink card={r.card} onOpen={setKpiOpen} /></td>
+                  <td>{!demo && <WorkLink card={r.card} onOpen={setKpiOpen} />}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        <ServicingCardDrawer key={kpiOpen ?? "closed"} id={kpiOpen} readOnly onClose={() => setKpiOpen(null)} />
+        {!demo && <ServicingCardDrawer key={kpiOpen ?? "closed"} id={kpiOpen} readOnly onClose={() => setKpiOpen(null)} />}
       </Panel>
     </div>
   );

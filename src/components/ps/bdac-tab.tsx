@@ -13,6 +13,8 @@ import {
   v_bdac_conversion_cohort, v_bdac_cycle_time, v_bdac_deal_aging, v_bdac_diagnostic_bin, v_bdac_flow, v_bdac_stage_current,
   type LineFilter, type Range,
 } from "@/lib/bdac-views";
+import type { ContractLifecycle } from '@/lib/contract-lifecycle';
+import { periodRange, selectedPeriod, useDashboardGlobal, type GlobalFilter } from '@/lib/ps-dashboard-global';
 import { cn } from "@/lib/utils";
 
 const RANGES = { mtd: "เดือนนี้", "3m": "3 เดือน", "6m": "6 เดือน", all: "ทั้งหมด" } as const;
@@ -27,8 +29,9 @@ const owner = (id: string | null | undefined) => (id ? id.split("@")[0] ?? "—"
 const fmt = (n: number | null) => (n == null ? "—" : n.toFixed(1));
 
 function Section({ n, title, sub, children, className }: { n: string; title: string; sub?: string; children: React.ReactNode; className?: string }) {
+  const { demo } = useDashboardGlobal();
   return <section className={cn("bdac-section min-w-0", className)}>
-    <div className="flex items-center gap-2"><span className="bdac-section-number">{n}</span><h3>{title}</h3></div>
+    <div className="flex items-center gap-2"><span className="bdac-section-number">{n}</span><h3>{title}{demo ? " · DEMO" : ""}</h3></div>
     {sub && <p className="bdac-caption mt-1">{sub}</p>}
     <div className="mt-5">{children}</div>
   </section>;
@@ -64,26 +67,27 @@ function OwnerCell({ id }: { id: string | null | undefined }) {
   </span>;
 }
 
-export function BdacTab() {
+export function BdacTab({ source, globalFilter, clock }: { source?: ContractLifecycle[]; globalFilter?: GlobalFilter; clock?: number }) {
   const { lifecycles } = useContractLifecycle();
   const navigate = useNavigate();
   const [line, setLine] = useState<LineFilter>("ALL");
   const [rk, setRk] = useState<RangeKey>("6m");
   const [cycle, setCycle] = useState<"7_8" | "8_9">("7_8");
   const [byOwner, setByOwner] = useState(false);
-  const range = rangeOf(rk);
-  const rows = useMemo(() => filterLine(lifecycles, line), [lifecycles, line]);
+  const range = globalFilter ? periodRange(selectedPeriod(globalFilter,new Date(clock ?? Date.now()))) : rangeOf(rk);
+  const rows = useMemo(() => source ?? filterLine(lifecycles, line), [source,lifecycles,line]);
 
   const flow = v_bdac_flow(rows, range);
   const cohort = v_bdac_conversion_cohort(rows, range).total;
-  const current = v_bdac_stage_current(rows);
+  const current = v_bdac_stage_current(rows,clock);
   const cycleRows = v_bdac_cycle_time(rows, range, cycle);
-  const aging = v_bdac_deal_aging(rows);
+  const aging = v_bdac_deal_aging(rows,clock);
   const bin = v_bdac_diagnostic_bin();
   const groups = byOwner ? [...new Set(cycleRows.map((c) => c.bd_owner_id))] : ["__all"];
 
   const pct = (n: number) => (cohort.cohort_size ? Math.round((n / cohort.cohort_size) * 100) : 0);
-  const open = (id: string) => void navigate({ to: "/ps/contract-dashboard", hash: `contract-card-${id}` });
+  const { demo } = useDashboardGlobal();
+  const open = (id: string) => !demo && void navigate({ to: "/ps/contract-dashboard", hash: `contract-card-${id}` });
 
   const stageRows = [6, 7, 8, 9, 10].map((stage) => ({ stage, cards: current.filter((c) => c.stage === stage) }));
   const approvedCards = stageRows[0]?.cards ?? [];
@@ -99,7 +103,7 @@ export function BdacTab() {
 
   return (
     <div className="bdac-theme bdac-dashboard">
-      <div className="bdac-filterbar">
+      {!globalFilter && <div className="bdac-filterbar">
         <div className="bdac-segmented" role="group" aria-label="บริการ">
           {(["ALL", "ORM", "MARCOM", "NONE"] as LineFilter[]).map((f) => (
             <Button key={f} variant="ghost" size="sm" aria-pressed={line === f} onClick={() => setLine(f)} className="bdac-segment">
@@ -112,7 +116,7 @@ export function BdacTab() {
           <SelectContent>{Object.entries(RANGES).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}</SelectContent>
         </Select>
         <span className="bdac-caption sm:ml-auto">นับต่อดีล · ดีลเก่าที่ไม่มี timestamp ไม่ถูกนับ</span>
-      </div>
+      </div>}
 
       <Section n="01" title="Flow stats" sub="จำนวนเหตุการณ์ในช่วงที่เลือก (ต่อดีล)">
         <div className="bdac-chart-scroll">

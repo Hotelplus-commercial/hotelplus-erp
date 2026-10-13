@@ -1,3 +1,11 @@
+# PS Dashboard v1.2 patch
+- [x] Consolidate sticky global filters and ownership scoping across reporting surfaces.
+- [x] Add display-only A/B comparison, presets, custom periods and missing-history handling.
+- [x] Reuse one static fixture for all tabs and URL-driven preview-safe DEMO.
+- [x] Verify demo oracle, filters, comparison, reload, off-state and workflow regressions.
+
+- Real ownership aggregates and historical deltas remain pending where existing views lack ownership/snapshots; no attribution or backward values are invented.
+
 # PS Dashboard tab v1.0
 - [x] Add PM/System Admin risk governance; verified edit, blocked AE, reload readback and strict thresholds.
 - [x] Map sources; add nullable contract field and forward-only scheduled end capture on new Renewal decisions, without backfill.
