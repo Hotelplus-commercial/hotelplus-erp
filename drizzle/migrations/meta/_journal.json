@@ -64,6 +64,13 @@
       "when": 1791825803543,
       "tag": "0008_ac_ws2_projection_existing_document_boundary",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791855814415,
+      "tag": "0009_cloud_sync_level_a_per_collection_docs",
+      "breakpoints": true
     }
   ]
 }
