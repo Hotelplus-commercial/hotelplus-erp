@@ -64,7 +64,7 @@ export function PsReportTab({ report, filter, loading, error, wonMtd, compareSid
   const scatterRows = (rows: PsReportRow[], today: boolean) => rows.map(row => ({ x: (today ? now : new Date(String(row.end_date))).getTime(), y: n(row,'age_days'), contract: row.contract_id }));
   const openProfile = () => navigate({ to: '/ac/hotel-profile' });
   const reconcileOk = wonMtd === undefined || filter.service !== 'ALL' || flow.length === wonMtd;
-  return <div className="grid min-w-0 gap-6 lg:grid-cols-2" data-testid="ps-report-tab">
+  return <div className={cn("grid min-w-0 gap-6", compareSide ? "grid-cols-1 [&>div]:col-span-1" : "lg:grid-cols-2")} data-testid="ps-report-tab">
     <Section demo={demo} title="① Lifecycle & Flow">
       {hasFlow ? <div className="grid grid-cols-3 gap-4"><Metric label="In · New Property" value={String(flow.length)} detail={`${new Set(flow.map(row => row.hotel_id)).size} โรงแรม`} /><Metric label="Out · บริการ→Inactive" value={String(out.length)} warn /><Metric label="Pause" value="—" warn detail="รอกลไก Pause ต้นทาง" /></div> : <>{empty}<div className="grid grid-cols-2 gap-4"><Metric label="In / Out" value="— / —" /><Metric label="Pause" value="—" warn detail="รอกลไก Pause ต้นทาง" /></div></>}
       {hasFlow && !reconcileOk && <p className="mt-3 text-xs text-warning-foreground">QA: In ({flow.length}) ≠ Won MTD ({wonMtd})</p>}

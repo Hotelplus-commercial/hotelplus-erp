@@ -14,7 +14,7 @@
 - Servicing stage events are append-only and created by gated in-app actions; historical demo data remains separate from live action timestamps.
 - Servicing role flags are workflow simulation only, not authentication or authorization; do not treat them as production security.
 - Shared development-only Servicing UAT bypasses checklist ticking roles only, preserving read-only surfaces and all other permissions; prevent production bypass.
-- Servicing remains a browser-local prototype until authenticated shared persistence is explicitly scoped; Cloud activation alone does not migrate workflow data.
+- Servicing stays browser-local until authenticated shared persistence is scoped; Cloud activation never migrates workflow data.
 - Servicing links are service-stage-only, HTTP(S)-only and hydrate missing scaffold fields without replacing local data; preserve native work and safe navigation.
 
 - Prop Info (display 10, lifecycle 11) uses root ServicingProvider/manual initializer; deduplicate contract reference/service before handoff, preventing shadow cards.
