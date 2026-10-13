@@ -2,7 +2,7 @@
  * Raw entities are derived into v_ps_*-shaped rows here (view layer only); nothing is written to cloud or browser. */
 import { PS_VIEWS, type PsReport, type PsReportRow, type PsView } from './ps-dashboard-types';
 
-export const DEMO_ENABLED = import.meta.env.DEV; // hard-off outside development builds
+export const DEMO_ENABLED = Boolean(import.meta.env?.DEV); // hard-off outside development builds
 export const DEMO_NOW = '2026-09-30T00:00:00.000Z';
 
 type L = 'ORM' | 'Marcom';
