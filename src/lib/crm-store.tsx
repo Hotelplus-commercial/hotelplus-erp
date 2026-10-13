@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { useAccountingCloud } from './use-accounting-cloud';
+import { stageCloudDoc } from './cloud-sync';
+import { CRM_COLLECTIONS } from './cloud-sync-keys';
 import { bangkokDate, confirmPayment, recomputeAccounting, runDailyBilling, type GradeRecord, type CollectionEvent, manualCollection } from './ac-v2-engine';
 import { resolveContractHotel, stampInvoiceHotel } from './ac-attribution';
 
@@ -104,9 +105,6 @@ function load(): CrmData | null {
 }
 
 type Store = CrmData & {
-  cloudStatus: 'local'|'loading'|'cloud'|'error';
-  migrateToCloud: () => Promise<void>;
-  refreshCloud: () => Promise<void>;
   recordPayment: (invoiceId:string, method:string, amount:number) => void;
   collectionAction: (customerId:string, event:'LEGAL'|'WRITTEN_OFF'|'REACTIVATED', note:string) => void;
   hydrated: boolean;
@@ -148,8 +146,6 @@ const Ctx = createContext<Store | null>(null);
 export function CrmStoreProvider({ children }: { children: React.ReactNode }) {
   const [data, setData] = useState<CrmData>(initial);
   const [hydrated, setHydrated] = useState(false);
-  const applyCloud = useCallback((next:CrmData)=>setData({...initial(),...next}),[]);
-  const cloud = useAccountingCloud('crm',data,hydrated,applyCloud);
 
   useEffect(() => {
     const stored = load();
@@ -169,6 +165,7 @@ export function CrmStoreProvider({ children }: { children: React.ReactNode }) {
     } catch {
       /* ignore quota */
     }
+    CRM_COLLECTIONS.forEach((c) => stageCloudDoc(`crm:${c}`, { items: data[c] ?? [] }));
   }, [data, hydrated]);
 
   const log = useCallback(
@@ -190,9 +187,6 @@ export function CrmStoreProvider({ children }: { children: React.ReactNode }) {
 
     return {
       ...data,
-      cloudStatus:cloud.status,
-      migrateToCloud:cloud.migrate,
-      refreshCloud:cloud.refresh,
       recordPayment:(invoiceId,method,amount)=>upd(d=>{
         const next=confirmPayment(d,invoiceId,method,amount,d.actor);
         return next===d?d:{...next,audit:log(d,'payment.confirm',invoiceId)};

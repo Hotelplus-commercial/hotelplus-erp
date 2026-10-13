@@ -21,7 +21,7 @@ import { crmUsers, useCrm } from '@/lib/crm-store';
 import { paymentSummary } from '@/lib/ac-v2-engine';
 
 export function AcProfileForm() {
-  const { selected: h, patch,cloudStatus,migrateToCloud } = useHotelStore();
+  const { selected: h, patch } = useHotelStore();
   const crm=useCrm();
   const { customerId, grade, score, late, unpaidMonths, collection } = paymentSummary(crm, h);
   const set = (next: Partial<HotelProfile>) => patch(h.id, next);
@@ -152,7 +152,6 @@ export function AcProfileForm() {
       </div>
 
       <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
-        {import.meta.env.DEV && cloudStatus==='local' && <Button variant="outline" onClick={()=>migrateToCloud()}>ย้าย Hotel Profile ไป Cloud</Button>}
         <Select value={crm.actor} onValueChange={crm.setActor}><SelectTrigger className="w-48" aria-label="ผู้บันทึกบัญชี"><SelectValue /></SelectTrigger><SelectContent>{crmUsers.map(u=><SelectItem key={u.email} value={u.email}>{u.name}</SelectItem>)}</SelectContent></Select>
         {customerId && <>{(['LEGAL','WRITTEN_OFF','REACTIVATED'] as const).map(event=><Button key={event} variant="outline" size="sm" onClick={()=>{const note=window.prompt('หมายเหตุ '+event);if(note)crm.collectionAction(customerId,event,note);}}>{event==='LEGAL'?'ส่งฟ้อง':event==='WRITTEN_OFF'?'ตัดหนี้สูญ':'คืนบริการ'}</Button>)}</>}
         {h.acSaved && (

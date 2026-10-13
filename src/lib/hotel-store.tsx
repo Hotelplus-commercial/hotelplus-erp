@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { useAccountingCloud } from './use-accounting-cloud';
+import { stageCloudDoc } from './cloud-sync';
 
 import {
   activeContractIndex,
@@ -167,9 +167,6 @@ function load(): HotelProfile[] | null {
 /* ---------------- context ---------------- */
 
 type Store = {
-  cloudStatus:'local'|'loading'|'cloud'|'error';
-  migrateToCloud:()=>Promise<void>;
-  refreshCloud:()=>Promise<void>;
   hotels: HotelProfile[];
   selectedId: string;
   selected: HotelProfile;
@@ -185,8 +182,6 @@ export function HotelStoreProvider({ children }: { children: React.ReactNode }) 
   const [hotels, setHotels] = useState<HotelProfile[]>(() => [newHotel(1)]);
   const [selectedId, setSelectedId] = useState<string>(() => "");
   const [hydrated, setHydrated] = useState(false);
-  const applyCloud=useCallback((next:HotelProfile[])=>setHotels(JSON.parse(JSON.stringify(next),revive)),[]);
-  const cloud=useAccountingCloud('hotels',hotels,hydrated,applyCloud);
 
   useEffect(() => {
     const stored = load();
@@ -201,6 +196,7 @@ export function HotelStoreProvider({ children }: { children: React.ReactNode }) 
     } catch {
       /* ignore quota errors */
     }
+    stageCloudDoc('hotels', { hotels });
   }, [hotels, hydrated]);
 
   const current = hotels.find((h) => h.id === selectedId) ?? hotels[0]!;
@@ -225,7 +221,6 @@ export function HotelStoreProvider({ children }: { children: React.ReactNode }) 
 
   const value = useMemo<Store>(
     () => ({
-      cloudStatus:cloud.status,migrateToCloud:cloud.migrate,refreshCloud:cloud.refresh,
       hotels,
       selectedId: current.id,
       selected: current,
@@ -234,7 +229,7 @@ export function HotelStoreProvider({ children }: { children: React.ReactNode }) 
       removeHotel,
       patch,
     }),
-    [hotels, current, addHotel, removeHotel, patch,cloud.status,cloud.migrate,cloud.refresh],
+    [hotels, current, addHotel, removeHotel, patch],
   );
 
   return <HotelStoreContext.Provider value={value}>{children}</HotelStoreContext.Provider>;

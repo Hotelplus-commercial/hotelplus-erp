@@ -32,6 +32,7 @@ export type PortalFolder = { id: string; property_id: string; service: Ws2Servic
 
 type State = { properties: Property[]; profiles: ServiceProfile[]; forms: Ws2Form[]; restricted: RestrictedRecord[]; log: ActivityLog[]; folders: PortalFolder[]; images: PropertyImage[]; templates: TemplateVersion[] };
 
+import { stageCloudDoc } from "./cloud-sync";
 const KEY = "ps-ws2-v1";
 const APP = "PS App";
 const now = () => new Date().toISOString();
@@ -121,7 +122,8 @@ export function Ws2Provider({ children }: { children: ReactNode }) {
     } catch { /* ignore corrupt local data */ }
     setReady(true);
   }, []);
-  useEffect(() => { if (ready) localStorage.setItem(KEY, JSON.stringify(s)); }, [s, ready]);
+  // Cloud mirror carries only the assignment master; restricted credentials and form answers stay in the browser.
+  useEffect(() => { if (ready) { localStorage.setItem(KEY, JSON.stringify(s)); stageCloudDoc('ws2', { properties: s.properties, profiles: s.profiles }); } }, [s, ready]);
 
   const audit = (user: string, app = APP): Audit => ({ last_updated_at: now(), last_updated_by: user, last_updated_app: app });
   const logRow = (r: Omit<ActivityLog, "id" | "at">): ActivityLog => ({ ...r, id: rid(), at: now() });
