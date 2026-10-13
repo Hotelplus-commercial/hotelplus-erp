@@ -1,7 +1,7 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { Link } from '@tanstack/react-router';
 import { ArrowUpRight } from 'lucide-react';
-import { ResponsiveContainer, ScatterChart, Scatter, XAxis, YAxis, Tooltip, ReferenceArea, ReferenceLine, CartesianGrid, LineChart, Line, Area, ComposedChart, Legend, BarChart, Bar } from 'recharts';
+import { ResponsiveContainer, ScatterChart, Scatter, XAxis, YAxis, Tooltip, ReferenceArea, ReferenceLine, CartesianGrid, Line, Area, ComposedChart, Legend, BarChart, Bar } from 'recharts';
 import { Chip } from '@/components/crm/crm-ui';
 import { Button } from '@/components/ui/button';
 import { useTemplateMgmt } from '@/lib/email-templates';
@@ -34,7 +34,7 @@ export function PsReportTab({ report, filter, loading, error }: { report?: PsRep
   const cohort = psScope(views?.v_ps_onboard_cohort ?? [], filter).sort((a,b) => String(a.billing_period).localeCompare(String(b.billing_period)));
   const attach = psScope(views?.v_ps_attach_rate ?? [], filter, 'none');
   const health = psScope(views?.v_ps_account_health ?? [], filter, 'none');
-  const hotels = useMemo(() => [...new Set(health.map(row => String(row.hotel_id)))].map(id => {
+  const hotels = useMemo(() => [...new Set(health.map(row => String(row.hotel_id)))].map((id): PsReportRow | null => {
     const rows = health.filter(row => row.hotel_id === id);
     const first = rows[0];
     if (!first) return null;
