@@ -11,6 +11,10 @@ import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { Chip, Panel } from "@/components/crm/crm-ui";
 import { BdacTab } from "@/components/ps/bdac-tab";
 import { PsReportTab } from '@/components/ps/ps-report-tab';
+import { MeetingAnalyzerTab } from './meeting-analyzer-tab';
+import { readMeetingDashboard } from '@/lib/meeting-dashboard.functions';
+import { demoMeetingReport } from '@/lib/meeting-dashboard-demo';
+import { meetingScope, meetingPercent } from '@/lib/meeting-dashboard-types';
 import { readPsDashboard } from '@/lib/ps-dashboard.functions';
 import { latestPeriod, psScope, ratio, type PsReport } from '@/lib/ps-dashboard-types';
 import { buildDemoReport, demoAcViews, demoLifecycles, DEMO_NOW } from '@/lib/ps-demo-fixture';
@@ -18,7 +22,7 @@ import { Button } from "@/components/ui/button";
 import { readAcDashboard } from "@/lib/ac-dashboard.functions";
 import { v_bdac_flow } from "@/lib/bdac-views";
 import { useContractLifecycle } from "@/lib/contract-lifecycle";
-import { DashboardGlobal, defaultGlobalFilter, matchesBook, scopePeriod, selectedPeriod, periodRange, deltaText, useDashboardGlobal, type GlobalFilter } from '@/lib/ps-dashboard-global';
+import { DashboardGlobal, defaultGlobalFilter, matchesBook, scopePeriod, selectedPeriod, periodRange, deltaText, monthPeriod, useDashboardGlobal, type GlobalFilter } from '@/lib/ps-dashboard-global';
 import { DashboardGlobalFilters } from './dashboard-global-filters';
 import { DashboardCompare } from './dashboard-compare';
 import { useHrMembers, teamLabel } from '@/lib/hr-members';
@@ -46,6 +50,20 @@ function useAcViews() {
   useEffect(() => setReady(true), []);
   const real = useQuery({ queryKey: ["ac-dashboard-views"], queryFn: () => read(), staleTime: 60_000, enabled: ready && !demo });
   return demo ? { data: demoAcViews(), isLoading: false, isError: false } : real;
+}
+
+function useMeetingViews() {
+  const { demo } = useDashboardGlobal();
+  const read = useServerFn(readMeetingDashboard);
+  const [ready, setReady] = useState(false);
+  useEffect(() => setReady(true), []);
+  const real = useQuery({queryKey:['meeting-dashboard-views'],queryFn:()=>read(),staleTime:60_000,enabled:ready&&!demo});
+  const fixture = useMemo(()=>demo ? demoMeetingReport() : undefined,[demo]);
+  return demo ? {data:fixture,isLoading:false,isError:false} : real;
+}
+function MeetingTab() {
+  const report = useMeetingViews();
+  return <MeetingAnalyzerTab report={report.data} loading={report.isLoading} error={report.isError} />;
 }
 
 function Mom({ cur, prev }: { cur: number; prev: number | null }) {
@@ -111,7 +129,7 @@ export function DashboardShell({ servicing, overview, header }: { servicing: Rea
       <HeadlineStrip />
       {header}
       <div className="flex gap-1 overflow-x-auto rounded-lg border bg-card p-1" role="tablist" aria-label="Dashboard tabs">
-        {[["bdac", "BD-AC"], ["ac", "AC"], ["ps", "PS"], ["meeting", "Meeting·"], ["task", "Task·"], ["servicing", "Servicing"]].map(([k,l]) => <Button key={k} role="tab" aria-selected={tab === k} onClick={() => { if (k) setTab(k); }} variant={tab === k ? 'default' : 'ghost'} className="shrink-0 rounded-md px-3 py-1.5 text-sm font-medium">{l}</Button>)}
+        {[["bdac", "BD-AC"], ["ac", "AC"], ["ps", "PS"], ["meeting", "Meeting & Analyzer"], ["task", "Task·"], ["servicing", "Servicing"]].map(([k,l]) => <Button key={k} role="tab" aria-selected={tab === k} onClick={() => { if (k) setTab(k); }} variant={tab === k ? 'default' : 'ghost'} className="shrink-0 rounded-md px-3 py-1.5 text-sm font-medium">{l}</Button>)}
       </div>
       <div data-testid="active-dashboard-tab" className="min-w-0 space-y-4">
         {demo && <p className="text-xs font-semibold text-warning-foreground">DEMO · 30 Sep 2026</p>}
@@ -122,7 +140,8 @@ export function DashboardShell({ servicing, overview, header }: { servicing: Rea
           {filter.compare ? <div className="grid min-w-0 gap-6 xl:grid-cols-2">{(['A','B'] as const).map(side => <div key={side} className="min-w-0 space-y-3"><h2 className="border-b pb-2 font-semibold">Period {side} · {selectedPeriod(filter,now,side).from} — {selectedPeriod(filter,now,side).to}</h2><PsReportTab report={data} filter={{ ...filter, period:selectedPeriod(filter,now,side) }} loading={report.isLoading} error={report.isError} compareSide={side} /></div>)}</div> : <PsReportTab report={data} filter={periodFilter} loading={report.isLoading} error={report.isError} wonMtd={wonMtd} />}
           {overview}
         </>}
-        {(tab === 'meeting' || tab === 'task') && <Empty text={demo ? 'DEMO: stub (ตาม IA)' : 'เร็วๆ นี้ (ตาม IA)'} />}
+        {tab === 'meeting' && <MeetingTab />}
+        {tab === 'task' && <Empty text={demo ? 'DEMO: stub (ตาม IA)' : 'เร็วๆ นี้ (ตาม IA)'} />}
         {tab === 'servicing' && servicing}
       </div>
     </div>
@@ -147,6 +166,12 @@ function HeadlineStrip() {
   };
   const npsNow = npsValue(0), npsPrev = npsValue(-1);
   const q = useAcViews();
+  const meeting = useMeetingViews();
+  const completionRows = meeting.data?.views.v_meeting_completion ?? [];
+  const completionPeriodA = f.compare ? f.periodA : monthPeriod(now);
+  const completionPeriodB = f.compare ? f.periodB : monthPeriod(now,-1);
+  const completionA = meetingPercent(meetingScope(completionRows,f,completionPeriodA),'completed','scheduled','postponed_next_month');
+  const completionB = meetingPercent(meetingScope(completionRows,f,completionPeriodB),'completed','scheduled','postponed_next_month');
   const { lifecycles } = useContractLifecycle();
   const lines = (global.demo ? demoLifecycles() : lifecycles).filter(d => matchesBook({ service_line: d.service_line === 'MARCOM' ? 'Marcom' : d.service_line, ae_owner_id: global.demo ? d.bd_owner_id : ps.data?.views.v_ps_account_health.find(r => r.hotel_id === d.hotel_id)?.['ae_owner_id'] }, f));
   const cur = v_bdac_flow(lines, periodRange(f.compare ? f.periodA : selectedPeriod({ ...f, range:'mtd' }, now)));
@@ -173,6 +198,7 @@ function HeadlineStrip() {
       {churnNow === null ? <Tile label="Churn %" placeholder={ps.isError ? 'อ่านรายงานไม่ได้' : 'รอ Cloud Sync seed'} /> : <Tile label={'Churn %' + demoMark} tone="warn" value={`${churnNow.toFixed(1)}%`} mom={compare(churnNow,churnPrev,'pp')} />}
       {npsNow === null ? <Tile label="NPS" placeholder={ps.isError ? 'อ่านรายงานไม่ได้' : 'รอ Cloud Sync seed'} /> : <Tile label={'NPS' + demoMark} value={npsNow.toFixed(1)} mom={compare(npsNow,npsPrev)} />}
       <Tile label={"Pipeline health" + demoMark} placeholder="รอ PipeDrive" />
+      {completionA == null ? <Tile label="นัดสำเร็จ % (MTD)" placeholder={meeting.isError?'อ่านรายงานไม่ได้':'รอ Cloud Sync seed'} /> : <Tile label={'นัดสำเร็จ % (MTD)' + demoMark} value={`${completionA.toFixed(1)}%`} mom={compare(completionA,completionB,'pp')} />}
     </div>
   );
 }
