@@ -26,7 +26,7 @@ const RANGES: Record<RangeKey, string> = { mtd: "เดือนนี้", "3m"
 const MONTHS: Record<RangeKey, number | null> = { mtd: 1, "3m": 3, "6m": 6, "12m": 12, all: null };
 type Filter = { service: Service; range: RangeKey };
 const FilterCtx = createContext<Filter>({ service: "ALL", range: "6m" });
-const PsReportCtx = createContext<{ data?: PsReport; isLoading: boolean; isError: boolean }>({ isLoading: true, isError: false });
+const PsReportCtx = createContext<{ data?: PsReport | undefined; isLoading: boolean; isError: boolean }>({ isLoading: true, isError: false });
 
 type RowKey = "billing_period" | "service_line" | "outstanding" | "customer_count" | "invoice_count" | "grade" | "customer_id" | "customer_segment" | "hotel_id" | "amount" | "rank" | "previous_month_rank" | "lifetime_average_rank";
 type Row = Partial<Record<RowKey, string | number | boolean | null>>;

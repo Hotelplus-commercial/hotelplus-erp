@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, test as it } from 'bun:test';
 import { DEFAULT_RISK_RULES, riskReasons, ratio, psScope } from '../src/lib/ps-dashboard-types';
 describe('PS read-only reporting', () => {
   it('uses strict confirmed thresholds and OR risk', () => {
