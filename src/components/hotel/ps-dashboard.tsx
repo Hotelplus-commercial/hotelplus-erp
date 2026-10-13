@@ -126,7 +126,8 @@ export function PsDashboard({ assignment, part = "all" }: { assignment?: Assignm
     [hotels,clock,demo],
   );
 
-  const rows = allRows.filter(r => { const term=q.trim().toLowerCase(); return (!term || `${r.h.name} ${r.h.code}`.toLowerCase().includes(term)) && (status === 'all' || r.status === status) && matchAssignment(r.assignees,assignment); });
+  const window = selectedPeriod(filter,now);
+  const rows = allRows.filter(r => { const term=q.trim().toLowerCase(); return r.h.terms.some(t => (!t.start || t.start.toISOString().slice(0,10) <= window.to) && (!t.end || t.end.toISOString().slice(0,10) >= window.from)) && (!term || `${r.h.name} ${r.h.code}`.toLowerCase().includes(term)) && (status === 'all' || r.status === status) && matchAssignment(r.assignees,assignment); });
   const scopedHotels = rows.map(r => r.h);
   const totalTerms = scopedHotels.reduce((s, h) => s + h.terms.length, 0);
   const activeCount = rows.filter((r) => r.status === "active").length;

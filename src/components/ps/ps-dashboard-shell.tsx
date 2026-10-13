@@ -117,8 +117,8 @@ export function DashboardShell({ servicing, overview, header }: { servicing: Rea
       </div>
       <div data-testid="active-dashboard-tab" className="min-w-0 space-y-4">
         {demo && <p className="text-xs font-semibold text-warning-foreground">DEMO · 30 Sep 2026</p>}
-        {filter.compare && <DashboardCompare report={data} ac={demo ? demoAcViews() : undefined} deals={lines} tab={tab} />}
-        {tab === 'bdac' && <BdacTab source={lines} globalFilter={filter} clock={now.getTime()} />}
+        {filter.compare && <DashboardCompare report={data} ac={demo ? demoAcViews() : undefined} deals={lines} tab={tab === 'ac' ? '' : tab} />}
+        {tab === 'bdac' && (filter.compare ? <div className="grid min-w-0 gap-5 xl:grid-cols-2">{(['A','B'] as const).map(side => <div key={side} className="min-w-0"><h2 className="mb-3 text-sm font-semibold">Period {side}</h2><BdacTab source={lines} globalFilter={{...filter,periodA:selectedPeriod(filter,now,side)}} clock={now.getTime()} /></div>)}</div> : <BdacTab source={lines} globalFilter={filter} clock={now.getTime()} />)}
         {tab === 'ac' && <AcTab />}
         {tab === 'ps' && <>
           {filter.compare ? <div className="grid min-w-0 gap-6 xl:grid-cols-2">{(['A','B'] as const).map(side => <div key={side} className="min-w-0 space-y-3"><h2 className="border-b pb-2 font-semibold">Period {side} · {selectedPeriod(filter,now,side).from} — {selectedPeriod(filter,now,side).to}</h2><PsReportTab report={data} filter={{ ...filter, period:selectedPeriod(filter,now,side) }} loading={report.isLoading} error={report.isError} compareSide={side} /></div>)}</div> : <PsReportTab report={data} filter={periodFilter} loading={report.isLoading} error={report.isError} wonMtd={wonMtd} />}
@@ -162,7 +162,7 @@ function HeadlineStrip() {
   };
   const odNow = scope(od, f, 0, now), odPrev = scope(od, f, -1, now);
   const gNow = abShare(scope(gd, f, 0, now)), gPrev = abShare(scope(gd, f, -1, now));
-  const compare = (a: number, b: number | null, unit: 'pp' | '%' | '' = '') => f.compare ? <span className="text-xs text-muted-foreground">A {a.toLocaleString('th-TH', { maximumFractionDigits:1 })} · B {b == null ? '—' : b.toLocaleString('th-TH',{ maximumFractionDigits:1 })} · {deltaText(a,b,unit)}</span> : <Mom cur={a} prev={b} />;
+  const compare = (a: number, b: number | null, unit: 'pp' | '%' | '' = '') => f.compare ? <span className="text-xs text-muted-foreground">A {a.toLocaleString('th-TH', { maximumFractionDigits:1 })} · B {b == null ? '—' : b.toLocaleString('th-TH',{ maximumFractionDigits:1 })} · {deltaText(a,b,unit)}</span> : unit === 'pp' ? <span className="text-xs text-muted-foreground">{deltaText(a,b,'pp')}</span> : <Mom cur={a} prev={b} />;
   return (
     <div data-testid="headline-strip" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       {odNow.length ? <Tile tone="warn" label={"Collection outstanding" + demoMark} value={baht(sumOut(odNow))} mom={compare(sumOut(odNow), odPrev.length ? sumOut(odPrev) : null,'%')} />
@@ -171,10 +171,10 @@ function HeadlineStrip() {
         : <Tile label={"Grade A/B %" + demoMark} placeholder="รอ Cloud Sync seed" />}
       <Tile label={"Signed MTD" + demoMark} value={String(cur.signed)} mom={compare(cur.signed, global.demo && !lines.some(d => d.signed_at && new Date(d.signed_at).getTime() >= periodRange(f.periodB).from && new Date(d.signed_at).getTime() < periodRange(f.periodB).to) ? null : prev.signed)} />
       <Tile label={"Won MTD" + demoMark} value={String(cur.won)} mom={compare(cur.won, global.demo && prev.won === 0 ? null : prev.won)} />
-      <Tile label="MRR" placeholder="รอนิยาม" />
+      <Tile label={"MRR" + demoMark} placeholder="รอนิยาม" />
       {churnNow === null ? <Tile label="Churn %" placeholder={ps.isError ? 'อ่านรายงานไม่ได้' : 'รอ Cloud Sync seed'} /> : <Tile label={'Churn %' + demoMark} tone="warn" value={`${churnNow.toFixed(1)}%`} mom={compare(churnNow,churnPrev,'pp')} />}
       {npsNow === null ? <Tile label="NPS" placeholder={ps.isError ? 'อ่านรายงานไม่ได้' : 'รอ Cloud Sync seed'} /> : <Tile label={'NPS' + demoMark} value={npsNow.toFixed(1)} mom={compare(npsNow,npsPrev)} />}
-      <Tile label="Pipeline health" placeholder="รอ PipeDrive" />
+      <Tile label={"Pipeline health" + demoMark} placeholder="รอ PipeDrive" />
     </div>
   );
 }
@@ -203,7 +203,7 @@ function AcTab() {
   const latest = [...new Set(v['rank'].map((r) => String(r.billing_period)))].sort().at(-1);
   const ranks = v['rank'].filter((r) => String(r.billing_period) === latest).sort((a, b) => num(b['amount']) - num(a['amount']));
   return (
-    <div data-demo={global.demo || undefined} className="grid gap-4 lg:grid-cols-2">
+    <><DashboardCompare report={undefined} ac={q.data} deals={[]} tab={f.compare ? "ac" : ""} /><div data-demo={global.demo || undefined} className="grid gap-4 lg:grid-cols-2">
       <Panel title={"A · ลูกหนี้ & ภาพรวมใบแจ้งหนี้" + (global.demo ? " · DEMO" : "")} subtitle="v_ac_debtors · v_ac_invoices_breakdown">
         <div className="grid grid-cols-2 gap-3"><Tile label="ยอดค้าง" value={baht(outstanding)} tone="warn" /><Tile label="# ลูกหนี้" value={String(debtors)} /></div>
         {v.br.length ? <table className="mt-3 w-full text-sm"><thead><tr className="text-left text-xs text-muted-foreground"><th>กลุ่ม</th><th>ORM</th><th>Marcom</th></tr></thead><tbody>
@@ -245,6 +245,6 @@ function AcTab() {
       <Panel title={"E · ORM System Fee" + (global.demo ? " · DEMO" : "")} subtitle="v_ac_system_fee">
         <Tile label="ค่าระบบ ORM" placeholder="รอ email ingestion" />
       </Panel>
-    </div>
+    </div></>
   );
 }

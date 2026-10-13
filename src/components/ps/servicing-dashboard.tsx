@@ -129,7 +129,8 @@ function ServicingMonitor() {
   const s = useServicing();
   const { filter:global, demo, now:clock } = useDashboardGlobal();
   const source = demo ? demoOnboarding() : s.cards;
-  const book = source.filter(c => matchesBook({ service_line:c.service_line === 'MARCOM' ? 'Marcom' : c.service_line, hotel_id:c.property_id,hotel_name:c.property_name, ae_owner_id:c.assigned_ae_id,assigned_service_owner_id:c.assigned_service_owner_id,status:c.go_live_at ? 'ACTIVE' : null },global,true));
+  const period = selectedPeriod(global,clock ? new Date(clock) : new Date());
+  const book = source.filter(c => c.created_at.slice(0,10) <= period.to && (!c.go_live_at || c.go_live_at.slice(0,10) >= period.from) && matchesBook({ service_line:c.service_line === 'MARCOM' ? 'Marcom' : c.service_line, hotel_id:c.property_id,hotel_name:c.property_name, ae_owner_id:c.assigned_ae_id,assigned_service_owner_id:c.assigned_service_owner_id,status:c.go_live_at ? 'ACTIVE' : null },global,true));
   const [view, setView] = useState("pipeline");
   const [q, setQ] = useState("");
   const [line, setLine] = useState("ORM");
@@ -167,7 +168,7 @@ function ServicingMonitor() {
         </TabsList>
         <TabsContent value="pipeline">{demo ? <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{filtered.map(c => <article key={c.id} className="rounded-lg border p-4"><p className="text-[10px] font-bold text-warning-foreground">DEMO</p><h3 className="mt-2 text-sm font-semibold">{c.property_name} · {c.service_line}</h3><p className="mt-1 text-xs text-muted-foreground">{c.id} · {c.current_stage === 'go_live' ? 'Go Live' : 'New Property'}</p><p className="mt-2 text-xs">{c.created_at} → {c.go_live_at ?? 'in-flight'}</p></article>)}</div> : <CondensedPipeline cards={filtered} onOpen={setOpenCard} globalLine={global.service} />}</TabsContent>
         <TabsContent value="tracking"><TrackingView cards={filtered} onCompare={demo ? () => {} : setCompare} onOpen={demo ? () => {} : setOpenCard} /></TabsContent>
-        <TabsContent value="disparity"><div className="divide-y rounded-lg border px-4">{siblings.map((cards) => <div key={cards[0]?.property_id} className="flex flex-wrap items-center justify-between gap-2 py-3"><span className="text-sm font-medium">{cards[0]?.property_name}</span><div className="flex items-center gap-2"><DisparityBadge cards={cards} /><Button size="sm" variant="ghost" onClick={() => { const id = cards[0]?.property_id; if (id) setCompare(id); }}>Compare</Button></div></div>)}{!siblings.length && <p className="py-8 text-center text-sm text-muted-foreground">ไม่มีโรงแรมหลายบริการในผลลัพธ์นี้</p>}</div></TabsContent>
+        <TabsContent value="disparity"><div className="divide-y rounded-lg border px-4">{siblings.map((cards) => <div key={cards[0]?.property_id} className="flex flex-wrap items-center justify-between gap-2 py-3"><span className="text-sm font-medium">{cards[0]?.property_name}</span><div className="flex items-center gap-2">{!demo && <DisparityBadge cards={cards} />}<Button size="sm" variant="ghost" onClick={() => { const id = cards[0]?.property_id; if (id && !demo) setCompare(id); }}>Compare</Button></div></div>)}{!siblings.length && <p className="py-8 text-center text-sm text-muted-foreground">ไม่มีโรงแรมหลายบริการในผลลัพธ์นี้</p>}</div></TabsContent>
         <TabsContent value="kpi"><KpiView cards={filtered} /></TabsContent>
       </Tabs>
       {!demo && <CompareDialog propertyId={compare} onClose={() => setCompare(null)} />}

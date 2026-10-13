@@ -40,14 +40,14 @@ export function PsReportTab({ report, filter, loading, error, wonMtd, compareSid
   const renewals = psScope(views?.v_ps_renewal ?? [], filter, 'renewal_due_date', 0, now);
   const decided = renewals.filter(row => ['RENEWED','NOT_RENEWED','LOST'].includes(String(row.outcome)));
   const renewalSuccess = decided.length ? decided.filter(row => row.outcome === 'RENEWED').length / decided.length * 100 : null;
-  const lifetime = psScope(views?.v_ps_contract_lifetime ?? [], filter, 'none', 0, now);
+  const lifetime = psScope(views?.v_ps_contract_lifetime ?? [], filter, filter.period ? 'end_date' : 'none', 0, now);
   const ended = lifetime.filter(row => row.status === 'INACTIVE' && typeof row.age_days === 'number');
   const active = lifetime.filter(row => row.status === 'ACTIVE' && typeof row.age_days === 'number');
   const ages = ended.map(row => n(row, 'age_days'));
   const median = quantile(ages, .5), p25 = quantile(ages, .25), p75 = quantile(ages, .75);
   const cohort = psScope(views?.v_ps_onboard_cohort ?? [], filter, 'billing_period', 0, now).sort((a,b) => String(a.billing_period).localeCompare(String(b.billing_period)));
   const attach = psScope(views?.v_ps_attach_rate ?? [], filter, 'none');
-  const health = psScope(views?.v_ps_account_health ?? [], filter, 'none');
+  const health = compareSide === 'B' ? [] : psScope(views?.v_ps_account_health ?? [], filter, 'none');
   const hotels = useMemo(() => [...new Set(health.map(row => String(row.hotel_id)))].map(id => {
     const rows = health.filter(row => row.hotel_id === id);
     const first = rows[0] ?? {};
@@ -87,7 +87,7 @@ export function PsReportTab({ report, filter, loading, error, wonMtd, compareSid
     <Section demo={demo} title="⑥ Off-board"><Empty text="รอ source" /></Section>
     <div className="min-w-0 lg:col-span-2"><Section demo={demo} title="⑦a Risk Scorecard" right={<Button asChild variant="ghost" size="sm"><Link to="/ps/templates">กฎความเสี่ยง<ArrowUpRight className="size-3.5" /></Link></Button>}>
       {tiered.length ? <div className="grid gap-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]"><div className="grid gap-4"><Metric label="Attach-rate · โรงแรม ≥2 บริการ" value={fmt(ratio(attach,'attached_hotels','active_hotels'),'%')} /><Metric label="🔴 High-risk / Active" value={`${tierCount('high')} / ${tiered.length}`} /></div>
-        <ul className="divide-y rounded-lg border text-sm">{dims.map(({ d, count }) => <li key={d}><button type="button" onClick={() => setDimFilter(dimFilter === d ? null : d)} className={cn('flex w-full items-center justify-between px-3 py-2 text-left hover:bg-muted', dimFilter === d && 'bg-muted font-semibold')}><span>{DIM_LABEL[d]}</span><span className="tabular-nums">{count} →</span></button></li>)}<li className="flex items-center justify-between px-3 py-2 text-muted-foreground"><span>Flag</span><span>🔴 รอ Meeting tab</span></li></ul></div> : empty}
+        <ul className="divide-y rounded-lg border text-sm">{dims.map(({ d, count }) => <li key={d}><Button onClick={() => setDimFilter(dimFilter === d ? null : d)} variant="ghost" className={cn('flex h-auto w-full items-center justify-between rounded-none px-3 py-2 text-left hover:bg-muted', dimFilter === d && 'bg-muted font-semibold')}><span>{DIM_LABEL[d]}</span><span className="tabular-nums">{count} →</span></Button></li>)}<li className="flex items-center justify-between px-3 py-2 text-muted-foreground"><span>Flag</span><span>🔴 รอ Meeting tab</span></li></ul></div> : empty}
     </Section></div>
     {compareSide !== 'B' && <div className="min-w-0 lg:col-span-2"><Section demo={demo} title="⑦b Account Health" right={<div className="flex flex-wrap gap-1">{(['all','high','watch','healthy'] as const).map(t => <Button key={t} size="sm" variant={tierFilter === t ? 'default' : 'outline'} onClick={() => setTierFilter(t)}>{t === 'all' ? 'ทั้งหมด' : `${TIER[t].dot} ${TIER[t].label} ${tierCount(t)}`}</Button>)}</div>}>
       {dimFilter && <p className="mb-2 text-xs text-muted-foreground">กรองด้าน: {DIM_LABEL[dimFilter]} · <button type="button" className="underline" onClick={() => setDimFilter(null)}>ล้าง</button></p>}

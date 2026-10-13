@@ -14,7 +14,7 @@ import {
   type LineFilter, type Range,
 } from "@/lib/bdac-views";
 import type { ContractLifecycle } from '@/lib/contract-lifecycle';
-import { periodRange, selectedPeriod, type GlobalFilter } from '@/lib/ps-dashboard-global';
+import { periodRange, selectedPeriod, useDashboardGlobal, type GlobalFilter } from '@/lib/ps-dashboard-global';
 import { cn } from "@/lib/utils";
 
 const RANGES = { mtd: "เดือนนี้", "3m": "3 เดือน", "6m": "6 เดือน", all: "ทั้งหมด" } as const;
@@ -29,8 +29,9 @@ const owner = (id: string | null | undefined) => (id ? id.split("@")[0] ?? "—"
 const fmt = (n: number | null) => (n == null ? "—" : n.toFixed(1));
 
 function Section({ n, title, sub, children, className }: { n: string; title: string; sub?: string; children: React.ReactNode; className?: string }) {
+  const { demo } = useDashboardGlobal();
   return <section className={cn("bdac-section min-w-0", className)}>
-    <div className="flex items-center gap-2"><span className="bdac-section-number">{n}</span><h3>{title}</h3></div>
+    <div className="flex items-center gap-2"><span className="bdac-section-number">{n}</span><h3>{title}{demo ? " · DEMO" : ""}</h3></div>
     {sub && <p className="bdac-caption mt-1">{sub}</p>}
     <div className="mt-5">{children}</div>
   </section>;
@@ -85,7 +86,8 @@ export function BdacTab({ source, globalFilter, clock }: { source?: ContractLife
   const groups = byOwner ? [...new Set(cycleRows.map((c) => c.bd_owner_id))] : ["__all"];
 
   const pct = (n: number) => (cohort.cohort_size ? Math.round((n / cohort.cohort_size) * 100) : 0);
-  const open = (id: string) => void navigate({ to: "/ps/contract-dashboard", hash: `contract-card-${id}` });
+  const { demo } = useDashboardGlobal();
+  const open = (id: string) => !demo && void navigate({ to: "/ps/contract-dashboard", hash: `contract-card-${id}` });
 
   const stageRows = [6, 7, 8, 9, 10].map((stage) => ({ stage, cards: current.filter((c) => c.stage === stage) }));
   const approvedCards = stageRows[0]?.cards ?? [];
