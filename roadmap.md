@@ -1,3 +1,9 @@
+# PS Dashboard tab v1.0
+- [ ] Map existing source entities and add forward-only inactivation stamp.
+- [ ] Add read-only v_ps_* projections without new tables or sync changes.
+- [ ] Build seven PS panels and wire Churn/NPS; preserve Contract Overview and other tabs.
+- [ ] Verify filters, empty states, navigation, analytics and unchanged AC/BD-AC.
+
 # AC v2.0 tightening T1–T4
 - [x] Consolidate grade-derived scores and separate lifecycle from collection.
 - [x] Stamp stable hotel identity and rewire service-aware WS-2 attribution without Cloud sync changes; SQL owners await the separate WS-2 snapshot workstream.
