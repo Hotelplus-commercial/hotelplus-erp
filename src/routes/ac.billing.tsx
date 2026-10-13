@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { FileText, Link2, Receipt } from "lucide-react";
 import { useMemo, useState } from "react";
-import { bangkokDate, outstandingOf } from '@/lib/ac-v2-engine';
+import { bangkokDate, outstandingOf, paymentSummary } from '@/lib/ac-v2-engine';
+import { useHotelStore } from '@/lib/hotel-store';
 import { toast } from "sonner";
 
 import { Chip, Kpi, PartyBlock, Panel, TotalsBlock, fmtDate } from "@/components/crm/crm-ui";
@@ -44,6 +45,17 @@ function BillingPage() {
     liveLinks,
     actor,setActor,billingWaiting,recordPayment,
   } = useCrm();
+  const { runDaily } = useCrm();
+  const hotelStore = useHotelStore();
+  /* Daily processing: browser split docs only; debounced Cloud Sync pushes changed collections. */
+  const daily = () => {
+    const next = runDaily();
+    hotelStore.hotels.forEach((h) => {
+      const sum = paymentSummary(next, h);
+      if (h.latePayments !== sum.late || h.overdueMonths !== sum.unpaidMonths) hotelStore.patch(h.id, { latePayments: sum.late, overdueMonths: sum.unpaidMonths });
+    });
+    toast.success('ประมวลผลบัญชี ' + bangkokDate());
+  };
 
   const [year, setYear] = useState(String(lastPeriod.year));
   const [month, setMonth] = useState(String(lastPeriod.month));
@@ -99,7 +111,7 @@ function BillingPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Select value={actor} onValueChange={setActor}><SelectTrigger className="w-52" aria-label="ผู้บันทึกบัญชี"><SelectValue /></SelectTrigger><SelectContent>{crmUsers.map(u=><SelectItem key={u.email} value={u.email}>{u.name}</SelectItem>)}</SelectContent></Select>
-        <p className="text-xs text-muted-foreground">ข้อมูลบันทึกในเบราว์เซอร์และส่งขึ้น Cloud อัตโนมัติ (ดูปุ่ม Cloud Sync มุมขวาบน)</p>
+        <div className="flex flex-wrap items-center gap-2"><p className="text-xs text-muted-foreground">ข้อมูลบันทึกในเบราว์เซอร์และส่งขึ้น Cloud อัตโนมัติ (ดูปุ่ม Cloud Sync มุมขวาบน)</p><Button variant="outline" size="sm" onClick={daily}>ประมวลผลงานรายวัน</Button></div>
       </div>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Kpi label="คำขอออกใบแจ้งหนี้" value={invRequests.filter((r) => r.status !== "completed").length} />
