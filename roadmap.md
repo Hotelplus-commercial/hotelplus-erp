@@ -1,3 +1,8 @@
+# Meeting & Analyzer v1.0
+- [ ] Add safe read-only meeting views against existing sources; no tables, fields or source sync changes.
+- [ ] Build six sections, global filters/compare, completion headline and shared-spine demo.
+- [ ] Verify counts, attribution, source navigation, empty states and unchanged workflow tests.
+
 # PS Dashboard v1.2 patch
 - [x] Consolidate sticky global filters and ownership scoping across reporting surfaces.
 - [x] Add display-only A/B comparison, presets, custom periods and missing-history handling.
