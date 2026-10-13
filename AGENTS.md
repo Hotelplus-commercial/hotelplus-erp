@@ -9,15 +9,15 @@
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
 
-- Servicing has one data store and one role-aware guided drawer (ServicingCardDrawer); every surface (AE Zone 3, Property Info, My Tasks, menu 8, PS Dashboard read-only) opens that drawer instead of its own board, so work is never duplicated.
+- All Servicing surfaces (Zone 3, Property Info, My Tasks, menu 8, read-only PS Dashboard) share one store and ServicingCardDrawer; avoid duplicate work.
 - Zone 3 navigates to the existing menu-8 full Pipeline with a card/mode hash before opening the shared drawer; only the drawer advances stages, preserving one working board and direct My Day entry.
 - Servicing stage events are append-only and created by gated in-app actions; historical demo data remains separate from live action timestamps.
 - Servicing role flags are workflow simulation only, not authentication or authorization; do not treat them as production security.
-- Servicing UAT test mode lives in the shared provider and is hard-disabled outside development; it bypasses checklist ticking roles only, preserving read-only surfaces and every other workflow permission to prevent production bypass.
+- Shared development-only Servicing UAT bypasses checklist ticking roles only, preserving read-only surfaces and all other permissions; prevent production bypass.
 - Servicing remains a browser-local prototype until authenticated shared persistence is explicitly scoped; Cloud activation alone does not migrate workflow data.
 - Servicing links are service-stage-only, HTTP(S)-only and hydrate missing scaffold fields without replacing local data; preserve native work and safe navigation.
 
-- Contract Prop Info (display stage 10, lifecycle step 11) uses the root ServicingProvider and the manual-card initializer; deduplicate by contract reference/service line before recording handoff so menu 8 reads the same cards and no legacy shadow write can double-create.
+- Prop Info (display 10, lifecycle 11) uses root ServicingProvider/manual initializer; deduplicate contract reference/service before handoff, preventing shadow cards.
 - Service checklists are instantiated per card from PM-managed templates by service variant and never gate stage advance; explicit handover and appointment gates are evaluated separately.
 - Pipeline columns include the conditional pending stage, while drawer rails include it only for cards with a pending event or current pending stage; keeps parked cards visible without changing the default forward path.
 - ORM handover uses one per-card OTA scope; Specialist row-1 (4 parts) runs in parallel from Approved to Final Setup (ceiling), Completed (Handover) sits after Final Setup for row-2 acceptance + Survey #1 before System Training; Marcom has no Completed stage. Billing start and Survey #2 fire only from the explicit customer-email action.
@@ -28,7 +28,7 @@
 - AC billing uses one pure accounting engine for report arrival, AC confirmation and the authenticated daily callback; this keeps tax, grade and idempotency rules consistent across entry points.
 - AC views use canonical invoices, stable hotel IDs and WS-2 service owners, never contract/subscription snapshots; retain column types and no extra sync (WS-2 SQL awaits a hotels snapshot).
 - AC payment summaries use one pure recurring-grade selector; lifecycle ignores debt and collection derivation preserves manual terminal events until explicit reactivation, preventing contradictory scores and statuses.
-- Stable hotel IDs are resolved uniquely at canonical contract ingestion/backfill and copied to invoices; unresolved or ambiguous identity is never guessed in attribution.
+- Canonical ingestion/backfill copies uniquely resolved hotel IDs to invoices; never guess ambiguous attribution.
 - Canonical document saves use revision compare-and-swap with a retained local backup; conflicts stop synchronization rather than overwrite another writer's changes.
 - The legacy /ac/operations URL redirects to the original /ac/billing page so saved links do not open a removed console.
 - BD-AC charts consume only existing view projections and use a scoped theme backed by global CSS tokens; this preserves analytics, workflow writes and unrelated module styling.

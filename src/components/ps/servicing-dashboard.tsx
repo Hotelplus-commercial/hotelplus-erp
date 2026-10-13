@@ -847,13 +847,13 @@ function KpiView({ cards }: { cards?: OnboardingCard[] }) {
                   <td className="tabular-nums">{d(r.overall)}</td>
                   <td>{r.bottleneck ? TRACK_LABEL[r.bottleneck] : "—"}</td>
                   <td>{r.outlier ? "✕ Outlier" : "In range"}</td>
-                  <td><WorkLink card={r.card} onOpen={setKpiOpen} /></td>
+                  <td>{!demo && <WorkLink card={r.card} onOpen={setKpiOpen} />}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        <ServicingCardDrawer key={kpiOpen ?? "closed"} id={kpiOpen} readOnly onClose={() => setKpiOpen(null)} />
+        {!demo && <ServicingCardDrawer key={kpiOpen ?? "closed"} id={kpiOpen} readOnly onClose={() => setKpiOpen(null)} />}
       </Panel>
     </div>
   );
