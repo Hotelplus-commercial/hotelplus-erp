@@ -1,15 +1,7 @@
 import { Link } from "@tanstack/react-router";
-import { AlertCircle, CalendarX, Clock, Pencil, Search } from "lucide-react";
-import { useMemo, useState } from "react";
+import { AlertCircle, CalendarX, Clock, Pencil } from "lucide-react";
+import { useMemo } from "react";
 
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { formatDate, statusMeta, type HotelStatus } from "@/lib/hotel-profile";
 import {
   aeDirectory,

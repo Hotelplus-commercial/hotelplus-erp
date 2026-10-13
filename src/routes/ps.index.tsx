@@ -5,7 +5,6 @@ import { useState } from "react";
 import { Chip, Panel } from "@/components/crm/crm-ui";
 import { PageHeader } from "@/components/erp-ui";
 import { PsDashboard } from "@/components/hotel/ps-dashboard";
-import { PsDashboardFilters } from "@/components/ps/ps-dashboard-filters";
 import { ServicingDashboardView } from "@/components/ps/servicing-dashboard";
 import { NewContractUpdates } from "@/components/ps/renewal-ui";
 import { ActivityFeedList, useAutoRefresh } from "@/components/ps/v4-ui";
@@ -19,7 +18,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useMeetingMgmt } from "@/lib/orm-meeting";
-import type { AssignmentFilter } from "@/lib/ps-renewal";
 import { activityFeed, feedTypes } from "@/lib/ps-v4";
 
 const description =
@@ -41,11 +39,6 @@ export const Route = createFileRoute("/ps/")({
 
 function PsDashboardPage() {
   const { role } = useMeetingMgmt();
-  const [filter, setFilter] = useState<AssignmentFilter>({
-    role: "none",
-    teams: [],
-    people: [],
-  });
 
   return (
     <div className="flex flex-col gap-4">

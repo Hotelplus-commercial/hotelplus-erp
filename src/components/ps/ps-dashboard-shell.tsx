@@ -15,7 +15,6 @@ import { readPsDashboard } from '@/lib/ps-dashboard.functions';
 import { latestPeriod, psScope, ratio, type PsReport } from '@/lib/ps-dashboard-types';
 import { buildDemoReport, demoAcViews, demoLifecycles, DEMO_NOW } from '@/lib/ps-demo-fixture';
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { readAcDashboard } from "@/lib/ac-dashboard.functions";
 import { v_bdac_flow } from "@/lib/bdac-views";
 import { useContractLifecycle } from "@/lib/contract-lifecycle";
@@ -24,10 +23,6 @@ import { DashboardGlobalFilters } from './dashboard-global-filters';
 import { DashboardCompare } from './dashboard-compare';
 import { cn } from "@/lib/utils";
 
-type Service = "ALL" | "ORM" | "Marcom";
-type RangeKey = "mtd" | "3m" | "6m" | "12m" | "all";
-const RANGES: Record<RangeKey, string> = { mtd: "เดือนนี้", "3m": "3 เดือน", "6m": "6 เดือน", "12m": "12 เดือน", all: "ทั้งหมด" };
-const MONTHS: Record<RangeKey, number | null> = { mtd: 1, "3m": 3, "6m": 6, "12m": 12, all: null };
 type Filter = GlobalFilter;
 const FilterCtx = createContext<Filter>(defaultGlobalFilter);
 const PsReportCtx = createContext<{ data?: PsReport | undefined; isLoading: boolean; isError: boolean }>({ isLoading: true, isError: false });

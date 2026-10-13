@@ -57,7 +57,7 @@ import {
   handoverProgress,
 } from "@/lib/ps-servicing";
 import { useDashboardGlobal, matchesBook, selectedPeriod } from '@/lib/ps-dashboard-global';
-import { demoOnboarding } from '@/lib/ps-demo-fixture';
+import { demoOnboarding, demoOnboardingSums } from '@/lib/ps-demo-fixture';
 import { cn } from "@/lib/utils";
 import { Ws2Panel } from "@/components/ps/ws2-panel";
 import { ROLE_DISPLAY, greetingName, useTemplateMgmt } from "@/lib/email-templates";
@@ -350,8 +350,9 @@ function ExternalAppButton({ card }: { card: OnboardingCard }) {
 }
 
 function TrackingView({ cards, onCompare, onOpen }: { cards: OnboardingCard[]; onCompare: (id: string) => void; onOpen: (id: string) => void }) {
+  const { demo, now } = useDashboardGlobal();
   const groups = [...new Set(cards.map((card) => card.property_id))].map((id) => ({ id, cards: cards.filter((card) => card.property_id === id) }));
-  return <div className="divide-y rounded-lg border">{groups.map(({ id, cards: group }) => <div key={id} className="p-4"><div className="flex flex-wrap items-center justify-between gap-2"><p className="font-semibold">{group[0]?.property_name}</p><div className="flex items-center gap-2"><DisparityBadge cards={group} />{group.length > 1 && <Button size="sm" variant="ghost" onClick={() => onCompare(id)}>Compare</Button>}</div></div><div className="mt-2 divide-y">{group.map((card) => <div key={card.id} className="flex flex-wrap items-center gap-3 py-2 text-sm"><Chip tone={card.service_line === "ORM" ? "info" : "muted"}>{card.service_line}</Chip><span className="flex-1">{STAGE_LABEL[card.current_stage]}</span><span className="font-mono text-xs text-muted-foreground">Day {currentDay(card)}</span><WorkLink card={card} onOpen={onOpen} /></div>)}</div></div>)}{!groups.length && <p className="p-8 text-center text-sm text-muted-foreground">ไม่พบการ์ด</p>}</div>;
+  return <div className="divide-y rounded-lg border">{groups.map(({ id, cards: group }) => <div key={id} className="p-4"><div className="flex flex-wrap items-center justify-between gap-2"><p className="font-semibold">{group[0]?.property_name}</p><div className="flex items-center gap-2">{!demo && <DisparityBadge cards={group} />}{!demo && group.length > 1 && <Button size="sm" variant="ghost" onClick={() => onCompare(id)}>Compare</Button>}</div></div><div className="mt-2 divide-y">{group.map((card) => <div key={card.id} className="flex flex-wrap items-center gap-3 py-2 text-sm"><Chip tone={card.service_line === "ORM" ? "info" : "muted"}>{card.service_line}</Chip><span className="flex-1">{STAGE_LABEL[card.current_stage]}</span><span className="font-mono text-xs text-muted-foreground">Day {demo ? daysBetween(card.created_at,card.go_live_at ?? now) : currentDay(card)}</span>{!demo && <WorkLink card={card} onOpen={onOpen} />}</div>)}</div></div>)}{!groups.length && <p className="p-8 text-center text-sm text-muted-foreground">ไม่พบการ์ด</p>}</div>;
 }
 
 function trackForStage(_card: OnboardingCard, stage: string): OwnerTrack {
@@ -739,12 +740,13 @@ function CompareDialog({ propertyId, onClose }: { propertyId: string | null; onC
 
 function KpiView({ cards }: { cards?: OnboardingCard[] }) {
   const s = useServicing();
+  const { demo, filter:global } = useDashboardGlobal();
   const [kpiOpen, setKpiOpen] = useState<string | null>(null);
   const [line, setLine] = useState<ServiceLine>("ORM");
   const rows = (cards ?? s.cards)
-    .filter((c) => c.service_line === line && c.go_live_at)
+    .filter((c) => c.service_line === (global.service === 'Marcom' ? 'MARCOM' : global.service === 'ORM' ? 'ORM' : line) && c.go_live_at)
     .map((c) => {
-      const v = sums(c, eventsOf(s, c.id));
+      const v = demo ? demoOnboardingSums(c.id) : sums(c, eventsOf(s, c.id));
       return { card: c, ...v, bottleneck: bottleneck(v), x: new Date(c.go_live_at ?? c.created_at).getTime(), y: v.overall ?? 0 };
     });
   const ys = rows.map((r) => r.y).sort((a, b) => a - b);
@@ -759,12 +761,12 @@ function KpiView({ cards }: { cards?: OnboardingCard[] }) {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
-        <Tabs value={line} onValueChange={(v) => setLine(v as ServiceLine)}>
+        {global.service === "ALL" && <Tabs value={line} onValueChange={(v) => setLine(v as ServiceLine)}>
           <TabsList>
             <TabsTrigger value="ORM">ORM</TabsTrigger>
             <TabsTrigger value="MARCOM">Marcom</TabsTrigger>
           </TabsList>
-        </Tabs>
+        </Tabs>}
         <p className="font-display text-lg font-bold">
           median D{Math.round(med)} · {outliers} outliers
         </p>

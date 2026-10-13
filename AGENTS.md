@@ -15,18 +15,18 @@
 - Servicing role flags are workflow simulation only, not authentication or authorization; do not treat them as production security.
 - Servicing UAT test mode lives in the shared provider and is hard-disabled outside development; it bypasses checklist ticking roles only, preserving read-only surfaces and every other workflow permission to prevent production bypass.
 - Servicing remains a browser-local prototype until authenticated shared persistence is explicitly scoped; Cloud activation alone does not migrate workflow data.
-- Servicing cross-app links share one service-stage-only control, hydrate missing scaffold fields without replacing local data, and allow only HTTP(S) destinations; this keeps native work intact and prevents unsafe navigation.
+- Servicing links are service-stage-only, HTTP(S)-only and hydrate missing scaffold fields without replacing local data; preserve native work and safe navigation.
 
 - Contract Prop Info (display stage 10, lifecycle step 11) uses the root ServicingProvider and the manual-card initializer; deduplicate by contract reference/service line before recording handoff so menu 8 reads the same cards and no legacy shadow write can double-create.
 - Service checklists are instantiated per card from PM-managed templates by service variant and never gate stage advance; explicit handover and appointment gates are evaluated separately.
 - Pipeline columns include the conditional pending stage, while drawer rails include it only for cards with a pending event or current pending stage; keeps parked cards visible without changing the default forward path.
 - ORM handover uses one per-card OTA scope; Specialist row-1 (4 parts) runs in parallel from Approved to Final Setup (ceiling), Completed (Handover) sits after Final Setup for row-2 acceptance + Survey #1 before System Training; Marcom has no Completed stage. Billing start and Survey #2 fire only from the explicit customer-email action.
-- WS-2 property form data lives in its own browser-local store (src/lib/ws2-store.tsx) keyed by Hotel ID, with templates generated as JSON field dictionaries under src/lib/ws2/templates; it only reads cards and never gates Servicing stages, keeping the pipeline engine untouched.
-- Template Management lives only in the PS Templates menu (src/components/ps/template-catalogue.tsx + src/lib/email-templates.tsx); cards show checklists tick-only, and emails snapshot rendered text at send so past sends never change.
+- WS-2 is browser-local, keyed by Hotel ID with JSON field dictionaries; it reads cards without gating Servicing, preserving the pipeline engine.
+- Template Management lives only in PS Templates; card checklists are tick-only and emails snapshot rendered text at send, preserving past sends.
 - AC v1 is retired; original CRM IDs/shapes use split Cloud documents with revision CAS, avoiding a parallel ledger.
 - Cloud mirror writes are open in test mode (push-only, no payload reads); close before production. AC daily processing is a manual browser action on the split write-layer with no cloud I/O; the server callback is a no-op so nothing reads the deprecated combined crm document.
 - AC billing uses one pure accounting engine for report arrival, AC confirmation and the authenticated daily callback; this keeps tax, grade and idempotency rules consistent across entry points.
-- AC reporting views project canonical invoices with stable hotel IDs and service-aware WS-2 profile owners; retain legacy view column types, and never use contract/subscription owner snapshots as the assignment master. WS-2 SQL projection awaits a future snapshot within the hotels document; this pass never adds sync.
+- AC views use canonical invoices, stable hotel IDs and WS-2 service owners, never contract/subscription snapshots; retain column types and no extra sync (WS-2 SQL awaits a hotels snapshot).
 - AC payment summaries use one pure recurring-grade selector; lifecycle ignores debt and collection derivation preserves manual terminal events until explicit reactivation, preventing contradictory scores and statuses.
 - Stable hotel IDs are resolved uniquely at canonical contract ingestion/backfill and copied to invoices; unresolved or ambiguous identity is never guessed in attribution.
 - Canonical document saves use revision compare-and-swap with a retained local backup; conflicts stop synchronization rather than overwrite another writer's changes.
@@ -38,3 +38,6 @@
 - PS uses safe paginated v_ps_* reports; absent mirrors stay pending, not inferred from signing status.
 - Risk rules use TemplateMgmtProvider and simulated PM/Admin; dashboard never writes business state.
 - Renewal effective end is forward-only; never guess contract/service linkage from hotel-only mocks.
+
+- Dashboard filters and A/B periods share one React context and pure selectors; ownershipless aggregates stay empty under ownership lenses rather than imply attribution.
+- Preview demo adapters derive PS/AC/BD-AC/portfolio/servicing from one bundled spine, with URL/state switching and no provider writes; this keeps cross-tab invariants and fresh-share rendering deterministic.

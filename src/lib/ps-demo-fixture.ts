@@ -121,3 +121,9 @@ export function demoOnboarding(): OnboardingCard[] {
 export function demoHotels(): HotelProfile[] {
   return [...new Set(contracts.map(c => c.hotel))].map(hotel => ({ id: hid(hotel), code: hid(hotel), name: hotel, contractorType: '', overdueMonths: 0, latePayments: 0, mainContact: { id: hid(hotel), fullName: '', nickname: '', position: '', phone: '', email: '', permissions: [] }, acSaved: true, model: '', registration: '', rooms: '', terms: contracts.filter(c => c.hotel === hotel).map(c => ({ id: c.id, start: new Date(c.start), end: new Date(c.end), services: [{ id: c.id, category: c.line === 'ORM' ? 'orm' : 'marcom', serviceType: c.line, periodStart: new Date(c.start), periodEnd: new Date(c.end), monthlyFee: '', commission: '', platforms: [], guarantee: 'no', guaranteeAmount: '', marcomFee: '', productionItem: '', productionAmount: '', upsells: [] }] })), termination: { active: false, fee: '', reason: '' }, otherContacts: [], psSaved: true, system: { system: '', hplusPays: false, monthlyCost: '', payments: {} } }));
 }
+
+export function demoOnboardingSums(id: string) {
+  const index = ['F-A','F-B','F-C','F-D'].indexOf(id);
+  const f = FINISHED[index];
+  return f ? { ae:f[3], specialist:f[4], service:f[5] ?? f[6], overall:day(f[0],f[1]) } : { ae:null,specialist:null,service:null,overall:null };
+}
