@@ -111,4 +111,4 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [x] Per-collection docs, debounce + Sync now, revision lock with keep-cloud/force, views repointed
 - [x] 2-tab conflict test
 - [ ] One-time seed from the machine with complete data (user action)
-- [ ] AC daily job still reads legacy `crm` doc — repoint in a later AC pass
+- [x] AC daily job repointed to browser split docs; button restored
