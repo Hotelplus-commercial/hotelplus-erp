@@ -1,6 +1,7 @@
 /* Template Management v1.0 — email masters (draft → publish) + immutable send snapshots + checklist-template version meta.
  * Browser-local prototype; role flags are simulation, not authorization. */
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { DEFAULT_RISK_RULES, type RiskRules } from './ps-dashboard-types';
 
 export type EmailKey = "billing_survey2" | "go_live" | "post_meeting" | "production_report" | "ac_live_link";
 export type EmailVersion = { version: number; subject: string; body: string; published_at: string; published_by: string };
@@ -65,11 +66,12 @@ const SEED: EmailTemplate[] = [
 export const fillPlaceholders = (text: string, vars: Record<string, string>) => text.replace(/\{(\w+)\}/g, (m, k: string) => vars[k] ?? m);
 export const activeEmail = (t: EmailTemplate) => t.versions[t.versions.length - 1]!;
 
-type State = { templates: EmailTemplate[]; sent: EmailSent[]; checklist: ChecklistMeta; surveys: SurveyDef[]; surveyStamps: Record<string, number> };
+type State = { templates: EmailTemplate[]; sent: EmailSent[]; checklist: ChecklistMeta; surveys: SurveyDef[]; surveyStamps: Record<string, number>; riskRules: RiskRules; riskUpdated?: { by: string; at: string } };
 const KEY = "meridia.ps.templates.v1";
-const initial = (): State => ({ templates: SEED, sent: [], checklist: { version: 1, published_at: SEED_AT, published_by: "System" }, surveys: SURVEY_SEED, surveyStamps: {} });
+const initial = (): State => ({ templates: SEED, sent: [], checklist: { version: 1, published_at: SEED_AT, published_by: "System" }, surveys: SURVEY_SEED, surveyStamps: {}, riskRules: DEFAULT_RISK_RULES });
 
 type Ctx = State & {
+  saveRiskRules: (rules: RiskRules, role: string) => boolean;
   render: (key: EmailKey, vars: Record<string, string>) => { subject: string; body: string; version: number };
   saveDraft: (key: EmailKey, draft: { subject: string; body: string }, by: string) => void;
   discardDraft: (key: EmailKey) => void;
@@ -101,6 +103,11 @@ export function TemplateMgmtProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<Ctx>(() => ({
     ...state,
+    saveRiskRules: (rules, role) => {
+      if (!canManageTemplates(role) || !Number.isFinite(rules.monthlySurveyBelow) || rules.monthlySurveyBelow < 0 || rules.monthlySurveyBelow > 10 || !Number.isFinite(rules.monthlyBillingBelow) || !Number.isFinite(rules.monthlyBillingAbove) || rules.monthlyBillingBelow < 0 || rules.monthlyBillingAbove <= rules.monthlyBillingBelow || rules.grades.some(g => !['A', 'B', 'C', 'D'].includes(g))) return false;
+      setState(s => ({ ...s, riskRules: { ...rules, grades: [...rules.grades] }, riskUpdated: { by: ROLE_DISPLAY[role] ?? role, at: new Date().toISOString() } }));
+      return true;
+    },
     render,
     saveDraft: (key, draft, by) => setState((s) => ({ ...s, templates: s.templates.map((t) => t.key === key ? { ...t, draft, updated_by: by, updated_at: new Date().toISOString() } : t) })),
     discardDraft: (key) => setState((s) => ({ ...s, templates: s.templates.map((t) => t.key === key ? { ...t, draft: null } : t) })),

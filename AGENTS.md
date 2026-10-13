@@ -23,7 +23,7 @@
 - ORM handover uses one per-card OTA scope; Specialist row-1 (4 parts) runs in parallel from Approved to Final Setup (ceiling), Completed (Handover) sits after Final Setup for row-2 acceptance + Survey #1 before System Training; Marcom has no Completed stage. Billing start and Survey #2 fire only from the explicit customer-email action.
 - WS-2 property form data lives in its own browser-local store (src/lib/ws2-store.tsx) keyed by Hotel ID, with templates generated as JSON field dictionaries under src/lib/ws2/templates; it only reads cards and never gates Servicing stages, keeping the pipeline engine untouched.
 - Template Management lives only in the PS Templates menu (src/components/ps/template-catalogue.tsx + src/lib/email-templates.tsx); cards show checklists tick-only, and emails snapshot rendered text at send so past sends never change.
-- AC v1 duplicate ledger is retired; original CRM entities and IDs are persisted in one versioned Cloud document with compare-and-swap transactions, preserving existing entity shapes and avoiding a second parallel accounting model.
+- AC v1 is retired; original CRM IDs/shapes use split Cloud documents with revision CAS, avoiding a parallel ledger.
 - Cloud mirror writes are open in test mode (push-only, no payload reads); close before production. AC daily processing is a manual browser action on the split write-layer with no cloud I/O; the server callback is a no-op so nothing reads the deprecated combined crm document.
 - AC billing uses one pure accounting engine for report arrival, AC confirmation and the authenticated daily callback; this keeps tax, grade and idempotency rules consistent across entry points.
 - AC reporting views project canonical invoices with stable hotel IDs and service-aware WS-2 profile owners; retain legacy view column types, and never use contract/subscription owner snapshots as the assignment master. WS-2 SQL projection awaits a future snapshot within the hotels document; this pass never adds sync.
@@ -33,4 +33,8 @@
 - The legacy /ac/operations URL redirects to the original /ac/billing page so saved links do not open a removed console.
 - BD-AC charts consume only existing view projections and use a scoped theme backed by global CSS tokens; this preserves analytics, workflow writes and unrelated module styling.
 
-- Cloud Sync Level A: stores push one crm_documents row per collection (namespace crm:<collection>|hotels|ws2) via src/lib/cloud-sync.ts with revision lock; server fns never return payloads (no pull). ws2 mirror excludes restricted credentials.
+- Level A pushes crm:<collection>|hotels|ws2 with revision lock; no payload pull; WS2 excludes credentials.
+
+- PS uses safe paginated v_ps_* reports; absent mirrors stay pending, not inferred from signing status.
+- Risk rules use TemplateMgmtProvider and simulated PM/Admin; dashboard never writes business state.
+- Renewal effective end is forward-only; never guess contract/service linkage from hotel-only mocks.

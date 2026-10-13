@@ -10,6 +10,9 @@ import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 
 import { Chip, Panel } from "@/components/crm/crm-ui";
 import { BdacTab } from "@/components/ps/bdac-tab";
+import { PsReportTab } from '@/components/ps/ps-report-tab';
+import { readPsDashboard } from '@/lib/ps-dashboard.functions';
+import { psScope, ratio, type PsReport } from '@/lib/ps-dashboard-types';
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { readAcDashboard } from "@/lib/ac-dashboard.functions";
@@ -23,6 +26,7 @@ const RANGES: Record<RangeKey, string> = { mtd: "เดือนนี้", "3m"
 const MONTHS: Record<RangeKey, number | null> = { mtd: 1, "3m": 3, "6m": 6, "12m": 12, all: null };
 type Filter = { service: Service; range: RangeKey };
 const FilterCtx = createContext<Filter>({ service: "ALL", range: "6m" });
+const PsReportCtx = createContext<{ data?: PsReport | undefined; isLoading: boolean; isError: boolean }>({ isLoading: true, isError: false });
 
 type RowKey = "billing_period" | "service_line" | "outstanding" | "customer_count" | "invoice_count" | "grade" | "customer_id" | "customer_segment" | "hotel_id" | "amount" | "rank" | "previous_month_rank" | "lifetime_average_rank";
 type Row = Partial<Record<RowKey, string | number | boolean | null>>;
@@ -70,10 +74,13 @@ const Empty = ({ text = "รอ Cloud Sync seed — ยังไม่มีข�
 );
 
 export function DashboardShell({ servicing, overview }: { servicing: ReactNode; overview?: ReactNode }) {
+  const read = useServerFn(readPsDashboard);
+  const ps = useQuery({ queryKey: ['ps-dashboard-views'], queryFn: () => read(), staleTime: 60_000 });
   const [filter, setFilter] = useState<Filter>({ service: "ALL", range: "6m" });
   const [tab, setTab] = useState("bdac");
   return (
     <FilterCtx.Provider value={filter}>
+      <PsReportCtx.Provider value={ps}>
       <div className="flex flex-col gap-4">
         <HeadlineStrip />
         <div className="flex flex-wrap items-center gap-2 rounded-xl border bg-card p-2">
@@ -88,17 +95,18 @@ export function DashboardShell({ servicing, overview }: { servicing: ReactNode; 
           <span className="text-[11px] text-muted-foreground">"ไม่ระบุบริการ" นับเฉพาะ "ทั้งหมด"</span>
         </div>
         <div className="flex gap-1 overflow-x-auto rounded-xl border bg-card p-1" role="tablist">
-          {[["bdac", "BD-AC"], ["ac", "AC"], ["ps", "PS·"], ["meeting", "Meeting·"], ["task", "Task·"], ["servicing", "Servicing"]].map(([k, l]) => (
-            <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k!)}
-              className={cn("shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium", tab === k ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted")}>{l}</button>
+          {[["bdac", "BD-AC"], ["ac", "AC"], ["ps", "PS"], ["meeting", "Meeting·"], ["task", "Task·"], ["servicing", "Servicing"]].map(([k, l]) => (
+            <Button key={k} role="tab" aria-selected={tab === k} onClick={() => { if (k) setTab(k); }} variant={tab === k ? 'default' : 'ghost'}
+              className="shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium">{l}</Button>
           ))}
         </div>
         {tab === "bdac" && <BdacTab />}
         {tab === "ac" && <AcTab />}
-        {tab === "ps" && overview}
+        {tab === "ps" && <><PsReportTab report={ps.data} filter={filter} loading={ps.isLoading} error={ps.isError} />{overview}</>}
         {(tab === "meeting" || tab === "task") && <Empty text="เร็วๆ นี้ (ตาม IA)" />}
         {tab === "servicing" && servicing}
       </div>
+      </PsReportCtx.Provider>
     </FilterCtx.Provider>
   );
 }
@@ -106,6 +114,15 @@ export function DashboardShell({ servicing, overview }: { servicing: ReactNode; 
 
 function HeadlineStrip() {
   const f = useContext(FilterCtx);
+  const ps = useContext(PsReportCtx);
+  const churnNow = ratio(psScope(ps.data?.views.v_ps_churn_monthly ?? [], f), 'out_count', 'active_at_start');
+  const churnPrev = ratio(psScope(ps.data?.views.v_ps_churn_monthly ?? [], f, 'billing_period', -1), 'out_count', 'active_at_start');
+  const npsValue = (shift: number) => {
+    const rows = psScope(ps.data?.views.v_ps_nps ?? [], f, 'billing_period', shift);
+    const count = rows.reduce((s,r) => s + Number(r.responses ?? 0), 0);
+    return count > 0 ? rows.reduce((s,r) => s + Number(r.promoters ?? 0) - Number(r.detractors ?? 0), 0) / count * 100 : null;
+  };
+  const npsNow = npsValue(0), npsPrev = npsValue(-1);
   const q = useAcViews();
   const { lifecycles } = useContractLifecycle();
   const lines = filterLine(lifecycles, f.service === "ALL" ? "ALL" : f.service === "ORM" ? "ORM" : "MARCOM");
@@ -129,8 +146,8 @@ function HeadlineStrip() {
       <Tile label="Signed MTD" value={String(cur.signed)} mom={<Mom cur={cur.signed} prev={prev.signed} />} />
       <Tile label="Won MTD" value={String(cur.won)} mom={<Mom cur={cur.won} prev={prev.won} />} />
       <Tile label="MRR" placeholder="รอนิยาม" />
-      <Tile label="Churn" placeholder="รอ PS tab" />
-      <Tile label="NPS" placeholder="รอ survey / meeting" />
+      {churnNow === null ? <Tile label="Churn %" placeholder={ps.isError ? 'อ่านรายงานไม่ได้' : 'รอ Cloud Sync seed'} /> : <Tile label="Churn %" tone="warn" value={`${churnNow.toFixed(1)}%`} mom={<Mom cur={churnNow} prev={churnPrev} />} />}
+      {npsNow === null ? <Tile label="NPS" placeholder={ps.isError ? 'อ่านรายงานไม่ได้' : 'รอ Cloud Sync seed'} /> : <Tile label="NPS" value={npsNow.toFixed(1)} mom={<Mom cur={npsNow} prev={npsPrev} />} />}
       <Tile label="Pipeline health" placeholder="รอ PipeDrive" />
     </div>
   );

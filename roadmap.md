@@ -1,8 +1,11 @@
 # PS Dashboard tab v1.0
-- [ ] Map existing source entities and add forward-only inactivation stamp.
-- [ ] Add read-only v_ps_* projections without new tables or sync changes.
-- [ ] Build seven PS panels and wire Churn/NPS; preserve Contract Overview and other tabs.
-- [ ] Verify filters, empty states, navigation, analytics and unchanged AC/BD-AC.
+- [x] Add PM/System Admin risk governance; verified edit, blocked AE, reload readback and strict thresholds.
+- [x] Map sources; add nullable contract field and forward-only scheduled end capture on new Renewal decisions, without backfill.
+- [x] Add nine safe read-only v_ps_* projections without tables or sync changes; real WS2 health rows, other sources explicitly pending.
+- [x] Build seven PS panels and wire Churn/NPS; preserve Contract Overview and other tabs.
+- [x] Verify seven panels, filters, empty states, no overflow, risk governance and Renewal date capture; 14 PS/AC tests pass.
+- [ ] Live lifecycle/churn/renewal/cohort/NPS/attach reporting and canonical inactivation stamping blocked by absent servicing/renewal/survey Cloud snapshots and missing renewal contract/service IDs; scope prohibits new sync or guessed linkage.
+- [ ] Hotel drill-through content readback blocked on machines without the corresponding browser-local WS2 property; correct native URL verified, no Cloud pull introduced.
 
 # AC v2.0 tightening T1–T4
 - [x] Consolidate grade-derived scores and separate lifecycle from collection.

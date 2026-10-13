@@ -4,6 +4,7 @@ import { toast } from "sonner";
 
 import { Chip, Panel } from "@/components/crm/crm-ui";
 import { Ws2TemplateEditor } from "@/components/ps/ws2-template-editor";
+import { RiskGovernance } from '@/components/ps/risk-governance';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,12 +12,13 @@ import { ROLE_DISPLAY, SURVEY_OPEN_KEY, activeEmail, activeSurvey, canManageTemp
 import { AE_STAGES, STAGE_LABEL, VARIANT_LABEL, useServicing, type Role, type ServiceVariant } from "@/lib/ps-servicing";
 import { SERVICE_LABEL, useWs2, type Ws2Service } from "@/lib/ws2-store";
 
-type Section = "form" | "checklist" | "survey" | "email" | "document";
+type Section = "form" | "checklist" | "survey" | "email" | "document" | "risk";
 const SECTIONS: { key: Section; label: string }[] = [
   { key: "form", label: "Form Templates" },
   { key: "checklist", label: "Checklist Templates" },
   { key: "survey", label: "Survey Templates" },
   { key: "email", label: "Email Templates" },
+  { key: "risk", label: "Account Health Rules" },
   { key: "document", label: "Documents (QT / Contract)" },
 ];
 const fmt = (iso: string) => new Date(iso).toLocaleString("th-TH", { dateStyle: "short", timeStyle: "short" });
@@ -40,6 +42,7 @@ export function TemplateCatalogue({ onDocuments }: { onDocuments: () => void }) 
       {sec === "checklist" && <ChecklistEditor can={can} />}
       {sec === "survey" && <SurveyCatalogue can={can} />}
       {sec === "email" && <EmailEditor can={can} />}
+      {sec === "risk" && <RiskGovernance />}
     </div>
   );
 }

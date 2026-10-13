@@ -23,7 +23,7 @@ import type { AssignmentFilter } from "@/lib/ps-renewal";
 import { activityFeed, feedTypes } from "@/lib/ps-v4";
 
 const description =
-  "PS Dashboard: ภาพรวมสัญญาบริการของลูกค้าทั้งหมด — AC สร้างโรงแรม · PS เติมสัญญาให้ครบ พร้อมสถานะ ORM / Marcom / Production รายโรงแรม";
+  "PS Dashboard: รายงานวงจรบริการ การต่อสัญญา Churn และสุขภาพ Account พร้อมภาพรวมสัญญา ORM / Marcom";
 
 export const Route = createFileRoute("/ps/")({
   head: () => ({
