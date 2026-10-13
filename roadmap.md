@@ -106,3 +106,9 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [x] Provide explicit original-record migration with retained browser backup, Cloud loading and revision-safe saves; restrict privileged public prototype operations to development.
 - [ ] Migrate the user's actual browser records — user must use “ย้ายข้อมูลเดิมไป Cloud” and “ย้าย Hotel Profile ไป Cloud” in their preview; sandbox cannot access their local records.
 - [ ] Verify scheduled callback delivery after publication — requires user-requested publication; app is currently unpublished.
+
+## Cloud Sync Level A v1.0
+- [x] Per-collection docs, debounce + Sync now, revision lock with keep-cloud/force, views repointed
+- [x] 2-tab conflict test
+- [ ] One-time seed from the machine with complete data (user action)
+- [ ] AC daily job still reads legacy `crm` doc — repoint in a later AC pass
