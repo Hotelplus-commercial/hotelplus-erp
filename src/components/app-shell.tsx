@@ -4,6 +4,7 @@ import { Search, Sparkles } from "lucide-react";
 
 import { AppSidebar } from "@/components/app-sidebar";
 import { NotificationCenter } from "@/components/notification-center";
+import { CloudSyncControl } from "@/components/cloud-sync-control";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -72,6 +73,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <Button variant="outline" size="sm" className="hidden gap-1.5 sm:flex">
                   <Sparkles className="size-4" /> Insights
                 </Button>
+                <CloudSyncControl />
                 <NotificationCenter />
                 <div className="grid size-8 shrink-0 place-items-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
                   IK

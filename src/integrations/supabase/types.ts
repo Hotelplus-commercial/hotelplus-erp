@@ -677,6 +677,10 @@ export type Database = {
         Args: { p_namespace: string; p_payload: Json; p_revision: number }
         Returns: number
       }
+      crm_force_push: {
+        Args: { p_namespace: string; p_payload: Json }
+        Returns: number
+      }
     }
     Enums: {
       collection_event_type:

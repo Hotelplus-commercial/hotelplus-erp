@@ -24,7 +24,7 @@
 - WS-2 property form data lives in its own browser-local store (src/lib/ws2-store.tsx) keyed by Hotel ID, with templates generated as JSON field dictionaries under src/lib/ws2/templates; it only reads cards and never gates Servicing stages, keeping the pipeline engine untouched.
 - Template Management lives only in the PS Templates menu (src/components/ps/template-catalogue.tsx + src/lib/email-templates.tsx); cards show checklists tick-only, and emails snapshot rendered text at send so past sends never change.
 - AC v1 duplicate ledger is retired; original CRM entities and IDs are persisted in one versioned Cloud document with compare-and-swap transactions, preserving existing entity shapes and avoiding a second parallel accounting model.
-- Public accounting migration/access is development-only on the server; published routes stay public but privileged prototype data operations are rejected to prevent public access to real financial records.
+- Cloud mirror writes are open in test mode (push-only, no payload reads); the AC daily job stays development-only. Close writes before production.
 - AC billing uses one pure accounting engine for report arrival, AC confirmation and the authenticated daily callback; this keeps tax, grade and idempotency rules consistent across entry points.
 - AC reporting views project canonical invoices with stable hotel IDs and service-aware WS-2 profile owners; retain legacy view column types, and never use contract/subscription owner snapshots as the assignment master. WS-2 SQL projection awaits a future snapshot within the hotels document; this pass never adds sync.
 - AC payment summaries use one pure recurring-grade selector; lifecycle ignores debt and collection derivation preserves manual terminal events until explicit reactivation, preventing contradictory scores and statuses.
@@ -32,3 +32,5 @@
 - Canonical document saves use revision compare-and-swap with a retained local backup; conflicts stop synchronization rather than overwrite another writer's changes.
 - The legacy /ac/operations URL redirects to the original /ac/billing page so saved links do not open a removed console.
 - BD-AC charts consume only existing view projections and use a scoped theme backed by global CSS tokens; this preserves analytics, workflow writes and unrelated module styling.
+
+- Cloud Sync Level A: browser stores push one crm_documents row per collection (namespace = crm:<collection> | hotels | ws2, PK stays namespace) via src/lib/cloud-sync.ts with revision optimistic lock; server fns never return payloads so data-entry apps never pull cloud. Test-mode no-auth writes must be closed (auth+RLS, Level B) before production. ws2 mirror excludes restricted credentials.
