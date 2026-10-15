@@ -86,7 +86,7 @@ function CategoryPicker({ categories, value, onChange }: { categories: Category[
   return <Select value={value} onValueChange={onChange}><SelectTrigger aria-label="หมวดย่อย"><SelectValue placeholder="เลือกหมวดย่อย" /></SelectTrigger><SelectContent>{TEAMS.map(team => <SelectGroup key={team}><SelectLabel>{TEAM_LABEL[team]}</SelectLabel>{categories.filter(c => c.domain === team).sort((a, b) => a.sort - b.sort).map(c => <SelectItem key={c.code} value={c.code}>{c.subcategory_label_th}</SelectItem>)}</SelectGroup>)}</SelectContent></Select>;
 }
 function DeptPicker({ value, onChange, disabled }: { value: Team | null; onChange: (t: Team) => void; disabled?: boolean }) {
-  return <Select value={value ?? ''} onValueChange={v => onChange(v as Team)} disabled={disabled}><SelectTrigger aria-label="แผนกรับผิดชอบ"><SelectValue placeholder="เลือกหมวดย่อยก่อน" /></SelectTrigger><SelectContent>{TEAMS.map(t => <SelectItem key={t} value={t}>{TEAM_LABEL[t]}</SelectItem>)}</SelectContent></Select>;
+  return <Select value={value ?? ''} onValueChange={v => onChange(v as Team)} disabled={!!disabled}><SelectTrigger aria-label="แผนกรับผิดชอบ"><SelectValue placeholder="เลือกหมวดย่อยก่อน" /></SelectTrigger><SelectContent>{TEAMS.map(t => <SelectItem key={t} value={t}>{TEAM_LABEL[t]}</SelectItem>)}</SelectContent></Select>;
 }
 function People({ care, team }: { care: HotelCare | undefined; team: Team | null }) {
   return <div className="space-y-1 text-sm"><p>ผู้รับผิดชอบ: <span className="rounded bg-primary/10 px-1.5 py-0.5 font-semibold text-primary">{team ? responsibleOf(team, care) : '—'}</span></p><div className="flex flex-wrap items-center gap-1"><span className="text-muted-foreground">Watchers:</span>{watchersOf(care).map(w => <Chip key={w.role} tone="muted">{w.role}: {w.name}</Chip>)}{!care && <span className="text-muted-foreground">—</span>}</div></div>;
@@ -148,7 +148,7 @@ function CreateCase({ open, onClose, hotels, categories, actor, demo, onDone }: 
   const save = async () => {
     if (!hotel || !cat || !title.trim()) { toast.error('กรุณาเลือกโรงแรม หมวดย่อย และใส่หัวข้อ'); return; }
     setBusy(true);
-    try { const t = await ticketApi.create(demo, { hotel_id: hotel.hotel_id, hotel_name: hotel.hotel_name, category: cat, routed_team: team ?? undefined, title, description: desc, actor }); onDone(t); onClose(); }
+    try { const t = await ticketApi.create(demo, { hotel_id: hotel.hotel_id, hotel_name: hotel.hotel_name, category: cat, ...(team ? { routed_team: team } : {}), title, description: desc, actor }); onDone(t); onClose(); }
     catch (e) { toast.error(e instanceof Error ? e.message : 'สร้างเคสไม่สำเร็จ'); } finally { setBusy(false); }
   };
   return <Dialog open={open} onOpenChange={o => !o && onClose()}><DialogContent className="max-w-lg"><DialogHeader><DialogTitle>New case</DialogTitle></DialogHeader>
