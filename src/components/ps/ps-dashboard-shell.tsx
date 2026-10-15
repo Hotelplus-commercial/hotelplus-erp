@@ -25,6 +25,7 @@ import { useContractLifecycle } from "@/lib/contract-lifecycle";
 import { DashboardGlobal, defaultGlobalFilter, matchesBook, scopePeriod, selectedPeriod, periodRange, deltaText, monthPeriod, useDashboardGlobal, type GlobalFilter } from '@/lib/ps-dashboard-global';
 import { DashboardGlobalFilters } from './dashboard-global-filters';
 import { DashboardCompare } from './dashboard-compare';
+import { TaskTab, useOverdueTile } from './task-tab';
 import { useHrMembers, teamLabel } from '@/lib/hr-members';
 import { cn } from "@/lib/utils";
 
@@ -129,7 +130,7 @@ export function DashboardShell({ servicing, overview, header }: { servicing: Rea
       <HeadlineStrip />
       {header}
       <div className="flex gap-1 overflow-x-auto rounded-lg border bg-card p-1" role="tablist" aria-label="Dashboard tabs">
-        {[["bdac", "BD-AC"], ["ac", "AC"], ["ps", "PS"], ["meeting", "Meeting & Analyzer"], ["task", "Task·"], ["servicing", "Servicing"]].map(([k,l]) => <Button key={k} role="tab" aria-selected={tab === k} onClick={() => { if (k) setTab(k); }} variant={tab === k ? 'default' : 'ghost'} className="shrink-0 rounded-md px-3 py-1.5 text-sm font-medium">{l}</Button>)}
+        {[["bdac", "BD-AC"], ["ac", "AC"], ["ps", "PS"], ["meeting", "Meeting & Analyzer"], ["task", "Task"], ["servicing", "Servicing"]].map(([k,l]) => <Button key={k} role="tab" aria-selected={tab === k} onClick={() => { if (k) setTab(k); }} variant={tab === k ? 'default' : 'ghost'} className="shrink-0 rounded-md px-3 py-1.5 text-sm font-medium">{l}</Button>)}
       </div>
       <div data-testid="active-dashboard-tab" className="min-w-0 space-y-4">
         {demo && <p className="text-xs font-semibold text-warning-foreground">DEMO · 30 Sep 2026</p>}
@@ -141,7 +142,7 @@ export function DashboardShell({ servicing, overview, header }: { servicing: Rea
           {overview}
         </>}
         {tab === 'meeting' && <MeetingTab />}
-        {tab === 'task' && <Empty text={demo ? 'DEMO: stub (ตาม IA)' : 'เร็วๆ นี้ (ตาม IA)'} />}
+        {tab === 'task' && <TaskTab />}
         {tab === 'servicing' && servicing}
       </div>
     </div>
@@ -198,6 +199,7 @@ function HeadlineStrip() {
       {churnNow === null ? <Tile label="Churn %" placeholder={ps.isError ? 'อ่านรายงานไม่ได้' : 'รอ Cloud Sync seed'} /> : <Tile label={'Churn %' + demoMark} tone="warn" value={`${churnNow.toFixed(1)}%`} mom={compare(churnNow,churnPrev,'pp')} />}
       {npsNow === null ? <Tile label="NPS" placeholder={ps.isError ? 'อ่านรายงานไม่ได้' : 'รอ Cloud Sync seed'} /> : <Tile label={'NPS' + demoMark} value={npsNow.toFixed(1)} mom={compare(npsNow,npsPrev)} />}
       <Tile label={"Pipeline health" + demoMark} placeholder="รอ PipeDrive" />
+      <TaskTiles />
       {completionA == null ? <Tile label="นัดสำเร็จ % (MTD)" placeholder={meeting.isError?'อ่านรายงานไม่ได้':'รอ Cloud Sync seed'} /> : <Tile label={'นัดสำเร็จ % (MTD)' + demoMark} value={`${completionA.toFixed(1)}%`} mom={compare(completionA,completionB,'pp')} />}
     </div>
   );
@@ -271,4 +273,16 @@ function AcTab() {
       </Panel>
     </div></>
   );
+}
+
+/** Task tab Headline tiles: overdue tickets (live now, tickets only) + Avg onboarding cycle-time (empty until seed). */
+function TaskTiles() {
+  const t = useOverdueTile();
+  const f = useContext(FilterCtx);
+  const mark = t.demo ? ' · DEMO' : '';
+  const ab = (a: number | null, b: number | null) => f.compare ? <span className="text-xs text-muted-foreground">A {a == null ? '—' : a.toLocaleString('th-TH',{maximumFractionDigits:1})} · B {b == null ? '—' : b.toLocaleString('th-TH',{maximumFractionDigits:1})} · {deltaText(a,b)}</span> : <Mom cur={a ?? 0} prev={b} />;
+  return <>
+    {t.error ? <Tile label="งานค้างเกินกำหนด" placeholder="อ่านเคสไม่ได้" /> : <Tile label={"งานค้างเกินกำหนด" + mark} {...(t.overdue ? { tone: 'warn' as const } : {})} value={t.loading ? '…' : String(t.overdue)} mom={ab(t.overdue, null)} />}
+    {t.cycleA == null ? <Tile label={"Avg onboarding cycle-time" + mark} placeholder="รอ Cloud Sync seed" /> : <Tile label={"Avg onboarding cycle-time" + mark} value={`${t.cycleA.toFixed(1)} วัน`} mom={ab(t.cycleA, t.cycleB)} />}
+  </>;
 }

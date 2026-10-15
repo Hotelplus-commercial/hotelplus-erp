@@ -127,3 +127,20 @@ export function demoOnboardingSums(id: string) {
   const f = FINISHED[index];
   return f ? { ae:f[3], specialist:f[4], service:f[5] ?? f[6], overall:day(f[0],f[1]) } : { ae:null,specialist:null,service:null,overall:null };
 }
+
+/** Task tab demo (DP14): caretakers per spine hotel (nicknames). null = not yet assigned. Specialist never a watcher. */
+const TASK_CARETAKERS: Record<string, { orm: string | null; marcom: string | null }> = {
+  'Chaam Peumsuk': { orm: 'A-Rev-01', marcom: null }, 'Baan Talay': { orm: 'B-Rev-01', marcom: null }, Seefah: { orm: null, marcom: null },
+  Anjali: { orm: null, marcom: 'แนน' }, 'Baan Suan': { orm: null, marcom: 'บิว' }, 'Chaba Grand': { orm: 'C-Rev-01', marcom: null }, 'Dusit Pool Villa': { orm: 'A-Rev-01', marcom: 'โบว์' },
+};
+export function demoTaskHotels() {
+  const active = contracts.filter(c => c.status === 'ACTIVE' && TASK_CARETAKERS[c.hotel]);
+  return [...new Set(active.map(c => c.hotel))].map(hotel => {
+    const mine = active.filter(c => c.hotel === hotel);
+    return { hotel_id: hid(hotel), hotel_name: hotel, ae: mine[0]?.ae ?? null, orm: mine.some(c => c.line === 'ORM') ? { member: TASK_CARETAKERS[hotel]!.orm } : null, marcom: mine.some(c => c.line === 'Marcom') ? { member: TASK_CARETAKERS[hotel]!.marcom } : null, status: 'ACTIVE' };
+  });
+}
+/** Same cohort values the PS tab ④ shows (oracle: Avg onboarding cycle-time must match). */
+export function demoOnboardCycle() {
+  return FINISHED.map(([created, live, line], i) => ({ card_id: `F-${'ABCD'[i]}`, hotel_id: null, hotel_name: null, service_line: line, created_at: created, go_live_at: live, cycle_days: day(created, live) }));
+}

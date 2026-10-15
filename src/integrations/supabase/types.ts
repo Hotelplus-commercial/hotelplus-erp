@@ -469,6 +469,141 @@ export type Database = {
           },
         ]
       }
+      ticket: {
+        Row: {
+          case_no: string
+          category_id: string
+          created_at: string
+          created_by: string
+          description: string | null
+          hotel_id: string
+          hotel_name: string
+          id: string
+          resolved_at: string | null
+          revision: number
+          routed_team: string
+          status: string
+          title: string
+          updated_at: string
+          waiting_reason: string | null
+        }
+        Insert: {
+          case_no?: string
+          category_id: string
+          created_at?: string
+          created_by: string
+          description?: string | null
+          hotel_id: string
+          hotel_name?: string
+          id?: string
+          resolved_at?: string | null
+          revision?: number
+          routed_team: string
+          status?: string
+          title: string
+          updated_at?: string
+          waiting_reason?: string | null
+        }
+        Update: {
+          case_no?: string
+          category_id?: string
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          hotel_id?: string
+          hotel_name?: string
+          id?: string
+          resolved_at?: string | null
+          revision?: number
+          routed_team?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          waiting_reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "ticket_category"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      ticket_activity: {
+        Row: {
+          actor_id: string
+          at: string
+          body: string
+          id: string
+          ticket_id: string
+          type: string
+        }
+        Insert: {
+          actor_id: string
+          at?: string
+          body?: string
+          id?: string
+          ticket_id: string
+          type: string
+        }
+        Update: {
+          actor_id?: string
+          at?: string
+          body?: string
+          id?: string
+          ticket_id?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_activity_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "ticket"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_activity_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "v_task_overdue_tickets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_activity_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "v_task_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ticket_category: {
+        Row: {
+          active: boolean
+          code: string
+          domain: string
+          sort: number
+          subcategory_label_th: string
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          domain: string
+          sort?: number
+          subcategory_label_th: string
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          domain?: string
+          sort?: number
+          subcategory_label_th?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -901,6 +1036,121 @@ export type Database = {
         }
         Relationships: []
       }
+      v_task_coaching_backlog: {
+        Row: {
+          age_days: number | null
+          coach: string | null
+          coaching_id: string | null
+          created_at: string | null
+          hotel_id: string | null
+          hotel_name: string | null
+          pending_sync: boolean | null
+          service_line: string | null
+          status: string | null
+        }
+        Relationships: []
+      }
+      v_task_deadline_streams: {
+        Row: {
+          age_days: number | null
+          deadline: string | null
+          hotel_id: string | null
+          hotel_name: string | null
+          item_id: string | null
+          overdue: boolean | null
+          owner_id: string | null
+          pending_sync: boolean | null
+          service_line: string | null
+          stream: string | null
+        }
+        Relationships: []
+      }
+      v_task_onboard_cycle: {
+        Row: {
+          card_id: string | null
+          created_at: string | null
+          cycle_days: number | null
+          go_live_at: string | null
+          hotel_id: string | null
+          hotel_name: string | null
+          pending_sync: boolean | null
+          service_line: string | null
+        }
+        Relationships: []
+      }
+      v_task_overdue_tickets: {
+        Row: {
+          aging_days: number | null
+          case_no: string | null
+          category_id: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          hotel_id: string | null
+          hotel_name: string | null
+          id: string | null
+          resolved_at: string | null
+          revision: number | null
+          routed_team: string | null
+          status: string | null
+          subcategory_label_th: string | null
+          title: string | null
+          updated_at: string | null
+          waiting_reason: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "ticket_category"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      v_task_tickets: {
+        Row: {
+          aging_days: number | null
+          case_no: string | null
+          category_id: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          hotel_id: string | null
+          hotel_name: string | null
+          id: string | null
+          resolved_at: string | null
+          revision: number | null
+          routed_team: string | null
+          status: string | null
+          subcategory_label_th: string | null
+          title: string | null
+          updated_at: string | null
+          waiting_reason: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "ticket_category"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      v_task_unassigned: {
+        Row: {
+          age_days: number | null
+          card_id: string | null
+          due_since: string | null
+          hotel_id: string | null
+          hotel_name: string | null
+          pending_sync: boolean | null
+          role: string | null
+          service_line: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       ac_daily: { Args: { t?: string }; Returns: number }
@@ -931,6 +1181,29 @@ export type Database = {
       crm_force_push: {
         Args: { p_namespace: string; p_payload: Json }
         Returns: number
+      }
+      ticket_create: {
+        Args: {
+          p_actor: string
+          p_category: string
+          p_description: string
+          p_hotel_id: string
+          p_hotel_name: string
+          p_title: string
+        }
+        Returns: Json
+      }
+      ticket_update: {
+        Args: {
+          p_actor: string
+          p_category: string
+          p_comment: string
+          p_id: string
+          p_revision: number
+          p_status: string
+          p_waiting_reason: string
+        }
+        Returns: Json
       }
     }
     Enums: {
