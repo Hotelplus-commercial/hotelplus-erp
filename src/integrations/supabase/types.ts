@@ -1193,6 +1193,18 @@ export type Database = {
         }
         Returns: Json
       }
+      ticket_create_v2: {
+        Args: {
+          p_actor: string
+          p_category: string
+          p_description: string
+          p_hotel_id: string
+          p_hotel_name: string
+          p_routed_team: string
+          p_title: string
+        }
+        Returns: Json
+      }
       ticket_update: {
         Args: {
           p_actor: string
@@ -1200,6 +1212,19 @@ export type Database = {
           p_comment: string
           p_id: string
           p_revision: number
+          p_status: string
+          p_waiting_reason: string
+        }
+        Returns: Json
+      }
+      ticket_update_v2: {
+        Args: {
+          p_actor: string
+          p_category: string
+          p_comment: string
+          p_id: string
+          p_revision: number
+          p_routed_team: string
           p_status: string
           p_waiting_reason: string
         }
