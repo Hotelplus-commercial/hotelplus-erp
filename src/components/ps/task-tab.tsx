@@ -1,4 +1,4 @@
-/* PS Dashboard · Tab "Task" v1.0
+/* PS Dashboard · Tab "Task" v1.1 (monitor first · overridable department)
  * Layer 1 — Ticket system: WRITE · live cloud tables (ticket / ticket_activity / ticket_category) · independent of Cloud Sync.
  * Layer 2 — Work monitor: READ-ONLY v_task_* views · empty until Cloud Sync seed + C5 · drill-through navigates only.
  * Layer 3 — skeleton. Never touches assignment master, pipeline, billing or Portfolio snapshot. Amber only, no red. */
@@ -85,6 +85,9 @@ const EmptyState = ({ text }: { text: string }) => <div className="flex flex-col
 function CategoryPicker({ categories, value, onChange }: { categories: Category[]; value: string; onChange: (v: string) => void }) {
   return <Select value={value} onValueChange={onChange}><SelectTrigger aria-label="หมวดย่อย"><SelectValue placeholder="เลือกหมวดย่อย" /></SelectTrigger><SelectContent>{TEAMS.map(team => <SelectGroup key={team}><SelectLabel>{TEAM_LABEL[team]}</SelectLabel>{categories.filter(c => c.domain === team).sort((a, b) => a.sort - b.sort).map(c => <SelectItem key={c.code} value={c.code}>{c.subcategory_label_th}</SelectItem>)}</SelectGroup>)}</SelectContent></Select>;
 }
+function DeptPicker({ value, onChange, disabled }: { value: Team | null; onChange: (t: Team) => void; disabled?: boolean }) {
+  return <Select value={value ?? ''} onValueChange={v => onChange(v as Team)} disabled={disabled}><SelectTrigger aria-label="แผนกรับผิดชอบ"><SelectValue placeholder="เลือกหมวดย่อยก่อน" /></SelectTrigger><SelectContent>{TEAMS.map(t => <SelectItem key={t} value={t}>{TEAM_LABEL[t]}</SelectItem>)}</SelectContent></Select>;
+}
 function People({ care, team }: { care: HotelCare | undefined; team: Team | null }) {
   return <div className="space-y-1 text-sm"><p>ผู้รับผิดชอบ: <span className="rounded bg-primary/10 px-1.5 py-0.5 font-semibold text-primary">{team ? responsibleOf(team, care) : '—'}</span></p><div className="flex flex-wrap items-center gap-1"><span className="text-muted-foreground">Watchers:</span>{watchersOf(care).map(w => <Chip key={w.role} tone="muted">{w.role}: {w.name}</Chip>)}{!care && <span className="text-muted-foreground">—</span>}</div></div>;
 }
@@ -110,47 +113,49 @@ export function TaskTab() {
   const selected = d.tickets.find(t => t.id === openId) ?? null;
 
   return <div className="space-y-4" data-testid="task-tab">
-    <p className="rounded-lg border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">แท็บนี้ <b>เขียนข้อมูลได้</b>: ระบบเคส (บันทึกทันที · ไม่ขึ้นกับ Cloud Sync){d.demo ? ' · DEMO: บันทึกในหน่วยความจำเท่านั้น ไม่แตะ Cloud' : ''} · Work monitor อ่านอย่างเดียว · ไม่แตะผู้ดูแล / pipeline / billing / ภาพรวมสัญญา</p>
+    <p className="rounded-lg border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">แท็บนี้ <b>เขียนข้อมูลได้</b>: Work monitor (บน · อ่านอย่างเดียว) · ระบบเคส (ล่าง · บันทึกทันที · ไม่ขึ้นกับ Cloud Sync){d.demo ? ' · DEMO: บันทึกในหน่วยความจำเท่านั้น ไม่แตะ Cloud' : ''} · Work monitor อ่านอย่างเดียว · ไม่แตะผู้ดูแล / pipeline / billing / ภาพรวมสัญญา</p>
+    <WorkMonitor monitor={d.monitor} error={d.monitorError} filter={filter} now={d.now} onNavigate={to => navigate({ to: to as '/ps' })} />
+
     <Panel title="ระบบเคส (Ticket)" subtitle={`ทุก role แก้ไขได้ · ผู้ทำรายการบันทึกทุกครั้ง · aging เกิน ${AGING_THRESHOLD_DAYS} วัน = สีเหลืองอำพัน`} right={<div className="flex items-center gap-2 text-sm"><span className="text-muted-foreground">ผู้ทำรายการ</span><Select value={actor} onValueChange={setActor}><SelectTrigger aria-label="ผู้ทำรายการ" className="h-9 w-40"><SelectValue /></SelectTrigger><SelectContent>{actors.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent></Select></div>}>
       {filter.compare && <div className="mb-3 grid gap-2 sm:grid-cols-3">{(['open', 'overdue', 'aging'] as const).map(k => { const a = agg(filter.periodA)[k], b = agg(filter.periodB)[k]; return <div key={k} className="rounded-lg border p-2 text-xs"><p className="text-muted-foreground">{k === 'open' ? 'เคสเปิด' : k === 'overdue' ? 'เกินกำหนด' : 'Avg aging (วัน)'} · สร้างในช่วง</p><p className="tabular-nums">A {a == null ? '—' : a.toFixed(k === 'aging' ? 1 : 0)} · B {b == null ? '—' : b.toFixed(k === 'aging' ? 1 : 0)} · {deltaText(a, b)}</p></div>; })}</div>}
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <div className="relative min-w-48 flex-1"><Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" /><Input aria-label="ค้นหาเคส" placeholder="ค้นหา: โรงแรม / เลขเคส / หัวข้อ / รายละเอียด" value={q} onChange={e => setQ(e.target.value)} className="h-9 pl-8" /></div>
         <Select value={cat} onValueChange={setCat}><SelectTrigger aria-label="กรองหมวด" className="h-9 w-44"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">หมวด: ทั้งหมด</SelectItem>{d.categories.map(c => <SelectItem key={c.code} value={c.code}>{TEAM_LABEL[c.domain]} · {c.subcategory_label_th}</SelectItem>)}</SelectContent></Select>
         <Select value={st} onValueChange={setSt}><SelectTrigger aria-label="กรองสถานะ" className="h-9 w-36"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">สถานะ: ทั้งหมด</SelectItem>{STATUSES.map(s => <SelectItem key={s} value={s}>{STATUS_LABEL[s]}</SelectItem>)}</SelectContent></Select>
-        <Select value={team} onValueChange={setTeam}><SelectTrigger aria-label="กรองทีม" className="h-9 w-32"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">ทีม: ทั้งหมด</SelectItem>{TEAMS.map(t => <SelectItem key={t} value={t}>{TEAM_LABEL[t]}</SelectItem>)}</SelectContent></Select>
+        <Select value={team} onValueChange={setTeam}><SelectTrigger aria-label="กรองแผนก" className="h-9 w-36"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">แผนก: ทั้งหมด</SelectItem>{TEAMS.map(t => <SelectItem key={t} value={t}>{TEAM_LABEL[t]}</SelectItem>)}</SelectContent></Select>
         <Button size="sm" onClick={() => setCreating(true)}><Plus className="size-4" />New case</Button>
       </div>
       {d.ticketsError ? <EmptyState text="อ่านเคสไม่สำเร็จ ลองใหม่อีกครั้ง" /> : d.ticketsLoading ? <EmptyState text="กำลังโหลด…" /> : !rows.length ? <EmptyState text={d.tickets.length ? 'ไม่พบเคสตามตัวกรอง' : 'ยังไม่มีเคส — กด New case เพื่อสร้าง'} /> :
-        <div className="overflow-x-auto"><table className="w-full min-w-[820px] text-sm"><thead className="text-left text-xs text-muted-foreground"><tr>{['เลขเคส', 'โรงแรม', 'หัวข้อ', 'หมวดย่อย', 'ทีม', 'ผู้รับผิดชอบ', 'สถานะ', 'Aging'].map(h => <th key={h} className="border-b px-2 py-2 font-medium">{h}</th>)}</tr></thead><tbody>{rows.map(t => { const ag = agingDays(t, d.now); const over = isOverdue(t, d.now); return <tr key={t.id} className="cursor-pointer border-b hover:bg-muted/50" onClick={() => setOpenId(t.id)}><td className="px-2 py-2 font-mono text-xs">{t.case_no}</td><td className="px-2 py-2">{t.hotel_name}</td><td className="px-2 py-2">{t.title}</td><td className="px-2 py-2 text-muted-foreground">{catOf(t.category_id)?.subcategory_label_th ?? t.category_id}</td><td className="px-2 py-2">{TEAM_LABEL[t.routed_team]}</td><td className="px-2 py-2">{responsibleOf(t.routed_team, byHotel.get(t.hotel_id))}</td><td className="px-2 py-2"><StatusPill t={t} /></td><td className={cn('px-2 py-2 tabular-nums', over && 'font-semibold text-warning-foreground')}>{ag == null ? '—' : <span className={cn(over && 'rounded bg-warning/25 px-1.5 py-0.5')}>{ag} วัน</span>}</td></tr>; })}</tbody></table></div>}
+        <div className="overflow-x-auto"><table className="w-full min-w-[820px] text-sm"><thead className="text-left text-xs text-muted-foreground"><tr>{['เลขเคส', 'โรงแรม', 'หัวข้อ', 'หมวดย่อย', 'แผนก', 'ผู้รับผิดชอบ', 'สถานะ', 'Aging'].map(h => <th key={h} className="border-b px-2 py-2 font-medium">{h}</th>)}</tr></thead><tbody>{rows.map(t => { const ag = agingDays(t, d.now); const over = isOverdue(t, d.now); return <tr key={t.id} className="cursor-pointer border-b hover:bg-muted/50" onClick={() => setOpenId(t.id)}><td className="px-2 py-2 font-mono text-xs">{t.case_no}</td><td className="px-2 py-2">{t.hotel_name}</td><td className="px-2 py-2">{t.title}</td><td className="px-2 py-2 text-muted-foreground">{catOf(t.category_id)?.subcategory_label_th ?? t.category_id}</td><td className="px-2 py-2">{TEAM_LABEL[t.routed_team]}</td><td className="px-2 py-2">{responsibleOf(t.routed_team, byHotel.get(t.hotel_id))}</td><td className="px-2 py-2"><StatusPill t={t} /></td><td className={cn('px-2 py-2 tabular-nums', over && 'font-semibold text-warning-foreground')}>{ag == null ? '—' : <span className={cn(over && 'rounded bg-warning/25 px-1.5 py-0.5')}>{ag} วัน</span>}</td></tr>; })}</tbody></table></div>}
     </Panel>
 
     <CreateCase open={creating} onClose={() => setCreating(false)} hotels={care} categories={d.categories} actor={actor} demo={d.demo} onDone={t => { refresh(); toast.success(`สร้าง ${t.case_no} แล้ว`); }} />
     <CaseDrawer ticket={selected} onClose={() => setOpenId(null)} care={selected ? byHotel.get(selected.hotel_id) : undefined} categories={d.categories} actor={actor} demo={d.demo} onSaved={refresh} />
 
-    <WorkMonitor monitor={d.monitor} error={d.monitorError} filter={filter} now={d.now} onNavigate={to => navigate({ to: to as '/ps' })} />
-
     <section aria-label="Layer 3" className="rounded-xl border border-dashed bg-muted/30 p-4 text-sm text-muted-foreground opacity-70">
-      <p className="font-semibold">Layer 3 · อนาคต</p>
+      <p className="font-semibold">Section C · อนาคต</p>
       <p>สร้างเคสอัตโนมัติจาก flag / SLA breach · เชื่อมเคส ↔ สัญญา / meeting · สร้างเคสด่วนจาก Hotel Profile & Meeting · cross-app alert inbox — รอ workstream ถัดไป</p>
     </section>
   </div>;
 }
 
 function CreateCase({ open, onClose, hotels, categories, actor, demo, onDone }: { open: boolean; onClose: () => void; hotels: HotelCare[]; categories: Category[]; actor: string; demo: boolean; onDone: (t: Ticket) => void }) {
-  const [hq, setHq] = useState(''); const [hotel, setHotel] = useState<HotelCare | null>(null); const [cat, setCat] = useState(''); const [title, setTitle] = useState(''); const [desc, setDesc] = useState(''); const [busy, setBusy] = useState(false);
-  useEffect(() => { if (open) { setHq(''); setHotel(null); setCat(''); setTitle(''); setDesc(''); } }, [open]);
-  const team = categories.find(c => c.code === cat)?.domain ?? null;
+  const [hq, setHq] = useState(''); const [hotel, setHotel] = useState<HotelCare | null>(null); const [cat, setCat] = useState(''); const [title, setTitle] = useState(''); const [desc, setDesc] = useState(''); const [dept, setDept] = useState<Team | null>(null); const [busy, setBusy] = useState(false);
+  useEffect(() => { if (open) { setHq(''); setHotel(null); setCat(''); setTitle(''); setDesc(''); setDept(null); } }, [open]);
+  const team = dept ?? categories.find(c => c.code === cat)?.domain ?? null;
+  const pickCat = (v: string) => { setCat(v); setDept(categories.find(c => c.code === v)?.domain ?? null); };
   const matches = hotels.filter(h => `${h.hotel_name} ${h.hotel_id}`.toLowerCase().includes(hq.trim().toLowerCase())).slice(0, 8);
   const save = async () => {
     if (!hotel || !cat || !title.trim()) { toast.error('กรุณาเลือกโรงแรม หมวดย่อย และใส่หัวข้อ'); return; }
     setBusy(true);
-    try { const t = await ticketApi.create(demo, { hotel_id: hotel.hotel_id, hotel_name: hotel.hotel_name, category: cat, title, description: desc, actor }); onDone(t); onClose(); }
+    try { const t = await ticketApi.create(demo, { hotel_id: hotel.hotel_id, hotel_name: hotel.hotel_name, category: cat, routed_team: team ?? undefined, title, description: desc, actor }); onDone(t); onClose(); }
     catch (e) { toast.error(e instanceof Error ? e.message : 'สร้างเคสไม่สำเร็จ'); } finally { setBusy(false); }
   };
   return <Dialog open={open} onOpenChange={o => !o && onClose()}><DialogContent className="max-w-lg"><DialogHeader><DialogTitle>New case</DialogTitle></DialogHeader>
     <div className="space-y-3 text-sm">
       <div><label className="text-xs font-medium">โรงแรม *</label>{hotel ? <div className="mt-1 flex items-center justify-between rounded-md border px-3 py-2"><span>{hotel.hotel_name}</span><Button variant="ghost" size="sm" onClick={() => setHotel(null)}>เปลี่ยน</Button></div> : <><Input aria-label="ค้นหาโรงแรม" className="mt-1" placeholder="พิมพ์ชื่อหรือรหัสโรงแรม" value={hq} onChange={e => setHq(e.target.value)} /><div className="mt-1 max-h-40 overflow-y-auto rounded-md border">{matches.length ? matches.map(h => <button key={h.hotel_id} type="button" className="block w-full px-3 py-1.5 text-left hover:bg-muted" onClick={() => setHotel(h)}>{h.hotel_name} <span className="text-xs text-muted-foreground">{h.hotel_id}</span></button>) : <p className="px-3 py-2 text-muted-foreground">ไม่พบโรงแรม</p>}</div></>}</div>
-      <div><label className="text-xs font-medium">หมวดย่อย *</label><CategoryPicker categories={categories} value={cat} onChange={setCat} /><p className="mt-1 text-xs text-muted-foreground">ส่งต่อทีม (อัตโนมัติ): <b>{team ? TEAM_LABEL[team] : '—'}</b></p></div>
+      <div><label className="text-xs font-medium">หมวดย่อย *</label><CategoryPicker categories={categories} value={cat} onChange={pickCat} /></div>
+      <div><label className="text-xs font-medium">แผนกรับผิดชอบ *</label><DeptPicker value={team} onChange={setDept} disabled={!cat} /><p className="mt-1 text-xs text-muted-foreground">ค่าเริ่มต้นตามหมวดย่อย · เปลี่ยนได้ · 1 เคส = 1 แผนก</p></div>
       <div><label className="text-xs font-medium">หัวข้อ *</label><Input aria-label="หัวข้อ" value={title} onChange={e => setTitle(e.target.value)} /></div>
       <div><label className="text-xs font-medium">รายละเอียด</label><Textarea aria-label="รายละเอียด" value={desc} onChange={e => setDesc(e.target.value)} rows={3} /></div>
       <div className="rounded-lg bg-muted/50 p-2"><People care={hotel ?? undefined} team={team} /></div>
@@ -162,17 +167,18 @@ function CreateCase({ open, onClose, hotels, categories, actor, demo, onDone }: 
 function CaseDrawer({ ticket, onClose, care, categories, actor, demo, onSaved }: { ticket: Ticket | null; onClose: () => void; care: HotelCare | undefined; categories: Category[]; actor: string; demo: boolean; onSaved: () => void }) {
   const qc = useQueryClient();
   const v = useDemoVersion();
-  const [status, setStatus] = useState<TicketStatus>('open'); const [reason, setReason] = useState<WaitingReason | ''>(''); const [cat, setCat] = useState(''); const [comment, setComment] = useState(''); const [busy, setBusy] = useState(false); const [conflict, setConflict] = useState(false);
-  useEffect(() => { if (ticket) { setStatus(ticket.status); setReason(ticket.waiting_reason ?? ''); setCat(ticket.category_id); setComment(''); setConflict(false); } }, [ticket?.id, ticket?.revision]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [status, setStatus] = useState<TicketStatus>('open'); const [reason, setReason] = useState<WaitingReason | ''>(''); const [cat, setCat] = useState(''); const [dept, setDept] = useState<Team | null>(null); const [comment, setComment] = useState(''); const [busy, setBusy] = useState(false); const [conflict, setConflict] = useState(false);
+  useEffect(() => { if (ticket) { setStatus(ticket.status); setReason(ticket.waiting_reason ?? ''); setCat(ticket.category_id); setDept(ticket.routed_team); setComment(''); setConflict(false); } }, [ticket?.id, ticket?.revision]); // eslint-disable-line react-hooks/exhaustive-deps
   const timeline = useQuery({ queryKey: ['task-activity', ticket?.id, demo, ticket?.revision, demo ? v : 0], queryFn: () => ticketApi.activity(demo, ticket!.id), enabled: !!ticket });
-  const team = categories.find(c => c.code === cat)?.domain ?? ticket?.routed_team ?? null;
-  const dirty = !!ticket && (status !== ticket.status || (status === 'waiting' && reason !== (ticket.waiting_reason ?? '')) || cat !== ticket.category_id || !!comment.trim());
+  const team = dept ?? ticket?.routed_team ?? null;
+  const pickCat = (v: string) => { setCat(v); setDept(categories.find(c => c.code === v)?.domain ?? null); };
+  const dirty = !!ticket && (status !== ticket.status || (status === 'waiting' && reason !== (ticket.waiting_reason ?? '')) || cat !== ticket.category_id || team !== ticket.routed_team || !!comment.trim());
   const save = async () => {
     if (!ticket) return;
     if (status === 'waiting' && !reason) { toast.error('สถานะ Waiting ต้องเลือกเหตุผล (รอลูกค้า / รอภายใน)'); return; }
     setBusy(true);
     try {
-      const r = await ticketApi.update(demo, { id: ticket.id, revision: ticket.revision, actor, ...(status !== ticket.status || status === 'waiting' ? { status, waiting_reason: status === 'waiting' ? (reason as WaitingReason) : null } : {}), ...(cat !== ticket.category_id ? { category: cat } : {}), comment });
+      const r = await ticketApi.update(demo, { id: ticket.id, revision: ticket.revision, actor, ...(status !== ticket.status || status === 'waiting' ? { status, waiting_reason: status === 'waiting' ? (reason as WaitingReason) : null } : {}), ...(cat !== ticket.category_id ? { category: cat } : {}), ...(team && (team !== ticket.routed_team || cat !== ticket.category_id) ? { routed_team: team } : {}), comment });
       if (!r.ok) { setConflict(true); return; }
       setComment(''); onSaved(); qc.invalidateQueries({ queryKey: ['task-activity'] }); toast.success('บันทึกแล้ว');
     } catch (e) { toast.error(e instanceof Error ? e.message : 'บันทึกไม่สำเร็จ'); } finally { setBusy(false); }
@@ -187,8 +193,10 @@ function CaseDrawer({ ticket, onClose, care, categories, actor, demo, onSaved }:
           <label className="text-xs font-medium">สถานะ (เปลี่ยนได้ทุกทิศทาง · เปิดใหม่ได้)</label>
           <Select value={status} onValueChange={s => setStatus(s as TicketStatus)}><SelectTrigger aria-label="สถานะเคส"><SelectValue /></SelectTrigger><SelectContent>{STATUSES.map(s => <SelectItem key={s} value={s}>{STATUS_LABEL[s]}</SelectItem>)}</SelectContent></Select>
           {status === 'waiting' && <Select value={reason} onValueChange={r => setReason(r as WaitingReason)}><SelectTrigger aria-label="เหตุผลที่รอ"><SelectValue placeholder="เหตุผลที่รอ *" /></SelectTrigger><SelectContent>{(['CUSTOMER', 'INTERNAL'] as const).map(r => <SelectItem key={r} value={r}>{WAITING_LABEL[r]}</SelectItem>)}</SelectContent></Select>}
-          <label className="text-xs font-medium">หมวดย่อย (เปลี่ยนแล้วส่งต่อทีมใหม่อัตโนมัติ)</label>
-          <CategoryPicker categories={categories} value={cat} onChange={setCat} />
+          <label className="text-xs font-medium">หมวดย่อย (เปลี่ยนแล้วตั้งแผนกใหม่ตามหมวด)</label>
+          <CategoryPicker categories={categories} value={cat} onChange={pickCat} />
+          <label className="text-xs font-medium">แผนกรับผิดชอบ (เปลี่ยนได้ · ผู้รับผิดชอบตามแผนก)</label>
+          <DeptPicker value={team} onChange={setDept} />
           <Textarea aria-label="ความคิดเห็น" placeholder="เพิ่มความคิดเห็น…" value={comment} onChange={e => setComment(e.target.value)} rows={2} />
           <div className="flex items-center justify-between"><span className="text-xs text-muted-foreground">บันทึกในชื่อ: {actor}</span><Button size="sm" onClick={save} disabled={!dirty || busy}>บันทึก</Button></div>
         </div>
