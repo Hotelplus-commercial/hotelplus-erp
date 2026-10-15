@@ -126,7 +126,7 @@ export const ticketApi = {
       demoState = { tickets: [...demoState.tickets, t], activity: [...demoState.activity, { id: `${t.id}-c`, ticket_id: t.id, actor_id: i.actor, type: 'CREATE', body: t.case_no, at }] }; emit();
       return t;
     }
-    const r = await supabase.rpc('ticket_create_v2', { p_hotel_id: i.hotel_id, p_hotel_name: i.hotel_name, p_category: i.category, p_routed_team: i.routed_team ?? null, p_title: i.title, p_description: i.description, p_actor: i.actor });
+    const r = await supabase.rpc('ticket_create_v2', { p_hotel_id: i.hotel_id, p_hotel_name: i.hotel_name, p_category: i.category, p_routed_team: i.routed_team ?? '', p_title: i.title, p_description: i.description, p_actor: i.actor });
     if (r.error) throw new Error('สร้างเคสไม่สำเร็จ');
     return r.data as unknown as Ticket;
   },
