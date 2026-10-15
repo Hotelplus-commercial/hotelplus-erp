@@ -9,7 +9,7 @@ export type TicketStatus = 'open' | 'in-progress' | 'waiting' | 'resolved' | 'cl
 export type WaitingReason = 'CUSTOMER' | 'INTERNAL';
 export type Category = { code: string; domain: Team; subcategory_label_th: string; active: boolean; sort: number };
 export type Ticket = { id: string; case_no: string; hotel_id: string; hotel_name: string; title: string; description: string | null; category_id: string; routed_team: Team; status: TicketStatus; waiting_reason: WaitingReason | null; created_by: string; created_at: string; updated_at: string; resolved_at: string | null; revision: number };
-export type Activity = { id: string; ticket_id: string; actor_id: string; type: 'CREATE' | 'COMMENT' | 'STATUS_CHANGE' | 'CATEGORY_CHANGE'; body: string; at: string };
+export type Activity = { id: string; ticket_id: string; actor_id: string; type: 'CREATE' | 'COMMENT' | 'STATUS_CHANGE' | 'CATEGORY_CHANGE' | 'DEPT_CHANGE'; body: string; at: string };
 /** Hotel caretakers resolved from the assignment master (nicknames; null member = not assigned; null service = not bought). */
 export type HotelCare = { hotel_id: string; hotel_name: string; ae: string | null; orm: { member: string | null } | null; marcom: { member: string | null } | null; status?: string };
 
@@ -49,8 +49,8 @@ export function agingDays(t: Ticket, now: Date): number | null {
 export const isOverdue = (t: Ticket, now: Date) => (agingDays(t, now) ?? -1) > AGING_THRESHOLD_DAYS;
 
 /* ---------------- data access (live cloud | demo memory) ---------------- */
-export type UpdateInput = { id: string; revision: number; actor: string; status?: TicketStatus; waiting_reason?: WaitingReason | null; category?: string; comment?: string };
-export type CreateInput = { hotel_id: string; hotel_name: string; category: string; title: string; description: string; actor: string };
+export type UpdateInput = { id: string; revision: number; actor: string; status?: TicketStatus; waiting_reason?: WaitingReason | null; category?: string; routed_team?: Team; comment?: string };
+export type CreateInput = { hotel_id: string; hotel_name: string; category: string; routed_team?: Team; title: string; description: string; actor: string };
 export type UpdateResult = { ok: true; ticket: Ticket } | { ok: false; conflict: true };
 
 /** Demo store: bundled, in-memory only (no localStorage / cloud). Reset each time demo turns on. */
@@ -60,7 +60,7 @@ const listeners = new Set<() => void>();
 const emit = () => { demoVersion++; listeners.forEach(l => l()); };
 const daysAgo = (n: number) => new Date(new Date(DEMO_NOW).getTime() - n * 864e5).toISOString();
 export function resetDemoTickets() {
-  const rows: [string, string, string, string, TicketStatus, WaitingReason | null, number][] = [
+  const rows: [string, string, string, string, TicketStatus, WaitingReason | null, number, Team?][] = [
     ['DEMO-CHAAM-PEUMSUK', 'Chaam Peumsuk', 'ORM-RATE', 'ราคาบน Agoda ต่ำกว่าเว็บโรงแรม', 'open', null, 6],
     ['DEMO-BAAN-TALAY', 'Baan Talay', 'ORM-CONN', 'Channel manager ไม่ sync ห้องว่าง', 'in-progress', null, 5],
     ['DEMO-ANJALI', 'Anjali', 'MKT-ADS', 'ขอปรับงบโฆษณา Meta เดือนหน้า', 'waiting', 'CUSTOMER', 4],
@@ -68,8 +68,9 @@ export function resetDemoTickets() {
     ['DEMO-SEEFAH', 'Seefah', 'PS-PACKAGE', 'ปรึกษาเพิ่มบริการ Marcom', 'open', null, 1],
     ['DEMO-BAAN-SUAN', 'Baan Suan', 'MKT-KOL', 'ขอรายชื่อ KOL สายครอบครัว', 'waiting', 'INTERNAL', 3],
     ['DEMO-DUSIT-POOL-VILLA', 'Dusit Pool Villa', 'PS-COMPLAIN', 'ร้องเรียนการตอบกลับล่าช้า', 'resolved', null, 8],
+    ['DEMO-ANJALI', 'Anjali', 'ORM-INFO', 'ขอข้อมูลรูปโปรโมชันสำหรับโพสต์ (ส่ง Marcom)', 'waiting', 'INTERNAL', 2, 'MARCOM'],
   ];
-  const tickets = rows.map(([hotel_id, hotel_name, cat, title, status, wr, ago], i): Ticket => ({ id: `demo-t${i + 1}`, case_no: `Case-${String(i + 1).padStart(6, '0')}`, hotel_id, hotel_name, title, description: null, category_id: cat, routed_team: SEED_CATEGORIES.find(c => c.code === cat)!.domain, status, waiting_reason: wr, created_by: 'Nont', created_at: daysAgo(ago), updated_at: daysAgo(Math.max(0, ago - 1)), resolved_at: status === 'resolved' ? daysAgo(1) : null, revision: status === 'open' ? 0 : 1 }));
+  const tickets = rows.map(([hotel_id, hotel_name, cat, title, status, wr, ago, team], i): Ticket => ({ id: `demo-t${i + 1}`, case_no: `Case-${String(i + 1).padStart(6, '0')}`, hotel_id, hotel_name, title, description: null, category_id: cat, routed_team: team ?? SEED_CATEGORIES.find(c => c.code === cat)!.domain, status, waiting_reason: wr, created_by: 'Nont', created_at: daysAgo(ago), updated_at: daysAgo(Math.max(0, ago - 1)), resolved_at: status === 'resolved' ? daysAgo(1) : null, revision: status === 'open' ? 0 : 1 }));
   const activity: Activity[] = tickets.flatMap(t => [{ id: `${t.id}-a0`, ticket_id: t.id, actor_id: 'Nont', type: 'CREATE' as const, body: t.case_no, at: t.created_at }, ...(t.status !== 'open' ? [{ id: `${t.id}-a1`, ticket_id: t.id, actor_id: 'Fern', type: 'STATUS_CHANGE' as const, body: `open → ${t.status}${t.waiting_reason ? ` (${t.waiting_reason})` : ''}`, at: t.updated_at }] : [])]);
   demoState = { tickets, activity }; emit();
 }
@@ -79,6 +80,8 @@ const nowIso = (demo: boolean) => (demo ? DEMO_NOW : new Date().toISOString());
 function applyUpdate(t: Ticket, i: UpdateInput, push: (a: Omit<Activity, 'id' | 'ticket_id' | 'at'>) => void): Ticket {
   const next = { ...t };
   if (i.category && i.category !== t.category_id) { const c = SEED_CATEGORIES.find(x => x.code === i.category)!; push({ actor_id: i.actor, type: 'CATEGORY_CHANGE', body: `${t.category_id} → ${c.code}` }); next.category_id = c.code; next.routed_team = c.domain; }
+  if (i.routed_team) next.routed_team = i.routed_team;
+  if (next.routed_team !== t.routed_team) push({ actor_id: i.actor, type: 'DEPT_CHANGE', body: `${t.routed_team} → ${next.routed_team}` });
   const ns = i.status ?? t.status;
   const nr = ns === 'waiting' ? (i.waiting_reason ?? (t.status === 'waiting' ? t.waiting_reason : null)) : null;
   if (ns === 'waiting' && !nr) throw new Error('กรุณาเลือกเหตุผลที่รอ');
@@ -119,11 +122,11 @@ export const ticketApi = {
     if (!i.hotel_id || !i.title.trim() || !i.category || !i.actor) throw new Error('กรอกโรงแรม หมวด และหัวข้อ');
     if (demo) {
       const c = SEED_CATEGORIES.find(x => x.code === i.category)!; const n = demoState.tickets.length + 1; const at = nowIso(true);
-      const t: Ticket = { id: `demo-t${n}-${Date.now()}`, case_no: `Case-${String(n).padStart(6, '0')}`, hotel_id: i.hotel_id, hotel_name: i.hotel_name, title: i.title.trim(), description: i.description.trim() || null, category_id: c.code, routed_team: c.domain, status: 'open', waiting_reason: null, created_by: i.actor, created_at: at, updated_at: at, resolved_at: null, revision: 0 };
+      const t: Ticket = { id: `demo-t${n}-${Date.now()}`, case_no: `Case-${String(n).padStart(6, '0')}`, hotel_id: i.hotel_id, hotel_name: i.hotel_name, title: i.title.trim(), description: i.description.trim() || null, category_id: c.code, routed_team: i.routed_team ?? c.domain, status: 'open', waiting_reason: null, created_by: i.actor, created_at: at, updated_at: at, resolved_at: null, revision: 0 };
       demoState = { tickets: [...demoState.tickets, t], activity: [...demoState.activity, { id: `${t.id}-c`, ticket_id: t.id, actor_id: i.actor, type: 'CREATE', body: t.case_no, at }] }; emit();
       return t;
     }
-    const r = await supabase.rpc('ticket_create', { p_hotel_id: i.hotel_id, p_hotel_name: i.hotel_name, p_category: i.category, p_title: i.title, p_description: i.description, p_actor: i.actor });
+    const r = await supabase.rpc('ticket_create_v2', { p_hotel_id: i.hotel_id, p_hotel_name: i.hotel_name, p_category: i.category, p_routed_team: i.routed_team ?? null, p_title: i.title, p_description: i.description, p_actor: i.actor });
     if (r.error) throw new Error('สร้างเคสไม่สำเร็จ');
     return r.data as unknown as Ticket;
   },
@@ -138,7 +141,7 @@ export const ticketApi = {
       demoState = { tickets: demoState.tickets.map(x => (x.id === t.id ? next : x)), activity: [...demoState.activity, ...acts] }; emit();
       return { ok: true, ticket: next };
     }
-    const r = await supabase.rpc('ticket_update', { p_id: i.id, p_revision: i.revision, p_actor: i.actor, p_status: i.status ?? null, p_waiting_reason: i.waiting_reason ?? null, p_category: i.category ?? null, p_comment: i.comment ?? null } as never);
+    const r = await supabase.rpc('ticket_update_v2', { p_id: i.id, p_revision: i.revision, p_actor: i.actor, p_status: i.status ?? null, p_waiting_reason: i.waiting_reason ?? null, p_category: i.category ?? null, p_routed_team: i.routed_team ?? null, p_comment: i.comment ?? null } as never);
     if (r.error) throw new Error('บันทึกเคสไม่สำเร็จ');
     const d = r.data as unknown as Ticket & { conflict?: boolean };
     return d.conflict ? { ok: false, conflict: true } : { ok: true, ticket: d };
