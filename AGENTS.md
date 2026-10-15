@@ -26,3 +26,4 @@
 - Dashboard filters/A-B periods share one context + pure selectors; ownershipless aggregates stay empty under ownership lenses.
 - Demo adapters derive all tabs from one bundled spine via URL/state, no provider writes; renewal end forward-only.
 - Task tickets use own cloud tables, written only via ticket_create/ticket_update RPCs with revision CAS; responsible/watchers derived at read time, never stored; demo uses in-memory store.
+- PS Dashboard Servicing tab reads only v_servicing_* (empty pending projections until a Cloud Servicing mirror exists); its single write reuses the existing v1.1 AssignDialog/saveAssignment, never a dashboard-local store. Why: Servicing stays browser-local and assignment has one source.
