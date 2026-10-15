@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Chip, Panel } from "@/components/crm/crm-ui";
 import { PageHeader } from "@/components/erp-ui";
 import { PsDashboard } from "@/components/hotel/ps-dashboard";
-import { ServicingDashboardView } from "@/components/ps/servicing-dashboard";
+import { ServicingTab } from "@/components/ps/servicing-tab";
 import { NewContractUpdates } from "@/components/ps/renewal-ui";
 import { ActivityFeedList, useAutoRefresh } from "@/components/ps/v4-ui";
 import { Button } from "@/components/ui/button";
@@ -45,7 +45,7 @@ function PsDashboardPage() {
       <PageHeader eyebrow="PS App · Dashboard" title="PS Dashboard" description={description} />
       <DashboardShell
         header={<PsDashboard part="overview" />}
-        servicing={<ServicingDashboardView />}
+        servicing={<ServicingTab />}
         overview={
           <section className="flex flex-col gap-4">
             {role === "Partner Manager" && (

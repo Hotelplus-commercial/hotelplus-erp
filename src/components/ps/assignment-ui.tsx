@@ -82,7 +82,7 @@ export function AccountOwners({ card }: { card: OnboardingCard }) {
   );
 }
 
-function AssignDialog({ card, type, onClose }: { card: OnboardingCard; type: AssignType; onClose: () => void }) {
+export function AssignDialog({ card, type, onClose }: { card: OnboardingCard; type: AssignType; onClose: () => void }) {
   const hr = useHrMembers();
   const w = useWs2();
   const a = useAssignments();

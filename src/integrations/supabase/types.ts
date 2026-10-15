@@ -1036,6 +1036,77 @@ export type Database = {
         }
         Relationships: []
       }
+      v_servicing_assignment_gaps: {
+        Row: {
+          card_id: string | null
+          current_stage: string | null
+          hotel_id: string | null
+          hotel_name: string | null
+          missing_roles: string[] | null
+          pending_sync: boolean | null
+          service_line: string | null
+        }
+        Relationships: []
+      }
+      v_servicing_golive_days: {
+        Row: {
+          card_id: string | null
+          cohort_month: string | null
+          created_at: string | null
+          go_live_at: string | null
+          hotel_id: string | null
+          hotel_name: string | null
+          overall_days: number | null
+          pending_sync: boolean | null
+          service_line: string | null
+        }
+        Relationships: []
+      }
+      v_servicing_pipeline: {
+        Row: {
+          card_count: number | null
+          pending_sync: boolean | null
+          service_line: string | null
+          stage: string | null
+        }
+        Relationships: []
+      }
+      v_servicing_stage_cards: {
+        Row: {
+          ae_owner_id: string | null
+          assignment_complete: boolean | null
+          card_id: string | null
+          created_at: string | null
+          current_stage: string | null
+          go_live_at: string | null
+          hotel_id: string | null
+          hotel_name: string | null
+          hotel_status: string | null
+          last_updated: string | null
+          marcom_owner_id: string | null
+          orm_lite: boolean | null
+          orm_team: string | null
+          pending_sync: boolean | null
+          progress_done: number | null
+          progress_total: number | null
+          service_line: string | null
+          service_variant: string | null
+          specialist_id: string | null
+          stage_entered_at: string | null
+        }
+        Relationships: []
+      }
+      v_servicing_stat: {
+        Row: {
+          awaiting_caretaker: number | null
+          cards_total: number | null
+          go_live: number | null
+          hotels: number | null
+          in_progress: number | null
+          pending_sync: boolean | null
+        }
+        Relationships: []
+      }
       v_task_coaching_backlog: {
         Row: {
           age_days: number | null
