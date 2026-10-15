@@ -738,7 +738,7 @@ function CompareDialog({ propertyId, onClose }: { propertyId: string | null; onC
 
 /* ---------------- KPI #4 (§5.9) ---------------- */
 
-function KpiView({ cards }: { cards?: OnboardingCard[] }) {
+export function KpiView({ cards }: { cards?: OnboardingCard[] }) {
   const s = useServicing();
   const { demo, filter:global } = useDashboardGlobal();
   const [kpiOpen, setKpiOpen] = useState<string | null>(null);
