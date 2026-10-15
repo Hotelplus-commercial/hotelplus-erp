@@ -137,3 +137,10 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [x] 2-tab conflict test
 - [ ] One-time seed from the machine with complete data (user action)
 - [x] AC daily job repointed to browser split docs; button restored
+
+## PS Dashboard · Task tab v1.0
+- [x] ticket / ticket_activity / ticket_category + 19-row seed, revision lock, no assignee/priority
+- [x] Ticket UI (manage bar, table, create modal, drawer, waiting reason, reopen, timeline, actor dropdown)
+- [x] Work monitor ①–④ (read-only, empty until seed), Layer 3 skeleton, 2 Headline tiles, filter/compare mapping, demo
+- [ ] Monitor data — blocked: coaching/assignment/renewal/onboarding mirrors not in Cloud yet (seed + C5)
+- [ ] Per-category aging thresholds — awaiting PM (O-T1); default 3 days
