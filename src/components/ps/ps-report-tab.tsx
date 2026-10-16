@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { useTemplateMgmt } from '@/lib/email-templates';
 import { DIM_LABEL, healthOf, latestPeriod, psScope, ratio, type HealthDim, type HealthTier, type PsReport, type PsReportRow, type PsFilter } from '@/lib/ps-dashboard-types';
 import { cn } from '@/lib/utils';
+import { accountHealthOf, sortHealth, DIM_TH, INERT_DIMS, DEMO_VALUE_RATIO_MIN, ROI_VALUE_RATIO_MIN, type DimCode } from '@/lib/account-health';
+import { useAccount360 } from '@/components/ps/account-360';
 
 const n = (row: PsReportRow, key: string) => Number(row[key] ?? 0);
 const fmt = (value: number | null, suffix = '') => value === null ? '—' : `${value.toLocaleString('th-TH', { maximumFractionDigits: 1 })}${suffix}`;
@@ -27,7 +29,9 @@ const TIER: Record<HealthTier, { dot: string; label: string; order: number }> = 
 export function PsReportTab({ report, filter, loading, error, wonMtd, compareSide }: { report?: PsReport | undefined; filter: PsFilter; loading: boolean; error: boolean; wonMtd?: number | undefined; compareSide?: 'A' | 'B' }) {
   const [groupBy, setGroupBy] = useState<'service_line' | 'ae_owner_id'>('service_line');
   const [tierFilter, setTierFilter] = useState<HealthTier | 'all'>('all');
-  const [dimFilter, setDimFilter] = useState<HealthDim | null>(null);
+  const [dimFilter, setDimFilter] = useState<DimCode | null>(null);
+  const [distBy, setDistBy] = useState<'service_line' | 'ae_owner_id'>('service_line');
+  const { openAccount360 } = useAccount360();
   const navigate = useNavigate();
   const { riskRules } = useTemplateMgmt(); // Governance configuration only; no browser domain data reads.
   const views = report?.views;
@@ -48,16 +52,20 @@ export function PsReportTab({ report, filter, loading, error, wonMtd, compareSid
   const cohort = psScope(views?.v_ps_onboard_cohort ?? [], filter, 'billing_period', 0, now).sort((a,b) => String(a.billing_period).localeCompare(String(b.billing_period)));
   const attach = psScope(views?.v_ps_attach_rate ?? [], filter, 'none');
   const health = compareSide === 'B' ? [] : psScope(views?.v_ps_account_health ?? [], filter, 'none');
-  const hotels = useMemo(() => [...new Set(health.map(row => String(row.hotel_id)))].map(id => {
+  const roiRows = psScope(views?.v_ps_roi ?? [], filter, 'none');
+  const flowAll = views?.v_ps_lifecycle_flow ?? [];
+  const hotels = useMemo(() => sortHealth([...new Set(health.map(row => String(row.hotel_id)))].map(id => {
     const rows = health.filter(row => row.hotel_id === id);
     const first = rows[0] ?? {};
-    const row: PsReportRow = { ...first, completeness: rows.some(r => r.completeness != null && r.completeness !== 'complete') ? 'incomplete' : first.completeness ?? null };
-    return { row, ...healthOf(row, riskRules, now) };
-  }).sort((a, b) => TIER[a.tier].order - TIER[b.tier].order), [health, riskRules, now.getTime()]);
+    const row: PsReportRow = { ...first, service_line: [...new Set(rows.map(r => String(r.service_line ?? '')))].join('+'), completeness: rows.some(r => r.completeness != null && r.completeness !== 'complete') ? 'incomplete' : first.completeness ?? null, has_orm_commission: rows.some(r => r.has_orm_commission === true) };
+    return accountHealthOf(row, { now, roi: roiRows, flow: flowAll, ratioMin: demo ? DEMO_VALUE_RATIO_MIN : ROI_VALUE_RATIO_MIN });
+  })), [health, roiRows, flowAll, demo, now.getTime()]);
   const tiered = hotels.filter(h => h.tier !== 'pending');
   const tierCount = (t: HealthTier) => tiered.filter(h => h.tier === t).length;
-  const dims = (Object.keys(DIM_LABEL) as HealthDim[]).map(d => ({ d, count: tiered.filter(h => h.dims.includes(d)).length })).sort((a, b) => b.count - a.count);
-  const shown = hotels.filter(h => (tierFilter === 'all' || h.tier === tierFilter) && (!dimFilter || h.dims.includes(dimFilter)));
+  const dimCodes = (Object.keys(DIM_TH) as DimCode[]).filter(c => !INERT_DIMS.includes(c));
+  const dims = dimCodes.map(d => ({ d, count: tiered.filter(h => h.dims.some(x => x.code === d)).length })).filter(x => x.count).sort((a, b) => b.count - a.count);
+  const shown = hotels.filter(h => (tierFilter === 'all' || h.tier === tierFilter) && (!dimFilter || h.dims.some(x => x.code === dimFilter)));
+  const distKeys = [...new Set(tiered.map(h => String(h.row[distBy] ?? 'ไม่ระบุ')))].sort();
   const groups = [...new Set(renewals.map(row => String(row[groupBy] ?? 'ไม่ระบุ')))];
   const emptyText = loading ? 'กำลังโหลดรายงาน…' : error ? 'อ่านรายงาน PS ไม่ได้ — ลองใหม่อีกครั้ง' : pending;
   const empty = <Empty text={emptyText} />;
@@ -91,7 +99,13 @@ export function PsReportTab({ report, filter, loading, error, wonMtd, compareSid
     </Section></div>
     {compareSide !== 'B' && <div className="min-w-0 lg:col-span-2"><Section demo={demo} title="⑦b Account Health" right={<div className="flex flex-wrap gap-1">{(['all','high','watch','healthy'] as const).map(t => <Button key={t} size="sm" variant={tierFilter === t ? 'default' : 'outline'} onClick={() => setTierFilter(t)}>{t === 'all' ? 'ทั้งหมด' : `${TIER[t].dot} ${TIER[t].label} ${tierCount(t)}`}</Button>)}</div>}>
       {dimFilter && <p className="mb-2 text-xs text-muted-foreground">กรองด้าน: {DIM_LABEL[dimFilter]} · <button type="button" className="underline" onClick={() => setDimFilter(null)}>ล้าง</button></p>}
-      {hotels.length ? <div className="overflow-x-auto"><table className="w-full min-w-[640px] text-sm"><thead><tr className="text-left text-xs text-muted-foreground">{['โรงแรม','Tier','Grade ล่าสุด / แย่สุด','Survey #2','ด้านเสี่ยง','WS-2','Flag','#svc'].map(label => <th key={label} className="px-2 py-2">{label}</th>)}</tr></thead><tbody>{shown.map(({ row, dims: hit, tier }) => <tr key={String(row.hotel_id)} className="cursor-pointer border-t hover:bg-muted" onClick={openProfile}><td className="px-2 py-3"><span className="inline-flex items-center gap-1 text-primary">{String(row.hotel_name ?? row.hotel_id)}<ArrowUpRight className="size-3 shrink-0" /></span></td><td className="px-2 whitespace-nowrap">{TIER[tier].dot} {TIER[tier].label}</td><td className="px-2">{String(row.latest_grade ?? '—')} / {String(row.worst_grade ?? '—')}</td><td className="px-2">{row.survey2 == null ? '—' : String(row.survey2)}</td><td className="px-2"><div className="flex flex-wrap gap-1">{tier === 'pending' ? <Chip tone="muted">รอข้อมูล</Chip> : hit.length ? hit.map(d => <Chip key={d} tone="warn">{DIM_LABEL[d]}</Chip>) : <Chip tone="muted">ไม่เข้าเกณฑ์</Chip>}</div></td><td className="px-2 text-xs">{String(row.completeness ?? '—')}</td><td className="px-2 text-xs text-muted-foreground">🔴 รอ</td><td className="px-2">{String(row.active_services ?? '—')}</td></tr>)}</tbody></table></div> : empty}
+      {hotels.length > 0 && <div className="mb-3 space-y-2">
+        <div className="flex flex-wrap items-center gap-2 text-xs"><span className="text-muted-foreground">กระจาย Tier ตาม</span>{(['service_line','ae_owner_id'] as const).map(k => <Button key={k} size="sm" variant={distBy === k ? 'default' : 'outline'} onClick={() => setDistBy(k)}>{k === 'service_line' ? 'บริการ' : 'Owner'}</Button>)}</div>
+        <div className="flex flex-wrap gap-3 text-xs">{distKeys.map(k => { const g = tiered.filter(h => String(h.row[distBy] ?? 'ไม่ระบุ') === k); return <span key={k} className="rounded border px-2 py-1"><b>{k}</b> · 🔴{g.filter(h => h.tier === 'high').length} 🟡{g.filter(h => h.tier === 'watch').length} 🟢{g.filter(h => h.tier === 'healthy').length}</span>; })}</div>
+        {dims.length > 0 && <div className="flex flex-wrap gap-1">{dims.map(({ d, count }) => <button key={d} type="button" onClick={() => setDimFilter(dimFilter === d ? null : d)} className={cn('rounded-full border px-2 py-0.5 text-xs', dimFilter === d && 'bg-muted font-semibold')}>{DIM_TH[d]} {count}</button>)}</div>}
+      </div>}
+      {dimFilter && <p className="mb-2 text-xs text-muted-foreground">กรองด้าน: {DIM_TH[dimFilter]} · <button type="button" className="underline" onClick={() => setDimFilter(null)}>ล้าง</button></p>}
+      {hotels.length ? <div className="overflow-x-auto"><table className="w-full min-w-[640px] text-sm"><thead><tr className="text-left text-xs text-muted-foreground">{['โรงแรม','Tier','Score','Grade ล่าสุด / แย่สุด','ด้านเสี่ยง','Flag','#svc'].map(label => <th key={label} className="px-2 py-2">{label}</th>)}</tr></thead><tbody>{shown.map(({ row, dims: hit, tier, score, compound, hotel_id }) => <tr key={hotel_id} className="cursor-pointer border-t hover:bg-muted" onClick={() => openAccount360(hotel_id)} data-testid="health-row"><td className="px-2 py-3"><span className="inline-flex flex-wrap items-center gap-1 text-primary">{String(row.hotel_name ?? hotel_id)}<ArrowUpRight className="size-3 shrink-0" />{compound && <Chip tone="warn">⚠ ORM churn-risk</Chip>}</span></td><td className="px-2 whitespace-nowrap">{TIER[tier].dot} {TIER[tier].label}</td><td className="px-2 tabular-nums">{tier === 'pending' ? '—' : score}</td><td className="px-2">{String(row.latest_grade ?? '—')} / {String(row.worst_grade ?? '—')}</td><td className="px-2"><div className="flex flex-wrap gap-1">{tier === 'pending' ? <Chip tone="muted">รอข้อมูล</Chip> : hit.length ? hit.map(d => <Chip key={d.code} tone="warn">{d.code === 'TIER_A_PERSIST' ? d.value : d.value ? `${d.label} ${d.value}` : d.label}</Chip>) : <Chip tone="muted">ไม่เข้าเกณฑ์</Chip>}</div></td><td className="px-2 text-xs text-muted-foreground">🔴 รอ</td><td className="px-2">{String(row.active_services ?? '—')}</td></tr>)}</tbody></table></div> : empty}
     </Section></div>}
   </div>;
 }

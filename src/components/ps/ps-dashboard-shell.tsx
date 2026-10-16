@@ -11,6 +11,7 @@ import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { Chip, Panel } from "@/components/crm/crm-ui";
 import { BdacTab } from "@/components/ps/bdac-tab";
 import { PsReportTab } from '@/components/ps/ps-report-tab';
+import { Account360Provider } from '@/components/ps/account-360';
 import { MeetingAnalyzerTab } from './meeting-analyzer-tab';
 import { readMeetingDashboard } from '@/lib/meeting-dashboard.functions';
 import { demoMeetingReport } from '@/lib/meeting-dashboard-demo';
@@ -124,7 +125,7 @@ export function DashboardShell({ servicing, overview, header }: { servicing: Rea
   const lines = deals.filter(d => matchesBook({ service_line: d.service_line === 'MARCOM' ? 'Marcom' : d.service_line, hotel_id:d.hotel_id, hotel_name:d.hotel_name, ae_owner_id: data?.views.v_ps_account_health.find(r => r.hotel_id === d.hotel_id)?.['ae_owner_id'] ?? (demo ? d.bd_owner_id : null) }, filter));
   const wonMtd = v_bdac_flow(lines, periodRange(selectedPeriod(filter, now))).won;
   const periodFilter = { ...filter, ...(filter.compare ? { period:selectedPeriod(filter, now) } : {}) };
-  return <DashboardGlobal.Provider value={{ filter, demo, now:nowString }}><FilterCtx.Provider value={filter}><PsReportCtx.Provider value={report}>
+  return <DashboardGlobal.Provider value={{ filter, demo, now:nowString }}><FilterCtx.Provider value={filter}><PsReportCtx.Provider value={report}><Account360Provider report={report.data}>
     <div className="flex flex-col gap-4">
       <DashboardGlobalFilters value={filter} onChange={setFilter} demo={demo} onDemo={toggleDemo} now={now} />
       <HeadlineStrip />
@@ -146,7 +147,7 @@ export function DashboardShell({ servicing, overview, header }: { servicing: Rea
         {tab === 'servicing' && servicing}
       </div>
     </div>
-  </PsReportCtx.Provider></FilterCtx.Provider></DashboardGlobal.Provider>;
+  </Account360Provider></PsReportCtx.Provider></FilterCtx.Provider></DashboardGlobal.Provider>;
 }
 
 
