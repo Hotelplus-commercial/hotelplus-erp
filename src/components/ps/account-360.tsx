@@ -89,7 +89,7 @@ function Account360Body({ report, hotelId }: { report?: PsReport | undefined; ho
       </>}
     </Block>
     <Block title="โอกาสขยายบัญชี (Expansion)">
-      <ExpansionSection report={report} hotelId={hotelId} lines={lines} />
+      <ExpansionSection report={report} hotelId={hotelId} lines={[...new Set(healthRows.map(r => String(r.service_line ?? "")).filter(Boolean))]} />
     </Block>
     <Block title="⑧ Timeline">
       {contracts.length ? [...contracts].flatMap(c => [[c.start_date, `เริ่ม ${c.contract_id}`], [c.inactivated_at, `ปิด ${c.contract_id}`]]).filter(([d]) => d).sort((a, b) => String(a[0]).localeCompare(String(b[0]))).map(([d, t], i) => <Kv key={i} k={String(d).slice(0, 10)} v={String(t)} />) : <p className="text-muted-foreground">—</p>}
