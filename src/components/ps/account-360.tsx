@@ -7,7 +7,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { Chip } from '@/components/crm/crm-ui';
 import { accountHealthOf, DEMO_VALUE_RATIO_MIN, ROI_VALUE_RATIO_MIN, tierAStreak, trailingValueRatio } from '@/lib/account-health';
 import type { PsReport, PsReportRow } from '@/lib/ps-dashboard-types';
-import { BdLink, RenewalLink, priceLine, readyTag, sigChips, triggerBadge } from '@/components/ps/expansion-ui';
+import { BdTicketButton, RenewalLink, priceLine, readyTag, sigChips, triggerBadge } from '@/components/ps/expansion-ui';
 import { bandLabel } from '@/lib/expansion';
 
 type Ctx = { openAccount360: (hotelId: string) => void };
@@ -107,7 +107,7 @@ function ExpansionSection({ report, hotelId, lines }: { report?: PsReport | unde
     <div><p className="mb-1 font-medium">ขายบริการเพิ่ม (Cross-sell)</p>
       {lines.length >= 2 ? <p className="text-muted-foreground">ครบ 2 บริการ</p> : !cs ? <p className="text-muted-foreground">—</p> : cs.gate_pass !== true ?
         <p className="text-warning-foreground">{String(cs.gate_fail_reason ?? '')} · ดูแลก่อน ยังไม่ขาย</p> :
-        <div className="flex flex-wrap items-center gap-1"><span>{String(cs.owned_service)} → เสนอเพิ่ม {String(cs.gap_service)}</span>{readyTag(cs)}{sigChips(cs)}<span className="ml-auto"><BdLink /></span></div>}
+        <div className="flex flex-wrap items-center gap-1"><span>{String(cs.owned_service)} → เสนอเพิ่ม {String(cs.gap_service)}</span>{readyTag(cs)}{sigChips(cs)}<span className="ml-auto"><BdTicketButton row={cs} demo={!!report?.demo} /></span></div>}
     </div>
     <div><p className="mb-1 font-medium">ขึ้นค่าบริการ (Fee-uplift)</p>
       {!rp.length ? <p className="text-muted-foreground">ไม่มีค่าบริการ fixed — ไม่เข้าเกณฑ์ repricing</p> : rp.map(r => <div key={String(r.service_line)} className="mb-1">
