@@ -39,6 +39,12 @@ const FINISHED: [string, string, L, number, number, number | null, number | null
 const RENEWALS: [string, string, string, string][] = [['R1', 'C01', '2026-09-10', 'RENEWED'], ['R2', 'C02', '2026-09-15', 'RENEWED'], ['R3', 'C04', '2026-09-20', 'RENEWED'], ['R4', 'C05', '2026-09-25', 'NOT_RENEWED'], ['R5', 'C06', '2026-09-28', 'IN_PROGRESS']];
 const SURVEY2: Record<string, [number, number]> = { 'Chaam Peumsuk': [5, 10], Seefah: [5, 9], 'Chaba Grand': [4, 9], 'Baan Suan': [4, 8], 'Dusit Pool Villa': [3, 5] };
 const GRADES: Record<string, [string | null, string | null]> = { 'Chaam Peumsuk': ['A', 'A'], Seefah: ['A', 'A'], 'Erawan Boutique': [null, null], Anjali: ['C', 'C'], 'Baan Suan': ['B', 'B'], 'Baan Talay': ['B', 'B'], 'Dusit Pool Villa': ['C', 'C'], 'Chaba Grand': ['B', 'D'] };
+/** Account Health 360 demo: ORM-commission revenue × fee × tier (closed months). Chaba Grand = compound; Chaam Peumsuk = healthy. */
+const ROI_MONTHS = ['2026-03-01','2026-04-01','2026-05-01','2026-06-01','2026-07-01','2026-08-01'];
+const ROI: Record<string, { rev: number[]; tier: string[]; fee: number; comm: number[] }> = {
+  'Chaba Grand': { rev: [420000,410000,400000,360000,320000,280000], tier: ['B','B','A','A','A','A'], fee: 60000, comm: [42000,41000,40000,36000,32000,28000] },
+  'Chaam Peumsuk': { rev: [500000,530000,560000,590000,620000,650000], tier: ['C','C','C','C','C','C'], fee: 50000, comm: [50000,53000,56000,59000,62000,65000] },
+};
 const WS2_INCOMPLETE = new Set(['Dusit Pool Villa', 'Baan Talay', 'Baan Suan']);
 
 const day = (a: string, b: string) => Math.round((new Date(b).getTime() - new Date(a).getTime()) / 864e5);
@@ -80,8 +86,9 @@ export function buildDemoReport(filter?: GlobalFilter): PsReport {
   views.v_ps_account_health = active.map(c => {
     const mine = active.filter(x => x.hotel === c.hotel);
     const [latest, worst] = GRADES[c.hotel] ?? [null, null];
-    return { hotel_id: hid(c.hotel), hotel_name: c.hotel, service_line: c.line, ae_owner_id: c.ae, status: c.status, latest_grade: latest, worst_grade: worst, survey2: SURVEY2[c.hotel]?.[0] ?? null, completeness: WS2_INCOMPLETE.has(c.hotel) ? 'incomplete' : 'complete', end_date: mine.map(x => x.end).sort()[0] ?? null, active_services: mine.length };
+    return { hotel_id: hid(c.hotel), hotel_name: c.hotel, service_line: c.line, ae_owner_id: c.ae, status: c.status, latest_grade: latest, worst_grade: worst, survey2: SURVEY2[c.hotel]?.[0] ?? null, completeness: WS2_INCOMPLETE.has(c.hotel) ? 'incomplete' : 'complete', end_date: mine.map(x => x.end).sort()[0] ?? null, active_services: mine.length, has_orm_commission: !!ROI[c.hotel] };
   });
+  views.v_ps_roi = Object.entries(ROI).flatMap(([hotel, r]) => ROI_MONTHS.map((period, i) => ({ hotel_id: hid(hotel), hotel_name: hotel, service_line: 'ORM', ae_owner_id: contracts.find(c => c.hotel === hotel)?.ae ?? null, period, revenue_thb: r.rev[i]!, fee_fixed_thb: r.fee, commission_thb: r.comm[i]!, value_ratio: Math.round(r.rev[i]! / (r.fee + r.comm[i]!) * 100) / 100, orm_tier: r.tier[i]!, achievement_pct: r.tier[i] === 'A' ? 55 : r.tier[i] === 'B' ? 80 : 105, portfolio_rev_median: null, portfolio_n: Object.keys(ROI).length })));
   if (filter) {
     for (const view of PS_VIEWS) if (view !== 'v_ps_attach_rate') views[view] = views[view].filter(row => matchesBook(row, filter, view === 'v_ps_lifecycle_flow' || view === 'v_ps_account_health'));
     const scopedActive = active.filter(c => matchesBook({ service_line: c.line, ae_owner_id: c.ae, hotel_id: hid(c.hotel), hotel_name: c.hotel, status: c.status }, filter, true));
