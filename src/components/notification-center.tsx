@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { isPendingPickup, setTicketDemo, STATUS_TH, useTickets } from "@/lib/tickets-l0";
+import { setTicketDemo, STATUS_TH, useTickets } from "@/lib/tickets-l0";
+import { workspaceByDept } from "@/lib/workspace-registry";
 import { Bell, AlertTriangle, Info, CircleAlert, Check } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -61,9 +62,9 @@ export function NotificationCenter() {
             <p className="mb-2 text-xs font-medium text-muted-foreground">งาน Ticket</p>
             <ul className="space-y-2">{tickets.map(t => <li key={t.ticket_id}>
               <Button asChild variant="ghost" className="h-auto w-full justify-start whitespace-normal px-2 py-2 text-left">
-                <Link to="/bd/tickets" search={{ demo: demo ? 1 : undefined, ticket: t.ticket_id }}>
+                <Link to={workspaceByDept(t.target_dept).path} search={{ demo: demo ? 1 : undefined, ticket: t.ticket_id }}>
                   <span className="min-w-0 break-words"><span className="block text-xs font-medium">#{t.ticket_id} · {STATUS_TH[t.status]}</span>
-                    <span className="block text-xs text-muted-foreground">{t.subject_ref.hotel_name} · {t.target_dept}{isPendingPickup(t) ? " · รอ pickup" : ""}</span>
+                    <span className="block text-xs text-muted-foreground">{t.subject_ref.hotel_name} · {workspaceByDept(t.target_dept).label}</span>
                   </span>
                 </Link>
               </Button>

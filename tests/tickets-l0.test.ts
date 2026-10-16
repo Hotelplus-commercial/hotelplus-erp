@@ -28,10 +28,11 @@ describe('Layer 0 ticket oracle', () => {
     expect(transition('TKT-000002', 0, 'CANCELLED', 'BD')).toBe(false);
     expect(transition('TKT-000002', 0, 'CANCELLED', 'PM')).toBe(true);
   });
-  test('pending pickup is retained; restarting demo clears only its in-memory collection', () => {
-    createTask({ ...input, target_dept: 'ORM' });
+  test('OFFICE ticket lands in its own workspace (no pending pickup); restarting demo clears only its in-memory collection', () => {
+    createTask({ ...input, target_dept: 'OFFICE' });
     const ticket = findOpen('UPSELL_PITCH', 'H1', 'Marcom');
-    expect(ticket && isPendingPickup(ticket)).toBe(true);
+    expect(ticket?.target_dept).toBe('OFFICE');
+    expect(ticket && isPendingPickup(ticket)).toBe(false);
     expect(ticket?.audit).toHaveLength(1);
     setTicketDemo(false); setTicketDemo(true);
     expect(findOpen('UPSELL_PITCH', 'H1', 'Marcom')).toBeUndefined();
