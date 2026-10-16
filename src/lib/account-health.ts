@@ -54,7 +54,7 @@ export function revenueDecline(series: PsReportRow[]): boolean {
 export function revenueFlat(series: PsReportRow[]): boolean {
   const last = series.slice(-ROI_FLAT_MONTHS).map(r => num(r.revenue_thb));
   if (last.length < ROI_FLAT_MONTHS || last.some(v => v == null)) return false;
-  const mean = last.reduce((s, v) => s + v!, 0) / last.length;
+  const mean = last.reduce<number>((s, v) => s + (v ?? 0), 0) / last.length;
   return mean > 0 && last.every(v => Math.abs(v! - mean) / mean * 100 <= ROI_FLAT_BAND_PCT);
 }
 export function trailingValueRatio(series: PsReportRow[]) {
