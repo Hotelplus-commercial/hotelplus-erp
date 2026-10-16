@@ -144,3 +144,6 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [x] Work monitor ①–④ (read-only, empty until seed), Layer 3 skeleton, 2 Headline tiles, filter/compare mapping, demo
 - [ ] Monitor data — blocked: coaching/assignment/renewal/onboarding mirrors not in Cloud yet (seed + C5)
 - [ ] Per-category aging thresholds — awaiting PM (O-T1); default 3 days
+
+- [x] Account Health + 360 v1.0 (demo verified)
+- [ ] Account Health live data: waits on Cloud mirrors for contract billing type, Production Report revenue, ORM tier; value-ratio cutoff + thresholds await business confirmation
