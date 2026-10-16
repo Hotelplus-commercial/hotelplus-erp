@@ -13,7 +13,7 @@ const fmt = (iso: string) => new Date(iso).toLocaleString("th-TH", { dateStyle: 
 const RANGES: { key: DateRange; label: string }[] = [{ key: "today", label: "วันนี้" }, { key: "7d", label: "7 วัน" }, { key: "14d", label: "14 วัน" }];
 
 /** ONE generic shell (spec Layer 1 §2). Renders only from `config`. */
-export function WorkspaceShell({ config, demo, ticket }: { config: WorkspaceConfig; demo: boolean; ticket?: string }) {
+export function WorkspaceShell({ config, demo, ticket }: { config: WorkspaceConfig; demo: boolean; ticket?: string | undefined }) {
   const [ready, setReady] = useState(false);
   useEffect(() => { setTicketDemo(demo); setReady(true); }, [demo]);
   const [role, setRole] = useState<Role>(config.dept_key);
@@ -72,7 +72,7 @@ function Lane({ title, focus, children }: { title: string; focus?: boolean; chil
 const Empty = ({ text }: { text: string }) => <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">{text}</div>;
 
 /** Inbound-only: tickets WHERE target_dept = dept. Never time-bound. */
-function TicketsLane({ dept, role, initialTicket }: { dept: Dept; role: Role; initialTicket?: string }) {
+function TicketsLane({ dept, role, initialTicket }: { dept: Dept; role: Role; initialTicket?: string | undefined }) {
   const tickets = useTickets();
   const [showClosed, setShowClosed] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
