@@ -9,7 +9,7 @@ import {
 } from "@/lib/tickets-l0";
 
 export const Route = createFileRoute("/bd/tickets")({
-  validateSearch: (s: Record<string, unknown>) => ({ demo: s["demo"] === "1" || s["demo"] === 1 ? 1 : undefined }),
+  validateSearch: (s: Record<string, unknown>) => ({ demo: s["demo"] === "1" || s["demo"] === 1 ? 1 : undefined, ticket: typeof s["ticket"] === "string" ? s["ticket"] : undefined }),
   head: () => ({
     meta: [
       { title: "BD 🎫 Tickets — Ticket Inbox | Meridia Hotel ERP" },
@@ -26,12 +26,19 @@ export const Route = createFileRoute("/bd/tickets")({
 const fmt = (iso: string) => new Date(iso).toLocaleString("th-TH", { dateStyle: "medium", timeStyle: "short" });
 
 function TicketsPage() {
-  const { demo } = Route.useSearch();
+  const { demo, ticket } = Route.useSearch();
   const [ready, setReady] = useState(false);
   useEffect(() => { setTicketDemo(!!demo); setReady(true); }, [demo]);
   const [role, setRole] = useState<Role>("BD");
   const [openId, setOpenId] = useState<string | null>(null);
   const tickets = useTickets();
+  useEffect(() => {
+    if (!ready || !ticket) return;
+    const selected = tickets.find(t => t.ticket_id === ticket);
+    if (!selected) return;
+    setOpenId(selected.ticket_id);
+    setRole(isPendingPickup(selected) ? selected.target_dept : "BD");
+  }, [ready, ticket]);
   if (!ready) return null;
   const bd = tickets.filter((t) => t.target_dept === "BD");
   const parked = tickets.filter(t => isPendingPickup(t) && (role === "PM" || t.target_dept === role));
