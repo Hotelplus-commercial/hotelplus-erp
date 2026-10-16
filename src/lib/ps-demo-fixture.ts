@@ -6,6 +6,8 @@ import type { HotelProfile } from './hotel-store';
 import type { OnboardingCard } from './ps-servicing';
 import type { GlobalFilter } from './ps-dashboard-global';
 import { matchesBook } from './ps-dashboard-global';
+import { accountHealthOf, DEMO_VALUE_RATIO_MIN, roiSeries, trailingValueRatio } from './account-health';
+import { crossSellRow, repricingRow, EXPANSION_DEMO, type RevenueProfile } from './expansion';
 
 export const DEMO_ENABLED = true; // Preview-safe; default OFF is controlled by React state + URL.
 export const DEMO_NOW = '2026-09-30T00:00:00.000Z';
@@ -46,6 +48,15 @@ const ROI: Record<string, { rev: number[]; tier: string[]; fee: number; comm: nu
   'Chaam Peumsuk': { rev: [500000,530000,560000,590000,620000,650000], tier: ['C','C','C','C','C','C'], fee: 50000, comm: [50000,53000,56000,59000,62000,65000] },
 };
 const WS2_INCOMPLETE = new Set(['Dusit Pool Villa', 'Baan Talay', 'Baan Suan']);
+/** Expansion oracle: prime=Chaam Peumsuk · nurture=Seefah/Anjali · save-first=Dusit/Baan Talay · cadence=Baan Suan · signal=Chaam Peumsuk · declining=Chaba Grand · no-fixed=Dusit · pending=Seefah. */
+const DEMO_PORTFOLIO_VR_MEDIAN = 3;
+const REPRICE: [string, L, 'fixed' | 'commission', number | null, number | null, string | null, RevenueProfile, boolean | null][] = [
+  ['Chaam Peumsuk', 'ORM', 'fixed', 50000, null, '2025-01-10', 'strong', true],
+  ['Baan Suan', 'Marcom', 'fixed', 35000, null, '2024-05-01', 'stable', false],
+  ['Chaba Grand', 'ORM', 'fixed', 90000, null, '2025-03-01', 'declining', false],
+  ['Dusit Pool Villa', 'ORM', 'commission', null, null, null, 'moderate', false],
+  ['Seefah', 'ORM', 'fixed', 40000, null, null, 'pending', null],
+];
 
 const day = (a: string, b: string) => Math.round((new Date(b).getTime() - new Date(a).getTime()) / 864e5);
 const hid = (hotel: string) => 'DEMO-' + hotel.replace(/\s+/g, '-').toUpperCase();
@@ -89,6 +100,12 @@ export function buildDemoReport(filter?: GlobalFilter): PsReport {
     return { hotel_id: hid(c.hotel), hotel_name: c.hotel, service_line: c.line, ae_owner_id: c.ae, status: c.status, latest_grade: latest, worst_grade: worst, survey2: SURVEY2[c.hotel]?.[0] ?? null, completeness: WS2_INCOMPLETE.has(c.hotel) ? 'incomplete' : 'complete', end_date: mine.map(x => x.end).sort()[0] ?? null, active_services: mine.length, has_orm_commission: !!ROI[c.hotel] };
   });
   views.v_ps_roi = Object.entries(ROI).flatMap(([hotel, r]) => ROI_MONTHS.map((period, i) => ({ hotel_id: hid(hotel), hotel_name: hotel, service_line: 'ORM', ae_owner_id: contracts.find(c => c.hotel === hotel)?.ae ?? null, period, revenue_thb: r.rev[i]!, fee_fixed_thb: r.fee, commission_thb: r.comm[i]!, value_ratio: Math.round(r.rev[i]! / (r.fee + r.comm[i]!) * 100) / 100, orm_tier: r.tier[i]!, achievement_pct: r.tier[i] === 'A' ? 55 : r.tier[i] === 'B' ? 80 : 105, portfolio_rev_median: null, portfolio_n: Object.keys(ROI).length })));
+  // Expansion v1.0 — derived once from the same spine (health tier + ROI), consumed by both tracks.
+  const clock = new Date(DEMO_NOW);
+  const tierOf = (hotel: string) => { const rows = views.v_ps_account_health.filter(r => r.hotel_name === hotel); const first = rows[0] ?? {}; return accountHealthOf({ ...first, completeness: rows.some(r => r.completeness === 'incomplete') ? 'incomplete' : 'complete' }, { now: clock, roi: views.v_ps_roi, flow: views.v_ps_lifecycle_flow, ratioMin: DEMO_VALUE_RATIO_MIN }).tier; };
+  const vr = (hotel: string) => trailingValueRatio(roiSeries(views.v_ps_roi, hid(hotel), clock));
+  views.v_ps_crosssell = hotels.flatMap(h => { const mine = active.filter(c => c.hotel === h); const row = crossSellRow({ hotel_id: hid(h), hotel_name: h, ae_owner_id: mine[0]!.ae, owned: mine.map(c => c.line), health_tier: tierOf(h), grade: GRADES[h]?.[0] ?? null, survey: SURVEY2[h]?.[0] ?? null, onboard_complete: true, service_start: mine[0]!.start, tenure_start: mine[0]!.start, renewal_date: mine.map(c => c.end).sort()[0] ?? null, value_ratio: vr(h), portfolio_median: DEMO_PORTFOLIO_VR_MEDIAN, value_strong: false }, EXPANSION_DEMO, clock); return row ? [row] : []; });
+  views.v_ps_repricing = REPRICE.flatMap(([h, line, model, fee, guar, hist, profile, under]) => { const c = active.find(x => x.hotel === h && x.line === line); if (!c) return []; const row = repricingRow({ hotel_id: hid(h), hotel_name: h, ae_owner_id: c.ae, service_line: line, billing_model: model, fee_fixed: fee, guarantee_fee: guar, price_history: hist ? [{ effective_date: hist, note: 'ปรับราคาล่าสุด (demo)' }] : null, revenue_profile: profile, underpriced: under, health_tier: tierOf(h), grade: GRADES[h]?.[0] ?? null, survey: SURVEY2[h]?.[0] ?? null }, EXPANSION_DEMO, clock); return row ? [row] : []; });
   if (filter) {
     for (const view of PS_VIEWS) if (view !== 'v_ps_attach_rate') views[view] = views[view].filter(row => matchesBook(row, filter, view === 'v_ps_lifecycle_flow' || view === 'v_ps_account_health'));
     const scopedActive = active.filter(c => matchesBook({ service_line: c.line, ae_owner_id: c.ae, hotel_id: hid(c.hotel), hotel_name: c.hotel, status: c.status }, filter, true));

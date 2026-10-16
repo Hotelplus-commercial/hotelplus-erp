@@ -962,6 +962,30 @@ export type Database = {
         }
         Relationships: []
       }
+      v_ps_crosssell: {
+        Row: {
+          ae_owner_id: string | null
+          gap_service: string | null
+          gate_fail_reason: string | null
+          gate_pass: boolean | null
+          grade: string | null
+          health_tier: string | null
+          hotel_id: string | null
+          hotel_name: string | null
+          is_prime: boolean | null
+          owned_service: string | null
+          pending_sync: boolean | null
+          readiness_score: number | null
+          readiness_tier: string | null
+          service_line: string | null
+          sig_happy: boolean | null
+          sig_mature: boolean | null
+          sig_timely: boolean | null
+          sig_value_proof: boolean | null
+          survey_score: number | null
+        }
+        Relationships: []
+      }
       v_ps_lifecycle_flow: {
         Row: {
           ae_owner_id: string | null
@@ -1021,6 +1045,34 @@ export type Database = {
           renewal_due_date: string | null
           renewal_id: string | null
           service_line: string | null
+        }
+        Relationships: []
+      }
+      v_ps_repricing: {
+        Row: {
+          ae_owner_id: string | null
+          band_bucket: string | null
+          band_max_pct: number | null
+          band_min_pct: number | null
+          billing_model: string | null
+          cadence_path: boolean | null
+          gate_fail_reason: string | null
+          gate_pass: boolean | null
+          hotel_id: string | null
+          hotel_name: string | null
+          last_increase_at: string | null
+          lever_amount: number | null
+          lever_field: string | null
+          months_since_increase: number | null
+          pending_sync: boolean | null
+          revenue_profile: string | null
+          service_line: string | null
+          signal_path: string | null
+          suggested_max_thb: number | null
+          suggested_min_thb: number | null
+          trigger: string | null
+          trigger_pending: boolean | null
+          why_chips: string[] | null
         }
         Relationships: []
       }
