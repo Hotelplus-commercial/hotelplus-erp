@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 import { ModuleLayout } from "@/components/hotel/module-layout";
 import { getModule } from "@/lib/erp-data";
@@ -11,6 +11,9 @@ export const ormTabs = [
 ];
 
 export const Route = createFileRoute("/orm")({
+  beforeLoad: ({ location }) => {
+    if (location.pathname.replace(/\/$/, "") === "/orm") throw redirect({ to: "/workspace/$dept", params: { dept: "orm" }, search: { demo: new URLSearchParams(location.searchStr).get("demo") === "1" ? 1 : undefined, ticket: undefined } });
+  },
   head: () => ({
     meta: [
       { title: "ORM App — Online Reputation | Meridia Hotel ERP" },
