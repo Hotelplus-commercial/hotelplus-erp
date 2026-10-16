@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Link, useRouterState } from "@tanstack/react-router";
+import { isPendingPickup, setTicketDemo, STATUS_TH, useTickets } from "@/lib/tickets-l0";
 import { Bell, AlertTriangle, Info, CircleAlert, Check } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -19,8 +21,12 @@ const severityStyles = {
 } as const;
 
 export function NotificationCenter() {
+  const location = useRouterState({ select: r => r.location });
+  const demo = new URLSearchParams(location.searchStr).get("demo") === "1";
+  useEffect(() => { setTicketDemo(new URLSearchParams(window.location.search).get("demo") === "1"); }, [location.pathname, location.searchStr]);
+  const tickets = useTickets().filter(t => t.status === "NEW" || t.status === "ACK" || t.status === "IN_PROGRESS");
   const [items, setItems] = useState(seed);
-  const unread = items.filter((n) => n.unread).length;
+  const unread = items.filter((n) => n.unread).length + tickets.filter(t => t.status === "NEW").length;
 
   return (
     <Popover>
@@ -51,6 +57,18 @@ export function NotificationCenter() {
         </div>
         <Separator />
         <ScrollArea className="max-h-[22rem]">
+          {tickets.length > 0 && <div className="border-b px-4 py-3">
+            <p className="mb-2 text-xs font-medium text-muted-foreground">งาน Ticket</p>
+            <ul className="space-y-2">{tickets.map(t => <li key={t.ticket_id}>
+              <Button asChild variant="ghost" className="h-auto w-full justify-start whitespace-normal px-2 py-2 text-left">
+                <Link to="/bd/tickets" search={{ demo: demo ? 1 : undefined, ticket: t.ticket_id }}>
+                  <span className="min-w-0 break-words"><span className="block text-xs font-medium">#{t.ticket_id} · {STATUS_TH[t.status]}</span>
+                    <span className="block text-xs text-muted-foreground">{t.subject_ref.hotel_name} · {t.target_dept}{isPendingPickup(t) ? " · รอ pickup" : ""}</span>
+                  </span>
+                </Link>
+              </Button>
+            </li>)}</ul>
+          </div>}
           <ul className="divide-y">
             {items.map((n) => {
               const s = severityStyles[n.severity];

@@ -1,4 +1,4 @@
-/* Expansion / Upsell v1.0 — read-only lists. Every action is a deep-link; nothing writes. */
+/* Expansion / Upsell — read-only projections; only the central Layer 0 ticket action writes. */
 import { useContext, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { createTask, setTicketDemo, STATUS_TH, useTicketReadBack } from '@/lib/tickets-l0';
@@ -7,6 +7,7 @@ import { Link } from '@tanstack/react-router';
 import { ArrowUpRight } from 'lucide-react';
 import { Chip } from '@/components/crm/crm-ui';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Button } from '@/components/ui/button';
 import { useAccount360 } from '@/components/ps/account-360';
 import { bandLabel, crossSellList, READY_TH, repricingList, SIG_TH, TRIGGER_TH, UPLIFT_CEILING_MIN, UPLIFT_FLOOR_MIN, UPLIFT_MID_MIN } from '@/lib/expansion';
 import type { PsReportRow } from '@/lib/ps-dashboard-types';
@@ -28,13 +29,13 @@ export function BdTicketButton({ row, demo }: { row: PsReportRow; demo?: boolean
   useEffect(() => { setTicketDemo(isDemo); }, [isDemo]);
   const hotel_id = String(row.hotel_id), gap = String(row.gap_service ?? '');
   const open = useTicketReadBack('UPSELL_PITCH', hotel_id, gap);
-  if (open) return <Link to="/bd/tickets" search={{ demo: isDemo ? 1 : undefined }} onClick={e => e.stopPropagation()} data-testid="ticket-badge" className="whitespace-nowrap rounded border px-1.5 py-0.5 text-xs text-primary hover:underline">#{open.ticket_id} · {STATUS_TH[open.status]}</Link>;
-  return <button type="button" data-testid="ticket-create" className="inline-flex items-center gap-1 whitespace-nowrap rounded border border-primary/50 px-2 py-0.5 text-xs text-primary hover:bg-primary/10" onClick={e => {
+  if (open) return <Link to="/bd/tickets" search={{ demo: isDemo ? 1 : undefined, ticket: open.ticket_id }} onClick={e => e.stopPropagation()} data-testid="ticket-badge" className="whitespace-nowrap rounded border px-1.5 py-0.5 text-xs text-primary hover:underline">#{open.ticket_id} · {STATUS_TH[open.status]}</Link>;
+  return <Button type="button" variant="outline" size="sm" data-testid="ticket-create" className="h-auto gap-1 whitespace-nowrap border-primary/50 px-2 py-0.5 text-xs text-primary hover:bg-primary/10" onClick={e => {
     e.stopPropagation();
     const chips = (Object.keys(SIG_TH) as (keyof typeof SIG_TH)[]).filter(k => row[k] === true).map(k => SIG_TH[k]);
     const r = createTask({ type: 'UPSELL_PITCH', target_dept: 'BD', subject_ref: { hotel_id, hotel_name: String(row.hotel_name ?? hotel_id), gap_service: gap }, payload: { readiness_tier: String(row.readiness_tier ?? ''), chips, note: `${String(row.owned_service)} → เสนอเพิ่ม ${gap}` }, created_by: 'PM' });
     toast.success(r.deduped ? `มี Ticket อยู่แล้ว #${r.ticket_id}` : `สร้าง Ticket ให้ BD แล้ว #${r.ticket_id}`);
-  }}>สร้าง Ticket ให้ BD</button>;
+  }}>สร้าง Ticket ให้ BD</Button>;
 }
 export const RenewalLink = () => <Link to="/ps/ae-workspace/dashboard" hash="renewal-activities" onClick={e => e.stopPropagation()} className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-primary hover:underline">เปิด Renewal Activities <ArrowUpRight className="size-3" /></Link>;
 export const sigChips = (r: PsReportRow) => (Object.keys(SIG_TH) as (keyof typeof SIG_TH)[]).filter(k => r[k] === true).map(k => <Chip key={k} tone="muted">{SIG_TH[k]}</Chip>);
