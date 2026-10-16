@@ -920,12 +920,14 @@ export type Database = {
           active_services: number | null
           completeness: string | null
           flag: string | null
+          has_orm_commission: boolean | null
           hotel_id: string | null
           hotel_name: string | null
           latest_grade: string | null
           monthly_billing: number | null
           monthly_survey_score: number | null
           nps: number | null
+          pending_sync: boolean | null
           service_line: string | null
           survey2: number | null
           worst_grade: string | null
@@ -1033,6 +1035,25 @@ export type Database = {
           high_risk: number | null
           pending_sync: boolean | null
           service_line: string | null
+        }
+        Relationships: []
+      }
+      v_ps_roi: {
+        Row: {
+          achievement_pct: number | null
+          ae_owner_id: string | null
+          commission_thb: number | null
+          fee_fixed_thb: number | null
+          hotel_id: string | null
+          hotel_name: string | null
+          orm_tier: string | null
+          pending_sync: boolean | null
+          period: string | null
+          portfolio_n: number | null
+          portfolio_rev_median: number | null
+          revenue_thb: number | null
+          service_line: string | null
+          value_ratio: number | null
         }
         Relationships: []
       }
