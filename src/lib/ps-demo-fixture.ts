@@ -42,7 +42,7 @@ const GRADES: Record<string, [string | null, string | null]> = { 'Chaam Peumsuk'
 /** Account Health 360 demo: ORM-commission revenue × fee × tier (closed months). Chaba Grand = compound; Chaam Peumsuk = healthy. */
 const ROI_MONTHS = ['2026-03-01','2026-04-01','2026-05-01','2026-06-01','2026-07-01','2026-08-01'];
 const ROI: Record<string, { rev: number[]; tier: string[]; fee: number; comm: number[] }> = {
-  'Chaba Grand': { rev: [420000,410000,400000,360000,320000,280000], tier: ['B','B','A','A','A','A'], fee: 60000, comm: [42000,41000,40000,36000,32000,28000] },
+  'Chaba Grand': { rev: [420000,410000,400000,360000,320000,280000], tier: ['B','B','A','A','A','A'], fee: 90000, comm: [42000,41000,40000,36000,32000,28000] },
   'Chaam Peumsuk': { rev: [500000,530000,560000,590000,620000,650000], tier: ['C','C','C','C','C','C'], fee: 50000, comm: [50000,53000,56000,59000,62000,65000] },
 };
 const WS2_INCOMPLETE = new Set(['Dusit Pool Villa', 'Baan Talay', 'Baan Suan']);
