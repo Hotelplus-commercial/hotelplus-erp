@@ -10,7 +10,7 @@ describe('Layer 0 ticket oracle', () => {
     expect(createTask(input)).toEqual({ ticket_id: 'TKT-000001', deduped: false });
     expect(createTask({ ...input, target_dept: 'ORM' })).toEqual({ ticket_id: 'TKT-000001', deduped: true });
     setTicketDemo(true);
-    expect(findOpen('UPSELL_PITCH', 'H1', 'Marcom')?.created_at).toBe('2026-09-30T12:00:00Z');
+    expect(findOpen('UPSELL_PITCH', 'H1', 'Marcom')?.created_at).toBe('2026-09-30T00:00:00.000Z');
     expect(stage).not.toHaveBeenCalled();
   });
   test('target advances, creator cancels, revision rejects stale actions, terminal tickets cannot advance', () => {
