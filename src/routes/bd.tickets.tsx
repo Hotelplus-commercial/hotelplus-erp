@@ -8,7 +8,7 @@ import {
 } from "@/lib/tickets-l0";
 
 export const Route = createFileRoute("/bd/tickets")({
-  validateSearch: (s: Record<string, unknown>) => ({ demo: s.demo === "1" || s.demo === 1 ? 1 : undefined }),
+  validateSearch: (s: Record<string, unknown>) => ({ demo: s["demo"] === "1" || s["demo"] === 1 ? 1 : undefined }),
   head: () => ({
     meta: [
       { title: "BD 🎫 Tickets — Ticket Inbox | Meridia Hotel ERP" },
