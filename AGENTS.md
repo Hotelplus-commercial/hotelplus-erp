@@ -27,3 +27,4 @@
 - Demo adapters derive all tabs from one bundled spine via URL/state, no provider writes; renewal end forward-only.
 - Task tickets use own cloud tables, written only via ticket_create/ticket_update RPCs with revision CAS; responsible/watchers derived at read time, never stored; demo uses in-memory store.
 - PS Dashboard Servicing tab reads only v_servicing_* (empty pending projections until a Cloud Servicing mirror exists); its single write reuses the existing v1.1 AssignDialog/saveAssignment, never a dashboard-local store. Why: Servicing stays browser-local and assignment has one source.
+- Account Health dims/score/tier come only from the pure selector in src/lib/account-health.ts (count-based, TBD thresholds = not computed); Account 360 is one read-only drawer opened via useAccount360().openAccount360(hotel_id). Why: one explainable score and one shared hotel view.
