@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { PendingAssignList } from "@/components/ps/assignment-ui";
 import { READY_TH } from "@/lib/expansion";
 import {
   DEPTS, OPEN_STATUSES, STATUS_TH, TYPE_TH, allowedNext, createTask, setTicketDemo, transition,
@@ -52,6 +53,12 @@ export function WorkspaceShell({ config, demo, ticket }: { config: WorkspaceConf
         </Lane>
         <Lane title="✅ งานที่ต้องทำ">
           {config.lanes.todo.length === 0 ? <Empty text="ไม่มีงานค้าง 🎉" /> : null}
+          {config.lanes.todo.map((group) => (
+            <div key={group.key} className="min-w-0 space-y-2">
+              <h4 className="flex items-center gap-1.5 text-sm font-medium text-warning-foreground"><span aria-hidden="true">{group.icon}</span>{group.label_th}</h4>
+              {group.assignment_scope && <PendingAssignList scope={group.assignment_scope} />}
+            </div>
+          ))}
         </Lane>
         <Lane title="🎫 Tickets" focus>
           <TicketsLane dept={config.ticket_target_dept} role={role} initialTicket={ticket} />

@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 import { ModuleLayout } from "@/components/hotel/module-layout";
 import { getModule } from "@/lib/erp-data";
@@ -6,18 +6,22 @@ import { getModule } from "@/lib/erp-data";
 const mod = getModule("orm");
 
 export const ormTabs = [
-  { label: "ORM Overview", to: "/orm" },
   { label: "Action A · Hotel Plus ORM", to: "/orm/action-a" },
   { label: "ORM Dashboard", to: "/orm/dashboard" },
 ];
 
 export const Route = createFileRoute("/orm")({
+  beforeLoad: ({ location }) => {
+    if (location.pathname.replace(/\/$/, "") === "/orm") throw redirect({ to: "/workspace/$dept", params: { dept: "orm" }, search: { demo: new URLSearchParams(location.searchStr).get("demo") === "1" ? 1 : undefined, ticket: undefined } });
+  },
   head: () => ({
     meta: [
       { title: "ORM App — Online Reputation | Meridia Hotel ERP" },
       { name: "description", content: mod.description },
       { property: "og:title", content: "ORM App — Online Reputation | Meridia Hotel ERP" },
       { property: "og:description", content: mod.description },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: () => <ModuleLayout tabs={ormTabs} />,

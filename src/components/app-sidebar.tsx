@@ -55,12 +55,10 @@ const moduleChildren: Record<string, { title: string; url: string; icon: typeof 
   ],
 
   orm: [
-    { title: "ORM Overview", url: "/orm", icon: LayoutDashboard },
     { title: "Action A · Hotel Plus ORM", url: "/orm/action-a", icon: BarChart3 },
     { title: "ORM Dashboard", url: "/orm/dashboard", icon: LayoutDashboard },
   ],
   marcom: [
-    { title: "Marcom Overview", url: "/marcom", icon: Megaphone },
     { title: "Marcom Dashboard", url: "/marcom/dashboard", icon: LayoutDashboard },
   ],
   hr: [
@@ -165,7 +163,7 @@ export function AppSidebar() {
                         <span className="truncate">{m.code} App</span>
                       </Link>
                     </SidebarMenuButton>
-                    {!collapsed && children.length > 0 && inSection && (
+                    {!collapsed && (children.length > 0 || extraWs.length > 0) && inSection && (
                       <SidebarMenuSub>
                         {children.map((c) => (
                           <SidebarMenuSubItem key={c.url}>

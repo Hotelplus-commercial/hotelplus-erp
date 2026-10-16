@@ -1,10 +1,13 @@
-import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 
 import { getModule } from "@/lib/erp-data";
 
 const mod = getModule("marcom");
 
 export const Route = createFileRoute("/marcom")({
+  beforeLoad: ({ location }) => {
+    if (location.pathname.replace(/\/$/, "") === "/marcom") throw redirect({ to: "/workspace/$dept", params: { dept: "marcom" }, search: { demo: new URLSearchParams(location.searchStr).get("demo") === "1" ? 1 : undefined, ticket: undefined } });
+  },
   head: () => ({
     meta: [
       { title: "MARCOM App — Marketing & Comms | Meridia Hotel ERP" },
