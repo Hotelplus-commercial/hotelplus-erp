@@ -176,7 +176,7 @@ export function AppSidebar() {
                           <SidebarMenuSubItem>
                             <span className="block px-2 pt-2 text-xs font-medium text-muted-foreground">BD Workspace</span>
                             <SidebarMenuSubButton asChild isActive={pathname === "/bd/tickets"}>
-                              <Link to="/bd/tickets" search={{ demo: ticketDemo ? 1 : undefined }} className="flex items-center gap-2">
+                              <Link to="/bd/tickets" search={{ demo: ticketDemo ? 1 : undefined, ticket: undefined }} className="flex items-center gap-2">
                                 <Ticket className="size-3.5 shrink-0" />
                                 <span className="truncate">🎫 Tickets</span>
                               </Link>
