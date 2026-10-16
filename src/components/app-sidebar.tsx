@@ -44,6 +44,7 @@ import {
 } from "@/components/ui/sidebar";
 import { modules } from "@/lib/erp-data";
 import { useMeetingMgmt } from "@/lib/orm-meeting";
+import { HOST_OF_MODULE, workspacesFor, workspaceByDept } from "@/lib/workspace-registry";
 
 const moduleChildren: Record<string, { title: string; url: string; icon: typeof BuildingIcon }[]> = {
   bd: [
@@ -79,6 +80,7 @@ const moduleChildren: Record<string, { title: string; url: string; icon: typeof 
     { title: "Contract Dashboard", url: "/ps/contract-dashboard", icon: LayoutDashboard },
     { title: "Production Report", url: "/ps/production", icon: BarChart3 },
     { title: "Templates", url: "/ps/templates", icon: FileText },
+    { title: "PM Workspace", url: "/workspace/ps", icon: Ticket },
     { title: "AE Workspace", url: "/ps/ae-workspace/dashboard", icon: CalendarCheck },
     { title: "On-boarding Process", url: "/ps/onboarding-process", icon: ClipboardCheck },
     { title: "Property Content", url: "/ps/property-content", icon: FolderOpen },
@@ -145,8 +147,11 @@ export function AppSidebar() {
             <SidebarMenu>
               {modules.map((m) => {
                 const children = (moduleChildren[m.slug] ?? []).filter((c) => !hiddenUrls.has(c.url));
-                const inSection = pathname === m.to || pathname.startsWith(`${m.to}/`);
-                const officeActive = pathname.startsWith("/the-office-app");
+                const host = HOST_OF_MODULE[m.slug];
+                const extraWs = host ? workspacesFor(host).filter((w) => !children.some((c) => c.url === w.path)) : [];
+                const inSection = pathname === m.to || pathname.startsWith(`${m.to}/`) || extraWs.some((w) => w.path === pathname) || children.some((c) => c.url === pathname);
+                const officeWs = workspaceByDept("OFFICE");
+                const officeActive = pathname.startsWith("/the-office-app") || pathname === officeWs.path;
                 return (
                   <Fragment key={m.slug}>
                   <SidebarMenuItem>
@@ -172,17 +177,16 @@ export function AppSidebar() {
                             </SidebarMenuSubButton>
                           </SidebarMenuSubItem>
                         ))}
-                        {m.slug === "bd" && (
-                          <SidebarMenuSubItem>
-                            <span className="block px-2 pt-2 text-xs font-medium text-muted-foreground">BD Workspace</span>
-                            <SidebarMenuSubButton asChild isActive={pathname === "/bd/tickets"}>
-                              <Link to="/bd/tickets" search={{ demo: ticketDemo ? 1 : undefined, ticket: undefined }} className="flex items-center gap-2">
+                        {extraWs.map((w) => (
+                          <SidebarMenuSubItem key={w.path}>
+                            <SidebarMenuSubButton asChild isActive={pathname === w.path}>
+                              <Link to={w.path} search={{ demo: ticketDemo ? 1 : undefined, ticket: undefined }} className="flex items-center gap-2">
                                 <Ticket className="size-3.5 shrink-0" />
-                                <span className="truncate">🎫 Tickets</span>
+                                <span className="truncate">{w.label}</span>
                               </Link>
                             </SidebarMenuSubButton>
                           </SidebarMenuSubItem>
-                        )}
+                        ))}
                       </SidebarMenuSub>
                     )}
                   </SidebarMenuItem>
@@ -208,6 +212,14 @@ export function AppSidebar() {
                               <Link to="/the-office-app/orm-bonus" className="flex items-center gap-2">
                                 <Trophy className="size-3.5 shrink-0" />
                                 <span className="truncate">ORM Bonus</span>
+                              </Link>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                          <SidebarMenuSubItem>
+                            <SidebarMenuSubButton asChild isActive={pathname === officeWs.path}>
+                              <Link to={officeWs.path} search={{ demo: ticketDemo ? 1 : undefined, ticket: undefined }} className="flex items-center gap-2">
+                                <Ticket className="size-3.5 shrink-0" />
+                                <span className="truncate">{officeWs.label}</span>
                               </Link>
                             </SidebarMenuSubButton>
                           </SidebarMenuSubItem>

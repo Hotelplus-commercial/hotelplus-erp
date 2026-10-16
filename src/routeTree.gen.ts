@@ -55,6 +55,7 @@ import { Route as PsServicingTimelineRouteImport } from './routes/ps.servicing-t
 import { Route as PsSystemCostRouteImport } from './routes/ps.system-cost'
 import { Route as TheOfficeAppIndexRouteImport } from './routes/the-office-app.index'
 import { Route as TheOfficeAppOrmBonusRouteImport } from './routes/the-office-app.orm-bonus'
+import { Route as WorkspaceDeptRouteImport } from './routes/workspace.$dept'
 import { Route as ApiPublicAcBillingDailyRouteImport } from './routes/api/public/ac-billing-daily'
 import { Route as BdCalculatorMarcomRouteImport } from './routes/bd.calculator.marcom'
 import { Route as BdCalculatorOrmRouteImport } from './routes/bd.calculator.orm'
@@ -318,6 +319,11 @@ const TheOfficeAppOrmBonusRoute = TheOfficeAppOrmBonusRouteImport.update({
   path: '/orm-bonus',
   getParentRoute: () => TheOfficeAppRoute,
 } as any)
+const WorkspaceDeptRoute = WorkspaceDeptRouteImport.update({
+  id: '/workspace/$dept',
+  path: '/workspace/$dept',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicAcBillingDailyRoute = ApiPublicAcBillingDailyRouteImport.update({
   id: '/api/public/ac-billing-daily',
   path: '/api/public/ac-billing-daily',
@@ -523,6 +529,7 @@ export interface FileRoutesByFullPath {
   '/ps/servicing-timeline': typeof PsServicingTimelineRoute
   '/ps/system-cost': typeof PsSystemCostRoute
   '/the-office-app/orm-bonus': typeof TheOfficeAppOrmBonusRoute
+  '/workspace/$dept': typeof WorkspaceDeptRoute
   '/ac/': typeof AcIndexRoute
   '/bd/': typeof BdIndexRoute
   '/hr/': typeof HrIndexRoute
@@ -591,6 +598,7 @@ export interface FileRoutesByTo {
   '/ps/servicing-timeline': typeof PsServicingTimelineRoute
   '/ps/system-cost': typeof PsSystemCostRoute
   '/the-office-app/orm-bonus': typeof TheOfficeAppOrmBonusRoute
+  '/workspace/$dept': typeof WorkspaceDeptRoute
   '/ac': typeof AcIndexRoute
   '/bd': typeof BdIndexRoute
   '/hr': typeof HrIndexRoute
@@ -672,6 +680,7 @@ export interface FileRoutesById {
   '/ps/servicing-timeline': typeof PsServicingTimelineRoute
   '/ps/system-cost': typeof PsSystemCostRoute
   '/the-office-app/orm-bonus': typeof TheOfficeAppOrmBonusRoute
+  '/workspace/$dept': typeof WorkspaceDeptRoute
   '/ac/': typeof AcIndexRoute
   '/bd/': typeof BdIndexRoute
   '/hr/': typeof HrIndexRoute
@@ -754,6 +763,7 @@ export interface FileRouteTypes {
     | '/ps/servicing-timeline'
     | '/ps/system-cost'
     | '/the-office-app/orm-bonus'
+    | '/workspace/$dept'
     | '/ac/'
     | '/bd/'
     | '/hr/'
@@ -822,6 +832,7 @@ export interface FileRouteTypes {
     | '/ps/servicing-timeline'
     | '/ps/system-cost'
     | '/the-office-app/orm-bonus'
+    | '/workspace/$dept'
     | '/ac'
     | '/bd'
     | '/hr'
@@ -902,6 +913,7 @@ export interface FileRouteTypes {
     | '/ps/servicing-timeline'
     | '/ps/system-cost'
     | '/the-office-app/orm-bonus'
+    | '/workspace/$dept'
     | '/ac/'
     | '/bd/'
     | '/hr/'
@@ -958,6 +970,7 @@ export interface RootRouteChildren {
   TheOfficeAppRoute: typeof TheOfficeAppRouteWithChildren
   FTokenRoute: typeof FTokenRoute
   LTokenRoute: typeof LTokenRoute
+  WorkspaceDeptRoute: typeof WorkspaceDeptRoute
   ApiPublicAcBillingDailyRoute: typeof ApiPublicAcBillingDailyRoute
 }
 
@@ -1284,6 +1297,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/the-office-app/orm-bonus'
       preLoaderRoute: typeof TheOfficeAppOrmBonusRouteImport
       parentRoute: typeof TheOfficeAppRoute
+    }
+    '/workspace/$dept': {
+      id: '/workspace/$dept'
+      path: '/workspace/$dept'
+      fullPath: '/workspace/$dept'
+      preLoaderRoute: typeof WorkspaceDeptRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/public/ac-billing-daily': {
       id: '/api/public/ac-billing-daily'
@@ -1771,6 +1791,7 @@ const rootRouteChildren: RootRouteChildren = {
   TheOfficeAppRoute: TheOfficeAppRouteWithChildren,
   FTokenRoute: FTokenRoute,
   LTokenRoute: LTokenRoute,
+  WorkspaceDeptRoute: WorkspaceDeptRoute,
   ApiPublicAcBillingDailyRoute: ApiPublicAcBillingDailyRoute,
 }
 export const routeTree = rootRouteImport
