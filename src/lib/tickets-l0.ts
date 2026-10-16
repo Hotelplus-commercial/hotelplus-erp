@@ -6,7 +6,7 @@ import { stageCloudDoc } from './cloud-sync';
 import { DEMO_NOW } from './ps-demo-fixture';
 
 export type TicketType = 'UPSELL_PITCH';
-export type Dept = 'BD' | 'ORM' | 'MARCOM' | 'PS' | 'AC' | 'AUTO' | 'HR';
+export type Dept = 'BD' | 'ORM' | 'MARCOM' | 'PS' | 'AC' | 'AUTO' | 'HR' | 'OFFICE';
 export type Role = 'PM' | Dept;
 export type L0Status = 'NEW' | 'ACK' | 'IN_PROGRESS' | 'DONE' | 'CANCELLED';
 export type L0Ticket = {
@@ -17,9 +17,10 @@ export type L0Ticket = {
   audit: { at: string; by: Role; from_status: L0Status | null; to_status: L0Status }[];
 };
 
-export const DEPTS: Dept[] = ['BD', 'ORM', 'MARCOM', 'PS', 'AC', 'AUTO', 'HR'];
-/** Departments that already have a ticket inbox. Others park as "รอ pickup". */
-export const DEPTS_WITH_WORKSPACE: Dept[] = ['BD'];
+export const DEPTS: Dept[] = ['BD', 'ORM', 'MARCOM', 'PS', 'AC', 'AUTO', 'HR', 'OFFICE'];
+/** Layer 1: every department now has a workspace, so nothing parks as "รอ pickup". */
+export const DEPTS_WITH_WORKSPACE: Dept[] = [...DEPTS];
+export const OPEN_STATUSES: L0Status[] = ['NEW', 'ACK', 'IN_PROGRESS'];
 export const STATUS_TH: Record<L0Status, string> = { NEW: 'ใหม่', ACK: 'รับแล้ว', IN_PROGRESS: 'กำลังทำ', DONE: 'เสร็จ', CANCELLED: 'ยกเลิก' };
 export const TYPE_TH: Record<TicketType, string> = { UPSELL_PITCH: 'เสนอขายบริการเพิ่ม' };
 const OPEN: L0Status[] = ['NEW', 'ACK', 'IN_PROGRESS'];
