@@ -1,7 +1,7 @@
 /* Ticket system Layer 0 (spec v1.0) — canonical browser-storage collection `tickets`.
  * Only write path: createTask() + transition(). Mirrors to Cloud doc 'tickets' (push-only, Level A).
  * Cross-machine delivery is Cloud Sync Level B — not simulated here. Demo = in-memory, never persisted. */
-import { useSyncExternalStore } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { stageCloudDoc } from './cloud-sync';
 import { DEMO_NOW } from './ps-demo-fixture';
 
@@ -87,11 +87,12 @@ export function transition(id: string, revision: number, to: L0Status, by: Role)
 export const isPendingPickup = (t: L0Ticket) => !DEPTS_WITH_WORKSPACE.includes(t.target_dept);
 
 export function useTickets(): L0Ticket[] {
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => { setHydrated(true); }, []);
   useSyncExternalStore((cb) => { listeners.add(cb); return () => listeners.delete(cb); }, () => version, () => 0);
-  return typeof window === 'undefined' ? [] : cur().items;
+  return hydrated ? cur().items : [];
 }
 /** Read-back for consumers: open ticket for hotel+gap+type, or undefined → show create button. */
 export function useTicketReadBack(type: TicketType, hotel_id: string, gap_service: string) {
-  useTickets();
-  return typeof window === 'undefined' ? undefined : findOpen(type, hotel_id, gap_service);
+  return useTickets().find(t => t.type === type && t.subject_ref.hotel_id === hotel_id && t.subject_ref.gap_service === gap_service && OPEN.includes(t.status));
 }
