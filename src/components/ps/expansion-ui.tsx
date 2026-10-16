@@ -28,7 +28,7 @@ export function BdTicketButton({ row, demo }: { row: PsReportRow; demo?: boolean
   useEffect(() => { setTicketDemo(isDemo); }, [isDemo]);
   const hotel_id = String(row.hotel_id), gap = String(row.gap_service ?? '');
   const open = useTicketReadBack('UPSELL_PITCH', hotel_id, gap);
-  if (open) return <Link to="/bd/tickets" search={isDemo ? { demo: 1 } : {}} onClick={e => e.stopPropagation()} data-testid="ticket-badge" className="whitespace-nowrap rounded border px-1.5 py-0.5 text-xs text-primary hover:underline">#{open.ticket_id} · {STATUS_TH[open.status]}</Link>;
+  if (open) return <Link to="/bd/tickets" search={{ demo: isDemo ? 1 : undefined }} onClick={e => e.stopPropagation()} data-testid="ticket-badge" className="whitespace-nowrap rounded border px-1.5 py-0.5 text-xs text-primary hover:underline">#{open.ticket_id} · {STATUS_TH[open.status]}</Link>;
   return <button type="button" data-testid="ticket-create" className="inline-flex items-center gap-1 whitespace-nowrap rounded border border-primary/50 px-2 py-0.5 text-xs text-primary hover:bg-primary/10" onClick={e => {
     e.stopPropagation();
     const chips = (Object.keys(SIG_TH) as (keyof typeof SIG_TH)[]).filter(k => row[k] === true).map(k => SIG_TH[k]);
