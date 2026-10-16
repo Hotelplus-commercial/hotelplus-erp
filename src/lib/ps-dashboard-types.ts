@@ -1,6 +1,6 @@
 /** Cloud-only reporting DTOs. Pending source rows never carry invented values. */
 type PsField = 'hotel_id' | 'hotel_name' | 'service_line' | 'status' | 'outcome' | 'contract_id' | 'created_at' | 'inactivated_at' | 'end_date' | 'billing_period' | 'age_days' | 'completeness' | 'worst_grade' | 'latest_grade' | 'monthly_survey_score' | 'monthly_billing' | 'survey2' | 'nps' | 'active_services' | 'responses' | 'promoters' | 'detractors' | 'p25_days' | 'p75_days' | 'ae_owner_id' | 'start_date' | 'renewal_id' | 'renewal_due_date' | 'period' | 'revenue_thb' | 'fee_fixed_thb' | 'commission_thb' | 'value_ratio' | 'orm_tier' | 'achievement_pct' | 'portfolio_rev_median' | 'portfolio_n' | 'has_orm_commission' | 'pending_sync';
-export type PsReportRow = Partial<Record<PsField, string | number | boolean | null | undefined>> & Record<string, string | number | boolean | null | undefined>;
+export type PsReportRow = Partial<Record<PsField, string | number | boolean | null>> & Record<string, string | number | boolean | null | undefined>;
 export const PS_VIEWS = ['v_ps_lifecycle_flow', 'v_ps_churn_monthly', 'v_ps_renewal', 'v_ps_contract_lifetime', 'v_ps_onboard_cohort', 'v_ps_attach_rate', 'v_ps_account_health', 'v_ps_nps', 'v_ps_offboard', 'v_ps_risk_scorecard', 'v_ps_roi'] as const;
 export type PsView = (typeof PS_VIEWS)[number];
 /** demo/now are set only by the bundled preview fixture (fixed clock). */

@@ -100,7 +100,7 @@ export function PsDashboard({ assignment, part = "all" }: { assignment?: Assignm
   const hotels = candidates.filter((h,i) => {
     const assignees = hotelAssignees(i);
     const owners = demo ? demoFlow.filter(r => r.hotel_id === h.id) : [];
-    const match = (line: string) => matchesBook({ hotel_id:h.id,hotel_name:h.name,service_line:line,ae_owner_id:demo ? owners.find(r => r.service_line === line)?.['ae_owner_id'] : assignees.AE, orm_team:demo ? null : assignees.ORM,marcom_owner_id:demo ? null : assignees.Marcom }, filter);
+    const match = (line: string) => matchesBook({ hotel_id:h.id,hotel_name:h.name,service_line:line,ae_owner_id:demo ? owners.find(r => r.service_line === line)?.['ae_owner_id'] ?? null : (assignees.AE ?? null), orm_team:demo ? null : assignees.ORM,marcom_owner_id:demo ? null : assignees.Marcom }, filter);
     return (filter.service === 'ALL' ? (match('ORM') || match('Marcom')) : match(filter.service));
   });
 
