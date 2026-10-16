@@ -1,7 +1,7 @@
 # Ticket Layer 0 · supplied v1.0 delta
-- [ ] Add minimal BD Workspace navigation and reuse existing routing/alerts rail.
-- [ ] Preserve demo tickets across PS → BD navigation, Thai read-only payload and role-gated lifecycle.
-- [ ] Verify five demo oracle cases and live browser persistence/revision locking without altering other business data.
+- [x] Add minimal BD Workspace navigation and link the existing notification rail to the same inbox records; no other workspace lanes.
+- [x] Preserve demo tickets across PS → BD navigation, Thai read-only payload and role-gated lifecycle; hydration-safe browser readback.
+- [x] Verify PS create → BD ACK/IN_PROGRESS/DONE, PM cancellation, dedup, pending pickup and notification deep links; live UI create/reload/lifecycle with revision 3 + audit 4. Five focused tests pass and build OK. Temporary test mirror requests blocked to avoid Cloud sample data; shared mirror delivery not re-tested.
 - [ ] Cross-machine delivery requires Cloud Sync Level B (not part of this build).
 
 # Meeting & Analyzer v1.0
