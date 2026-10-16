@@ -66,6 +66,7 @@ export function RenewalActivityCards({
 }) {
   const { cards } = usePsRenewal();
   const [open, setOpen] = useState(false);
+  useEffect(() => { if (window.location.hash === "#renewal-activities") { setOpen(true); document.getElementById("renewal-activities")?.scrollIntoView({ block: "start" }); } }, []);
   const [sortAsc, setSortAsc] = useState(true);
   const [active, setActive] = useState<{ card: RenewalCard; addMode: boolean } | null>(null);
 
@@ -74,7 +75,7 @@ export function RenewalActivityCards({
     .sort((a, b) => (sortAsc ? a.daysLeft - b.daysLeft : b.daysLeft - a.daysLeft));
 
   return (
-    <div className="mt-4 rounded-xl border">
+    <div id="renewal-activities" className="mt-4 scroll-mt-20 rounded-xl border">
       <div className="flex flex-wrap items-center justify-between gap-2 p-3">
         <button
           type="button"
