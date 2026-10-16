@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { READY_TH } from "@/lib/expansion";
 import {
   DEPTS, STATUS_TH, TYPE_TH, allowedNext, createTask, isPendingPickup, setTicketDemo, transition,
   useTicketReadBack, useTickets, type Dept, type L0Ticket, type Role,
@@ -27,23 +28,23 @@ const fmt = (iso: string) => new Date(iso).toLocaleString("th-TH", { dateStyle: 
 function TicketsPage() {
   const { demo } = Route.useSearch();
   const [ready, setReady] = useState(false);
-  useEffect(() => { setTicketDemo(!!demo); setReady(true); return () => setTicketDemo(false); }, [demo]);
+  useEffect(() => { setTicketDemo(!!demo); setReady(true); }, [demo]);
   const [role, setRole] = useState<Role>("BD");
   const [openId, setOpenId] = useState<string | null>(null);
   const tickets = useTickets();
   if (!ready) return null;
   const bd = tickets.filter((t) => t.target_dept === "BD");
-  const parked = tickets.filter(isPendingPickup);
+  const parked = tickets.filter(t => isPendingPickup(t) && (role === "PM" || t.target_dept === role));
   const open = tickets.find((t) => t.ticket_id === openId) ?? null;
 
   return (
     <div className="space-y-5">
-      {demo && <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs">DEMO · ข้อมูลตัวอย่างในหน่วยความจำ · นาฬิกา 2026-09-30 · ไม่บันทึก</div>}
+      {demo && <div className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs">ข้อมูลสาธิต · 30 กันยายน 2569 · ไม่บันทึก</div>}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-xl font-semibold">🎫 Tickets</h2>
+        <h2 className="text-xl font-semibold">BD Workspace › 🎫 Tickets</h2>
         <label className="flex items-center gap-2 text-sm">
           <span className="text-muted-foreground">สวมบท (โหมดทดสอบ)</span>
-          <select className="rounded-md border bg-background px-2 py-1" value={role} onChange={(e) => setRole(e.target.value as Role)}>
+          <select aria-label="สวมบท" className="rounded-md border bg-background px-2 py-1" value={role} onChange={(e) => { setRole(e.target.value as Role); setOpenId(null); }}>
             {(["PM", ...DEPTS] as Role[]).map((r) => <option key={r} value={r}>สวมบท {r}</option>)}
           </select>
         </label>
@@ -55,7 +56,7 @@ function TicketsPage() {
       {role === "BD" || role === "PM" ? (
         <TicketTable rows={bd} onOpen={setOpenId} />
       ) : (
-        <div className="rounded-md border p-4 text-sm text-muted-foreground">แผนก {role} ยังไม่มี workspace — ticket ของแผนกนี้รอ pickup</div>
+        <div className="rounded-md border p-4 text-sm text-muted-foreground">แผนก {role} · รอ pickup</div>
       )}
 
       {parked.length > 0 && (
@@ -80,8 +81,8 @@ function TicketTable({ rows, onOpen }: { rows: L0Ticket[]; onOpen: (id: string) 
         </thead>
         <tbody>
           {[...rows].reverse().map((t) => (
-            <tr key={t.ticket_id} className="cursor-pointer border-t hover:bg-muted/40" onClick={() => onOpen(t.ticket_id)}>
-              <td className="p-2 font-mono">#{t.ticket_id}</td>
+            <tr key={t.ticket_id} className="border-t hover:bg-muted/40">
+              <td className="p-2 font-mono"><Button variant="link" size="sm" className="h-auto p-0 font-mono" onClick={() => onOpen(t.ticket_id)}>#{t.ticket_id}</Button></td>
               <td className="p-2">{TYPE_TH[t.type]}</td>
               <td className="p-2">{t.subject_ref.hotel_name} · {t.subject_ref.gap_service}</td>
               <td className="p-2"><Badge variant="secondary">{STATUS_TH[t.status]}</Badge>{isPendingPickup(t) && <Badge variant="outline" className="ml-1">รอ pickup · {t.target_dept}</Badge>}</td>
@@ -100,13 +101,13 @@ function Detail({ t, role, onClose }: { t: L0Ticket; role: Role; onClose: () => 
   return (
     <div className="space-y-3 rounded-md border p-4">
       <div className="flex items-center justify-between">
-        <h3 className="font-medium">#{t.ticket_id} · {STATUS_TH[t.status]} <span className="text-xs text-muted-foreground">rev {t.revision}</span></h3>
+        <h3 className="font-medium">#{t.ticket_id} · {STATUS_TH[t.status]} <span className="text-xs text-muted-foreground">รุ่น {t.revision}</span></h3>
         <Button variant="ghost" size="sm" onClick={onClose}>ปิด</Button>
       </div>
-      <dl className="grid grid-cols-[8rem_1fr] gap-1 text-sm">
+      <dl className="grid grid-cols-[minmax(5rem,8rem)_minmax(0,1fr)] gap-1 break-words text-sm">
         <dt className="text-muted-foreground">โรงแรม</dt><dd>{t.subject_ref.hotel_name} ({t.subject_ref.hotel_id})</dd>
         <dt className="text-muted-foreground">บริการที่ขาด</dt><dd>{t.subject_ref.gap_service}</dd>
-        <dt className="text-muted-foreground">ความพร้อม</dt><dd>{t.payload.readiness_tier}</dd>
+        <dt className="text-muted-foreground">ความพร้อม</dt><dd>{READY_TH[t.payload.readiness_tier] ?? t.payload.readiness_tier}</dd>
         <dt className="text-muted-foreground">เหตุผล</dt><dd className="flex flex-wrap gap-1">{t.payload.chips.map((c) => <Badge key={c} variant="outline">{c}</Badge>)}</dd>
         <dt className="text-muted-foreground">หมายเหตุ</dt><dd>{t.payload.note || "—"}</dd>
         <dt className="text-muted-foreground">ผู้สร้าง → แผนก</dt><dd>{t.created_by} → {t.target_dept}</dd>
@@ -120,7 +121,7 @@ function Detail({ t, role, onClose }: { t: L0Ticket; role: Role; onClose: () => 
           </Button>
         ))}
       </div>
-      {msg && <p className="text-xs text-amber-600">{msg}</p>}
+      {msg && <p role="alert" className="text-xs text-warning-foreground">{msg}</p>}
       <ol className="space-y-1 border-t pt-2 text-xs text-muted-foreground">
         {t.audit.map((a, i) => <li key={i}>{fmt(a.at)} · {a.by} · {a.from_status ? STATUS_TH[a.from_status] : "—"} → {STATUS_TH[a.to_status]}</li>)}
       </ol>
@@ -134,7 +135,7 @@ function PmTester() {
   const [note, setNote] = useState<string | null>(null);
   const subject = { hotel_id: "DEMO-SEEFAH", hotel_name: "Seefah", gap_service: "MARCOM" };
   const existing = useTicketReadBack("UPSELL_PITCH", subject.hotel_id, subject.gap_service);
-  const otherSubject = { hotel_id: "DEMO-SEEFAH", hotel_name: "Seefah", gap_service: `MARCOM→${dept}` };
+  const otherSubject = { hotel_id: "DEMO-ANJALI", hotel_name: "Anjali", gap_service: "ORM" };
   return (
     <div className="space-y-2 rounded-md border border-dashed p-3 text-sm">
       <div className="font-medium">ทดสอบสร้าง Ticket (ตัวอย่างโรงแรม Seefah · ขาด Marcom)</div>
@@ -148,7 +149,7 @@ function PmTester() {
           }}>สร้าง Ticket</Button>
         )}
         <span className="text-muted-foreground">·</span>
-        <select className="rounded-md border bg-background px-2 py-1" value={dept} onChange={(e) => setDept(e.target.value as Dept)}>
+        <select aria-label="ส่งไปแผนก" className="rounded-md border bg-background px-2 py-1" value={dept} onChange={(e) => setDept(e.target.value as Dept)}>
           {DEPTS.map((d) => <option key={d} value={d}>ส่งไป {d}</option>)}
         </select>
         <Button size="sm" variant="outline" onClick={() => {
