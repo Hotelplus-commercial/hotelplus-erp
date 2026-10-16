@@ -1,3 +1,9 @@
+# Ticket Layer 0 · supplied v1.0 delta
+- [ ] Add minimal BD Workspace navigation and reuse existing routing/alerts rail.
+- [ ] Preserve demo tickets across PS → BD navigation, Thai read-only payload and role-gated lifecycle.
+- [ ] Verify five demo oracle cases and live browser persistence/revision locking without altering other business data.
+- [ ] Cross-machine delivery requires Cloud Sync Level B (not part of this build).
+
 # Meeting & Analyzer v1.0
 - [x] Add seven safe empty v_meeting_* projections with pending columns; no tables, fields or source sync changes.
 - [x] Build six sections, global filters/compare, completion headline and shared-spine demo.

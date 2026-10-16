@@ -10,7 +10,7 @@ export const bdTabs = [
   { label: "Calculator · ORM", to: "/bd/calculator/orm" },
   { label: "Calculator · Marcom", to: "/bd/calculator/marcom" },
   { label: "Register Deal", to: "/bd/register-deal" },
-  { label: "🎫 Tickets", to: "/bd/tickets" },
+  { label: "BD Workspace · 🎫 Tickets", to: "/bd/tickets" },
 ];
 
 
@@ -21,6 +21,8 @@ export const Route = createFileRoute("/bd")({
       { name: "description", content: mod.description },
       { property: "og:title", content: "BD App — Deals & Quotations | Meridia Hotel ERP" },
       { property: "og:description", content: mod.description },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: () => <ModuleLayout tabs={bdTabs} />,

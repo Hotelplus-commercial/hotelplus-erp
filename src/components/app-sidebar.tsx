@@ -9,6 +9,7 @@ import {
   ClipboardCheck,
   Crown,
   Trophy,
+  Ticket,
 
 
   Megaphone,
@@ -170,6 +171,17 @@ export function AppSidebar() {
                             </SidebarMenuSubButton>
                           </SidebarMenuSubItem>
                         ))}
+                        {m.slug === "bd" && (
+                          <SidebarMenuSubItem>
+                            <span className="block px-2 pt-2 text-xs font-medium text-muted-foreground">BD Workspace</span>
+                            <SidebarMenuSubButton asChild isActive={pathname === "/bd/tickets"}>
+                              <Link to="/bd/tickets" search={{ demo: new URLSearchParams(typeof window === "undefined" ? "" : window.location.search).get("demo") === "1" ? 1 : undefined }} className="flex items-center gap-2">
+                                <Ticket className="size-3.5 shrink-0" />
+                                <span className="truncate">🎫 Tickets</span>
+                              </Link>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        )}
                       </SidebarMenuSub>
                     )}
                   </SidebarMenuItem>
