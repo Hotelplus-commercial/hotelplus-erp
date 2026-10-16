@@ -9,7 +9,10 @@ export type ScheduledItem = { id: string; datetime: string; title: string; subti
 /** Own-only, sorted by time, within range. Not called anywhere in this build. */
 export type ScheduledAdapter = (q: { person: string; range: DateRange }) => ScheduledItem[];
 export type TodoItem = { id: string; title: string; due_relative: string; route_target: string };
-export type TodoTypeGroup = { key: string; icon: string; label_th: string; adapter: (q: { person: string; range: DateRange }) => TodoItem[] };
+export type TodoTypeGroup = { key: string; icon: string; label_th: string } & (
+  | { assignment_scope: 'ORM' | 'MARCOM'; adapter?: never }
+  | { assignment_scope?: never; adapter: (q: { person: string; range: DateRange }) => TodoItem[] }
+);
 
 export type WorkspaceConfig = {
   dept_key: Dept;
@@ -23,13 +26,14 @@ export type WorkspaceConfig = {
 };
 
 const lanes = () => ({ scheduled: null, todo: [] as TodoTypeGroup[], tickets: { enabled: true as const, default_filter: 'open' as const } });
+const assignmentLanes = (scope: 'ORM' | 'MARCOM') => ({ ...lanes(), todo: [{ key: 'ASSIGNMENT_PENDING', icon: '⚠', label_th: 'รอระบุผู้ดูแล', assignment_scope: scope }] });
 
 export const WORKSPACES: WorkspaceConfig[] = [
   { dept_key: 'BD', label: 'BD Workspace', app_host: 'BD_APP', sidebar_order: 90, ticket_target_dept: 'BD', path: '/bd/tickets', lanes: lanes() },
   { dept_key: 'AC', label: 'AC Workspace', app_host: 'AC_APP', sidebar_order: 90, ticket_target_dept: 'AC', path: '/workspace/ac', lanes: lanes() },
   { dept_key: 'PS', label: 'PM Workspace', app_host: 'PS_APP', sidebar_order: 50, ticket_target_dept: 'PS', path: '/workspace/ps', lanes: lanes() },
-  { dept_key: 'ORM', label: 'ORM Workspace', app_host: 'ORM_APP', sidebar_order: 90, ticket_target_dept: 'ORM', path: '/workspace/orm', lanes: lanes() },
-  { dept_key: 'MARCOM', label: 'Marcom Workspace', app_host: 'MARCOM_APP', sidebar_order: 90, ticket_target_dept: 'MARCOM', path: '/workspace/marcom', lanes: lanes() },
+  { dept_key: 'ORM', label: 'ORM Workspace', app_host: 'ORM_APP', sidebar_order: 90, ticket_target_dept: 'ORM', path: '/workspace/orm', lanes: assignmentLanes('ORM') },
+  { dept_key: 'MARCOM', label: 'Marcom Workspace', app_host: 'MARCOM_APP', sidebar_order: 90, ticket_target_dept: 'MARCOM', path: '/workspace/marcom', lanes: assignmentLanes('MARCOM') },
   { dept_key: 'HR', label: 'HR Workspace', app_host: 'HR_APP', sidebar_order: 90, ticket_target_dept: 'HR', path: '/workspace/hr', lanes: lanes() },
   { dept_key: 'AUTO', label: 'AUTO Workspace', app_host: 'AUTO_APP', sidebar_order: 90, ticket_target_dept: 'AUTO', path: '/workspace/auto', lanes: lanes() },
   { dept_key: 'OFFICE', label: 'The Office Workspace', app_host: 'OFFICE_APP', sidebar_order: 90, ticket_target_dept: 'OFFICE', path: '/workspace/office', lanes: lanes() },

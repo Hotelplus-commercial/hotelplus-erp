@@ -1,3 +1,9 @@
+# Workspace Layer 1 patch v1.1
+- [ ] Restore AUTO sidebar visibility using the registry; remove ORM/Marcom Overview surfaces, retaining layouts and Dashboard inboxes.
+- [ ] Surface ORM/Marcom pending assignments through existing v1.1 list/modal, due rule, master and audit.
+- [ ] Verify AUTO/all eight workspaces, assignment save/recompute/readback and L0 regressions.
+- [ ] Standalone ORM/Marcom Dashboard removal awaits Sai's explicit confirmation; retained in this patch.
+
 # Ticket Layer 0 · supplied v1.0 delta
 - [x] Add minimal BD Workspace navigation and link the existing notification rail to the same inbox records; no other workspace lanes.
 - [x] Preserve demo tickets across PS → BD navigation, Thai read-only payload and role-gated lifecycle; hydration-safe browser readback.
