@@ -34,6 +34,7 @@ import { Route as BdDealsRouteImport } from './routes/bd.deals'
 import { Route as BdQuotationsRouteImport } from './routes/bd.quotations'
 import { Route as BdQuotesRouteImport } from './routes/bd.quotes'
 import { Route as BdRegisterDealRouteImport } from './routes/bd.register-deal'
+import { Route as BdTicketsRouteImport } from './routes/bd.tickets'
 import { Route as FTokenRouteImport } from './routes/f.$token'
 import { Route as HrIndexRouteImport } from './routes/hr.index'
 import { Route as HrMembersRouteImport } from './routes/hr.members'
@@ -210,6 +211,11 @@ const BdQuotesRoute = BdQuotesRouteImport.update({
 const BdRegisterDealRoute = BdRegisterDealRouteImport.update({
   id: '/register-deal',
   path: '/register-deal',
+  getParentRoute: () => BdRoute,
+} as any)
+const BdTicketsRoute = BdTicketsRouteImport.update({
+  id: '/tickets',
+  path: '/tickets',
   getParentRoute: () => BdRoute,
 } as any)
 const FTokenRoute = FTokenRouteImport.update({
@@ -501,6 +507,7 @@ export interface FileRoutesByFullPath {
   '/bd/quotations': typeof BdQuotationsRouteWithChildren
   '/bd/quotes': typeof BdQuotesRouteWithChildren
   '/bd/register-deal': typeof BdRegisterDealRoute
+  '/bd/tickets': typeof BdTicketsRoute
   '/f/$token': typeof FTokenRoute
   '/hr/members': typeof HrMembersRoute
   '/l/$token': typeof LTokenRoute
@@ -571,6 +578,7 @@ export interface FileRoutesByTo {
   '/bd/calculator': typeof BdCalculatorRouteWithChildren
   '/bd/deals': typeof BdDealsRoute
   '/bd/register-deal': typeof BdRegisterDealRoute
+  '/bd/tickets': typeof BdTicketsRoute
   '/f/$token': typeof FTokenRoute
   '/hr/members': typeof HrMembersRoute
   '/l/$token': typeof LTokenRoute
@@ -648,6 +656,7 @@ export interface FileRoutesById {
   '/bd/quotations': typeof BdQuotationsRouteWithChildren
   '/bd/quotes': typeof BdQuotesRouteWithChildren
   '/bd/register-deal': typeof BdRegisterDealRoute
+  '/bd/tickets': typeof BdTicketsRoute
   '/f/$token': typeof FTokenRoute
   '/hr/members': typeof HrMembersRoute
   '/l/$token': typeof LTokenRoute
@@ -729,6 +738,7 @@ export interface FileRouteTypes {
     | '/bd/quotations'
     | '/bd/quotes'
     | '/bd/register-deal'
+    | '/bd/tickets'
     | '/f/$token'
     | '/hr/members'
     | '/l/$token'
@@ -799,6 +809,7 @@ export interface FileRouteTypes {
     | '/bd/calculator'
     | '/bd/deals'
     | '/bd/register-deal'
+    | '/bd/tickets'
     | '/f/$token'
     | '/hr/members'
     | '/l/$token'
@@ -875,6 +886,7 @@ export interface FileRouteTypes {
     | '/bd/quotations'
     | '/bd/quotes'
     | '/bd/register-deal'
+    | '/bd/tickets'
     | '/f/$token'
     | '/hr/members'
     | '/l/$token'
@@ -1124,6 +1136,13 @@ declare module '@tanstack/react-router' {
       path: '/register-deal'
       fullPath: '/bd/register-deal'
       preLoaderRoute: typeof BdRegisterDealRouteImport
+      parentRoute: typeof BdRoute
+    }
+    '/bd/tickets': {
+      id: '/bd/tickets'
+      path: '/tickets'
+      fullPath: '/bd/tickets'
+      preLoaderRoute: typeof BdTicketsRouteImport
       parentRoute: typeof BdRoute
     }
     '/f/$token': {
@@ -1565,6 +1584,7 @@ interface BdRouteChildren {
   BdQuotationsRoute: typeof BdQuotationsRouteWithChildren
   BdQuotesRoute: typeof BdQuotesRouteWithChildren
   BdRegisterDealRoute: typeof BdRegisterDealRoute
+  BdTicketsRoute: typeof BdTicketsRoute
   BdIndexRoute: typeof BdIndexRoute
 }
 
@@ -1574,6 +1594,7 @@ const BdRouteChildren: BdRouteChildren = {
   BdQuotationsRoute: BdQuotationsRouteWithChildren,
   BdQuotesRoute: BdQuotesRouteWithChildren,
   BdRegisterDealRoute: BdRegisterDealRoute,
+  BdTicketsRoute: BdTicketsRoute,
   BdIndexRoute: BdIndexRoute,
 }
 

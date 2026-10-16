@@ -10,6 +10,7 @@ export const bdTabs = [
   { label: "Calculator · ORM", to: "/bd/calculator/orm" },
   { label: "Calculator · Marcom", to: "/bd/calculator/marcom" },
   { label: "Register Deal", to: "/bd/register-deal" },
+  { label: "🎫 Tickets", to: "/bd/tickets" },
 ];
 
 
