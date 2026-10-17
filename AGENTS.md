@@ -35,3 +35,5 @@
 - Alert BOT (src/lib/alert-bot.ts) is the second Ticket L0 consumer: reads already-computed signals (gradeRecords/renewal/survey), writes only `tickets` via createTask/stampConditionCleared, runs as post-step of the AC daily button. Why: one condition = one ticket, never recompute signals, never auto-close.
 - BOT ticket primary is always target_dept 'PS'; other departments are read-only watchers via payload.watchers[] and the additive 🎫 lane query (isWatcherOf). Why: no fan-out, one ticket per condition.
 - Sidebar module/child links must propagate the ?demo=1 search param so the Layer 0 demo session survives navigation. Why: demo store resets whenever demo mode toggles off.
+
+- PS visual summaries use only the pure summaryRules module and existing card inputs; shared DashCard/ChartHint own presentation and safe note persistence. Why: consistent accessible reports without new queries or business calculations.
