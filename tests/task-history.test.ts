@@ -98,6 +98,13 @@ describe('Task v2.1 history', () => {
     expect([one('MARCOM'), one('PS'), one('AC'), one('BD')]).toEqual([[12, 10, 6], [15, 12, 5], [13, 11, 4], [12, 8, 5]]);
     expect(orm[0]!.close.median).toBeCloseTo(2.5, 5);
   });
+  test('⑦ per-10-hotel denominators match spec; no Infinity/NaN', () => {
+    const orm = H.workload('ORM', rows, acts, care, P);
+    expect(orm.map(r => r.hotels)).toEqual([18, 14, 12, 10, 9, 6]);
+    const one = (d: 'MARCOM' | 'PS' | 'AC' | 'BD') => H.workload(d, rows, acts, care, P)[0]!.hotels;
+    expect([one('MARCOM'), one('PS'), one('AC'), one('BD')]).toEqual([57, 121, 121, null]);
+    for (const d of ['ORM', 'MARCOM', 'PS', 'AC', 'BD'] as const) for (const r of H.workload(d, rows, acts, care, P)) { if (r.per10 != null) expect(Number.isFinite(r.per10)).toBe(true); if (r.inN > 0 && d !== 'BD') expect(r.hotels!).toBeGreaterThanOrEqual(1); }
+  });
   test('fixture is deterministic', () => {
     expect(JSON.stringify(taskDemo(SEED_CATEGORIES, demoCareHotels()))).toBe(JSON.stringify(fx));
   });
