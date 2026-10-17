@@ -10,6 +10,7 @@ import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 
 import { Chip, Panel } from "@/components/crm/crm-ui";
 import { BdacTab } from "@/components/ps/bdac-tab";
+import { AcTab as AcTabV2 } from "@/components/ps/ac-tab";
 import { PsReportTab } from "@/components/ps/ps-report-tab";
 import { Account360Provider } from "@/components/ps/account-360";
 import { MeetingAnalyzerTab } from "./meeting-analyzer-tab";
