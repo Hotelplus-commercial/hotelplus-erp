@@ -19,9 +19,8 @@
 - WS-2 is browser-local keyed by Hotel ID; reads cards without gating Servicing.
 - Template Management only in PS Templates; emails snapshot text at send.
 - AC v1 retired; CRM docs are split Cloud documents (crm:<collection>|hotels|ws2) with revision CAS + local backup, push-only, WS2 excludes credentials; conflicts stop sync. Open test-mode writes: close before production.
-- AC daily processing is a manual browser action; server callback is a no-op. One pure accounting engine for all AC entry points.
+- AC daily processing is a manual browser action (server callback no-op; /ac/operations → /ac/billing). One pure accounting engine for all AC entry points.
 - AC views use canonical invoices, stable hotel IDs, WS-2 owners; never guess ambiguous attribution. One pure recurring-grade selector; terminal collection events persist until explicit reactivation.
-- /ac/operations redirects to /ac/billing.
 - Dashboard reads only existing view projections (v_ps_*, v_ac_*, v_meeting_*, v_task_*), paginated; absent mirrors stay empty, never inferred. Dashboards never write business state (except Task tickets).
 - Dashboard filters/A-B periods share one context + pure selectors; ownershipless aggregates stay empty under ownership lenses.
 - Demo adapters derive all tabs from one bundled spine via URL/state, no provider writes; renewal end forward-only.
