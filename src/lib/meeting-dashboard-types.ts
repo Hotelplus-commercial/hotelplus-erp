@@ -167,9 +167,9 @@ export function aggregateFunnel(cards: MeetingRow[], service: "ORM" | "Marcom", 
         else if (!ss) agg.drops.aeNotSent += 1;
         else if (ss === "PENDING") agg.drops.surveyPending += 1;
         else if (ss === "COMMENTED") agg.drops.surveyCommented += 1;
-      } else if (status === "NO_SHOW") {
+      } else if (dropScope && status === "NO_SHOW") {
         agg.drops.noShow += 1;
-      } else {
+      } else if (dropScope) {
         const md = r["meeting_date"] ? dayNum(String(r["meeting_date"]).slice(0, 10)) : null;
         if (md != null && md < todayNum) agg.drops.pastNotUpdated += 1;
         else agg.drops.waiting += 1;

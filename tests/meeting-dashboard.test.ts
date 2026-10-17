@@ -87,7 +87,7 @@ describe("Meeting v2.0 invariants (§5)", () => {
       orm.drops.notAssigned + orm.drops.postponed + orm.drops.rejected,
     );
     expect(orm.scheduled.A - orm.completed.A).toBe(
-      orm.drops.waiting + orm.drops.pastNotUpdated + orm.drops.noShow - (orm.scheduled.B + orm.scheduled.C - (orm.completed.B + orm.completed.C)),
+      orm.drops.waiting + orm.drops.pastNotUpdated + orm.drops.noShow,
     );
   });
   test("I3: completed − survey_success = AE ยังไม่ส่ง + รอลูกค้าตอบ + ลูกค้าแย้ง (per service)", () => {
