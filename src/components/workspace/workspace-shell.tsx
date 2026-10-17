@@ -81,33 +81,42 @@ function Lane({ title, focus, children }: { title: string; focus?: boolean; chil
 }
 const Empty = ({ text }: { text: string }) => <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">{text}</div>;
 
-/** Inbound-only: tickets WHERE target_dept = dept. Never time-bound. */
+/** Inbound: tickets WHERE target_dept = dept OR payload.watchers[] contains dept (👁 FYI, read-only). Never time-bound. */
 function TicketsLane({ dept, role, initialTicket }: { dept: Dept; role: Role; initialTicket?: string | undefined }) {
   const tickets = useTickets();
   const [showClosed, setShowClosed] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
   useEffect(() => {
-    const t = initialTicket && tickets.find((x) => x.ticket_id === initialTicket && x.target_dept === dept);
+    const t = initialTicket && tickets.find((x) => x.ticket_id === initialTicket && (x.target_dept === dept || isWatcherOf(x, dept)));
     if (t) { setOpenId(t.ticket_id); setShowClosed(!OPEN_STATUSES.includes(t.status)); }
   }, [initialTicket, dept]); // eslint-disable-line react-hooks/exhaustive-deps
-  const inbound = tickets.filter((t) => t.target_dept === dept);
-  const rows = inbound.filter((t) => OPEN_STATUSES.includes(t.status) !== showClosed);
+  const inbound = tickets.filter((t) => t.target_dept === dept || isWatcherOf(t, dept));
+  const rows = sortBotFirst(inbound.filter((t) => OPEN_STATUSES.includes(t.status) !== showClosed));
   const open = inbound.find((t) => t.ticket_id === openId) ?? null;
+  const digest = digestFor(inbound, new Date().toISOString().slice(0, 10));
+  const breakdown = (Object.entries(digest.byType) as [keyof typeof TYPE_TH, number][]).map(([k, n]) => `${TYPE_TH[k]} ${n}`).join(" · ");
   return (
     <div className="space-y-3">
+      {(digest.fresh > 0 || digest.carried > 0 || digest.readyToClose > 0) && (
+        <p className="rounded-md border bg-muted/40 px-3 py-2 text-xs">
+          วันนี้: ใหม่ {digest.fresh}{breakdown ? ` (${breakdown})` : ""} · ค้าง {digest.carried} · รอปิด {digest.readyToClose}
+        </p>
+      )}
       <div role="group" aria-label="ตัวกรอง ticket" className="inline-flex rounded-md border p-0.5">
         {[{ v: false, l: "เปิดอยู่" }, { v: true, l: "เสร็จ / ยกเลิก" }].map((o) => (
           <button key={o.l} type="button" aria-pressed={showClosed === o.v} onClick={() => setShowClosed(o.v)}
             className={cn("rounded px-2.5 py-1 text-xs", showClosed === o.v ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted")}>{o.l}</button>
         ))}
       </div>
-      <TicketTable rows={rows} onOpen={setOpenId} />
-      {open && <Detail t={open} role={role} onClose={() => setOpenId(null)} />}
+      <TicketTable rows={rows} dept={dept} onOpen={setOpenId} />
+      {open && <Detail t={open} role={role} dept={dept} onClose={() => setOpenId(null)} />}
     </div>
   );
 }
 
-function TicketTable({ rows, onOpen }: { rows: L0Ticket[]; onOpen: (id: string) => void }) {
+const SEVERITY_DOT: Record<string, string> = { high: "🔴", medium: "🟡", low: "⚪" };
+
+function TicketTable({ rows, dept, onOpen }: { rows: L0Ticket[]; dept: Dept; onOpen: (id: string) => void }) {
   if (!rows.length) return <Empty text="ยังไม่มี ticket" />;
   return (
     <div className="overflow-x-auto rounded-md border">
@@ -116,12 +125,15 @@ function TicketTable({ rows, onOpen }: { rows: L0Ticket[]; onOpen: (id: string) 
           <tr><th className="p-2">#</th><th className="p-2">ประเภท</th><th className="p-2">โรงแรม</th><th className="p-2">สถานะ</th><th className="p-2">สร้างเมื่อ</th></tr>
         </thead>
         <tbody>
-          {[...rows].reverse().map((t) => (
+          {rows.map((t) => (
             <tr key={t.ticket_id} className="border-t hover:bg-muted/40">
-              <td className="p-2 font-mono"><Button variant="link" size="sm" className="h-auto p-0 font-mono" onClick={() => onOpen(t.ticket_id)}>#{t.ticket_id}</Button></td>
-              <td className="p-2">{TYPE_TH[t.type]}</td>
+              <td className="p-2 font-mono">
+                <Button variant="link" size="sm" className="h-auto p-0 font-mono" onClick={() => onOpen(t.ticket_id)}>#{t.ticket_id}</Button>
+                {isWatcherOf(t, dept) && <Badge variant="outline" className="ml-1 text-[10px]">👁 FYI</Badge>}
+              </td>
+              <td className="p-2">{t.payload.severity && <span aria-label={`severity ${t.payload.severity}`} className="mr-1">{SEVERITY_DOT[t.payload.severity]}</span>}{TYPE_TH[t.type]}</td>
               <td className="p-2">{t.subject_ref.hotel_name} · {t.subject_ref.gap_service}</td>
-              <td className="p-2"><Badge variant="secondary">{STATUS_TH[t.status]}</Badge></td>
+              <td className="p-2"><Badge variant="secondary">{STATUS_TH[t.status]}</Badge>{t.payload.condition_cleared_at && <Badge variant="outline" className="ml-1 border-warning/50 text-[10px] text-warning-foreground">รอปิด</Badge>}</td>
               <td className="whitespace-nowrap p-2 text-muted-foreground">{fmt(t.created_at)}</td>
             </tr>
           ))}
