@@ -161,7 +161,7 @@ export function workload(dept: WorkDept, rows: WorkRow[], acts: ActMap, care: Ho
     const closeTimed = att.filter(a => a.close.dept === dept && a.close.team === key && a.okClose).map(a => ({ a, t: netCloseTime(a.r, acts) }));
     const closed = att.filter(a => a.close.dept === dept && a.close.team === key && a.okClose && inP(a.r.closed_at, p));
     const accepts = att.filter(a => a.create.dept === dept && a.create.team === key && a.okCreate).map(a => acceptTime(a.r, acts));
-    const openNow = rows.filter(r => r.status_group !== 'CLOSED' && r.dept === dept && liveTeam(r.dept, byHotel.get(r.hotel_id ?? '')) === key && (!who.size || r.source_kind === 'L0' || who.has(r.responsible_label))).length;
+    const openNow = rows.filter(r => r.status_group !== 'CLOSED' && r.dept === dept && liveTeam(r.dept, byHotel.get(r.hotel_id ?? '')) === key).length;
     const closedCases = closed.filter(a => a.r.source_kind === 'CASE');
     const hotels = dept === 'BD' ? null : dept === 'ORM' ? care.filter(c => c.orm && ormKey(c.orm_team) === key).length : dept === 'MARCOM' ? care.filter(c => c.marcom).length : care.length;
     const scope = new Set([...incoming, ...closed].map(a => a.r.work_id));
