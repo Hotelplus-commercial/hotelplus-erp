@@ -50,7 +50,7 @@ export function rankRows(rows: PsReportRow[], period: string | null, lens: AcLen
       (r) =>
         String(r.billing_period ?? "").slice(0, 7) === (period ?? "").slice(0, 7) &&
         String(r.lens ?? "ALL") === lens &&
-        r.has_bill === true,
+        r['has_bill'] === true,
     )
     .map((r) => ({
       billing_period: String(r.billing_period),
@@ -75,7 +75,7 @@ export function unbilledCount(rows: PsReportRow[], period: string | null, lens: 
     (r) =>
       String(r.billing_period ?? "").slice(0, 7) === (period ?? "").slice(0, 7) &&
       String(r.lens ?? "ALL") === lens &&
-      r.has_bill === false,
+      r['has_bill'] === false,
   ).length;
 }
 
@@ -205,18 +205,18 @@ export type DebtorRow = {
 };
 export function debtorRows(rows: PsReportRow[]): DebtorRow[] {
   return rows
-    .filter((r) => r.hotel_id != null && r.collection_status != null)
+    .filter((r) => r.hotel_id != null && r['collection_status'] != null)
     .map((r) => ({
       hotel_id: String(r.hotel_id),
       hotel_name: String(r.hotel_name ?? ""),
-      customer_name: String(r.customer_name ?? r.customer_id ?? ""),
+      customer_name: String(r['customer_name'] ?? r['customer_id'] ?? ""),
       service_line: String(r.service_line ?? ""),
-      caretaker: r.caretaker == null ? null : String(r.caretaker),
-      outstanding: num(r.outstanding),
-      invoice_count: num(r.invoice_count ?? 1),
-      overdue_months: num(r.overdue_months),
+      caretaker: r['caretaker'] == null ? null : String(r['caretaker']),
+      outstanding: num(r['outstanding']),
+      invoice_count: num(r['invoice_count'] ?? 1),
+      overdue_months: num(r['overdue_months']),
       grade: String(r.grade ?? ""),
-      status: String(r.collection_status) as CollectionStatus,
+      status: String(r['collection_status']) as CollectionStatus,
     }));
 }
 /** ⑧ sort: ส่งฟ้อง → ปิดระบบ → ค้างชำระ → ตัดสูญ, then ฿ high → low. */
