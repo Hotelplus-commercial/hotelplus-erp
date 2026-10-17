@@ -691,22 +691,22 @@ function OutstandingCard({
   compare: boolean;
 }) {
   const outstanding = breakdown.reduce((s, r) => s + num(r['outstanding']), 0);
-  const invCount = breakdown.reduce((s, r) => s + num(r.outstanding_count), 0);
+  const invCount = breakdown.reduce((s, r) => s + num(r['outstanding_count']), 0);
   const customers = new Set(debtors.map((r) => String(r.customer_id ?? ""))).size;
-  const collected = breakdown.reduce((s, r) => s + num(r.collected_count), 0);
+  const collected = breakdown.reduce((s, r) => s + num(r['collected_count']), 0);
   const totalInv = collected + invCount;
-  const overdueN = breakdown.reduce((s, r) => s + num(r.overdue_count), 0);
-  const overdueAmt = breakdown.reduce((s, r) => s + num(r.overdue_amount), 0);
+  const overdueN = breakdown.reduce((s, r) => s + num(r['overdue_count']), 0);
+  const overdueAmt = breakdown.reduce((s, r) => s + num(r['overdue_amount']), 0);
   const notdueN = breakdown.reduce((s, r) => s + num(r['notdue_count']), 0);
   const notdueAmt = breakdown.reduce((s, r) => s + num(r['notdue_amount']), 0);
   const groups = (["ORM", "Marcom"] as const).flatMap((line) =>
     (["EXISTING", "NEW"] as const).map((seg) => {
-      const rows = breakdown.filter((r) => r.service_line === line && r.customer_segment === seg);
+      const rows = breakdown.filter((r) => r['service_line'] === line && r['customer_segment'] === seg);
       return {
         label: `${line} · ${seg === "EXISTING" ? "ลูกค้าเดิม" : "ลูกค้าใหม่"}`,
         line,
         sum: rows.reduce((s, r) => s + num(r['outstanding']), 0),
-        n: rows.reduce((s, r) => s + num(r.outstanding_count), 0),
+        n: rows.reduce((s, r) => s + num(r['outstanding_count']), 0),
       };
     }),
   );
