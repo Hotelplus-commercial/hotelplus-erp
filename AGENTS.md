@@ -36,6 +36,6 @@
 - Account-risk BOT targets PS; Servicing stall targets its lane department with PS watcher. isWatcherOf keeps FYI read-only. Why: one condition = one ticket.
 - Sidebar module/child links must propagate the ?demo=1 search param so the Layer 0 demo session survives navigation. Why: demo store resets whenever demo mode toggles off.
 
-- PS uses shared summaries/tooltips; Servicing charts use measured pixels/shared quantiles and browser-only drill visibility. Why: consistent undistorted reports, unchanged logic.
+- PS uses shared summaries/tooltips; Servicing charts use measured pixels/shared quantiles and browser-only drill; AC tab math = pure selectors in src/lib/ac-revenue.ts. Why: consistent undistorted reports, unchanged logic.
 - PI required validation gates final saveAnswers only; template publish freezes flags and audits changes. Why: customer/AE share one validator.
 - Portfolio uses existing hotel terms, latest active start per service; missing SKU link stays placeholder. Contracts reuses the hotel list. Why: no guessed CRM joins.

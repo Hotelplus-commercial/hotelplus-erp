@@ -1,3 +1,10 @@
+# AC Dashboard tab v2.0
+- [x] Re-grained v_ac_invoice_ranking (hotel × period × lens ALL/ORM/MARCOM; rank/prev_rank/avg_rank/has_bill; RECURRING only) via migration 0019; config AC_BAND_CONFIG (10k/100k) in src/lib/ac-revenue.ts.
+- [x] Rebuilt tab as Visual Standard cards ①–⑧ + definition strip (src/components/ps/ac-tab.tsx), reusing DashCard/ChartHint/summaryRules; Mon YY everywhere; red only on D/SUSPENDED/LEGAL/⑤ answer; no Tier/Pareto/no-service bucket.
+- [x] Demo fixture: 155 billed hotels Sep 26 (odd N, half=78, k=44), 150 Aug 26, 15 both-service, 6 unbilled, 5 new, 2 ≥฿100k; 4 collection statuses + PAUSED + not-yet-due; 6 grade periods (Sep open, no D); Anan Group 3-hotel customer.
+- [x] 94 tests pass (12 new in tests/ac-revenue.test.ts covering I2–I7, split/k/bands/sort); tsgo + build OK; browser-verified demo + live empty state + Compare A/B + search + 390px no overflow.
+- [ ] Live data awaits Cloud Sync seed + C5 (all cards show empty states); ⑧ ticket badges read Ticket L0 store — show "รอ BOT รอบถัดไป" until a BOT run creates GRADE_RISK tickets.
+
 # Servicing patch v2.1
 - [x] Go-Live measured pixel geometry/anchored labels verified at 1280/1440/1920/390px; shared interpolated quartiles unchanged, phase strip circles undistorted.
 - [x] Persistent collapsed drill/toggles/group and stage auto-open verified; eight flag rows/two gap rows and July 18 tooltip unchanged; 82 tests pass, build OK. See SERVICING_V2_1_REPORT.md.

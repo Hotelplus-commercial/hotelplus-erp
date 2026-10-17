@@ -2,14 +2,13 @@
  * AC data comes only from the existing v_ac_* views (cloud mirror, C5); nothing here mutates
  * AC data. Signed/Won are re-homed from BD-AC using the unchanged v_bdac_flow projection. */
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { Clock, Minus, Triangle } from "lucide-react";
 import { createContext, useContext, useMemo, useState, useEffect, type ReactNode } from "react";
-import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 
-import { Chip, Panel } from "@/components/crm/crm-ui";
+import { Chip } from "@/components/crm/crm-ui";
 import { BdacTab } from "@/components/ps/bdac-tab";
+import { AcTab as AcTabV2 } from "@/components/ps/ac-tab";
 import { PsReportTab } from "@/components/ps/ps-report-tab";
 import { Account360Provider } from "@/components/ps/account-360";
 import { MeetingAnalyzerTab } from "./meeting-analyzer-tab";
@@ -66,12 +65,7 @@ type RowKey =
   | "previous_month_rank"
   | "lifetime_average_rank";
 type Row = Partial<Record<RowKey, string | number | boolean | null>>;
-const ym = (offset: number) => {
-  const d = new Date();
-  return new Date(Date.UTC(d.getFullYear(), d.getMonth() + offset, 1)).toISOString().slice(0, 7);
-};
 const num = (v: unknown) => Number(v ?? 0) || 0;
-const baht = (n: number) => "฿" + n.toLocaleString("th-TH", { maximumFractionDigits: 0 });
 
 /** Rows inside the selected window; shift=-1 gives the same window one month earlier (MoM). */
 function scope(rows: Row[], f: Filter, shift = 0, now = new Date()) {
@@ -588,260 +582,36 @@ function HeadlineStrip() {
   );
 }
 
-const GRADE_COLOR: Record<string, string> = {
-  A: "var(--primary)",
-  B: "var(--chart-2, var(--primary))",
-  C: "var(--warning)",
-  D: "var(--muted-foreground)",
-};
-
+/** AC tab v2.0 — delegates to the Visual Standard cards; period-scoped rows for ①②③⑥ only. */
 function AcTab() {
   const f = useContext(FilterCtx);
   const q = useAcViews();
   const global = useDashboardGlobal();
   const now = new Date(global.now);
-  const navigate = useNavigate();
-  const open = () => navigate({ to: "/ac/hotel-profile" });
-  const v = useMemo(() => {
+  const views = useMemo(() => {
     const d = q.data;
-    const s = (
-      k:
-        | "v_ac_debtors"
-        | "v_ac_invoices_breakdown"
-        | "v_ac_invoice_ranking"
-        | "v_ac_grade_distribution"
-        | "v_ac_overdue"
-        | "v_ac_suspended"
-        | "v_ac_legal",
-    ) => scope((d?.[k] ?? []) as Row[], f, 0, now);
+    if (!d) return undefined;
+    const per = selectedPeriod(f, now, "A");
+    const perB = f.compare ? selectedPeriod(f, now, "B") : null;
+    const inRange = (r: Row) => {
+      const p = String(r.billing_period ?? "").slice(0, 10);
+      return (p >= per.from && p <= per.to) || (perB != null && p >= perB.from && p <= perB.to);
+    };
     return {
-      debt: s("v_ac_debtors"),
-      br: s("v_ac_invoices_breakdown"),
-      rank: s("v_ac_invoice_ranking"),
-      grade: s("v_ac_grade_distribution"),
-      gradePrev: scope((d?.["v_ac_grade_distribution"] ?? []) as Row[], f, -1, now),
-      od: s("v_ac_overdue"),
-      sus: s("v_ac_suspended"),
-      legal: s("v_ac_legal"),
+      ...d,
+      v_ac_invoice_ranking: ((d["v_ac_invoice_ranking"] ?? []) as Row[]).filter(inRange),
+      v_ac_grade_distribution: ((d["v_ac_grade_distribution"] ?? []) as Row[]).filter(inRange),
     };
   }, [q.data, f, global.now]);
-  if (q.isLoading) return <Empty text="กำลังโหลดรายงาน…" />;
-  if (q.isError) return <Empty text="อ่านรายงาน AC ไม่ได้ — ลองโหลดหน้าใหม่" />;
-  const outstanding = v.od.reduce((s, r) => s + num(r["outstanding"]), 0);
-  const debtors = new Set(v.debt.map((r) => r["customer_id"])).size;
-  const cnt = (rows: Row[], k: RowKey = "customer_count") =>
-    rows.reduce((s, r) => s + num(r[k]), 0);
-  const gradeAgg = ["A", "B", "C", "D"].map((g) => ({
-    g,
-    n: cnt(v["grade"].filter((r) => r["grade"] === g)),
-    p: cnt(v.gradePrev.filter((r) => r["grade"] === g)),
-  }));
-  const gTotal = gradeAgg.reduce((s, x) => s + x.n, 0),
-    pTotal = gradeAgg.reduce((s, x) => s + x.p, 0);
-  const latest = [...new Set(v["rank"].map((r) => String(r.billing_period)))].sort().at(-1);
-  const ranks = v["rank"]
-    .filter((r) => String(r.billing_period) === latest)
-    .sort((a, b) => num(b["amount"]) - num(a["amount"]));
   return (
-    <>
-      <DashboardCompare report={undefined} ac={q.data} deals={[]} tab={f.compare ? "ac" : ""} />
-      <div data-demo={global.demo || undefined} className="grid gap-4 lg:grid-cols-2">
-        <Panel
-          title={"A · ลูกหนี้ & ภาพรวมใบแจ้งหนี้" + (global.demo ? " · DEMO" : "")}
-          subtitle="v_ac_debtors · v_ac_invoices_breakdown"
-        >
-          <div className="grid grid-cols-2 gap-3">
-            <Tile label="ยอดค้าง" value={baht(outstanding)} tone="warn" />
-            <Tile label="# ลูกหนี้" value={String(debtors)} />
-          </div>
-          {v.br.length ? (
-            <table className="mt-3 w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs text-muted-foreground">
-                  <th>กลุ่ม</th>
-                  <th>ORM</th>
-                  <th>Marcom</th>
-                </tr>
-              </thead>
-              <tbody>
-                {["NEW", "EXISTING"].map((seg) => (
-                  <tr key={seg} className="border-t">
-                    <td>{seg === "NEW" ? "ลูกค้าใหม่" : "ลูกค้าเดิม"}</td>
-                    {["ORM", "Marcom"].map((l) => (
-                      <td key={l} className="tabular-nums">
-                        {cnt(
-                          v.br.filter((r) => r["customer_segment"] === seg && r.service_line === l),
-                          "invoice_count",
-                        )}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <div className="mt-3">
-              <Empty />
-            </div>
-          )}
-          {v.debt.length ? (
-            <table className="mt-3 w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs text-muted-foreground">
-                  <th>ลูกค้า</th>
-                  <th>บริการ</th>
-                  <th>รอบ</th>
-                </tr>
-              </thead>
-              <tbody>
-                {v.debt.slice(0, 20).map((r, i) => (
-                  <tr key={i} className="cursor-pointer border-t hover:bg-muted" onClick={open}>
-                    <td className="font-mono text-xs">{String(r["customer_id"]).slice(0, 8)}</td>
-                    <td>{String(r.service_line)}</td>
-                    <td>{String(r.billing_period).slice(0, 7)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : null}
-        </Panel>
-
-        <Panel
-          title={"B · Payment Grade A–D" + (global.demo ? " · DEMO" : "")}
-          subtitle="v_ac_grade_distribution · คำนวณใน AC App (อ่านผลเท่านั้น)"
-        >
-          {gTotal ? (
-            <div className="flex items-center gap-4">
-              <div className="h-40 w-40">
-                <ResponsiveContainer>
-                  <PieChart>
-                    <Pie
-                      data={gradeAgg.filter((x) => x.n)}
-                      dataKey="n"
-                      nameKey="g"
-                      innerRadius={40}
-                      outerRadius={70}
-                    >
-                      {gradeAgg
-                        .filter((x) => x.n)
-                        .map((x) => (
-                          <Cell key={x.g} fill={GRADE_COLOR[x.g]} />
-                        ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <ul className="space-y-1 text-sm">
-                {gradeAgg.map((x) => (
-                  <li key={x.g} className="flex items-center gap-2">
-                    <b>{x.g}</b> {Math.round((x.n / gTotal) * 100)}%{" "}
-                    <Mom
-                      cur={Math.round((x.n / gTotal) * 100)}
-                      prev={pTotal ? Math.round((x.p / pTotal) * 100) : null}
-                    />
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : (
-            <Empty />
-          )}
-        </Panel>
-
-        <Panel
-          title={"C · Collection" + (global.demo ? " · DEMO" : "")}
-          subtitle="v_ac_overdue · v_ac_suspended · v_ac_legal (PAUSED ไม่นับเป็น SUSPENDED)"
-        >
-          <div className="grid grid-cols-3 gap-3">
-            <Tile
-              tone="warn"
-              label="ค้างชำระ"
-              value={v.od.length ? `${baht(outstanding)} / ${cnt(v.od)}` : "—"}
-            />
-            <Tile tone="warn" label="SUSPENDED" value={v.sus.length ? String(cnt(v.sus)) : "—"} />
-            <Tile tone="warn" label="LEGAL" value={v.legal.length ? String(cnt(v.legal)) : "—"} />
-          </div>
-          {!v.od.length && !v.sus.length && !v.legal.length ? (
-            <div className="mt-3">
-              <Empty />
-            </div>
-          ) : (
-            <table className="mt-3 w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs text-muted-foreground">
-                  <th>รอบ</th>
-                  <th>บริการ</th>
-                  <th>ลูกค้า</th>
-                  <th>ยอดค้าง</th>
-                </tr>
-              </thead>
-              <tbody>
-                {v.od.map((r, i) => (
-                  <tr key={i} className="cursor-pointer border-t hover:bg-muted" onClick={open}>
-                    <td>{String(r.billing_period).slice(0, 7)}</td>
-                    <td>{String(r.service_line)}</td>
-                    <td>{num(r["customer_count"])}</td>
-                    <td>
-                      <Chip tone="warn">{baht(num(r["outstanding"]))}</Chip>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </Panel>
-
-        <Panel
-          title={"D · Invoice Ranking" + (global.demo ? " · DEMO" : "")}
-          subtitle={`v_ac_invoice_ranking${latest ? " · รอบ " + latest.slice(0, 7) : ""}`}
-        >
-          {ranks.length ? (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs text-muted-foreground">
-                  <th>#</th>
-                  <th>โรงแรม</th>
-                  <th>ยอด</th>
-                  <th>ΔMoM</th>
-                  <th>เฉลี่ย</th>
-                </tr>
-              </thead>
-              <tbody>
-                {ranks.slice(0, 20).map((r, i) => (
-                  <tr key={i} className="cursor-pointer border-t hover:bg-muted" onClick={open}>
-                    <td>{num(r["rank"])}</td>
-                    <td className="font-mono text-xs">{String(r.hotel_id).slice(0, 8)}</td>
-                    <td className="tabular-nums">{baht(num(r["amount"]))}</td>
-                    <td>
-                      {r["previous_month_rank"] == null ? (
-                        <span className="text-xs text-muted-foreground">— / รอสะสม</span>
-                      ) : (
-                        <Mom cur={num(r["previous_month_rank"])} prev={num(r["rank"])} />
-                      )}
-                    </td>
-                    <td className="tabular-nums">
-                      {r["lifetime_average_rank"] == null
-                        ? "—"
-                        : num(r["lifetime_average_rank"]).toFixed(1)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <Empty />
-          )}
-        </Panel>
-
-        <Panel
-          title={"E · ORM System Fee" + (global.demo ? " · DEMO" : "")}
-          subtitle="v_ac_system_fee"
-        >
-          <Tile label="ค่าระบบ ORM" placeholder="รอ email ingestion" />
-        </Panel>
-      </div>
-    </>
+    <AcTabV2
+      views={views as Record<string, import("@/lib/ps-dashboard-types").PsReportRow[]> | undefined}
+      loading={q.isLoading}
+      error={q.isError}
+      service={f.service}
+      compare={f.compare}
+      demo={global.demo}
+    />
   );
 }
 
