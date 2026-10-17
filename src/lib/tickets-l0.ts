@@ -108,9 +108,14 @@ export function stampConditionCleared(id: string): boolean {
 export function allowedNext(t: L0Ticket, role: Role): L0Status[] {
   const out: L0Status[] = [];
   const n = NEXT[t.status]; if (n && role === t.target_dept) out.push(n);
+  // BOT tickets: the primary party may press "Solved" (DONE) directly from any open status; no CANCEL (creator is SYSTEM).
+  if (t.created_by === SYSTEM_CREATOR && OPEN.includes(t.status) && role === t.target_dept && !out.includes('DONE')) out.push('DONE');
   if (OPEN.includes(t.status) && role === t.created_by) out.push('CANCELLED');
   return out;
 }
+
+/** True when `dept` sees this ticket only as a read-only watcher (👁 FYI). */
+export const isWatcherOf = (t: L0Ticket, dept: Dept) => t.target_dept !== dept && (t.payload.watchers ?? []).some((w) => w.dept === dept);
 
 /** Status transition with revision check. Returns false on conflict / not allowed. */
 export function transition(id: string, revision: number, to: L0Status, by: Role): boolean {
