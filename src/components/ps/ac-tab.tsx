@@ -83,7 +83,7 @@ export function AcTab({ views, loading, error, service, compare, demo }: AcTabPr
   if (error) return <p className="text-sm text-muted-foreground">อ่านรายงาน AC ไม่ได้ — ลองโหลดหน้าใหม่</p>;
 
   return (
-    <div className="dash-grid grid-cols-1" data-testid="ac-tab" data-demo={demo || undefined}>
+    <div className="flex min-w-0 flex-col gap-5" data-testid="ac-tab" data-demo={demo || undefined}>
       <DefinitionStrip />
       <SectionHead
         title="รายได้รายโรงแรม"
@@ -231,8 +231,11 @@ function RevenueSplitCard({
       answerSub={
         rows.length ? (
           <>
-            {prevTotal != null ? (
-              <Delta a={stats.total} b={prevTotal} unit="%" />
+            {prevTotal != null && prevTotal > 0 ? (
+              <span className={stats.total >= prevTotal ? "text-dash-good" : "text-dash-watch"}>
+                {stats.total >= prevTotal ? "▲ +" : "▼ "}
+                {(((stats.total - prevTotal) / prevTotal) * 100).toLocaleString("th-TH", { maximumFractionDigits: 1 })}%
+              </span>
             ) : (
               <span className="text-muted-foreground">—</span>
             )}{" "}
