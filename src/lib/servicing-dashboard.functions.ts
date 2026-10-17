@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import type { ServicingReport, ServicingRow, PhaseTimeRow } from "./servicing-dashboard-types";
 import type { StallCandidate } from './servicing-stall';
-import { phaseConfig } from './servicing-time';
+import { phaseConfig, servicingLanes } from './servicing-time';
 
 /** Reads only the granted v_servicing_stage_cards projection (empty + pending until seed+C5). */
 export const readServicingDashboard = createServerFn({ method: "GET" }).handler(async (): Promise<ServicingReport> => {
@@ -64,7 +64,7 @@ export const readServicingBotSignals = createServerFn({method:'GET'}).handler(as
   const result=await client.from('v_servicing_stage_cards').select('*').range(offset,offset+999);
   if(result.error)throw new Error('อ่านสัญญาณ Servicing ไม่สำเร็จ');
   const page=(result.data??[]) as unknown as ServicingRow[];
-  for(const row of page){for(const lane of row.lanes??[])if(lane.state==='done'||row.go_live_at)out.push({row,lane,ended:true});}
+  for(const row of page){for(const lane of row.lanes??servicingLanes(row,new Date().toISOString()))if(lane.state==='done'||row.go_live_at)out.push({row,lane,ended:true});}
   if(page.length<1000)break;if(offset>=99000)throw new Error('ข้อมูล Servicing เกินขนาดที่รองรับ');
  }
  return out;
