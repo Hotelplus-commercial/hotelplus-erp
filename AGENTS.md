@@ -39,3 +39,4 @@
 - PS uses shared summaries/tooltips; Servicing charts use measured pixels/shared quantiles and browser-only drill; AC tab math = pure selectors in src/lib/ac-revenue.ts. Why: consistent undistorted reports, unchanged logic.
 - PI required validation gates final saveAnswers only; template publish freezes flags and audits changes. Why: customer/AE share one validator.
 - Portfolio uses existing hotel terms, latest active start per service; missing SKU link stays placeholder. Contracts reuses the hotel list. Why: no guessed CRM joins.
+- Task history (v2.1) is reconstructed client-side by the pure engine in src/lib/task-history.ts from status/audit replay with effective-dated config (configAt); only K3 reads task_backlog_snapshot, written solely by the AC daily post-step. Why: one source for live and historical backlog.
