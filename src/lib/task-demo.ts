@@ -83,7 +83,7 @@ function l0Specs(): L0Spec[] {
   let ci = 0;
   plan.forEach(([early, late, open], j) => {
     for (let k = 0; k < early; k++) { const c = D(5 + j, 2 + 2 * k), lane = closedLanes[ci++]!; s.push({ lane, created: c, closed: plus(c, CLOSE[lane]!) }); }
-    for (let k = 0; k < late; k++) { const closed = D(6 + j, 1 + k), lane = closedLanes[ci++]!; s.push({ lane, created: plus(closed, -CLOSE[lane]!), closed }); }
+    for (let k = 0; k < late; k++) { const closed = D(6 + j, 1, 0.2 * k), lane = closedLanes[ci++]!; s.push({ lane, created: plus(closed, -CLOSE[lane]!), closed }); }
     for (let k = 0; k < open; k++) s.push({ lane: 'BD', created: D(5 + j, 16 + 2 * k) });
   });
   let nw = 0; for (const t of s) if (!t.closed) t.now = nw++ % 2 ? 'ACK' : 'NEW';
