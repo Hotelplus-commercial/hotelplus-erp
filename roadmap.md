@@ -1,3 +1,8 @@
+# PS Dashboard visual standard v1.0
+- [ ] Apply authoritative tokens/font and shared cards, accessible tooltips and persistent deterministic summary notes.
+- [ ] Replace headline with seven groups/tiles using existing values only; refresh PS visualizations and default PS entry.
+- [ ] Verify unchanged report values, summaries, drill-through, compare and desktop/mobile layout; no other-tab layout changes.
+
 # Workspace Layer 1 patch v1.1
 - [x] Restore AUTO sidebar visibility using the registry; remove ORM/Marcom Overview surfaces, retaining layouts and Dashboard inboxes. Existing base URLs redirect to the corresponding Workspace.
 - [x] Surface ORM/Marcom pending assignments through existing v1.1 list/modal, due rule, master and audit; no assignment data migration or new write path.
