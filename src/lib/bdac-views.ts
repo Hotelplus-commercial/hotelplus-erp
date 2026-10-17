@@ -138,7 +138,6 @@ export function v_bdac_stage_current(rows: ContractLifecycle[], now = Date.now()
     const sla = bdacSla(l, now);
     return {
       deal: l,
-      stage: sla.stage,
       substep: sla.stage === 6 ? SUBSTEP_LABEL[l.current_stage] ?? "Draft" : null,
       ...sla,
     };

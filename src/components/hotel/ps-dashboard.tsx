@@ -82,7 +82,7 @@ function matchAssignment(
 ): boolean {
   if (!f) return true;
   const people = [a.AE, a.ORM, a.Marcom];
-  if (f.role !== "none" && f.teams.length && !f.teams.includes(a[f.role])) return false;
+  if (f.role !== "none" && f.role !== "PM" && f.teams.length && !f.teams.includes(a[f.role])) return false;
   if (f.people.length && !f.people.some((p) => people.includes(p))) return false;
   return true;
 }

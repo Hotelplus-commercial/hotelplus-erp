@@ -183,7 +183,7 @@ export function BdacTab({ source, globalFilter, clock }: { source?: ContractLife
       target_dept: "BD",
       source_app: "PS_DASHBOARD",
       created_by: "PM",
-      subject_ref: { deal_id: c.deal_id, hotel_id: c.hotel_id ?? c.deal_id, hotel_name: c.hotel_name, gap_service: "", service_line: c.service_line ?? undefined },
+      subject_ref: { deal_id: c.deal_id, hotel_id: c.hotel_id ?? c.deal_id, hotel_name: c.hotel_name, gap_service: "", ...(c.service_line ? { service_line: c.service_line } : {}) },
       payload: {
         readiness_tier: "", chips: [],
         note: `ดีล carry ข้ามเดือน — ส่งสัญญา ${thaiMonth(c.cohort_month)} แล้วยังไม่ WON`,
@@ -201,7 +201,7 @@ export function BdacTab({ source, globalFilter, clock }: { source?: ContractLife
           <div className="bdac-segmented" role="group" aria-label="บริการ">
             {(["ALL", "ORM", "MARCOM"] as LineFilter[]).map((f) => (
               <Button key={f} variant="ghost" size="sm" aria-pressed={line === f} onClick={() => setLine(f)} className="bdac-segment">
-                {f === "ALL" ? "All" : LINE_LABEL(f)}
+                {f === "ALL" ? "All" : LINE_LABEL(f === "NONE" ? null : f)}
               </Button>
             ))}
           </div>
@@ -229,7 +229,7 @@ export function BdacTab({ source, globalFilter, clock }: { source?: ContractLife
           }
           noteKey="bdac.flow"
           noteLines={summaryRules(
-            { metric: "WON", current: flow.won, previous: flow.prev_won, prevLabel, unit: " ดีล", split: svcFiltered ? undefined : [{ group: "ORM", value: flow.splits.won.orm }, { group: "Marcom", value: flow.splits.won.marcom }], empty: !rows.length },
+            { metric: "WON", current: flow.won, previous: flow.prev_won, prevLabel, unit: " ดีล", ...(svcFiltered ? {} : { split: [{ group: "ORM", value: flow.splits.won.orm }, { group: "Marcom", value: flow.splits.won.marcom }] }), empty: !rows.length },
             svcFiltered ? ["R-DELTA"] : ["R-DELTA", "R-SPLIT"],
           )}
           howToRead="แต่ละแท่ง = จำนวนดีลที่ &quot;เข้า&quot; stage นั้นในช่วงเวลา · ไม่ใช่อัตราแปลง (ดูอัตราที่การ์ด ③)"
