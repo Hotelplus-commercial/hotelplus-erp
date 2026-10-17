@@ -97,7 +97,7 @@ export function DashCard({
   right,
   noteNamespace = 'ps',
 }: {
-  title: string;
+  title: ReactNode;
   question: string;
   answer?: ReactNode;
   answerSub?: ReactNode;
