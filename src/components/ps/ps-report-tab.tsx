@@ -1,5 +1,5 @@
 import { useMemo, useState, type ReactNode } from "react";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { ArrowUpRight } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -12,9 +12,7 @@ import {
   ReferenceLine,
   CartesianGrid,
   Line,
-  Area,
   ComposedChart,
-  Legend,
   BarChart,
   Bar,
   PieChart,
@@ -24,7 +22,6 @@ import {
 } from "recharts";
 import { Chip } from "@/components/crm/crm-ui";
 import { Button } from "@/components/ui/button";
-import { useTemplateMgmt } from "@/lib/email-templates";
 import {
   latestPeriod,
   psScope,
@@ -54,40 +51,6 @@ const fmt = (value: number | null, suffix = "") =>
   value === null ? "—" : `${value.toLocaleString("th-TH", { maximumFractionDigits: 1 })}${suffix}`;
 const sum = (rows: PsReportRow[], key: string) => rows.reduce((s, r) => s + n(r, key), 0);
 const pending = "รอ Cloud Sync seed";
-function Empty({ text = pending }: { text?: string }) {
-  return <p className="py-7 text-center text-sm text-muted-foreground">{text}</p>;
-}
-function DemoMark() {
-  return (
-    <span className="rounded border border-warning/60 bg-warning/15 px-1.5 py-0.5 text-[10px] font-bold tracking-widest text-warning-foreground">
-      DEMO
-    </span>
-  );
-}
-function Section({
-  title,
-  children,
-  right,
-  demo,
-}: {
-  title: string;
-  children: ReactNode;
-  right?: ReactNode;
-  demo?: boolean;
-}) {
-  return (
-    <section className="min-w-0 border-b pb-6">
-      <header className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="flex items-center gap-2 font-display text-base font-semibold">
-          {title}
-          {demo && <DemoMark />}
-        </h2>
-        {right}
-      </header>
-      {children}
-    </section>
-  );
-}
 function Metric({
   label,
   value,
@@ -154,8 +117,6 @@ export function PsReportTab({
   const [dimFilter, setDimFilter] = useState<DimCode | null>(null);
   const [distBy, setDistBy] = useState<"service_line" | "ae_owner_id">("service_line");
   const { openAccount360 } = useAccount360();
-  const navigate = useNavigate();
-  const { riskRules } = useTemplateMgmt(); // Governance configuration only; no browser domain data reads.
   const views = report?.views;
   const demo = !!report?.demo;
   const now = report?.now ? new Date(report.now) : new Date();
@@ -249,7 +210,6 @@ export function PsReportTab({
     : error
       ? "อ่านรายงาน PS ไม่ได้ — ลองใหม่อีกครั้ง"
       : pending;
-  const empty = <Empty text={emptyText} />;
   const scatterRows = (rows: PsReportRow[], today: boolean) =>
     rows.map((row) => ({
       x: (today ? now : new Date(String(row.end_date))).getTime(),
@@ -344,6 +304,16 @@ export function PsReportTab({
       </ChartHint>
     );
   };
+  const barShape = (kind: 'incoming' | 'outgoing' | 'median_days') => (props: { x?:number; y?:number; width?:number; height?:number; payload?: Record<string,unknown> }) => {
+    const r=props.payload; if(!r || props.x==null || props.y==null || props.width==null || props.height==null) return <g/>;
+    const val=Number(r[kind] ?? 0), period=String(r['month'] ?? r['billing_period'] ?? '').slice(0,7);
+    return <ChartHint header={`${period} · ${kind==='median_days'?'median':'เข้า / ออก'} ${Math.abs(val)}${kind==='median_days'?' วัน':''}`} lines={kind==='median_days' ? [`ORM ${r['orm_days'] ?? '—'} วัน · Marcom ${r['marcom_days'] ?? '—'} วัน`] : [`เข้า ${r['incoming']} · ออก ${Math.abs(Number(r['outgoing']))}`]}><rect x={props.x} y={props.y} width={props.width} height={Math.abs(props.height)} rx={4} fill={kind==='incoming'?'var(--primary)':kind==='outgoing'?'var(--neutral-bar)':'var(--series-2)'} tabIndex={0} role="button" aria-label={`${period} ${kind} ${Math.abs(val)}`} className="dash-bar-interactive" /></ChartHint>;
+  };
+  const churnDot = (line:'ORM'|'Marcom') => (props:{cx?:number;cy?:number;payload?:typeof churnChart[number]}) => {
+    const r=props.payload; if(!r||props.cx==null||props.cy==null) return <g/>;
+    const rows=r.rows.filter(x=>x.service_line===line),value=ratio(rows,'out_count','active_at_start');
+    return <ChartHint header={`${r.month} · ${line} ${fmt(value,'%')}`} lines={[`${sum(rows,'out_count')}/${sum(rows,'active_at_start')} โรงแรม`]}><circle cx={props.cx} cy={props.cy} r={4} fill={line==='ORM'?'var(--watch-line)':'var(--series-2)'} tabIndex={0} role="button" aria-label={`${r.month} ${line} ${fmt(value,'%')}`} className="dash-bar-interactive" /></ChartHint>;
+  };
   const lifePoints = (rows: PsReportRow[], isEnded: boolean) =>
     scatterRows(rows, !isEnded).map((p, i) => ({ ...p, row: rows[i] ?? {}, ended: isEnded }));
   return (
@@ -399,10 +369,10 @@ export function PsReportTab({
                       ) : null;
                     }}
                   />
-                  <Bar dataKey="incoming" fill="var(--primary)" radius={[4, 4, 0, 0]}>
+                  <Bar dataKey="incoming" fill="var(--primary)" shape={barShape("incoming")} radius={[4, 4, 0, 0]}>
                     {flowChart.length <= 8 && <LabelList dataKey="incoming" position="top" />}
                   </Bar>
-                  <Bar dataKey="outgoing" fill="var(--neutral-bar)" radius={[0, 0, 4, 4]}>
+                  <Bar dataKey="outgoing" fill="var(--neutral-bar)" shape={barShape("outgoing")} radius={[0, 0, 4, 4]}>
                     {flowChart.length <= 8 && (
                       <LabelList
                         dataKey="outgoing"
@@ -496,7 +466,7 @@ export function PsReportTab({
                     stroke="var(--watch-line)"
                     strokeWidth={2.5}
                     connectNulls={false}
-                    dot={{ r: 4 }}
+                    dot={churnDot("ORM")}
                     activeDot={{ r: 6 }}
                   />
                 )}
@@ -507,7 +477,7 @@ export function PsReportTab({
                     stroke="var(--series-2)"
                     strokeDasharray="6 4"
                     strokeWidth={2.5}
-                    dot={{ r: 4 }}
+                    dot={churnDot("Marcom")}
                     activeDot={{ r: 6 }}
                   />
                 )}
@@ -570,6 +540,7 @@ export function PsReportTab({
                 </Button>
               ))}
             </div>
+            <div className="mb-4 space-y-2">{groups.map(group=>{const g=renewals.filter(r=>String(r[groupBy]??'ไม่ระบุ')===group),gd=g.filter(r=>r.outcome!=='IN_PROGRESS'),nr=g.filter(r=>r.outcome==='RENEWED').length;return <ChartHint key={group} header={`${group} · ${gd.length?fmt(nr/gd.length*100,'%'):'—'}`} lines={[`ต่อสำเร็จ ${nr}/${gd.length} ราย`]}><Button variant="ghost" className="h-auto w-full justify-between gap-3 px-0 text-xs"><span className="w-20 shrink-0 text-left">{group}</span><svg className="h-5 min-w-0 flex-1" viewBox="0 0 200 20" preserveAspectRatio="none" aria-hidden="true"><rect width="200" height="20" rx="4" fill="var(--accent-soft)"/><rect width={gd.length?nr/gd.length*200:0} height="20" rx="4" fill="var(--primary)"/></svg><span>{gd.length?fmt(nr/gd.length*100,'%'):'—'} ({nr}/{gd.length})</span></Button></ChartHint>;})}</div>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[420px] text-xs">
                 <thead>
@@ -741,6 +712,7 @@ export function PsReportTab({
                     />
                     <Bar
                       dataKey="median_days"
+                      shape={barShape("median_days")}
                       fill="var(--series-2)"
                       fillOpacity={compareSide === "B" ? 0.45 : 1}
                       radius={[4, 4, 0, 0]}
