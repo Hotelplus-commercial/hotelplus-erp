@@ -34,7 +34,7 @@ export const SURVEY2_LOW_BELOW = 3; // O-PS4 pending confirmation: Survey #2 sta
 export const NEAR_END_DAYS = 60; // same threshold as Portfolio snapshot "ใกล้หมด 60 วัน".
 export type HealthTier = 'high' | 'watch' | 'healthy' | 'pending';
 export type HealthDim = 'grade' | 'survey' | 'ws2' | 'nearEnd';
-export const DIM_LABEL: Record<HealthDim, string> = { grade: 'Grade C/D', survey: 'Survey ต่ำ', ws2: 'WS-2 ไม่ครบ', nearEnd: 'ใกล้หมด ≤60 วัน' };
+export const DIM_LABEL: Record<HealthDim, string> = { grade: 'Grade C/D', survey: 'Survey ต่ำ', ws2: 'Property Information Form ไม่ครบ', nearEnd: 'ใกล้หมด ≤60 วัน' };
 /** v1.1 §E: binary dims (Flag excluded); tier only when the confirmed active-service source exists. */
 export function healthOf(row: PsReportRow, rules: RiskRules, now = new Date()): { dims: HealthDim[]; tier: HealthTier } {
   const dims: HealthDim[] = [];

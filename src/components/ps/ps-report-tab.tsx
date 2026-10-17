@@ -896,10 +896,6 @@ export function PsReportTab({
                     value={fmt(wavg(cohort, k) ?? wavg(cohort, k + "_days"), " วัน")}
                   />
                 ))}
-                <Metric
-                  label="NPS · Promoters / Detractors"
-                  value={`${fmt(sum(cohort, "promoters"))} / ${fmt(sum(cohort, "detractors"))}`}
-                />
               </div>
             </>
           ) : (

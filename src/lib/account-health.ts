@@ -16,7 +16,7 @@ export const DEMO_VALUE_RATIO_MIN = 3; // demo-only sample cutoff
 
 export type DimCode = 'GRADE_CD' | 'SURVEY_LOW' | 'WS2_INCOMPLETE' | 'RENEWAL_60' | 'CHURN_PARTIAL' | 'ROI_REV_DECLINE' | 'ROI_REV_FLAT' | 'ROI_VALUE_LOW' | 'TIER_A_PERSIST' | 'FLAG_OPEN' | 'MARCOM_ADS' | 'MARCOM_PERF';
 export const DIM_TH: Record<DimCode, string> = {
-  GRADE_CD: 'Grade C/D', SURVEY_LOW: 'Survey ต่ำ', WS2_INCOMPLETE: 'WS-2 ไม่ครบ', RENEWAL_60: 'ต่อสัญญา ≤60 วัน', CHURN_PARTIAL: 'churn บางบริการ',
+  GRADE_CD: 'Grade C/D', SURVEY_LOW: 'Survey ต่ำ', WS2_INCOMPLETE: 'Property Information Form ไม่ครบ', RENEWAL_60: 'ต่อสัญญา ≤60 วัน', CHURN_PARTIAL: 'churn บางบริการ',
   ROI_REV_DECLINE: 'revenue ขาลง', ROI_REV_FLAT: 'revenue ทรงตัว', ROI_VALUE_LOW: 'value ratio ต่ำ', TIER_A_PERSIST: 'Tier A ต่อเนื่อง',
   FLAG_OPEN: 'Flag (รอ Meeting)', MARCOM_ADS: 'Marcom Ads (L2)', MARCOM_PERF: 'Marcom Perf (L2)',
 };
