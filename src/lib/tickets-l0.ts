@@ -5,16 +5,27 @@ import { useEffect, useState, useSyncExternalStore } from 'react';
 import { stageCloudDoc } from './cloud-sync';
 import { DEMO_NOW } from './ps-demo-fixture';
 
-export type TicketType = 'UPSELL_PITCH';
+export type TicketType = 'UPSELL_PITCH' | 'RENEWAL_DUE' | 'GRADE_RISK' | 'SURVEY_LOW';
 export type Dept = 'BD' | 'ORM' | 'MARCOM' | 'PS' | 'AC' | 'AUTO' | 'HR' | 'OFFICE';
 export type Role = 'PM' | Dept;
+/** Pseudo-user for BOT-generated tickets (display "The Office"); never a switcher role, so BOT tickets have no CANCEL action. */
+export const SYSTEM_CREATOR = 'SYSTEM:THE_OFFICE' as const;
+export type Creator = Role | typeof SYSTEM_CREATOR;
+export type Severity = 'high' | 'medium' | 'low';
+export type BotPayload = {
+  severity?: Severity; event_key?: string;
+  signal_detail?: { grade?: string; renewal_due_date?: string; days_left?: number; survey_id?: string; score?: number };
+  assigned_ae?: { member_id: string; nickname: string } | null;
+  watchers?: { dept: Dept; member_id: string | null; nickname: string }[];
+  generated_round?: string; condition_cleared_at?: string | null; unassigned_owner?: boolean;
+};
 export type L0Status = 'NEW' | 'ACK' | 'IN_PROGRESS' | 'DONE' | 'CANCELLED';
 export type L0Ticket = {
-  ticket_id: string; type: TicketType; source_app: 'PS_DASHBOARD' | 'BD_APP'; created_by: Role; target_dept: Dept;
-  subject_ref: { hotel_id: string; hotel_name: string; gap_service: string };
-  payload: { readiness_tier: string; chips: string[]; note: string };
+  ticket_id: string; type: TicketType; source_app: 'PS_DASHBOARD' | 'BD_APP' | 'PS_DASHBOARD_BOT'; created_by: Creator; target_dept: Dept;
+  subject_ref: { hotel_id: string; hotel_name: string; gap_service: string; service_line?: string };
+  payload: { readiness_tier: string; chips: string[]; note: string } & BotPayload;
   status: L0Status; created_at: string; revision: number;
-  audit: { at: string; by: Role; from_status: L0Status | null; to_status: L0Status }[];
+  audit: { at: string; by: Creator; from_status: L0Status | null; to_status: L0Status }[];
 };
 
 export const DEPTS: Dept[] = ['BD', 'ORM', 'MARCOM', 'PS', 'AC', 'AUTO', 'HR', 'OFFICE'];
