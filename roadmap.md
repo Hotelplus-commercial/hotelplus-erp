@@ -1,7 +1,8 @@
 # Task Dashboard v2.0
-- [ ] Normalize PS cases and read-only L0 tickets with shared config, scoped selectors, monthly flow view and reconciled demo.
-- [ ] Rebuild Task KPI row, monitor cards, flow/department charts, unified worklist and read-only L0 drawer; preserve PS case writes.
-- [ ] Verify rule tests, create/edit/readback, L0 navigation, filters/Compare and desktop/mobile layout.
+- [x] Normalize PS cases and read-only L0 tickets with shared config, scoped selectors, monthly flow view 0020 and reconciled demo.
+- [x] Rebuild Task KPI row, monitor cards, flow/department charts, unified worklist and read-only L0 drawer; preserve PS case writes.
+- [x] 102 tests pass; browser demo create/edit/dept audit/readback, 31/5/6/9/2 KPIs, 21 closed, A/B and 390px no overflow; live read empty. L0 link preserves demo/ticket parameters.
+- [ ] Real monitor sources and prior-month snapshots await Cloud seed + C5; configuration persistence awaits an existing settings source. Task demo L0 bundle is isolated; existing Workspace demo has no matching bundled rows, so cross-page demo pickup is not verified. Live case create/update not exercised to avoid writing test rows into shared Cloud.
 
 # AC Dashboard tab v2.0
 - [x] Re-grained v_ac_invoice_ranking (hotel × period × lens ALL/ORM/MARCOM; rank/prev_rank/avg_rank/has_bill; RECURRING only) via migration 0019; config AC_BAND_CONFIG (10k/100k) in src/lib/ac-revenue.ts.
