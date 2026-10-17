@@ -143,35 +143,58 @@ function TicketTable({ rows, dept, onOpen }: { rows: L0Ticket[]; dept: Dept; onO
   );
 }
 
-function Detail({ t, role, onClose }: { t: L0Ticket; role: Role; onClose: () => void }) {
+function Detail({ t, role, dept, onClose }: { t: L0Ticket; role: Role; dept: Dept; onClose: () => void }) {
   const [msg, setMsg] = useState<string | null>(null);
-  const actions = allowedNext(t, role);
+  const watcher = isWatcherOf(t, dept); // FYI rows are read-only: no status actions.
+  const actions = watcher ? [] : allowedNext(t, role);
+  const isBot = t.created_by === SYSTEM_CREATOR;
   return (
     <div className="space-y-3 rounded-md border p-4">
       <div className="flex items-center justify-between">
         <h3 className="font-medium">#{t.ticket_id} · {STATUS_TH[t.status]} <span className="text-xs text-muted-foreground">รุ่น {t.revision}</span></h3>
         <Button variant="ghost" size="sm" onClick={onClose}>ปิด</Button>
       </div>
+      {watcher && <p className="rounded-md border px-2 py-1 text-xs text-muted-foreground">👁 FYI — ดูอย่างเดียว แผนก {t.target_dept} เป็นผู้ดำเนินการ</p>}
+      {t.payload.unassigned_owner && <p className="rounded-md border border-warning/40 bg-warning/10 px-2 py-1 text-xs text-warning-foreground">⚠ ยังไม่ได้ระบุผู้ดูแล (AE) — โปรดระบุก่อน</p>}
       <dl className="grid grid-cols-[minmax(5rem,8rem)_minmax(0,1fr)] gap-1 break-words text-sm">
         <dt className="text-muted-foreground">โรงแรม</dt><dd>{t.subject_ref.hotel_name} ({t.subject_ref.hotel_id})</dd>
         <dt className="text-muted-foreground">บริการที่ขาด</dt><dd>{t.subject_ref.gap_service}</dd>
-        <dt className="text-muted-foreground">ความพร้อม</dt><dd>{READY_TH[t.payload.readiness_tier] ?? t.payload.readiness_tier}</dd>
-        <dt className="text-muted-foreground">เหตุผล</dt><dd className="flex flex-wrap gap-1">{t.payload.chips.map((c) => <Badge key={c} variant="outline">{c}</Badge>)}</dd>
-        <dt className="text-muted-foreground">หมายเหตุ</dt><dd>{t.payload.note || "—"}</dd>
-        <dt className="text-muted-foreground">ผู้สร้าง → แผนก</dt><dd>{t.created_by} → {t.target_dept}</dd>
+        {isBot ? (
+          <>
+            <dt className="text-muted-foreground">สัญญาณ</dt><dd>{t.payload.note || "—"}</dd>
+            <dt className="text-muted-foreground">AE ผู้ดูแล</dt><dd>{t.payload.assigned_ae?.nickname ?? "— ยังไม่ระบุ"}</dd>
+            <dt className="text-muted-foreground">ผู้ติดตาม</dt><dd>{t.payload.watchers?.length ? t.payload.watchers.map((w) => `${w.dept} · ${w.nickname}`).join(", ") : "—"}</dd>
+            <dt className="text-muted-foreground">รอบที่สร้าง</dt><dd>{t.payload.generated_round ?? "—"}</dd>
+          </>
+        ) : (
+          <>
+            <dt className="text-muted-foreground">ความพร้อม</dt><dd>{READY_TH[t.payload.readiness_tier] ?? t.payload.readiness_tier}</dd>
+            <dt className="text-muted-foreground">เหตุผล</dt><dd className="flex flex-wrap gap-1">{t.payload.chips.map((c) => <Badge key={c} variant="outline">{c}</Badge>)}</dd>
+            <dt className="text-muted-foreground">หมายเหตุ</dt><dd>{t.payload.note || "—"}</dd>
+          </>
+        )}
+        <dt className="text-muted-foreground">ผู้สร้าง → แผนก</dt><dd>{isBot ? "The Office" : t.created_by} → {t.target_dept}</dd>
       </dl>
+      {t.payload.condition_cleared_at && OPEN_STATUSES.includes(t.status) && (
+        <div className="flex flex-wrap items-center gap-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs">
+          <span>คุณดำเนินการเรื่องนี้เรียบร้อยแล้ว · กด Solved ได้เลย</span>
+          {!watcher && role === t.target_dept && (
+            <Button size="sm" variant="outline" onClick={() => setMsg(transition(t.ticket_id, t.revision, "DONE", role) ? null : "ข้อมูลเปลี่ยนไปแล้ว กรุณาลองใหม่")}>Solved</Button>
+          )}
+        </div>
+      )}
       <div className="flex flex-wrap gap-2">
         {actions.length === 0 && <span className="text-xs text-muted-foreground">บทบาทนี้เปลี่ยนสถานะไม่ได้</span>}
         {actions.map((s) => (
           <Button key={s} size="sm" variant={s === "CANCELLED" ? "outline" : "default"}
             onClick={() => setMsg(transition(t.ticket_id, t.revision, s, role) ? null : "ข้อมูลเปลี่ยนไปแล้ว กรุณาลองใหม่")}>
-            {STATUS_TH[s]}
+            {isBot && s === "DONE" ? "Solved" : STATUS_TH[s]}
           </Button>
         ))}
       </div>
       {msg && <p role="alert" className="text-xs text-warning-foreground">{msg}</p>}
       <ol className="space-y-1 border-t pt-2 text-xs text-muted-foreground">
-        {t.audit.map((a, i) => <li key={i}>{fmt(a.at)} · {a.by} · {a.from_status ? STATUS_TH[a.from_status] : "—"} → {STATUS_TH[a.to_status]}</li>)}
+        {t.audit.map((a, i) => <li key={i}>{fmt(a.at)} · {a.by === SYSTEM_CREATOR ? "The Office" : a.by} · {a.from_status ? (a.from_status === a.to_status ? "เงื่อนไขหายแล้ว" : STATUS_TH[a.from_status]) : "—"} → {STATUS_TH[a.to_status]}</li>)}
       </ol>
     </div>
   );
