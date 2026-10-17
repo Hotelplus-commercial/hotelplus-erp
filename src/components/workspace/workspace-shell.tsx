@@ -183,7 +183,7 @@ function Detail({ t, role, dept, onClose }: { t: L0Ticket; role: Role; dept: Dep
             <dt className="text-muted-foreground">เหตุผล</dt><dd className="flex flex-wrap gap-1">{t.payload.chips.map((c) => <Badge key={c} variant="outline">{c}</Badge>)}</dd>
             <dt className="text-muted-foreground">หมายเหตุ</dt><dd>{t.payload.note || "—"}</dd>
           </>
-        )}
+        ))}
         <dt className="text-muted-foreground">ผู้สร้าง → แผนก</dt><dd>{isBot ? "The Office" : t.created_by} → {t.target_dept}</dd>
       </dl>
       {t.payload.condition_cleared_at && OPEN_STATUSES.includes(t.status) && (
