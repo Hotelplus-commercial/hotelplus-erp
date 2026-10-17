@@ -420,6 +420,72 @@ export function BdacTab({ source, globalFilter, clock }: { source?: ContractLife
         ownerGroups={ownerGroups} ownerRows={ownerRows} range={range}
       />
 
+      {/* ⑤ Deal table (full width, no SummaryNote) */}
+      <section className="dash-card">
+        <header className="dash-card-header">
+          <div className="min-w-0">
+            <h2>⑤ ดีลค้าง (เรียงวันมาก → น้อย)</h2>
+            <p className="dash-question">ดีลไหนต้องตามก่อน? · คลิกเพื่อเปิดการ์ดใน Contract Dashboard</p>
+          </div>
+          <div className="dash-answer-block">
+            <div className="dash-answer text-[#A63E29]">{aging.filter((a) => a.sla_tone === "red").length} เกิน SLA</div>
+            <div className="dash-answer-sub">จาก {aging.length} ดีล · นานสุด {aging[0]?.sla_days ?? 0} วัน</div>
+          </div>
+        </header>
+        <div className="bdac-table-scroll">
+          <table className="bdac-table w-full text-sm">
+            <thead>
+              <tr>{["ดีล · โรงแรม", "บริการ", "Stage", "Sub-step / สถานะ", "วันในช่วง SLA", "นับจาก", "BD", ""].map((h) => <th key={h} className={h === "วันในช่วง SLA" ? "text-right" : "text-left"}>{h}</th>)}</tr>
+            </thead>
+            <tbody>
+              {aging.map((a) => (
+                <tr key={a.deal.id} onClick={() => open(a.deal.id)} className="cursor-pointer">
+                  <td><span className="font-semibold">{a.deal.hotel_name}</span><p className="bdac-caption mt-0.5 font-mono">{a.deal.id}</p></td>
+                  <td>{bdacLine(a.deal) ? <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", bdacLine(a.deal) === "ORM" ? "bg-[#E2F1F2] text-[#0E7C86]" : "bg-[#F1EFFA] text-[#4F4596]")}>{LINE_LABEL(bdacLine(a.deal))}</span> : "—"}</td>
+                  <td>{STAGE_LABEL[a.stage]}</td>
+                  <td className="text-xs">
+                    {a.stage === 6 ? a.substep : a.stage === 7 ? "รอลูกค้าเซ็น" : a.stage === 8 ? "รอชำระ Set up fee" : a.deal.current_stage === 9 ? "ชำระแล้ว · รอ AC ออกใบเสร็จ" : "รอชำระ · รอ AC ออกใบเสร็จ"}
+                  </td>
+                  <td className="text-right">
+                    {a.sla_days == null ? "—" : (
+                      <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold", TONE_PILL[a.sla_tone ?? "ok"])}>
+                        <span className="inline-block size-1.5 rounded-full" style={{ background: TONE_DOT[a.sla_tone ?? "ok"] }} />{a.sla_days} วัน
+                      </span>
+                    )}
+                  </td>
+                  <td className="text-xs text-muted-foreground">{a.sla_ref_label ?? "—"}</td>
+                  <td>
+                    <span className="inline-flex items-center gap-2 whitespace-nowrap">
+                      <span className="grid size-6 place-items-center rounded-full bg-[#E2F1F2] text-[11px] font-bold text-[#0A5E66]">{owner(a.deal.bd_owner_id)[0] ?? "—"}</span>
+                      {owner(a.deal.bd_owner_id)}
+                    </span>
+                  </td>
+                  <td><Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); open(a.deal.id); }}>เปิดการ์ด ↗</Button></td>
+                </tr>
+              ))}
+              {!aging.length && <tr><td colSpan={8} className="p-6 text-center bdac-caption">ไม่มีดีลค้าง</td></tr>}
+            </tbody>
+          </table>
+        </div>
+        <p className="mt-3 text-xs text-muted-foreground">วันนับเป็นวันปฏิทินเต็ม · 0–1 วัน = ปกติ · 2 วัน = ครบกำหนด (amber · ยังนับ on-time) · มากกว่า 2 วัน = เกิน SLA (แดง) · หน้านี้ไม่เลื่อน stage</p>
+      </section>
+
+      {/* Pending-sync strip */}
+      {bin.pending_sync && (
+        <div className="flex flex-wrap items-center gap-3 rounded-[14px] border-[1.5px] border-dashed border-[#C9D3D8] px-[18px] py-3.5 text-sm">
+          <LockKeyhole className="size-4 text-muted-foreground" />
+          <span className="font-semibold">รอ PipeDrive sync</span>
+          <span className="flex flex-wrap gap-2">
+            {["Sent QT", "Follow up QT", "Special Deal · อัตราอนุมัติ", "Pending"].map((c) => (
+              <span key={c} className="rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">{c}</span>
+            ))}
+          </span>
+          <span className="ml-auto text-xs text-muted-foreground">ปลดพร้อมกันเมื่อ sync มา</span>
+        </div>
+      )}
+    </div>
+  );
+}
 
 /* ④ Cycle time v2.1 — full-width card, time-scale X axis with tick-only labels, median + SLA lines. *//* ④ Cycle time v2.1
 const THAI_MON = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
