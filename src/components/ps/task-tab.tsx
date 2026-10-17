@@ -1,7 +1,4 @@
-/* PS Dashboard · Tab "Task" v1.1 (monitor first · overridable department)
- * Layer 1 — Ticket system: WRITE · live cloud tables (ticket / ticket_activity / ticket_category) · independent of Cloud Sync.
- * Layer 2 — Work monitor: READ-ONLY v_task_* views · empty until Cloud Sync seed + C5 · drill-through navigates only.
- * Layer 3 — skeleton. Never touches assignment master, pipeline, billing or Portfolio snapshot. Amber only, no red. */
+/* Task v2: PS cases retain RPC writes; L0 is read-only; monitors are projection-only. */
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
 import { Inbox } from 'lucide-react';
@@ -26,7 +23,7 @@ import { useWs2 } from '@/lib/ws2-store';
 import { cn } from '@/lib/utils';
 import { taskDemo, TASK_DEMO_NOW } from '@/lib/task-demo';
 import { SEED_CATEGORIES } from '@/lib/task-tickets';
-import { useTickets } from '@/lib/tickets-l0';
+import { useTickets, type L0Ticket } from '@/lib/tickets-l0';
 import { getWorklist, workInScope, monitorScope, TASK_CONFIG, type WorkRow } from '@/lib/task-worklist';
 import { readTaskFlow } from '@/lib/task-flow.functions';
 import { ChartHint } from './dash-card';
@@ -73,8 +70,10 @@ export function ticketInScope(t: Ticket, f: GlobalFilter, care: HotelCare | unde
   return matchesBook(row, { ...f, service: 'ALL', hotelStatus: care?.status ? f.hotelStatus : 'all' }, true);
 }
 
+const CASE_STATUS_TH: Record<TicketStatus,string> = {open:'เปิด','in-progress':'กำลังทำ',waiting:'รอ',resolved:'ปิดแล้ว',closed:'ปิดแล้ว'};
+function LiveTicketReader({onChange}:{onChange:(rows:L0Ticket[])=>void}) {const tickets=useTickets();useEffect(()=>onChange(tickets),[tickets,onChange]);return null;}
 const pill: Record<TicketStatus, string> = { open: 'bg-primary/10 text-primary', 'in-progress': 'bg-accent text-accent-foreground', waiting: 'bg-warning/20 text-warning-foreground', resolved: 'bg-muted text-muted-foreground', closed: 'bg-muted text-muted-foreground' };
-const StatusPill = ({ t }: { t: Ticket }) => <span className={cn('inline-flex rounded-full px-2 py-0.5 text-xs font-medium', pill[t.status])}>{STATUS_LABEL[t.status]}{t.waiting_reason ? ` · ${WAITING_LABEL[t.waiting_reason]}` : ''}</span>;
+const StatusPill = ({ t }: { t: Ticket }) => <span className={cn('inline-flex rounded-full px-2 py-0.5 text-xs font-medium', pill[t.status])}>{CASE_STATUS_TH[t.status]}{t.waiting_reason ? ` · ${WAITING_LABEL[t.waiting_reason]}` : ''}</span>;
 const EmptyState = ({ text }: { text: string }) => <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground"><Inbox className="size-6" />{text}</div>;
 
 function CategoryPicker({ categories, value, onChange }: { categories: Category[]; value: string; onChange: (v: string) => void }) {
@@ -97,7 +96,7 @@ export function TaskTab() {
   const actors = useMemo(() => ['PM (Alex)', ...members.filter(m => m.active).map(m => m.nickname)], [members]);
   const [actor, setActor] = useState('PM (Alex)');
   const [creating, setCreating] = useState(false), [openId, setOpenId] = useState<string|null>(null);
-  const liveL0 = useTickets();
+  const [liveL0,setLiveL0] = useState<L0Ticket[]>([]);
   const fixture = useMemo(() => taskDemo(SEED_CATEGORIES, demoTaskHotels()), []);
   const readFlow = useServerFn(readTaskFlow);
   const flow = useQuery({queryKey:['task-flow'],queryFn:()=>readFlow(),enabled:!d.demo,staleTime:30000});
@@ -123,6 +122,7 @@ export function TaskTab() {
   const refresh=()=>{qc.invalidateQueries({queryKey:['task-tickets']});qc.invalidateQueries({queryKey:['task-flow']});};
   const selected=d.tickets.find(t=>t.id===openId)??null;
   return <div className="task-v2" data-testid="task-tab">
+    {!d.demo&&<LiveTicketReader onChange={setLiveL0}/>}
     {d.demo&&<p className="task-demo-watermark">ข้อมูลสาธิต · 17 ตุลาคม 2569 · ไม่บันทึก</p>}
     <header className="task-section-header"><h2>งานค้างวันนี้</h2><span className="task-current-pill">สถานะปัจจุบัน</span></header>
     <CurrentNote compare={filter.compare}/>
@@ -175,7 +175,7 @@ function CaseDrawer({ ticket, onClose, care, categories, actor, actors, onActor,
   const dirty = !!ticket && (status !== ticket.status || (status === 'waiting' && reason !== (ticket.waiting_reason ?? '')) || cat !== ticket.category_id || team !== ticket.routed_team || !!comment.trim());
   const save = async () => {
     if (!ticket) return;
-    if (status === 'waiting' && !reason) { toast.error('สถานะ Waiting ต้องเลือกเหตุผล (รอลูกค้า / รอภายใน)'); return; }
+    if (status === 'waiting' && !reason) { toast.error('สถานะรอต้องเลือกเหตุผล (รอลูกค้า / รอภายใน)'); return; }
     setBusy(true);
     try {
       const r = await ticketApi.update(demo, { id: ticket.id, revision: ticket.revision, actor, ...(status !== ticket.status || status === 'waiting' ? { status, waiting_reason: status === 'waiting' ? (reason as WaitingReason) : null } : {}), ...(cat !== ticket.category_id ? { category: cat } : {}), ...(team && (team !== ticket.routed_team || cat !== ticket.category_id) ? { routed_team: team } : {}), comment });
@@ -184,14 +184,14 @@ function CaseDrawer({ ticket, onClose, care, categories, actor, actors, onActor,
     } catch (e) { toast.error(e instanceof Error ? e.message : 'บันทึกไม่สำเร็จ'); } finally { setBusy(false); }
   };
   return <Sheet open={!!ticket} onOpenChange={o => !o && onClose()}><SheetContent className="task-drawer" aria-describedby={undefined}>
-    {ticket && <><SheetHeader><SheetTitle className="font-mono">{ticket.case_no}</SheetTitle></SheetHeader>
+    {ticket && <><SheetHeader><p className="task-drawer-eyebrow">{ticket.case_no} · เคส PS · PS เปิดเอง</p><SheetTitle>{ticket.title}</SheetTitle></SheetHeader>
       <div className="mt-3 space-y-4 text-sm">
         <div className="space-y-1"><p className="text-base font-semibold">{ticket.title}</p><p className="text-muted-foreground">{ticket.hotel_name} · {categories.find(c => c.code === ticket.category_id)?.subcategory_label_th} → {TEAM_LABEL[ticket.routed_team]}</p>{ticket.description && <p className="whitespace-pre-wrap">{ticket.description}</p>}<StatusPill t={ticket} /></div>
         <People care={care} team={team} />
         {conflict && <div className="rounded-lg border border-warning bg-warning/15 p-2 text-xs">มีคนแก้เคสนี้ก่อนหน้า · โหลดล่าสุดแล้วลองอีกครั้ง <Button size="sm" variant="outline" onClick={() => { setConflict(false); onSaved(); }}>โหลดใหม่</Button></div>}
-        <div className="grid gap-2 rounded-lg border p-3">
+        <div className="grid gap-2 rounded-lg border p-3 task-case-controls">
           <label className="text-xs font-medium">สถานะ (เปลี่ยนได้ทุกทิศทาง · เปิดใหม่ได้)</label>
-          <Select value={status} onValueChange={s => setStatus(s as TicketStatus)}><SelectTrigger aria-label="สถานะเคส"><SelectValue /></SelectTrigger><SelectContent>{STATUSES.map(s => <SelectItem key={s} value={s}>{STATUS_LABEL[s]}</SelectItem>)}</SelectContent></Select>
+          <Select value={status} onValueChange={s => setStatus(s as TicketStatus)}><SelectTrigger aria-label="สถานะเคส"><SelectValue /></SelectTrigger><SelectContent>{STATUSES.map(s => <SelectItem key={s} value={s}>{CASE_STATUS_TH[s]}</SelectItem>)}</SelectContent></Select>
           {status === 'waiting' && <Select value={reason} onValueChange={r => setReason(r as WaitingReason)}><SelectTrigger aria-label="เหตุผลที่รอ"><SelectValue placeholder="เหตุผลที่รอ *" /></SelectTrigger><SelectContent>{(['CUSTOMER', 'INTERNAL'] as const).map(r => <SelectItem key={r} value={r}>{WAITING_LABEL[r]}</SelectItem>)}</SelectContent></Select>}
           <label className="text-xs font-medium">หมวดย่อย (เปลี่ยนแล้วตั้งแผนกใหม่ตามหมวด)</label>
           <CategoryPicker categories={categories} value={cat} onChange={pickCat} />
@@ -200,7 +200,7 @@ function CaseDrawer({ ticket, onClose, care, categories, actor, actors, onActor,
           <label>เพิ่มคอมเมนต์</label><Textarea aria-label="เพิ่มคอมเมนต์" placeholder="พิมพ์ข้อความถึงทีม" value={comment} onChange={e => setComment(e.target.value)} rows={2} />
           <div className="flex items-center justify-between"><div><label>ในนามของ</label><Select value={actor} onValueChange={onActor}><SelectTrigger aria-label="ในนามของ"><SelectValue/></SelectTrigger><SelectContent>{actors.map(a=><SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent></Select></div><Button size="sm" onClick={save} disabled={!dirty || busy}>{comment.trim()?'ส่งคอมเมนต์':'บันทึก'}</Button></div>
         </div>
-        <div><p className="mb-2 text-xs font-semibold">ไทม์ไลน์</p><ol className="space-y-2">{(timeline.data ?? []).map(a => <li key={a.id} className="rounded-md border-l-2 border-primary/40 pl-3"><p className="text-xs text-muted-foreground">{new Date(a.at).toLocaleString('th-TH')} · {a.actor_id} · {a.type}</p><p className="whitespace-pre-wrap">{a.body}</p></li>)}</ol></div>
+        <div><p className="mb-2 text-xs font-semibold">ไทม์ไลน์</p><ol className="space-y-2">{[...(timeline.data ?? [])].reverse().sort((a,b)=>b.at.localeCompare(a.at)).map(a => <li key={a.id} className="rounded-md border-l-2 border-primary/40 pl-3"><p className="text-xs text-muted-foreground">{new Date(a.at).toLocaleString('th-TH')} · {a.actor_id} · {a.type}</p><p className="whitespace-pre-wrap">{a.body}</p></li>)}</ol></div>
       </div></>}
   </SheetContent></Sheet>;
 }
