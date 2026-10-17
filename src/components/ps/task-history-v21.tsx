@@ -31,14 +31,14 @@ export function Sparkline({ values, tone, bRef }: { values: (number | null)[]; t
 
 /* ---------------- ⑧ ---------------- */
 const DEPTS: [string, string][] = [['ALL', 'ทั้งหมด'], ['ORM', 'ORM'], ['MARCOM', 'Marcom'], ['PS', 'PS'], ['AC', 'AC'], ['BD', 'BD']];
-export function BacklogHistoryCard({ inp, a, b, compare, earliest }: { inp: BacklogInput; a: Period; b: Period; compare: boolean; earliest?: string }) {
+export function BacklogHistoryCard({ inp, a, b, compare, earliest }: { inp: BacklogInput; a: Period; b: Period; compare: boolean; earliest?: string | undefined }) {
   const [dept, setDept] = useState('ALL');
   const maxMonths = configAt('history_daily_max_months', inp.now.slice(0, 10));
   const daily = periodMonths(a, inp.now) <= maxMonths;
   const pick = (pts: Point[]) => pts.map(p => { const bl = backlogAsOf(p.T, inp), d = bl.dept[dept]; return { p, k1: dept === 'ALL' ? bl.k1 : d ? d[0] + d[1] + d[2] : 0, k2: dept === 'ALL' ? bl.k2 : bl.k2ByDept[dept] ?? 0, cases: bl.k1Case, l0: bl.k1L0, th: bl.k2Threshold }; });
   const A = useMemo(() => pick(historyPoints(a, inp.now, daily ? 'day' : 'week', earliest)), [inp, a, daily, dept, earliest]); // eslint-disable-line react-hooks/exhaustive-deps
   const B = useMemo(() => (compare ? pick(historyPoints(b, inp.now, daily ? 'day' : 'week', earliest)) : []), [inp, b, compare, daily, dept, earliest]); // eslint-disable-line react-hooks/exhaustive-deps
-  const [box, ref] = usePlotSize();
+  const box = usePlotSize(), ref = box.ref;
   const last = A.at(-1), lastB = B.at(-1), vals = A.map(r => r.k1), avg = vals.length ? vals.reduce((x, y) => x + y, 0) / vals.length : null, peak = vals.length ? Math.max(...vals) : null;
   const top = Math.max(4, Math.ceil(Math.max(1, ...A.flatMap(r => [r.k1, r.k2]), ...B.flatMap(r => [r.k1, r.k2])) / 4) * 4);
   const W = Math.max(1, box.width), H = 220, pad = { l: 30, r: 8, t: 8, b: 24 }, iw = W - pad.l - pad.r, ih = H - pad.t - pad.b, n = Math.max(A.length, 1);
