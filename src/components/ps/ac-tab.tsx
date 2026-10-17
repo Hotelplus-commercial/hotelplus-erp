@@ -58,7 +58,7 @@ export function AcTab({ views, loading, error, service, compare, demo }: AcTabPr
     () =>
       [
         ...new Set(
-          rankAll.filter((r) => r.has_bill === true).map((r) => String(r.billing_period).slice(0, 7)),
+          rankAll.filter((r) => r['has_bill'] === true).map((r) => String(r.billing_period).slice(0, 7)),
         ),
       ].sort(),
     [rankAll],
@@ -692,7 +692,7 @@ function OutstandingCard({
 }) {
   const outstanding = breakdown.reduce((s, r) => s + num(r['outstanding']), 0);
   const invCount = breakdown.reduce((s, r) => s + num(r['outstanding_count']), 0);
-  const customers = new Set(debtors.map((r) => String(r.customer_id ?? ""))).size;
+  const customers = new Set(debtors.map((r) => String(r['customer_id'] ?? ""))).size;
   const collected = breakdown.reduce((s, r) => s + num(r['collected_count']), 0);
   const totalInv = collected + invCount;
   const overdueN = breakdown.reduce((s, r) => s + num(r['overdue_count']), 0);
