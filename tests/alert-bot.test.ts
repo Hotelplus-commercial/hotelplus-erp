@@ -5,7 +5,6 @@ mock.module('../src/lib/cloud-sync', () => ({ stageCloudDoc: stage }));
 const { setTicketDemo, transition, findOpenByEvent, openOfType, SYSTEM_CREATOR } = await import('../src/lib/tickets-l0');
 const { runAlertBot, digestFor, RENEWAL_DUE_DAYS, SURVEY_LOW_THRESHOLD } = await import('../src/lib/alert-bot');
 const { demoScanInput } = await import('../src/lib/alert-bot-sources');
-const { useTickets } = await import('../src/lib/tickets-l0');
 
 const items = () => {
   // read the demo store through a fresh scan's side effects is awkward; expose via openOfType on known hotels
