@@ -5,7 +5,8 @@ import { SYSTEM_CREATOR } from './tickets-l0';
 import { WORKSPACES } from './workspace-registry';
 import { matchesBook, type GlobalFilter, type Period } from './ps-dashboard-global';
 
-export const TASK_CONFIG = { case_overdue_days: 3, coaching_aging_days: 3, unassigned_buckets: [3,7], renewal_buckets: [14,7], age_buckets: [3,7,14], survey_buckets: [7,14], closed_window_days: 30, list_page_size: 20 };
+import { TASK_CONFIG } from './task-config';
+export { TASK_CONFIG } from './task-config';
 export type StatusGroup = 'OPEN'|'IN_PROGRESS'|'WAITING'|'CLOSED';
 export const GROUP_LABEL: Record<StatusGroup,string> = { OPEN:'เปิด', IN_PROGRESS:'กำลังทำ', WAITING:'รอ', CLOSED:'ปิดแล้ว' };
 export const ORIGIN_LABEL = { PS_CASE:'เคส PS', BOT:'BOT', FOLLOWUP:'ติดตาม' };

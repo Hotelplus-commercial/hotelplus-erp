@@ -1274,6 +1274,17 @@ export type Database = {
         }
         Relationships: []
       }
+      v_task_flow_monthly: {
+        Row: {
+          closed_count: number | null
+          created_count: number | null
+          hotel_id: string | null
+          hotel_name: string | null
+          month: string | null
+          routed_team: string | null
+        }
+        Relationships: []
+      }
       v_task_onboard_cycle: {
         Row: {
           card_id: string | null

@@ -4,7 +4,7 @@ import { useSyncExternalStore } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { demoTaskHotels } from './ps-demo-fixture';
 import { TASK_DEMO_NOW, taskDemo } from './task-demo';
-import { TASK_CONFIG } from './task-worklist';
+import { TASK_CONFIG } from './task-config';
 
 export type Team = 'ORM' | 'MARCOM' | 'AC' | 'PS';
 export type TicketStatus = 'open' | 'in-progress' | 'waiting' | 'resolved' | 'closed';
