@@ -57,7 +57,7 @@ export function backlogAsOf(T: number, inp: BacklogInput): Backlog {
     if (r.source_kind === 'CASE' && (s === 'open' || s === 'in-progress') && Math.floor((T - Date.parse(r.created_at)) / DAY) > threshold) out.k2++;
     const dept = deptBucket(r.source_kind === 'CASE' ? caseDeptAt(r, inp.acts, T) : r.dept), v: [number, number, number] = out.dept[dept] ?? [0, 0, 0];
     if (r.source_kind === 'CASE' && (s === 'open' || s === 'in-progress') && Math.floor((T - Date.parse(r.created_at)) / DAY) > threshold) out.k2ByDept[dept] = (out.k2ByDept[dept] ?? 0) + 1;
-    const gi = GROUP_IDX[g] ?? 0; v[gi] = v[gi] + 1; out.dept[dept] = v;
+    const gi = GROUP_IDX[g] ?? 0; v[gi] = (v[gi] ?? 0) + 1; out.dept[dept] = v;
   }
   out.k4 = inp.coaching.filter(c => nowMs - Number(c.age_days ?? 0) * DAY <= T).length;
   out.k5 = inp.renewals.filter(c => { const end = c['deadline'] ? String(c['deadline']).slice(0, 10) : bkkDate(nowMs + Number(c.age_days ?? 0) * DAY); return end < date; }).length;
