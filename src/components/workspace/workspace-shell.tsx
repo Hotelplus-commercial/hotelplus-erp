@@ -9,7 +9,6 @@ import {
 } from "@/lib/tickets-l0";
 import { digestFor, runAlertBot, sortBotFirst, type BotRunResult } from "@/lib/alert-bot";
 import { demoScanInput } from "@/lib/alert-bot-sources";
-import { DEMO_NOW } from "@/lib/ps-demo-fixture";
 import type { DateRange, WorkspaceConfig } from "@/lib/workspace-registry";
 import { cn } from "@/lib/utils";
 
