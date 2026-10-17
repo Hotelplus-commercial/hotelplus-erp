@@ -10,15 +10,15 @@ export function taskDemo(categories:Category[],hotels:HotelCare[]) {
  for(const [dept,c,l]of open){c.forEach((n,j)=>{for(let k=0;k<n;k++)add(dept,['open','in-progress','waiting'][j]??'open','CASE');});l.forEach((n,j)=>{for(let k=0;k<n;k++)add(dept,j===0?'NEW':'ACK','L0');});}
  // 59 closures in May–Oct; 21 fall in the last 30 days (Sep 13 + Oct 8).
  const closed=[7,9,12,10,13,8];closed.forEach((n,j)=>{for(let k=0;k<n;k++){add(k%2?'ORM':'PS',k%2?'resolved':k===0&&j===5?'CANCELLED':'DONE',k%2?'CASE':'L0');const t=k%2?cases[cases.length-1]:tickets[tickets.length-1];if(!t)continue;const at=date(j+5,j===4?25:10);if('resolved_at'in t)t.resolved_at=at;else t.audit[t.audit.length-1]={at,by:'PM',from_status:'IN_PROGRESS',to_status:t.status};}});
- // Assign creation dates from one raw spine: 18 pre-May plus 72 across the six months.
- const all=[...cases,...tickets];const creation=[...Array(18).fill(date(4,10)),...[9,11,10,14,16,12].flatMap((n,j)=>Array(n).fill(date(j+5,1)))];
- // Closed records consume earliest creation slots first, so every close is after creation.
- const ordered=[...all.filter(t=>'resolved_at'in t?!!t.resolved_at:['DONE','CANCELLED'].includes(t.status)),...all.filter(t=>'resolved_at'in t?!t.resolved_at:!['DONE','CANCELLED'].includes(t.status))];
- ordered.forEach((t,i)=>{t.created_at=creation[i]??date(4,10);if('updated_at'in t)t.updated_at=t.created_at;if('audit'in t&&t.audit[0])t.audit[0].at=t.created_at;});
- // Exactly five overdue actionable PS cases; waiting still displays neutral age.
- cases.filter(t=>t.status==='open'||t.status==='in-progress').forEach((t,i)=>{t.created_at=i<5?date(10,1):date(10,16);});
- // Compensate replaced October creation slots using historical records, preserving monthly totals.
- const target=[9,11,10,14,16,12];for(let j=0;j<6;j++){let delta=target[j]-all.filter(t=>t.created_at.slice(0,7)===date(j+5,1).slice(0,7)).length;while(delta>0){const t=all.find(t=>t.created_at.slice(0,7)==='2026-04'&&(!('resolved_at'in t)||!t.resolved_at||t.resolved_at>=date(j+5,1)));if(!t)break;t.created_at=date(j+5,1);delta--;}}
+ // One raw spine: fix eight actionable cases, then allocate remaining creation slots chronologically.
+ const all=[...cases,...tickets];
+ const actionable=cases.filter(t=>t.status==='open'||t.status==='in-progress');
+ actionable.forEach((t,i)=>{t.created_at=i<5?date(10,1):date(10,16);});
+ const others=all.filter(t=>!actionable.includes(t as Ticket)).sort((a,b)=>{
+  const close=(t:Ticket|L0Ticket)=>'resolved_at'in t?t.resolved_at??'9999':t.audit.find(x=>x.to_status==='DONE'||x.to_status==='CANCELLED')?.at??'9999';return close(a).localeCompare(close(b));
+ });
+ const creation=[...Array(18).fill(date(4,10)),...[9,11,10,14,16,4].flatMap((n,j)=>Array(n).fill(date(j+5,1)))];
+ others.forEach((t,i)=>{t.created_at=creation[i]??date(4,10);if('updated_at'in t)t.updated_at=t.created_at;if('audit'in t&&t.audit[0])t.audit[0].at=t.created_at;});
  const override=cases.find(t=>t.routed_team==='MARCOM');if(override)override.category_id=categories.find(c=>c.domain==='ORM')?.code??override.category_id;
  const missing=cases.find(t=>t.routed_team==='ORM');const missingHotel=hotels.find(h=>h.orm&&!h.orm.member);if(missing&&missingHotel){missing.hotel_id=missingHotel.hotel_id;missing.hotel_name=missingHotel.hotel_name;}
  const base=(i:number)=>{const h=hotels[i%hotels.length];return {hotel_id:h?.hotel_id??null,hotel_name:h?.hotel_name??'—',service_line:i%2?'Marcom':'ORM'};};
