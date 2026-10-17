@@ -1130,14 +1130,39 @@ export type Database = {
           hotel_id: string | null
           hotel_name: string | null
           overall_days: number | null
+          owner_label: string | null
           pending_sync: boolean | null
           service_line: string | null
+        }
+        Relationships: []
+      }
+      v_servicing_phase_time: {
+        Row: {
+          card_id: string | null
+          days: number | null
+          go_live_at: string | null
+          hotel_id: string | null
+          hotel_name: string | null
+          lane: string | null
+          owner_fallback: boolean | null
+          owner_id_at_end: string | null
+          owner_label: string | null
+          phase: string | null
+          service_variant: string | null
+          zone: string | null
         }
         Relationships: []
       }
       v_servicing_pipeline: {
         Row: {
           card_count: number | null
+          max_days_hotel: string | null
+          max_days_in_stage: number | null
+          n_amber: number | null
+          n_gap: number | null
+          n_ok: number | null
+          n_red: number | null
+          n_wait: number | null
           pending_sync: boolean | null
           service_line: string | null
           stage: string | null
@@ -1149,23 +1174,56 @@ export type Database = {
           ae_owner_id: string | null
           assignment_complete: boolean | null
           card_id: string | null
+          card_tone: string | null
+          cause_lane: Json | null
           created_at: string | null
           current_stage: string | null
+          form_all_pct: number | null
+          form_required_filled: number | null
+          form_required_total: number | null
+          form_status: string | null
           go_live_at: string | null
           hotel_id: string | null
           hotel_name: string | null
           hotel_status: string | null
+          lanes: Json | null
           last_updated: string | null
           marcom_owner_id: string | null
+          meeting_created_at: string | null
+          meeting_date: string | null
+          open_ticket_id: string | null
+          open_ticket_source: string | null
+          open_ticket_status: string | null
+          open_ticket_target: string | null
           orm_lite: boolean | null
           orm_team: string | null
           pending_sync: boolean | null
           progress_done: number | null
           progress_total: number | null
+          row2_complete: boolean | null
           service_line: string | null
           service_variant: string | null
+          specialist_handover_done_at: string | null
           specialist_id: string | null
           stage_entered_at: string | null
+          stage_events: Json | null
+        }
+        Relationships: []
+      }
+      v_servicing_stall_candidates: {
+        Row: {
+          card_id: string | null
+          current_stage: string | null
+          d: number | null
+          event_key: string | null
+          hotel_id: string | null
+          hotel_name: string | null
+          lane: string | null
+          owner_id: string | null
+          phase: string | null
+          service_line: string | null
+          service_variant: string | null
+          target_role: string | null
         }
         Relationships: []
       }
@@ -1176,6 +1234,8 @@ export type Database = {
           go_live: number | null
           hotels: number | null
           in_progress: number | null
+          n_amber: number | null
+          n_red: number | null
           pending_sync: boolean | null
         }
         Relationships: []

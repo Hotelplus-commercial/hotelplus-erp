@@ -95,6 +95,7 @@ export function DashCard({
   noteLines,
   howToRead,
   right,
+  noteNamespace = 'ps',
 }: {
   title: string;
   question: string;
@@ -107,6 +108,7 @@ export function DashCard({
   noteLines: string[];
   howToRead: string;
   right?: ReactNode;
+  noteNamespace?: string;
 }) {
   return (
     <section className="dash-card">
@@ -124,7 +126,7 @@ export function DashCard({
       {legend && <div className="dash-legend">{legend}</div>}
       <div className="min-w-0">{children}</div>
       <SummaryNote
-        noteKey={`ps.${noteKey}`}
+        noteKey={`${noteNamespace}.${noteKey}`}
         noteLines={noteLines}
         howToRead={howToRead}
         tone={answerTone}

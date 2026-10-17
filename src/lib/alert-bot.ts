@@ -7,6 +7,7 @@ import {
   createTask, findOpenByEvent, openOfType, refreshBotTicket, stampConditionCleared,
   SYSTEM_CREATOR, type Dept, type L0Ticket, type Severity, type TicketType,
 } from './tickets-l0';
+import { runServicingStallBot, type StallCandidate } from './servicing-stall';
 
 export const RENEWAL_DUE_DAYS = 30;
 export const GRADE_RISK_BANDS = ['D'] as const; // D only this phase; NOT C
@@ -25,6 +26,7 @@ export type BotScanInput = {
   grades: BotGrade[];
   surveys: BotSurvey[];
   route: (hotel_id: string) => BotRouting;
+  servicing?: StallCandidate[];
 };
 export type BotRunResult = { created: number; skipped: number; cleared: number; round: string };
 
@@ -122,11 +124,12 @@ export function runAlertBot(input: BotScanInput): BotRunResult {
       }
     }
   }
-  return { created, skipped, cleared, round };
+  const stalls = runServicingStallBot(input.servicing ?? [], input.now);
+  return { created:created+stalls.created, skipped:skipped+stalls.skipped, cleared:cleared+stalls.cleared, round };
 }
 
 const TYPE_GAP: Record<TicketType, string> = {
-  UPSELL_PITCH: '', RENEWAL_DUE: 'ต่อสัญญา', GRADE_RISK: 'การชำระ', SURVEY_LOW: 'แบบสำรวจ', CONTRACT_FOLLOWUP: '',
+  UPSELL_PITCH: '', RENEWAL_DUE: 'ต่อสัญญา', GRADE_RISK: 'การชำระ', SURVEY_LOW: 'แบบสำรวจ', CONTRACT_FOLLOWUP: '', SERVICING_STALL: '',
 };
 
 /* ---------------- digest (§5.2) ---------------- */
