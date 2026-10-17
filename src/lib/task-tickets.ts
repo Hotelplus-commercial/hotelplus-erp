@@ -2,18 +2,17 @@
  * No assignee_id / priority: responsible + watchers are derived at read time from the assignment master. */
 import { useSyncExternalStore } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { demoTaskHotels } from './ps-demo-fixture';
-import { TASK_DEMO_NOW, taskDemo } from './task-demo';
+import { TASK_DEMO_NOW, taskDemo, demoCareHotels } from './task-demo';
 import { TASK_CONFIG } from './task-config';
 
 export type Team = 'ORM' | 'MARCOM' | 'AC' | 'PS';
 export type TicketStatus = 'open' | 'in-progress' | 'waiting' | 'resolved' | 'closed';
 export type WaitingReason = 'CUSTOMER' | 'INTERNAL';
 export type Category = { code: string; domain: Team; subcategory_label_th: string; active: boolean; sort: number };
-export type Ticket = { id: string; case_no: string; hotel_id: string; hotel_name: string; title: string; description: string | null; category_id: string; routed_team: Team; status: TicketStatus; waiting_reason: WaitingReason | null; created_by: string; created_at: string; updated_at: string; resolved_at: string | null; revision: number };
+export type Ticket = { id: string; case_no: string; hotel_id: string; hotel_name: string; title: string; description: string | null; category_id: string; routed_team: Team; status: TicketStatus; waiting_reason: WaitingReason | null; created_by: string; created_at: string; updated_at: string; resolved_at: string | null; revision: number; resp_id_at_create?: string | null; resp_team_at_create?: string | null; resp_id_at_close?: string | null; resp_team_at_close?: string | null; stamp_source?: 'LIVE' | 'BACKFILL' | null };
 export type Activity = { id: string; ticket_id: string; actor_id: string; type: 'CREATE' | 'COMMENT' | 'STATUS_CHANGE' | 'CATEGORY_CHANGE' | 'DEPT_CHANGE'; body: string; at: string };
 /** Hotel caretakers resolved from the assignment master (nicknames; null member = not assigned; null service = not bought). */
-export type HotelCare = { hotel_id: string; hotel_name: string; ae: string | null; orm: { member: string | null } | null; marcom: { member: string | null } | null; status?: string };
+export type HotelCare = { hotel_id: string; hotel_name: string; ae: string | null; orm: { member: string | null } | null; marcom: { member: string | null } | null; status?: string; orm_team?: string | null };
 
 export const TEAMS: Team[] = ['ORM', 'MARCOM', 'AC', 'PS'];
 export const TEAM_LABEL: Record<Team, string> = { ORM: 'ORM', MARCOM: 'Marcom', AC: 'AC', PS: 'PS' };
@@ -48,11 +47,18 @@ export function agingDays(t: Ticket, now: Date): number | null {
   if (t.status !== 'open' && t.status !== 'in-progress') return null;
   return Math.floor((now.getTime() - new Date(t.created_at).getTime()) / 864e5);
 }
+/** v2.1 stamp helpers: person = live derivation (null for unassigned / team labels); team = routed_team (+ hotel orm_team for ORM). */
+export function stampOf(team: Team, care: HotelCare | undefined): { resp_id: string | null; resp_team: string | null } {
+  const r = responsibleOf(team, care);
+  const resp_id = r === UNASSIGNED || r.startsWith('ทีม ') ? null : r;
+  const resp_team = team === 'ORM' ? (care?.orm_team ? `ORM-${care.orm_team === 'RE_ACTIVE' ? 'REACTIVE' : care.orm_team.replace(/^ORM-/, '')}` : null) : team;
+  return { resp_id, resp_team };
+}
 export const isOverdue = (t: Ticket, now: Date) => (agingDays(t, now) ?? -1) > AGING_THRESHOLD_DAYS;
 
 /* ---------------- data access (live cloud | demo memory) ---------------- */
-export type UpdateInput = { id: string; revision: number; actor: string; status?: TicketStatus; waiting_reason?: WaitingReason | null; category?: string; routed_team?: Team; comment?: string };
-export type CreateInput = { hotel_id: string; hotel_name: string; category: string; routed_team?: Team; title: string; description: string; actor: string };
+export type UpdateInput = { id: string; revision: number; actor: string; status?: TicketStatus; waiting_reason?: WaitingReason | null; category?: string; routed_team?: Team; comment?: string; resp_id?: string | null; resp_team?: string | null };
+export type CreateInput = { hotel_id: string; hotel_name: string; category: string; routed_team?: Team; title: string; description: string; actor: string; resp_id?: string | null; resp_team?: string | null };
 export type UpdateResult = { ok: true; ticket: Ticket } | { ok: false; conflict: true };
 
 /** Demo store: bundled, in-memory only (no localStorage / cloud). Reset each time demo turns on. */
@@ -61,8 +67,7 @@ let demoVersion = 0;
 const listeners = new Set<() => void>();
 const emit = () => { demoVersion++; listeners.forEach(l => l()); };
 export function resetDemoTickets() {
-  const { cases: tickets } = taskDemo(SEED_CATEGORIES, demoTaskHotels());
-  const activity: Activity[] = tickets.flatMap(t => [{ id: `${t.id}-a0`, ticket_id: t.id, actor_id: t.created_by, type: 'CREATE' as const, body: t.case_no, at: t.created_at }]);
+  const { cases: tickets, activity } = taskDemo(SEED_CATEGORIES, demoCareHotels());
   demoState = { tickets, activity }; emit();
 }
 export function useDemoVersion() { return useSyncExternalStore(cb => { listeners.add(cb); return () => listeners.delete(cb); }, () => demoVersion, () => 0); }
@@ -79,6 +84,7 @@ function applyUpdate(t: Ticket, i: UpdateInput, push: (a: Omit<Activity, 'id' | 
   if (ns !== t.status || nr !== t.waiting_reason) {
     push({ actor_id: i.actor, type: 'STATUS_CHANGE', body: `${t.status}${t.waiting_reason ? ` (${t.waiting_reason})` : ''} → ${ns}${nr ? ` (${nr})` : ''}` });
     next.resolved_at = ns === 'resolved' || ns === 'closed' ? (t.resolved_at && (t.status === 'resolved' || t.status === 'closed') ? t.resolved_at : nowIso(true)) : null;
+    if ((ns === 'resolved' || ns === 'closed') && t.status !== 'resolved' && t.status !== 'closed') { next.resp_id_at_close = i.resp_id ?? null; next.resp_team_at_close = i.resp_team ?? null; next.stamp_source = t.stamp_source ?? 'LIVE'; }
     next.status = ns; next.waiting_reason = nr;
   }
   if (i.comment?.trim()) push({ actor_id: i.actor, type: 'COMMENT', body: i.comment.trim() });
@@ -109,15 +115,27 @@ export const ticketApi = {
     if (r.error) throw new Error('อ่าน timeline ไม่สำเร็จ');
     return r.data as Activity[];
   },
+  /** v2.1: every activity row (paginated) for status replay — read-only. */
+  async activityAll(demo: boolean): Promise<Activity[]> {
+    if (demo) return demoState.activity;
+    const out: Activity[] = [];
+    for (let from = 0; ; from += 1000) {
+      const r = await supabase.from('ticket_activity').select('*').order('at').range(from, from + 999);
+      if (r.error) throw new Error('อ่านประวัติเคสไม่สำเร็จ');
+      out.push(...(r.data as Activity[]));
+      if (r.data.length < 1000) break;
+    }
+    return out;
+  },
   async create(demo: boolean, i: CreateInput): Promise<Ticket> {
     if (!i.hotel_id || !i.title.trim() || !i.category || !i.actor) throw new Error('กรอกโรงแรม หมวด และหัวข้อ');
     if (demo) {
       const c = SEED_CATEGORIES.find(x => x.code === i.category); if (!c) throw new Error('ไม่พบหมวด'); const n = demoState.tickets.length + 1; const at = nowIso(true);
-      const t: Ticket = { id: `demo-t${n}-${Date.now()}`, case_no: `Case-${String(n).padStart(6, '0')}`, hotel_id: i.hotel_id, hotel_name: i.hotel_name, title: i.title.trim(), description: i.description.trim() || null, category_id: c.code, routed_team: i.routed_team ?? c.domain, status: 'open', waiting_reason: null, created_by: i.actor, created_at: at, updated_at: at, resolved_at: null, revision: 0 };
+      const t: Ticket = { id: `demo-t${n}-${Date.now()}`, case_no: `Case-${String(n).padStart(6, '0')}`, hotel_id: i.hotel_id, hotel_name: i.hotel_name, title: i.title.trim(), description: i.description.trim() || null, category_id: c.code, routed_team: i.routed_team ?? c.domain, status: 'open', waiting_reason: null, created_by: i.actor, created_at: at, updated_at: at, resolved_at: null, revision: 0, resp_id_at_create: i.resp_id ?? null, resp_team_at_create: i.resp_team ?? null, resp_id_at_close: null, resp_team_at_close: null, stamp_source: 'LIVE' };
       demoState = { tickets: [...demoState.tickets, t], activity: [...demoState.activity, { id: `${t.id}-c`, ticket_id: t.id, actor_id: i.actor, type: 'CREATE', body: t.case_no, at }] }; emit();
       return t;
     }
-    const r = await supabase.rpc('ticket_create_v2', { p_hotel_id: i.hotel_id, p_hotel_name: i.hotel_name, p_category: i.category, p_routed_team: i.routed_team ?? '', p_title: i.title, p_description: i.description, p_actor: i.actor });
+    const r = await supabase.rpc('ticket_create_v3', { p_hotel_id: i.hotel_id, p_hotel_name: i.hotel_name, p_category: i.category, p_routed_team: i.routed_team ?? '', p_title: i.title, p_description: i.description, p_actor: i.actor, p_resp_id: i.resp_id ?? '', p_resp_team: i.resp_team ?? '' });
     if (r.error) throw new Error('สร้างเคสไม่สำเร็จ');
     return r.data as unknown as Ticket;
   },
@@ -132,7 +150,7 @@ export const ticketApi = {
       demoState = { tickets: demoState.tickets.map(x => (x.id === t.id ? next : x)), activity: [...demoState.activity, ...acts] }; emit();
       return { ok: true, ticket: next };
     }
-    const r = await supabase.rpc('ticket_update_v2', { p_id: i.id, p_revision: i.revision, p_actor: i.actor, p_status: i.status ?? null, p_waiting_reason: i.waiting_reason ?? null, p_category: i.category ?? null, p_routed_team: i.routed_team ?? null, p_comment: i.comment ?? null } as never);
+    const r = await supabase.rpc('ticket_update_v3', { p_resp_id: i.resp_id ?? '', p_resp_team: i.resp_team ?? '', p_id: i.id, p_revision: i.revision, p_actor: i.actor, p_status: i.status ?? null, p_waiting_reason: i.waiting_reason ?? null, p_category: i.category ?? null, p_routed_team: i.routed_team ?? null, p_comment: i.comment ?? null } as never);
     if (r.error) throw new Error('บันทึกเคสไม่สำเร็จ');
     const d = r.data as unknown as Ticket & { conflict?: boolean };
     return d.conflict ? { ok: false, conflict: true } : { ok: true, ticket: d };
@@ -160,4 +178,23 @@ export async function readTaskMonitor(): Promise<Record<TaskMonitorView, Monitor
 export function avgCycle(rows: MonitorRow[], from: string, to: string): number | null {
   const xs = rows.filter(r => r.go_live_at && String(r.go_live_at) >= from && String(r.go_live_at) <= to && typeof r.cycle_days === 'number').map(r => Number(r.cycle_days));
   return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null;
+}
+
+/* ---------------- v2.1 backlog snapshot (cloud table; job post-step only) ---------------- */
+export type SnapshotRow = { snapshot_date: string; metric: 'K1_OPEN'|'K2_OVERDUE'|'K3_UNASSIGNED'|'K4_COACHING'|'K5_RENEWAL_EXPIRED'|'DEPT_OPEN'; dim_key: string; value: number; threshold_used: number | null; source: 'JOB'|'CATCHUP' };
+export async function readSnapshots(fromDate: string): Promise<SnapshotRow[]> {
+  const out: SnapshotRow[] = [];
+  for (let from = 0; ; from += 1000) {
+    const r = await supabase.from('task_backlog_snapshot').select('snapshot_date,metric,dim_key,value,threshold_used,source').gte('snapshot_date', fromDate).order('snapshot_date').range(from, from + 999);
+    if (r.error) throw new Error('อ่าน snapshot ไม่สำเร็จ');
+    out.push(...(r.data as SnapshotRow[]));
+    if (r.data.length < 1000) break;
+  }
+  return out;
+}
+export async function upsertSnapshots(rows: SnapshotRow[]): Promise<number> {
+  if (!rows.length) return 0;
+  const r = await supabase.rpc('task_snapshot_upsert', { p_rows: rows as never });
+  if (r.error) throw new Error('บันทึก snapshot ไม่สำเร็จ');
+  return Number(r.data ?? 0);
 }

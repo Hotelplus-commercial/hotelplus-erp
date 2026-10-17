@@ -148,6 +148,13 @@
       "when": 1792246366830,
       "tag": "0020_task_flow_monthly",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1792257003491,
+      "tag": "0021_task_v21_stamps_snapshot",
+      "breakpoints": true
     }
   ]
 }

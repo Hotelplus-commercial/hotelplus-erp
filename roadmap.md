@@ -215,3 +215,9 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [x] Sidebar module links propagate ?demo=1 (demo follows navigation)
 - [x] 7 BOT tests + full suite 39 pass; browser-verified demo oracle (create/FYI/dedup)
 - [ ] Open: cross-machine delivery gated on Cloud Sync Level B (O-TK2); live signals fire only after Cloud Sync seed
+
+## Task v2.1 patch
+- [x] Stamp fields + backfill (team only; person/ORM sub-team not server-derivable), v3 case writes
+- [x] task_backlog_snapshot + AC daily post-step (upsert, catch-up ≤14 days, no K3 catch-up)
+- [x] Effective-dated config + configAt; time metrics; sparklines/Compare; ⑧ ⑥ ⑦; รับงาน
+- [ ] Demo numbers match §12 exactly (invariants pass; values differ)

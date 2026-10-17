@@ -469,6 +469,36 @@ export type Database = {
           },
         ]
       }
+      task_backlog_snapshot: {
+        Row: {
+          created_at: string
+          dim_key: string
+          metric: string
+          snapshot_date: string
+          source: string
+          threshold_used: number | null
+          value: number
+        }
+        Insert: {
+          created_at?: string
+          dim_key: string
+          metric: string
+          snapshot_date: string
+          source: string
+          threshold_used?: number | null
+          value: number
+        }
+        Update: {
+          created_at?: string
+          dim_key?: string
+          metric?: string
+          snapshot_date?: string
+          source?: string
+          threshold_used?: number | null
+          value?: number
+        }
+        Relationships: []
+      }
       ticket: {
         Row: {
           case_no: string
@@ -480,8 +510,13 @@ export type Database = {
           hotel_name: string
           id: string
           resolved_at: string | null
+          resp_id_at_close: string | null
+          resp_id_at_create: string | null
+          resp_team_at_close: string | null
+          resp_team_at_create: string | null
           revision: number
           routed_team: string
+          stamp_source: string | null
           status: string
           title: string
           updated_at: string
@@ -497,8 +532,13 @@ export type Database = {
           hotel_name?: string
           id?: string
           resolved_at?: string | null
+          resp_id_at_close?: string | null
+          resp_id_at_create?: string | null
+          resp_team_at_close?: string | null
+          resp_team_at_create?: string | null
           revision?: number
           routed_team: string
+          stamp_source?: string | null
           status?: string
           title: string
           updated_at?: string
@@ -514,8 +554,13 @@ export type Database = {
           hotel_name?: string
           id?: string
           resolved_at?: string | null
+          resp_id_at_close?: string | null
+          resp_id_at_create?: string | null
+          resp_team_at_close?: string | null
+          resp_team_at_create?: string | null
           revision?: number
           routed_team?: string
+          stamp_source?: string | null
           status?: string
           title?: string
           updated_at?: string
@@ -1340,8 +1385,13 @@ export type Database = {
           hotel_name: string | null
           id: string | null
           resolved_at: string | null
+          resp_id_at_close: string | null
+          resp_id_at_create: string | null
+          resp_team_at_close: string | null
+          resp_team_at_create: string | null
           revision: number | null
           routed_team: string | null
+          stamp_source: string | null
           status: string | null
           subcategory_label_th: string | null
           title: string | null
@@ -1402,6 +1452,7 @@ export type Database = {
         Args: { p_namespace: string; p_payload: Json }
         Returns: number
       }
+      task_snapshot_upsert: { Args: { p_rows: Json }; Returns: number }
       ticket_create: {
         Args: {
           p_actor: string
@@ -1425,6 +1476,20 @@ export type Database = {
         }
         Returns: Json
       }
+      ticket_create_v3: {
+        Args: {
+          p_actor: string
+          p_category: string
+          p_description: string
+          p_hotel_id: string
+          p_hotel_name: string
+          p_resp_id: string
+          p_resp_team: string
+          p_routed_team: string
+          p_title: string
+        }
+        Returns: Json
+      }
       ticket_update: {
         Args: {
           p_actor: string
@@ -1443,6 +1508,21 @@ export type Database = {
           p_category: string
           p_comment: string
           p_id: string
+          p_revision: number
+          p_routed_team: string
+          p_status: string
+          p_waiting_reason: string
+        }
+        Returns: Json
+      }
+      ticket_update_v3: {
+        Args: {
+          p_actor: string
+          p_category: string
+          p_comment: string
+          p_id: string
+          p_resp_id: string
+          p_resp_team: string
           p_revision: number
           p_routed_team: string
           p_status: string

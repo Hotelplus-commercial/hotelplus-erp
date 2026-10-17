@@ -22,6 +22,8 @@ import { crmUsers, lastPeriod, useCrm } from "@/lib/crm-store";
 import { usePsRenewal } from "@/lib/ps-renewal";
 import { runAlertBot, type BotRunResult } from "@/lib/alert-bot";
 import { liveScanInput } from "@/lib/alert-bot-sources";
+import { ticketSnapshot } from "@/lib/tickets-l0";
+import { runTaskSnapshotJob } from "@/lib/task-snapshot-job";
 import type { InvoiceLine } from "@/lib/crm-types";
 
 export const Route = createFileRoute("/ac/billing")({
@@ -68,6 +70,8 @@ function BillingPage() {
     const bot = runAlertBot(input);
     setBotResult(bot);
     toast.success('ประมวลผลบัญชี ' + bangkokDate(), { description: `BOT: สร้าง ${bot.created} · ข้าม(ซ้ำ) ${bot.skipped} · เงื่อนไขหาย ${bot.cleared}` });
+    // Task v2.1 post-step (after BOT): daily backlog snapshot + catch-up. Failure never blocks the AC run.
+    try { await runTaskSnapshotJob(ticketSnapshot()); } catch { toast.info('ยังบันทึก snapshot งานค้างไม่ได้ · ลองใหม่รอบถัดไป'); }
   };
 
   const [year, setYear] = useState(String(lastPeriod.year));
