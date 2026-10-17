@@ -2,7 +2,7 @@ import type { PhaseTimeRow, ServicingRow } from './servicing-dashboard-types';
 import { calendarDays, laneTone, servicingLanes } from './servicing-time';
 export const SERVICING_DEMO_NOW = '2026-10-17T09:07:00.000Z';
 const ago = (n: number, end = SERVICING_DEMO_NOW) => new Date(new Date(end).getTime() - n * 86_400_000).toISOString();
-const inFlight: [string,string,string,number,number,string,string|null,number|null,number|null,number|null,number|null,number|null][] = [
+const inFlight: [string,string,string,number,number,string,string|null,number|null,number|null,number|null,number|null,number|null,number|null][] = [
  ['บ้านริมน้ำ รีสอร์ท','ORM','collect_data',4,2,'Nont','B',6,null,null,null,null,null],
  ['ลานนา คอร์ทยาร์ด','ORM','property_pending',6,3,'Fern','A',4,null,null,null,null,null],
  ['สยาม ฮาร์เบอร์','ORM','final_check',9,2,'Boss','C',9,null,null,null,null,null],
