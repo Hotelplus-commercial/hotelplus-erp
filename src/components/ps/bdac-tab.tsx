@@ -3,11 +3,11 @@
  * to the existing Contract Dashboard card. Median only — no average, no IQR on this tab. */
 import { useNavigate } from "@tanstack/react-router";
 import { LockKeyhole } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChartHint, ChartTooltip, DashCard } from "@/components/ps/dash-card";
+import { ChartHint, ChartTooltip, DashCard, SummaryNote } from "@/components/ps/dash-card";
 import { useContractLifecycle } from "@/lib/contract-lifecycle";
 import {
   LINE_LABEL, STAGE_LABEL, bdacConfig, bdacLine, cycleAgg, cycleLegLimit, filterLine, monthRange, thaiMonth, thaiShort,
@@ -412,13 +412,13 @@ export function BdacTab({ source, globalFilter, clock }: { source?: ContractLife
             </div>
           </div>
         </DashCard>
-
-        {/* ④ Cycle time */}
-        <CycleCard
-          rows={cycleRows} agg={agg} leg={leg} setLeg={setLeg} byOwner={byOwner} setByOwner={setByOwner}
-          ownerGroups={ownerGroups} ownerRows={ownerRows} range={range}
-        />
       </div>
+
+      {/* ④ Cycle time — full width on its own row (v2.1) */}
+      <CycleCard
+        rows={cycleRows} agg={agg} leg={leg} setLeg={setLeg} byOwner={byOwner} setByOwner={setByOwner}
+        ownerGroups={ownerGroups} ownerRows={ownerRows} range={range}
+      />
 
       {/* ⑤ Deal table (full width, no SummaryNote) */}
       <section className="dash-card">
@@ -487,23 +487,61 @@ export function BdacTab({ source, globalFilter, clock }: { source?: ContractLife
   );
 }
 
-/* ④ Cycle time — median + SLA line, hover-by-day summary, no IQR, no average. */
+/* ④ Cycle time v2.1 — full-width card, time-scale X axis with tick-only labels, median + SLA lines. */
+const THAI_MON = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+const DAY_MS = 86_400_000;
+
+function useContainerWidth() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [w, setW] = useState(960);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const ro = new ResizeObserver((es) => { const cw = es[0]?.contentRect.width; if (cw) setW(cw); });
+    ro.observe(el);
+    setW(el.clientWidth || 960);
+    return () => ro.disconnect();
+  }, []);
+  return { ref, w };
+}
+
+/** Tick marks for the time axis: ≤31d → every 2–4 days · ≤120d → weekly · longer → monthly. Max ~10 ticks. */
+function xTicks(range: Range): { t: number; label: string }[] {
+  const span = Math.max(1, Math.round((range.to - range.from) / DAY_MS));
+  const fmtDM = (t: number) => { const d = new Date(t); return `${d.getDate()} ${THAI_MON[d.getMonth()]}`; };
+  if (span > 120) {
+    const out: { t: number; label: string }[] = [];
+    let d = new Date(range.from); d = new Date(d.getFullYear(), d.getMonth(), 1);
+    while (d.getTime() < range.to) {
+      if (d.getTime() >= range.from) out.push({ t: d.getTime(), label: `${THAI_MON[d.getMonth()]} ${String(d.getFullYear() + 543).slice(-2)}` });
+      d = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+    }
+    return out.slice(0, 10);
+  }
+  const step = span <= 31 ? Math.min(4, Math.max(2, Math.ceil(span / 10))) : 7;
+  const out: { t: number; label: string }[] = [];
+  for (let t = range.from; t < range.to; t += step * DAY_MS) out.push({ t, label: fmtDM(t) });
+  return out.slice(0, 10);
+}
+
 function CycleCard({ rows, agg, leg, setLeg, byOwner, setByOwner, ownerGroups, ownerRows, range }: {
   rows: ReturnType<typeof v_bdac_cycle_time>; agg: ReturnType<typeof cycleAgg>; leg: CycleLeg; setLeg: (l: CycleLeg) => void;
   byOwner: boolean; setByOwner: (b: boolean) => void; ownerGroups: string[]; ownerRows: (g: string) => ReturnType<typeof v_bdac_cycle_time>; range: Range;
 }) {
   const [activeDay, setActiveDay] = useState<string | null>(null);
+  const { ref, w: W } = useContainerWidth();
+  const H = W < 768 ? 260 : 320, PL = 36, PR = 12, PT = 16, PB = 28;
+  const plotW = W - PL - PR, plotH = H - PT - PB;
   const limit = cycleLegLimit(leg);
-  const maxY = Math.max(8, Math.ceil(Math.max(0, ...rows.map((r) => r.days))));
-  const W = 760, H = 240, PL = 36, PR = 76, PT = 14, PB = 26;
-  const x = (t: number) => PL + ((t - range.from) / Math.max(1, range.to - range.from)) * (W - PL - PR);
-  const y = (d: number) => PT + (1 - d / maxY) * (H - PT - PB);
+  const maxY = Math.max(8, Math.ceil(Math.max(0, ...rows.map((r) => r.days))) + 1);
+  const x = (t: number) => PL + ((t - range.from) / Math.max(1, range.to - range.from)) * plotW;
+  const y = (d: number) => PT + (1 - d / maxY) * plotH;
+  const ticks = useMemo(() => xTicks(range), [range]);
+  const spanDays = Math.max(1, Math.round((range.to - range.from) / DAY_MS));
+  const hitW = Math.min(40, Math.max(8, plotW / spanDays));
   const days = useMemo(() => {
     const m = new Map<string, typeof rows>();
-    for (const r of rows) {
-      const k = r.end_date.slice(0, 10);
-      m.set(k, [...(m.get(k) ?? []), r]);
-    }
+    for (const r of rows) { const k = r.end_date.slice(0, 10); m.set(k, [...(m.get(k) ?? []), r]); }
     return [...m.entries()].sort(([a], [b]) => (a < b ? -1 : 1));
   }, [rows]);
   const tone = (r: (typeof rows)[number]) => (r.days < r.limit ? "#0E7C86" : r.days === r.limit ? "#D9A13B" : "#C8553D");
@@ -514,43 +552,20 @@ function CycleCard({ rows, agg, leg, setLeg, byOwner, setByOwner, ownerGroups, o
   };
   const active = activeDay ? (days.find(([k]) => k === activeDay)?.[1] ?? []) : [];
   const activeAgg = cycleAgg(active);
-  const flip = activeDay ? x(new Date(activeDay).getTime()) > W * 0.6 : false;
+  const activeX = activeDay ? x(new Date(activeDay).getTime()) : 0;
+  const flip = activeDay ? activeX > PL + plotW * 0.6 : false;
+  const dotOpacity = rows.length > 40 ? 0.8 : 0.95;
+  const yTicks = useMemo(() => { const o: number[] = []; for (let v = 0; v <= maxY; v += 2) o.push(v); return o; }, [maxY]);
 
   return (
-    <DashCard
-      title="④ Cycle time"
-      question={leg === "SENT_TO_SIGNED" ? "Sent Contract → Contract Signed ใช้กี่วัน?" : "Contract Signed → ชำระ Set up fee ใช้กี่วัน?"}
-      answer={
-        <span className={agg.median == null ? "text-muted-foreground" : agg.median < limit ? "text-[#0A5E66]" : agg.median === limit ? "text-[#A86B00]" : "text-[#A63E29]"}>
-          {agg.median == null ? "—" : `${fmtD(agg.median)} วัน`}
-        </span>
-      }
-      answerSub={agg.n > 0 && <span className="text-xs text-muted-foreground">ค่ากลาง (median) · <span className="text-[#A63E29]">เกิน SLA {agg.over_sla_count}/{agg.n}</span></span>}
-      legend={byOwner ? (
-        <span className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-          {ownerGroups.map((g, i) => {
-            const rs = ownerRows(g);
-            const a = cycleAgg(rs);
-            return <span key={g} className="inline-flex items-center gap-1.5"><span className="inline-block size-2.5 rounded-full" style={{ background: OWNER_COLORS[i % OWNER_COLORS.length] }} />BD {g === "__others" ? "อื่นๆ" : owner(g)} · median {a.median == null ? "—" : fmtD(a.median)} วัน · เกิน {a.over_sla_count}/{a.n}</span>;
-          })}
-        </span>
-      ) : undefined}
-      noteKey="bdac.cyc"
-      noteLines={agg.n ? [
-        `ช่วง ${leg === "SENT_TO_SIGNED" ? "Sent Contract → Signed" : "Signed → Set up fee"} ใช้ราว ${fmtD(agg.median ?? 0)} วัน (median) เทียบ SLA ${limit} วัน`,
-        byOwner
-          ? (() => {
-              const aggs = ownerGroups.map((g) => ({ g, a: cycleAgg(ownerRows(g)) })).filter((x) => x.a.median != null && x.a.n > 0);
-              if (aggs.length < 2) return `เกิน SLA ${limit} วัน ${agg.over_sla_count} จาก ${agg.n} ดีล (${pct(agg.over_sla_count, agg.n)}%)`;
-              const fast = aggs.reduce((m, x) => (x.a.median! < m.a.median! ? x : m));
-              const slow = aggs.reduce((m, x) => (x.a.median! > m.a.median! ? x : m));
-              return fast.g === slow.g ? `เกิน SLA ${limit} วัน ${agg.over_sla_count} จาก ${agg.n} ดีล (${pct(agg.over_sla_count, agg.n)}%)` : `BD ${owner(fast.g)} เร็วกว่า BD ${owner(slow.g)} ${fmtD(slow.a.median! - fast.a.median!)} วัน (median)`;
-            })()
-          : `เกิน SLA ${limit} วัน ${agg.over_sla_count} จาก ${agg.n} ดีล (${pct(agg.over_sla_count, agg.n)}%)`,
-      ] : ["ยังไม่มีข้อมูลพอสรุป"]}
-      howToRead={`1 จุด = 1 ดีล · เส้นทึบ = median · เส้นประแดง = SLA ${limit} วัน · จุดเหนือเส้นประ = เกิน SLA`}
-      right={
-        <div className="mb-2 flex flex-wrap justify-end gap-2">
+    <section className="dash-card">
+      {/* 3-zone header: title | controls | answer (wraps below ~900px) */}
+      <header className="dash-card-header flex-wrap gap-x-6 gap-y-2 [@media(min-width:900px)]:flex-nowrap">
+        <div className="min-w-0">
+          <h2>④ Cycle time</h2>
+          <p className="dash-question">{leg === "SENT_TO_SIGNED" ? "Sent Contract → Contract Signed ใช้กี่วัน?" : "Contract Signed → ชำระ Set up fee ใช้กี่วัน?"}</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 [@media(min-width:900px)]:order-none order-last">
           <div className="bdac-segmented" role="group" aria-label="ช่วง Cycle time">
             <Button size="sm" variant="ghost" className="bdac-segment" aria-pressed={leg === "SENT_TO_SIGNED"} onClick={() => setLeg("SENT_TO_SIGNED")}>Sent Contract → Signed</Button>
             <Button size="sm" variant="ghost" className="bdac-segment" aria-pressed={leg === "SIGNED_TO_PAID"} onClick={() => setLeg("SIGNED_TO_PAID")}>Signed → Set up fee</Button>
@@ -560,59 +575,92 @@ function CycleCard({ rows, agg, leg, setLeg, byOwner, setByOwner, ownerGroups, o
             <Button size="sm" variant="ghost" className="bdac-segment" aria-pressed={byOwner} onClick={() => setByOwner(true)}>ราย BD</Button>
           </div>
         </div>
-      }
-    >
+        <div className="dash-answer-block">
+          <div className={cn("dash-answer", agg.median == null ? "text-muted-foreground" : agg.median < limit ? "text-[#0A5E66]" : agg.median === limit ? "text-[#A86B00]" : "text-[#A63E29]")}>
+            {agg.median == null ? "—" : `${fmtD(agg.median)} วัน`}
+          </div>
+          {agg.n > 0 && <div className="dash-answer-sub">ค่ากลาง (median) · <span className="text-[#A63E29]">เกิน SLA {agg.over_sla_count}/{agg.n}</span></div>}
+        </div>
+      </header>
+
+      {/* stat chips */}
+      <div className="mt-1 flex flex-wrap gap-2">
+        <span className="rounded-full bg-[#E2F1F2] px-2.5 py-1 text-xs font-semibold text-[#0A5E66]">Median {agg.median == null ? "—" : `${fmtD(agg.median)} วัน`}</span>
+        <span className="rounded-full bg-[#FBEDE9] px-2.5 py-1 text-xs font-semibold text-[#A63E29]">เกิน SLA {agg.over_sla_count} จาก {agg.n} ดีล ({pct(agg.over_sla_count, agg.n)}%)</span>
+        <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">n = {agg.n} ดีล</span>
+      </div>
+
+      {/* owner legend — ราย BD only */}
+      {byOwner && (
+        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+          {ownerGroups.map((g, i) => {
+            const a = cycleAgg(ownerRows(g));
+            return <span key={g} className="inline-flex items-center gap-1.5"><span className="inline-block size-2.5 rounded-full" style={{ background: OWNER_COLORS[i % OWNER_COLORS.length] }} />BD {g === "__others" ? "อื่นๆ" : owner(g)} · median {a.median == null ? "—" : fmtD(a.median)} วัน · เกิน {a.over_sla_count}/{a.n}</span>;
+          })}
+        </div>
+      )}
+
       {!rows.length ? (
-        <div className="dash-chart-skeleton"><div className="dash-skeleton-axis" /><span className="dash-source-pill">ยังไม่มีดีลที่ครบช่วงนี้ในระยะที่เลือก</span></div>
+        <div className="dash-chart-skeleton mt-3"><div className="dash-skeleton-axis" /><span className="dash-source-pill">ยังไม่มีดีลที่ครบช่วงนี้ในระยะที่เลือก</span></div>
       ) : (
-        <div className="relative w-full overflow-x-auto">
-          <svg viewBox={`0 0 ${W} ${H}`} className="min-w-[520px]" role="img" aria-label="cycle time scatter">
-            {[0, Math.round(maxY / 2), maxY].map((v) => (
+        <div ref={ref} className="relative mt-3 w-full">
+          <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} role="img" aria-label="cycle time scatter" className="block">
+            {/* Y gridlines + labels */}
+            {yTicks.map((v) => (
               <g key={v}>
-                <line x1={PL} x2={W - PR} y1={y(v)} y2={y(v)} stroke="#E7ECEF" />
-                <text x={PL - 6} y={y(v) + 4} textAnchor="end" fontSize="11" fill="#5A6B74">{v}</text>
+                <line x1={PL} x2={W - PR} y1={y(v)} y2={y(v)} stroke="#EEF2F4" strokeDasharray="3 4" />
+                <text x={PL - 6} y={y(v) + 4} textAnchor="end" fontSize="12" fill="#6B7B83">{v}</text>
               </g>
             ))}
-            {/* median line */}
-            {agg.median != null && (
-              <g>
-                <line x1={PL} x2={W - PR} y1={y(agg.median)} y2={y(agg.median)} stroke="#0E7C86" strokeWidth={2} />
-                <text x={W - PR + 6} y={y(agg.median) + 4} fontSize="11" fontWeight={600} fill="#0A5E66">median {fmtD(agg.median)} วัน</text>
+            {/* X ticks + gridlines */}
+            {ticks.map((tk) => (
+              <g key={tk.t}>
+                <line x1={x(tk.t)} x2={x(tk.t)} y1={PT} y2={H - PB} stroke="#EEF2F4" />
+                <text x={x(tk.t)} y={H - 8} textAnchor="middle" fontSize="12" fill="#6B7B83">{tk.label}</text>
               </g>
-            )}
-            {/* SLA line */}
-            <g>
-              <line x1={PL} x2={W - PR} y1={y(limit)} y2={y(limit)} stroke="#C8553D" strokeWidth={1.5} strokeDasharray="5 4" />
-              <text x={PL + 2} y={y(limit) - 5} fontSize="11" fontWeight={600} fill="#A63E29">{leg === "SENT_TO_SIGNED" ? `SLA ${limit} วัน` : `SLA Contract Signed → WON ${limit} วัน`}</text>
-            </g>
-            {/* hover-by-day hit columns + dots */}
+            ))}
+            {/* SLA line (label = HTML, left above) */}
+            <line x1={PL} x2={W - PR} y1={y(limit)} y2={y(limit)} stroke="#C8553D" strokeWidth={1.5} strokeDasharray="5 4" />
+            {/* median line (label = HTML, right above) */}
+            {agg.median != null && <line x1={PL} x2={W - PR} y1={y(agg.median)} y2={y(agg.median)} stroke="#0E7C86" strokeWidth={2} />}
+            {/* hover-by-day hit areas + dots (drawn above reference lines) */}
             {days.map(([k, rs]) => {
               const cx = x(new Date(k).getTime());
               const isActive = activeDay === k;
               return (
                 <g key={k}>
                   <rect
-                    x={cx - W * 0.025} y={PT} width={W * 0.05} height={H - PT - PB}
+                    x={cx - hitW / 2} y={PT} width={hitW} height={plotH}
                     fill="transparent" tabIndex={0} role="button" aria-label={`${thaiShort(k)} · ${rs.length} ดีล`}
                     onMouseEnter={() => setActiveDay(k)} onMouseLeave={() => setActiveDay(null)}
                     onFocus={() => setActiveDay(k)} onBlur={() => setActiveDay(null)}
                   />
                   {isActive && <line x1={cx} x2={cx} y1={PT} y2={H - PB} stroke="#1C2B33" strokeOpacity={0.55} strokeDasharray="4 4" />}
-                  {rs.map((r, i) => {
+                  {rs.map((r) => {
                     const sameSlot = rs.filter((o) => o.days === r.days);
                     const slot = sameSlot.indexOf(r);
-                    const dx = (slot - (sameSlot.length - 1) / 2) * 10;
-                    return <circle key={r.deal_id} cx={cx + dx} cy={y(r.days)} r={isActive ? 6 : 4.5} fill={colorOf(r)} fillOpacity={0.9} stroke="#fff" strokeWidth={1.2} />;
+                    const dx = Math.max(-6, Math.min(6, (slot - (sameSlot.length - 1) / 2) * Math.min(6, 12 / sameSlot.length)));
+                    return <circle key={r.deal_id} cx={cx + dx} cy={y(r.days)} r={isActive ? 7 : 5} fill={colorOf(r)} fillOpacity={dotOpacity} stroke="#fff" strokeWidth={2} />;
                   })}
-                  <text x={cx} y={H - 8} textAnchor="middle" fontSize="10.5" fill="#6B7B83">{thaiShort(k)}</text>
                 </g>
               );
             })}
           </svg>
+          {/* SLA label — left, just above the line */}
+          <span className="pointer-events-none absolute text-xs font-semibold text-[#A63E29]" style={{ left: PL + 2, top: Math.max(0, y(limit) - 18) }}>
+            {leg === "SENT_TO_SIGNED" ? `SLA ${limit} วัน` : `SLA Contract Signed → WON ${limit} วัน`}
+          </span>
+          {/* median label — one only, right end, white pill */}
+          {agg.median != null && (
+            <span className="pointer-events-none absolute rounded-full border bg-card px-2 py-0.5 text-xs font-semibold text-[#0A5E66]" style={{ right: PR, top: Math.max(0, y(agg.median) - 24) }}>
+              median {fmtD(agg.median)} วัน
+            </span>
+          )}
+          {/* hover-by-day tooltip (flips left past 60% width) */}
           {activeDay && active.length > 0 && (
             <div
-              className="pointer-events-none absolute top-3 z-10"
-              style={flip ? { right: `${100 - ((x(new Date(activeDay).getTime()) - W * 0.03) / W) * 100}%` } : { left: `${((x(new Date(activeDay).getTime()) + W * 0.03) / W) * 100}%` }}
+              className="pointer-events-none absolute top-3 z-10 max-w-[320px]"
+              style={flip ? { right: `${100 - ((activeX - 12) / W) * 100}%` } : { left: `${((activeX + 12) / W) * 100}%` }}
             >
               <ChartTooltip
                 header={`${thaiShort(activeDay)} · ${active.length} ดีล${active.length > 1 && activeAgg.median != null ? ` · median ${fmtD(activeAgg.median)} วัน` : ""}${activeAgg.over_sla_count ? ` · เกิน ${activeAgg.over_sla_count}` : ""}`}
@@ -625,6 +673,24 @@ function CycleCard({ rows, agg, leg, setLeg, byOwner, setByOwner, ownerGroups, o
           )}
         </div>
       )}
-    </DashCard>
+
+      <p className="mt-3 text-xs text-muted-foreground">แกน X = วันที่ดีลจบช่วงนั้น · แกน Y = จำนวนวัน · ชี้เมาส์ที่วันเพื่อดูสรุปทุกดีลของวันนั้น · ไม่แสดงค่าเฉลี่ย</p>
+      <SummaryNote
+        noteKey="ps.bdac.cyc"
+        noteLines={agg.n ? [
+          `ช่วง ${leg === "SENT_TO_SIGNED" ? "Sent Contract → Signed" : "Signed → Set up fee"} ใช้ราว ${fmtD(agg.median ?? 0)} วัน (median) เทียบ SLA ${limit} วัน`,
+          byOwner
+            ? (() => {
+                const aggs = ownerGroups.map((g) => ({ g, a: cycleAgg(ownerRows(g)) })).filter((x2) => x2.a.median != null && x2.a.n > 0);
+                if (aggs.length < 2) return `เกิน SLA ${limit} วัน ${agg.over_sla_count} จาก ${agg.n} ดีล (${pct(agg.over_sla_count, agg.n)}%)`;
+                const fast = aggs.reduce((m, x2) => (x2.a.median! < m.a.median! ? x2 : m));
+                const slow = aggs.reduce((m, x2) => (x2.a.median! > m.a.median! ? x2 : m));
+                return fast.g === slow.g ? `เกิน SLA ${limit} วัน ${agg.over_sla_count} จาก ${agg.n} ดีล (${pct(agg.over_sla_count, agg.n)}%)` : `BD ${owner(fast.g)} เร็วกว่า BD ${owner(slow.g)} ${fmtD(slow.a.median! - fast.a.median!)} วัน (median)`;
+              })()
+            : `เกิน SLA ${limit} วัน ${agg.over_sla_count} จาก ${agg.n} ดีล (${pct(agg.over_sla_count, agg.n)}%)`,
+        ] : ["ยังไม่มีข้อมูลพอสรุป"]}
+        howToRead={`1 จุด = 1 ดีล · เส้นทึบ = median · เส้นประแดง = SLA ${limit} วัน · จุดเหนือเส้นประ = เกิน SLA`}
+      />
+    </section>
   );
 }

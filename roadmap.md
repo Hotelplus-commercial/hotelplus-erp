@@ -1,3 +1,6 @@
+# BD-AC patch v2.1 · Cycle time layout
+- [x] Card ④ full width on its own row; 3-zone header (title | controls | answer) + stat chips + owner legend (ราย BD only); time-scale X with tick-only labels (2–4d / weekly / monthly), Y gridlines every 2, single SLA label left + median pill right, deterministic jitter, hover-by-day tooltip flip. Numbers unchanged; tests 62 pass, build OK.
+
 # BD-AC tab v2.0
 - [x] Rebuild tab on Visual Standard: definitions strip, cards ①–⑤, pending-sync strip; SLA 2-day layer with amber=on-time; cohort re-keyed to Sent Contract month + carry list; cycle time median-only (no IQR); ac_owner_id/aging/cohort-anchor deprecated (kept, unread).
 - [x] CONTRACT_FOLLOWUP ticket type (dedup per deal, target BD, create button only when Role=PM; PM role added to global filter); demo fixture with own clock 2026-10-17; oracle 8/8 verified in browser + 8 new tests (62 total pass, build OK).
