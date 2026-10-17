@@ -1,3 +1,8 @@
+# Servicing Dashboard v2.0
+- [ ] Shared phase timing/config + first meeting timestamp and frozen PI chip.
+- [ ] Stack definitions/stats/Pipeline/owner timing/Go-Live, preserve drawer/assignment paths, add safe projection reads and demo oracle.
+- [ ] Register stall tickets, department routing, BOT dedup/clear and test demo/live empty/shared surfaces.
+
 # BD-AC patch v2.1 · Cycle time layout
 - [x] Card ④ full width on its own row; 3-zone header (title | controls | answer) + stat chips + owner legend (ราย BD only); time-scale X with tick-only labels (2–4d / weekly / monthly), Y gridlines every 2, single SLA label left + median pill right, deterministic jitter, hover-by-day tooltip flip. Numbers unchanged; tests 62 pass, build OK.
 
