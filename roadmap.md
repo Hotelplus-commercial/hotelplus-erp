@@ -1,3 +1,8 @@
+# PS Dashboard v1.3
+- [ ] Apply snapshot Active/Inactive and distinct latest-contract ORM/Marcom breakdown; relocate hotel list and remove Dashboard NPS display.
+- [ ] Rename visible WS-2 labels throughout PS; add required-only template switches and audited frozen version publish.
+- [ ] Validate required customer/AE submit, keep draft saving allowed, and test rules plus desktop/mobile flows.
+
 # PS Dashboard visual standard v1.0
 - [x] Apply authoritative tokens/font and shared cards, accessible tooltips and persistent deterministic summary notes.
 - [x] Replace headline with seven groups/tiles using existing values only; refresh PS visualizations and default PS entry. Missing MRR/service score/queue/collection percentage remain —; no added query or source.
