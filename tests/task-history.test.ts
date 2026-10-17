@@ -101,4 +101,15 @@ describe('Task v2.1 history', () => {
   test('fixture is deterministic', () => {
     expect(JSON.stringify(taskDemo(SEED_CATEGORIES, demoCareHotels()))).toBe(JSON.stringify(fx));
   });
+  const bare = { rows: [], acts: new Map(), coaching: [], renewals: [], now: TASK_DEMO_NOW, snapshots: [], k3Today: null,
+    coachingClosed: [{ opened_at: '2026-05-01T09:00:00.000Z', resolved_at: '2026-07-01T09:00:00.000Z' }],
+    renewalsDecided: [{ end_date: '2026-06-05', decided_at: '2026-07-03T09:00:00.000Z' }] };
+  test('engine replay: coaching resolved after T counted, before T not', () => {
+    expect(H.backlogAsOf(H.endOfBkkDay('2026-06-15'), bare).k4).toBe(1);
+    expect(H.backlogAsOf(H.endOfBkkDay('2026-07-15'), bare).k4).toBe(0);
+  });
+  test('engine replay: renewal decided after T counted in K5, before T not', () => {
+    expect(H.backlogAsOf(H.endOfBkkDay('2026-06-15'), bare).k5).toBe(1);
+    expect(H.backlogAsOf(H.endOfBkkDay('2026-07-15'), bare).k5).toBe(0);
+  });
 });
