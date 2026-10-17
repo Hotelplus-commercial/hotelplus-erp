@@ -152,6 +152,8 @@ export function aggregateFunnel(cards: MeetingRow[], service: "ORM" | "Marcom", 
     const status = String(r["status"] ?? "");
     const tier = (String(r["tier"] ?? "A") || "A") as "A" | "B" | "C";
     const inBase = service === "Marcom" || tier === "A";
+    // ORM drop lines are Tier A only (§3 ①); Marcom has no tiers. Survey drops stay all tiers.
+    const dropScope = service === "Marcom" || tier === "A";
     if (status === "POSTPONED_NEXT_MONTH") continue;
     if (inBase) agg.base += 1;
     const scheduled = SCHEDULED_STATUSES.includes(status);
