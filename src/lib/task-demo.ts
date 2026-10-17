@@ -10,7 +10,19 @@ export const TASK_DEMO_NOW = '2026-10-17T12:00:00.000Z';
 const DAY = 864e5;
 const ORM_TEAM_CYCLE = ['A', 'B', 'C', 'D', 'E', 'RE_ACTIVE'];
 /** Demo caretakers + an orm_team per hotel (so ORM rows always resolve a sub-team). */
-export function demoCareHotels(): HotelCare[] { return demoTaskHotels().map((h, i) => ({ ...h, orm_team: ORM_TEAM_CYCLE[i % ORM_TEAM_CYCLE.length] ?? 'A' })); }
+/** §12 ⑦ denominators: ORM hotels per team, Marcom active, total active (PS/AC). Synthetic hotels pad the base list. */
+export const DEMO_HOTEL_TARGETS = { orm: { A: 18, B: 14, C: 12, D: 10, E: 9, RE_ACTIVE: 6 } as Record<string, number>, marcom: 57, total: 121 };
+export function demoCareHotels(): HotelCare[] {
+  const base: HotelCare[] = demoTaskHotels().map((h, i) => ({ ...h, orm_team: ORM_TEAM_CYCLE[i % ORM_TEAM_CYCLE.length] ?? 'A' }));
+  const out = [...base], T = DEMO_HOTEL_TARGETS;
+  let n = 0; const synth = (): HotelCare => { n++; return { hotel_id: `DEMO-SYN-${String(n).padStart(3, '0')}`, hotel_name: `Demo Hotel ${String(n).padStart(3, '0')}`, ae: null, orm: null, marcom: null, status: 'ACTIVE', orm_team: null } as HotelCare; };
+  const ormLeft = Object.fromEntries(Object.entries(T.orm).map(([t, v]) => [t, v - base.filter(h => h.orm && h.orm_team === t).length]));
+  let marcomLeft = T.marcom - base.filter(h => h.marcom).length;
+  for (const [team, left] of Object.entries(ormLeft)) for (let k = 0; k < left; k++) { const h = synth(); h.orm = { member: `${team === 'RE_ACTIVE' ? 'R' : team}-Rev-0${(k % 3) + 1}` } as HotelCare['orm']; h.orm_team = team; if (marcomLeft > 0) { h.marcom = { member: 'แนน' } as HotelCare['marcom']; marcomLeft--; } out.push(h); }
+  while (marcomLeft-- > 0) { const h = synth(); h.marcom = { member: 'บิว' } as HotelCare['marcom']; out.push(h); }
+  while (out.length < T.total) out.push(synth());
+  return out;
+}
 /** 09:00Z on y-m-d plus fractional days. */
 const at = (y: number, m: number, d: number, plusDays = 0) => new Date(Date.UTC(y, m - 1, d, 9) + plusDays * DAY).toISOString();
 const D = (m: number, d: number, plus = 0) => at(2026, m, d, plus);
