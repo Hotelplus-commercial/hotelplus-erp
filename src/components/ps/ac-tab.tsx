@@ -690,7 +690,7 @@ function OutstandingCard({
   breakdown: PsReportRow[];
   compare: boolean;
 }) {
-  const outstanding = breakdown.reduce((s, r) => s + num(r.outstanding), 0);
+  const outstanding = breakdown.reduce((s, r) => s + num(r['outstanding']), 0);
   const invCount = breakdown.reduce((s, r) => s + num(r.outstanding_count), 0);
   const customers = new Set(debtors.map((r) => String(r.customer_id ?? ""))).size;
   const collected = breakdown.reduce((s, r) => s + num(r.collected_count), 0);
@@ -705,7 +705,7 @@ function OutstandingCard({
       return {
         label: `${line} · ${seg === "EXISTING" ? "ลูกค้าเดิม" : "ลูกค้าใหม่"}`,
         line,
-        sum: rows.reduce((s, r) => s + num(r.outstanding), 0),
+        sum: rows.reduce((s, r) => s + num(r['outstanding']), 0),
         n: rows.reduce((s, r) => s + num(r.outstanding_count), 0),
       };
     }),
@@ -803,9 +803,9 @@ function CollectionCard({
   const legal = agg("v_ac_legal");
   const woRows = debtorRows(debtors).filter((r) => r.status === "WRITTEN_OFF");
   const paused = debtorRows(debtors).filter((r) => r.status === "PAUSED").length;
-  const cnt = (rows: PsReportRow[]) => rows.reduce((s, r) => s + num(r.customer_count), 0);
-  const sumOut = (rows: PsReportRow[]) => rows.reduce((s, r) => s + num(r.outstanding), 0);
-  const sumInv = (rows: PsReportRow[]) => rows.reduce((s, r) => s + num(r.invoice_count), 0);
+  const cnt = (rows: PsReportRow[]) => rows.reduce((s, r) => s + num(r['customer_count']), 0);
+  const sumOut = (rows: PsReportRow[]) => rows.reduce((s, r) => s + num(r['outstanding']), 0);
+  const sumInv = (rows: PsReportRow[]) => rows.reduce((s, r) => s + num(r['invoice_count']), 0);
   const stages: { status: CollectionStatus; n: number; amt: number; inv: number }[] = [
     { status: "OVERDUE", n: cnt(od), amt: sumOut(od), inv: sumInv(od) },
     { status: "SUSPENDED", n: cnt(sus), amt: sumOut(sus), inv: sumInv(sus) },
@@ -905,7 +905,7 @@ function GradeCard({
       g,
       n: gradeDist
         .filter((r) => String(r.billing_period).slice(0, 7) === p && r.grade === g)
-        .reduce((s, r) => s + num(r.customer_count), 0),
+        .reduce((s, r) => s + num(r['customer_count']), 0),
     }));
   const cur = byPeriod(latest);
   const prv = byPeriod(prev);
