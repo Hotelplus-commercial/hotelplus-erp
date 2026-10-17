@@ -155,6 +155,13 @@
       "when": 1792257003491,
       "tag": "0021_task_v21_stamps_snapshot",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1792264827203,
+      "tag": "0022_meeting_v2_views",
+      "breakpoints": true
     }
   ]
 }
