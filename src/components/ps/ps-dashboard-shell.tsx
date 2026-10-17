@@ -18,7 +18,7 @@ import { demoMeetingReport } from "@/lib/meeting-dashboard-demo";
 import { meetingScope, meetingPercent } from "@/lib/meeting-dashboard-types";
 import { readPsDashboard } from "@/lib/ps-dashboard.functions";
 import { latestPeriod, psScope, ratio, type PsReport } from "@/lib/ps-dashboard-types";
-import { buildDemoReport, demoAcViews, demoLifecycles, DEMO_NOW } from "@/lib/ps-demo-fixture";
+import { buildDemoReport, demoAcViews, demoBdacLifecycles, demoLifecycles, BDAC_DEMO_NOW, DEMO_NOW } from "@/lib/ps-demo-fixture";
 import { Button } from "@/components/ui/button";
 import { readAcDashboard } from "@/lib/ac-dashboard.functions";
 import { v_bdac_flow, v_bdac_deal_aging } from "@/lib/bdac-views";
@@ -257,6 +257,19 @@ export function DashboardShell({
     ),
   );
   const wonMtd = v_bdac_flow(lines, periodRange(selectedPeriod(filter, now))).won;
+  /* BD-AC v2.0 demo uses its own fixture + clock (2026-10-17); the PS spine stays unchanged. */
+  const bdacNow = demo ? new Date(BDAC_DEMO_NOW) : now;
+  const bdacLines = (demo ? demoBdacLifecycles() : lifecycles).filter((d) =>
+    matchesBook(
+      {
+        service_line: d.service_line === "MARCOM" ? "Marcom" : d.service_line,
+        hotel_id: d.hotel_id,
+        hotel_name: d.hotel_name,
+        ae_owner_id: demo ? d.bd_owner_id : null,
+      },
+      filter,
+    ),
+  );
   const periodFilter = {
     ...filter,
     ...(filter.compare ? { period: selectedPeriod(filter, now) } : {}),
