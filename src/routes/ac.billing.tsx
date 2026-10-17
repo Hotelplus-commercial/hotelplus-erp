@@ -17,6 +17,9 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { missingReports, monthName, thb } from "@/lib/crm-rules";
 import { crmUsers, lastPeriod, useCrm } from "@/lib/crm-store";
+import { usePsRenewal } from "@/lib/ps-renewal";
+import { runAlertBot, type BotRunResult } from "@/lib/alert-bot";
+import { liveScanInput } from "@/lib/alert-bot-sources";
 import type { InvoiceLine } from "@/lib/crm-types";
 
 export const Route = createFileRoute("/ac/billing")({
@@ -47,14 +50,19 @@ function BillingPage() {
   } = useCrm();
   const { runDaily } = useCrm();
   const hotelStore = useHotelStore();
-  /* Daily processing: browser split docs only; debounced Cloud Sync pushes changed collections. */
+  const { cards: renewalCards } = usePsRenewal();
+  const [botResult, setBotResult] = useState<BotRunResult | null>(null);
+  /* Daily processing: browser split docs only; debounced Cloud Sync pushes changed collections.
+   * Alert BOT runs as a post-step (grade fresh first). Empty sources fire nothing — never fake. */
   const daily = () => {
     const next = runDaily();
     hotelStore.hotels.forEach((h) => {
       const sum = paymentSummary(next, h);
       if (h.latePayments !== sum.late || h.overdueMonths !== sum.unpaidMonths) hotelStore.patch(h.id, { latePayments: sum.late, overdueMonths: sum.unpaidMonths });
     });
-    toast.success('ประมวลผลบัญชี ' + bangkokDate());
+    const bot = runAlertBot(liveScanInput(next, renewalCards, new Date().toISOString()));
+    setBotResult(bot);
+    toast.success('ประมวลผลบัญชี ' + bangkokDate(), { description: `BOT: สร้าง ${bot.created} · ข้าม(ซ้ำ) ${bot.skipped} · เงื่อนไขหาย ${bot.cleared}` });
   };
 
   const [year, setYear] = useState(String(lastPeriod.year));
