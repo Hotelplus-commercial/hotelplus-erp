@@ -266,7 +266,7 @@ const FLAGS: MeetingRow[] = [
       `ORM ทีม ${["A", "B", "C", "D", "E"][i]}`, "GRM", `2026-08-${String(10 + i).padStart(2, "0")}`, 40 + i,
       { ae_owner_id: ["Nont", "Fern", "Boss"][i % 3]!, orm_team: ["A", "B", "C", "D", "E"][i]!, watch_until: `2026-11-${String(10 + i).padStart(2, "0")}` })),
   ...Array.from({ length: 5 }, (_, i) =>
-    flag(`W-2${i}", "SYNCUP`, ["Q4", "Q5", "Q6"][i % 3]!, "WARNING", `HTL06${i}`, `Demo Hotel 06${i}`, 6,
+    flag(`W-2${i}`, "SYNCUP", ["Q4", "Q5", "Q6"][i % 3]!, "WARNING", `HTL06${i}`, `Demo Hotel 06${i}`, 6,
       `Marcom ${["แนน", "บิว", "โบว์", "เจน"][i % 4]}`, "Marcom Lead", `2026-07-${String(12 + i).padStart(2, "0")}`, 70 + i,
       { ae_owner_id: ["Nont", "Fern", "Boss"][i % 3]!, marcom_owner_id: ["แนน", "บิว", "โบว์", "เจน"][i % 4]!, watch_until: `2026-10-${String(12 + i).padStart(2, "0")}` })),
 ];
