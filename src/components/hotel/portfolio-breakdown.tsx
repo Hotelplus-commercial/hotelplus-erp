@@ -4,9 +4,9 @@ import { ChartHint } from '@/components/ps/dash-card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 
-export function PortfolioBreakdown({ hotels, now }: { hotels: HotelProfile[]; now: Date }) {
+export function PortfolioBreakdown({ hotels, now, service = 'ALL' }: { hotels: HotelProfile[]; now: Date; service?: 'ALL' | 'ORM' | 'Marcom' }) {
   return <div className="grid gap-6 lg:grid-cols-2">{(['orm', 'marcom'] as const).map(line => {
-    const rows = activePortfolioHotels(hotels, line, now);
+    const rows = service !== 'ALL' && service !== (line === 'orm' ? 'ORM' : 'Marcom') ? [] : activePortfolioHotels(hotels, line, now);
     const title = line === 'orm' ? 'ORM' : 'Marcom';
     const groups = [{ title: 'การจดทะเบียน', categories: [['Corporate', rows.filter(r => ['corporate', 'นิติบุคคล'].includes(r.hotel.registration)).length], ['Personal', rows.filter(r => ['personal', 'บุคคลธรรมดา'].includes(r.hotel.registration)).length]] }, ...(line === 'orm' ? [{ title: 'รูปแบบค่าบริการ', categories: [['Flat Rate', rows.filter(r => ['flat', 'fixed'].includes(r.hotel.model)).length], ['Commission', rows.filter(r => r.hotel.model === 'commission').length]] }] : [])];
     return <div key={line} className="min-w-0 space-y-3"><h3 className={`text-sm font-semibold ${line === 'orm' ? 'text-primary' : 'text-series-2'}`}>{title} · {rows.length} โรงแรม</h3>{groups.map(group => <div key={group.title}><p className="mb-1 text-xs font-medium text-muted-foreground">{group.title}</p>{group.categories.map(([label, value]) => {

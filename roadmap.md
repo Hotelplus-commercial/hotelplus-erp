@@ -1,7 +1,8 @@
 # PS Dashboard v1.3
-- [ ] Apply snapshot Active/Inactive and distinct latest-contract ORM/Marcom breakdown; relocate hotel list and remove Dashboard NPS display.
-- [ ] Rename visible WS-2 labels throughout PS; add required-only template switches and audited frozen version publish.
-- [ ] Validate required customer/AE submit, keep draft saving allowed, and test rules plus desktop/mobile flows.
+- [x] Keep snapshot Active/Inactive counts; show distinct active ORM/Marcom hotel breakdown from its existing hotel terms, without unspecified buckets. Hotel/service list moved unchanged to Contracts & Services (Case B); Dashboard NPS display removed, cohort preserved.
+- [x] Rename visible WS-2 labels throughout PS; required-only template switches, simulated PM/System Admin edit vs read-only others, version publish audit and frozen flags.
+- [x] Verify customer/AE generation → missing summary/focus → draft save → error clears → submit/readback; 30 rule/report tests pass, desktop/mobile without page overflow, preview build OK.
+- [ ] Marcom Full/Lite awaits a contract→SKU link in the snapshot's existing hotel data (ServiceBlock has no SKU; separate CRM uses Contract.lines[].sku_snapshot). Placeholder shown; no guessed join or field added. Registration/model currently remain hotel-profile values, not contract-level history, which this source does not have.
 
 # PS Dashboard visual standard v1.0
 - [x] Apply authoritative tokens/font and shared cards, accessible tooltips and persistent deterministic summary notes.

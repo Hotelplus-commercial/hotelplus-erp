@@ -184,7 +184,7 @@ export function PsDashboard({ assignment, part = "all" }: { assignment?: Assignm
         </div>
 
         <div className="mt-4 border-t pt-4">
-          <PortfolioBreakdown hotels={scopedHotels} now={now} />
+          <PortfolioBreakdown hotels={scopedHotels} now={now} service={filter.service} />
         </div>
       </section>}
 
