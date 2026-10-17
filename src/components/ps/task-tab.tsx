@@ -109,7 +109,7 @@ export function TaskTab() {
   const flow = useQuery({queryKey:['task-flow'],queryFn:()=>readFlow(),enabled:!d.demo,staleTime:30000});
   const all = getWorklist(d.tickets,d.demo?fixture.tickets:liveL0,d.categories,care,d.now.toISOString());
   const rows = all.filter(r=>workInScope(r,filter,byHotel.get(r.hotel_id??'')));
-  const demoFlow = d.tickets.flatMap(t=>[{month:t.created_at.slice(0,7)+'-01',hotel_id:t.hotel_id,hotel_name:t.hotel_name,routed_team:t.routed_team,created_count:1,closed_count:0},...(t.resolved_at?[{month:t.resolved_at.slice(0,7)+'-01',hotel_id:t.hotel_id,hotel_name:t.hotel_name,routed_team:t.routed_team,created_count:0,closed_count:1}]:[])]);
+  const demoFlow = d.tickets.flatMap(t=>[{month:bkkDate(Date.parse(t.created_at)).slice(0,7)+'-01',hotel_id:t.hotel_id,hotel_name:t.hotel_name,routed_team:t.routed_team,created_count:1,closed_count:0},...(t.resolved_at?[{month:bkkDate(Date.parse(t.resolved_at)).slice(0,7)+'-01',hotel_id:t.hotel_id,hotel_name:t.hotel_name,routed_team:t.routed_team,created_count:0,closed_count:1}]:[])]);
   const caseFlow = (d.demo?demoFlow:flow.data??[]).filter(r=>{
     const c=care.find(c=>c.hotel_id===r.hotel_id);
     const stub = {source_kind:'CASE',dept:r.routed_team,hotel_id:r.hotel_id,hotel_name:r.hotel_name} as WorkRow;
