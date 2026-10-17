@@ -192,7 +192,7 @@ const BDAC_PIPELINE: DemoDeal[] = [
   { id: 'D-2410', hotel: 'The Riverside Bangkok', line: 'ORM', stage: 5, bd: 'นุ่น', approved: '2026-10-13' },
   { id: 'D-2405', hotel: 'Ayutthaya Heritage Inn', line: 'ORM', stage: 8, bd: 'ต้น', approved: '2026-10-10', sent: '2026-10-13', signed: '2026-10-14' },
   { id: 'D-2415', hotel: 'Chiang Mai Old Town Hotel', line: 'ORM', stage: 4, bd: 'นุ่น', approved: '2026-10-15' },
-  { id: 'D-2408', hotel: 'Pattaya Bay Hotel', line: 'MARCOM', stage: 7, bd: 'นุ่น', approved: '2026-10-10', sent: '2026-10-15' },
+  { id: 'D-2408', hotel: 'Pattaya Bay Hotel', line: 'MARCOM', stage: 7, bd: 'นุ่น', approved: '2026-09-30', sent: '2026-10-15' },
   { id: 'D-2403', hotel: 'Hua Hin Beach Club', line: 'MARCOM', stage: 10, bd: 'ปาล์ม', approved: '2026-10-08', sent: '2026-10-12', signed: '2026-10-15' },
   { id: 'D-2414', hotel: 'Baan Talay Hua Hin', line: 'MARCOM', stage: 1, bd: 'ต้น', approved: '2026-10-16' },
   { id: 'D-2412', hotel: 'Koh Samui Garden Resort', line: 'ORM', stage: 7, bd: 'ต้น', approved: '2026-10-14', sent: '2026-10-16' },
