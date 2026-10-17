@@ -126,7 +126,7 @@ export function runAlertBot(input: BotScanInput): BotRunResult {
 }
 
 const TYPE_GAP: Record<TicketType, string> = {
-  UPSELL_PITCH: '', RENEWAL_DUE: 'ต่อสัญญา', GRADE_RISK: 'การชำระ', SURVEY_LOW: 'แบบสำรวจ',
+  UPSELL_PITCH: '', RENEWAL_DUE: 'ต่อสัญญา', GRADE_RISK: 'การชำระ', SURVEY_LOW: 'แบบสำรวจ', CONTRACT_FOLLOWUP: '',
 };
 
 /* ---------------- digest (§5.2) ---------------- */

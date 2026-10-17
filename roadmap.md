@@ -1,3 +1,11 @@
+# BD-AC tab v2.0
+- [x] Rebuild tab on Visual Standard: definitions strip, cards ①–⑤, pending-sync strip; SLA 2-day layer with amber=on-time; cohort re-keyed to Sent Contract month + carry list; cycle time median-only (no IQR); ac_owner_id/aging/cohort-anchor deprecated (kept, unread).
+- [x] CONTRACT_FOLLOWUP ticket type (dedup per deal, target BD, create button only when Role=PM; PM role added to global filter); demo fixture with own clock 2026-10-17; oracle 8/8 verified in browser + 8 new tests (62 total pass, build OK).
+
+# BD-AC tab v2.0
+- [x] Rebuild tab on Visual Standard: definitions strip, cards ①–⑤, pending-sync strip; SLA 2-day layer with amber=on-time; cohort re-keyed to Sent Contract month + carry list; cycle time median-only (no IQR); ac_owner_id/aging/cohort-anchor deprecated (kept, unread).
+- [x] CONTRACT_FOLLOWUP ticket type (dedup per deal, target BD, create button only when Role=PM; PM role added to global filter); demo fixture with own clock 2026-10-17; oracle 8/8 verified in browser + 8 new tests (62 total pass, build OK).
+
 # PS Dashboard v1.3
 - [x] Keep snapshot Active/Inactive counts; show distinct active ORM/Marcom hotel breakdown from its existing hotel terms, without unspecified buckets. Hotel/service list moved unchanged to Contracts & Services (Case B); Dashboard NPS display removed, cohort preserved.
 - [x] Rename visible WS-2 labels throughout PS; required-only template switches, simulated PM/System Admin edit vs read-only others, version publish audit and frozen flags.

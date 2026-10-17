@@ -159,8 +159,18 @@ function Detail({ t, role, dept, onClose }: { t: L0Ticket; role: Role; dept: Dep
       {t.payload.unassigned_owner && <p className="rounded-md border border-warning/40 bg-warning/10 px-2 py-1 text-xs text-warning-foreground">⚠ ยังไม่ได้ระบุผู้ดูแล (AE) — โปรดระบุก่อน</p>}
       <dl className="grid grid-cols-[minmax(5rem,8rem)_minmax(0,1fr)] gap-1 break-words text-sm">
         <dt className="text-muted-foreground">โรงแรม</dt><dd>{t.subject_ref.hotel_name} ({t.subject_ref.hotel_id})</dd>
-        <dt className="text-muted-foreground">บริการที่ขาด</dt><dd>{t.subject_ref.gap_service}</dd>
-        {isBot ? (
+        {t.type === "CONTRACT_FOLLOWUP" && t.payload.followup ? (
+          <>
+            <dt className="text-muted-foreground">ดีล</dt><dd>{t.subject_ref.deal_id}</dd>
+            <dt className="text-muted-foreground">cohort</dt><dd>{t.payload.followup.cohort_month}</dd>
+            <dt className="text-muted-foreground">ตอนนี้</dt><dd>{t.payload.followup.stage_label}{t.payload.followup.substep ? ` · ${t.payload.followup.substep}` : ""}</dd>
+            <dt className="text-muted-foreground">ค้าง</dt><dd>{t.payload.followup.days_since_sent_contract} วันนับจากส่งสัญญา</dd>
+            <dt className="text-muted-foreground">BD</dt><dd>{t.payload.followup.bd_name ?? "— ยังไม่ระบุ"}</dd>
+          </>
+        ) : (
+          <><dt className="text-muted-foreground">บริการที่ขาด</dt><dd>{t.subject_ref.gap_service}</dd></>
+        )}
+        {t.type !== "CONTRACT_FOLLOWUP" && (isBot ? (
           <>
             <dt className="text-muted-foreground">สัญญาณ</dt><dd>{t.payload.note || "—"}</dd>
             <dt className="text-muted-foreground">AE ผู้ดูแล</dt><dd>{t.payload.assigned_ae?.nickname ?? "— ยังไม่ระบุ"}</dd>
@@ -173,7 +183,7 @@ function Detail({ t, role, dept, onClose }: { t: L0Ticket; role: Role; dept: Dep
             <dt className="text-muted-foreground">เหตุผล</dt><dd className="flex flex-wrap gap-1">{t.payload.chips.map((c) => <Badge key={c} variant="outline">{c}</Badge>)}</dd>
             <dt className="text-muted-foreground">หมายเหตุ</dt><dd>{t.payload.note || "—"}</dd>
           </>
-        )}
+        ))}
         <dt className="text-muted-foreground">ผู้สร้าง → แผนก</dt><dd>{isBot ? "The Office" : t.created_by} → {t.target_dept}</dd>
       </dl>
       {t.payload.condition_cleared_at && OPEN_STATUSES.includes(t.status) && (

@@ -25,6 +25,7 @@ type Role = AssignmentFilter["role"];
 
 const teamOptions: Record<Role, string[]> = {
   none: [],
+  PM: [],
   AE: aeDirectory,
   ORM: ormTeams,
   Marcom: marcomDirectory,

@@ -168,3 +168,56 @@ export function demoTaskHotels() {
 export function demoOnboardCycle() {
   return FINISHED.map(([created, live, line], i) => ({ card_id: `F-${'ABCD'[i]}`, hotel_id: null, hotel_name: null, service_line: line, created_at: created, go_live_at: live, cycle_days: day(created, live) }));
 }
+
+/* ---------- BD-AC v2.0 demo fixture (§6) — own clock 2026-10-17, OFF → empty. ---------- */
+export const BDAC_DEMO_NOW = '2026-10-17T12:00:00.000Z';
+type DemoDeal = { id: string; hotel: string; line: 'ORM' | 'MARCOM'; stage: number; bd: string; approved?: string; sent?: string; signed?: string; paid?: string; won?: string };
+const ISO9 = (d: string) => `${d}T09:00:00.000Z`;
+const bdacDeal = (d: DemoDeal): ContractLifecycle => ({
+  id: d.id, quote_id: d.id, contract_id: d.stage >= 11 ? d.id : null, contract_service_line: null,
+  customer_id: null, invoice_number: null, property_name: d.hotel, hotel_id: hid(d.hotel), hotel_name: d.hotel,
+  customer_legal_name: d.hotel, service_line: d.line, bd_owner_id: d.bd, current_stage: d.stage,
+  live_link_token: null, live_link_sent_at: null, sent_to_ac_at: null,
+  approved_at: d.approved ? ISO9(d.approved) : null, send_contract_at: d.sent ? ISO9(d.sent) : null,
+  signed_at: d.signed ? ISO9(d.signed) : null, payment_at: d.paid ? ISO9(d.paid) : null, won_at: d.won ? ISO9(d.won) : null,
+  created_at: ISO9(d.approved ?? d.sent ?? '2026-05-01'), updated_at: ISO9(d.won ?? d.paid ?? d.signed ?? d.sent ?? d.approved ?? '2026-05-01'),
+});
+/** Current pipeline (stages 6–9) — oracle §6. Stage-6 sub-step via lifecycle step; stage 9: 9 = pay ✓ · AC ✗, 10 = pay ✗ · AC ✗. */
+const BDAC_PIPELINE: DemoDeal[] = [
+  { id: 'D-2361', hotel: 'Nan Riverside Lodge', line: 'ORM', stage: 1, bd: 'ต้น', approved: '2026-07-22' },
+  { id: 'D-2377', hotel: 'Rayong Seaview Hotel', line: 'MARCOM', stage: 2, bd: 'ปาล์ม', approved: '2026-08-19' },
+  { id: 'D-2380', hotel: 'Hat Yai Central Hotel', line: 'MARCOM', stage: 10, bd: 'นุ่น', approved: '2026-08-20', sent: '2026-08-25', signed: '2026-08-28' },
+  { id: 'D-2402', hotel: 'Phuket Sands Villa', line: 'ORM', stage: 7, bd: 'ปาล์ม', approved: '2026-09-20', sent: '2026-09-26' },
+  { id: 'D-2398', hotel: 'Khao Yai Hills Resort', line: 'ORM', stage: 9, bd: 'นุ่น', approved: '2026-10-02', sent: '2026-10-06', signed: '2026-10-12', paid: '2026-10-15' },
+  { id: 'D-2410', hotel: 'The Riverside Bangkok', line: 'ORM', stage: 5, bd: 'นุ่น', approved: '2026-10-13' },
+  { id: 'D-2405', hotel: 'Ayutthaya Heritage Inn', line: 'ORM', stage: 8, bd: 'ต้น', approved: '2026-10-10', sent: '2026-10-13', signed: '2026-10-14' },
+  { id: 'D-2415', hotel: 'Chiang Mai Old Town Hotel', line: 'ORM', stage: 4, bd: 'นุ่น', approved: '2026-10-15' },
+  { id: 'D-2408', hotel: 'Pattaya Bay Hotel', line: 'MARCOM', stage: 7, bd: 'นุ่น', approved: '2026-09-30', sent: '2026-10-15' },
+  { id: 'D-2403', hotel: 'Hua Hin Beach Club', line: 'MARCOM', stage: 10, bd: 'ปาล์ม', approved: '2026-10-08', sent: '2026-10-12', signed: '2026-10-15' },
+  { id: 'D-2414', hotel: 'Baan Talay Hua Hin', line: 'MARCOM', stage: 1, bd: 'ต้น', approved: '2026-10-16' },
+  { id: 'D-2412', hotel: 'Koh Samui Garden Resort', line: 'ORM', stage: 7, bd: 'ต้น', approved: '2026-10-14', sent: '2026-10-16' },
+  { id: 'D-2409', hotel: 'Ari Residence Bangkok', line: 'MARCOM', stage: 8, bd: 'ปาล์ม', approved: '2026-10-11', sent: '2026-10-14', signed: '2026-10-16' },
+  { id: 'D-2417', hotel: 'Krabi Cliff Resort', line: 'MARCOM', stage: 2, bd: 'ปาล์ม', approved: '2026-10-17' },
+  { id: 'D-2418', hotel: 'Sukhumvit Loft', line: 'ORM', stage: 1, bd: 'ต้น', approved: '2026-10-17' },
+];
+/** WON in Oct (5 deals · 4 distinct hotels) + Sep-sent deals completing the ก.ย. cohort (sent Sep, won Sep 1–17 → prev WON 3). */
+const BDAC_WON: DemoDeal[] = [
+  { id: 'D-2385', hotel: 'Nimman Hideaway', line: 'ORM', stage: 11, bd: 'ต้น', approved: '2026-09-27', sent: '2026-09-30', signed: '2026-10-01', paid: '2026-10-03', won: '2026-10-05' },
+  { id: 'D-2387', hotel: 'Bangsaen Breeze Hotel', line: 'MARCOM', stage: 11, bd: 'ปาล์ม', approved: '2026-09-22', sent: '2026-09-25', signed: '2026-09-30', paid: '2026-10-04', won: '2026-10-05' },
+  { id: 'D-2390', hotel: 'Lanna Boutique Chiang Mai', line: 'ORM', stage: 11, bd: 'นุ่น', approved: '2026-09-25', sent: '2026-09-28', signed: '2026-09-30', paid: '2026-10-01', won: '2026-10-02' },
+  { id: 'D-2391', hotel: 'Lanna Boutique Chiang Mai', line: 'MARCOM', stage: 11, bd: 'นุ่น', approved: '2026-09-29', sent: '2026-10-02', signed: '2026-10-04', paid: '2026-10-05', won: '2026-10-06' },
+  { id: 'D-2393', hotel: 'Silom Urban Suites', line: 'ORM', stage: 11, bd: 'ต้น', approved: '2026-09-30', sent: '2026-10-03', signed: '2026-10-04', paid: '2026-10-07', won: '2026-10-08' },
+  { id: 'D-2331', hotel: 'Pai River Corner', line: 'ORM', stage: 11, bd: 'ต้น', approved: '2026-08-30', sent: '2026-09-03', signed: '2026-09-04', paid: '2026-09-05', won: '2026-09-05' },
+  { id: 'D-2332', hotel: 'Sukhothai Garden Inn', line: 'MARCOM', stage: 11, bd: 'ปาล์ม', approved: '2026-09-04', sent: '2026-09-08', signed: '2026-09-10', paid: '2026-09-12', won: '2026-09-14' },
+  { id: 'D-2333', hotel: 'Trang Coast Lodge', line: 'ORM', stage: 11, bd: 'นุ่น', approved: '2026-09-08', sent: '2026-09-12', signed: '2026-09-13', paid: '2026-09-15', won: '2026-09-16' },
+];
+/** Closed cohorts พ.ค.–ส.ค. (all WON; ส.ค. carry = D-2380 lives in the pipeline). */
+const BDAC_HISTORY: DemoDeal[] = [
+  ...Array.from({ length: 9 }, (_, i) => ({ id: `D-22${90 + i}`, hotel: `Demo Resort May ${i + 1}`, line: i % 2 ? 'MARCOM' : 'ORM', stage: 11, bd: ['ต้น', 'ปาล์ม', 'นุ่น'][i % 3]!, approved: `2026-05-0${(i % 8) + 1}`, sent: `2026-05-1${i % 9}`, signed: `2026-05-1${(i % 8) + 1}`, paid: `2026-05-2${i % 8}`, won: `2026-05-2${(i % 8) + 1}` }) as DemoDeal),
+  ...Array.from({ length: 11 }, (_, i) => ({ id: `D-23${String(i).padStart(2, '0')}`, hotel: `Demo Resort Jun ${i + 1}`, line: i % 2 ? 'MARCOM' : 'ORM', stage: 11, bd: ['ต้น', 'ปาล์ม', 'นุ่น'][i % 3]!, approved: `2026-06-0${(i % 8) + 1}`, sent: `2026-06-1${i % 9}`, signed: `2026-06-1${(i % 8) + 1}`, paid: `2026-06-2${i % 8}`, won: `2026-06-2${(i % 8) + 1}` }) as DemoDeal),
+  ...Array.from({ length: 9 }, (_, i) => ({ id: `D-231${i}`, hotel: `Demo Resort Jul ${i + 1}`, line: i % 2 ? 'MARCOM' : 'ORM', stage: 11, bd: ['ต้น', 'ปาล์ม', 'นุ่น'][i % 3]!, approved: `2026-07-0${(i % 8) + 1}`, sent: `2026-07-1${i % 9}`, signed: `2026-07-1${(i % 8) + 1}`, paid: `2026-07-2${i % 8}`, won: `2026-07-2${(i % 8) + 1}` }) as DemoDeal),
+  ...Array.from({ length: 12 }, (_, i) => ({ id: `D-234${i}`, hotel: `Demo Resort Aug ${i + 1}`, line: i % 2 ? 'MARCOM' : 'ORM', stage: 11, bd: ['ต้น', 'ปาล์ม', 'นุ่น'][i % 3]!, approved: `2026-08-0${(i % 8) + 1}`, sent: `2026-08-1${i % 9}`, signed: `2026-08-1${(i % 8) + 1}`, paid: `2026-08-2${i % 8}`, won: `2026-08-2${(i % 8) + 1}` }) as DemoDeal),
+];
+export function demoBdacLifecycles(): ContractLifecycle[] {
+  return [...BDAC_PIPELINE, ...BDAC_WON, ...BDAC_HISTORY].map(bdacDeal);
+}

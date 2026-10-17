@@ -18,7 +18,7 @@ export function periodRange(period: Period) { return { from: new Date(period.fro
 export function matchesBook(row: PsReportRow, f: GlobalFilter, hotelLevel = false) {
   if (f.service !== 'ALL' && row.service_line !== f.service) return false;
   const owners = { AE: [row['ae_owner_id'], row['assigned_ae_id'], row['owner_ae']], ORM: [row['orm_team'], row['orm_owner_id'], row['assigned_service_owner_id'], row['orm_revenue_id'], row['orm_ecommerce_id']], Marcom: [row['marcom_owner_id'], row['marcom_id'], row['assigned_service_owner_id']] };
-  const chosen = f.role === 'none' ? Object.values(owners).flat() : owners[f.role];
+  const chosen = f.role === 'none' || f.role === 'PM' ? Object.values(owners).flat() : owners[f.role];
   const values = chosen.filter(v => v != null).flatMap(v => [String(v), ...(f.ownerAliases?.[String(v)] ?? [])]);
   if (f.role !== 'none' && !values.length) return false;
   if (f.teams.length && !f.teams.some(v => values.includes(v))) return false;
