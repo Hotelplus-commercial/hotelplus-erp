@@ -71,13 +71,38 @@ export function findOpen(type: TicketType, hotel_id: string, gap_service: string
 }
 
 /** Central generic engine. Returns the new id, or the existing open id (dedup). */
-export function createTask(i: { type: TicketType; target_dept: Dept; subject_ref: L0Ticket['subject_ref']; payload: L0Ticket['payload']; created_by: Role; source_app?: L0Ticket['source_app'] }): { ticket_id: string; deduped: boolean } {
+export function createTask(i: { type: TicketType; target_dept: Dept; subject_ref: L0Ticket['subject_ref']; payload: L0Ticket['payload']; created_by: Creator; source_app?: L0Ticket['source_app'] }): { ticket_id: string; deduped: boolean } {
   const existing = findOpen(i.type, i.subject_ref.hotel_id, i.subject_ref.gap_service);
   if (existing) return { ticket_id: existing.ticket_id, deduped: true };
   const s = cur(); const seq = s.seq + 1; const at = now(); // Level B: replace with revision-locked reservation.
   const t: L0Ticket = { ticket_id: `TKT-${String(seq).padStart(6, '0')}`, type: i.type, source_app: i.source_app ?? 'PS_DASHBOARD', created_by: i.created_by, target_dept: i.target_dept, subject_ref: i.subject_ref, payload: i.payload, status: 'NEW', created_at: at, revision: 0, audit: [{ at, by: i.created_by, from_status: null, to_status: 'NEW' }] };
   commit({ seq, items: [...s.items, t] });
   return { ticket_id: t.ticket_id, deduped: false };
+}
+
+/** BOT dedup: open ticket with same (hotel_id + type + event_key). */
+export function findOpenByEvent(type: TicketType, hotel_id: string, event_key: string) {
+  return cur().items.find((t) => t.type === type && t.subject_ref.hotel_id === hotel_id && t.payload.event_key === event_key && OPEN.includes(t.status));
+}
+/** Open BOT tickets of a type for a hotel, regardless of event_key (for condition-cleared checks). */
+export function openOfType(type: TicketType, hotel_id: string) {
+  return cur().items.filter((t) => t.type === type && t.subject_ref.hotel_id === hotel_id && OPEN.includes(t.status));
+}
+/** Refresh generated_round/severity on a deduped ticket (no new ticket, no status change). */
+export function refreshBotTicket(id: string, patch: Pick<BotPayload, 'generated_round' | 'severity'>) {
+  const s = cur(); const t = s.items.find((x) => x.ticket_id === id);
+  if (!t) return false;
+  commit({ ...s, items: s.items.map((x) => (x.ticket_id === id ? { ...x, payload: { ...x.payload, ...patch } } : x)) });
+  return true;
+}
+/** Condition-cleared stamp (AL5/AL12): sets payload.condition_cleared_at, appends audit, bumps revision. Never changes status. */
+export function stampConditionCleared(id: string): boolean {
+  const s = cur(); const t = s.items.find((x) => x.ticket_id === id);
+  if (!t || !OPEN.includes(t.status) || t.payload.condition_cleared_at) return false;
+  const at = now();
+  const next: L0Ticket = { ...t, payload: { ...t.payload, condition_cleared_at: at }, revision: t.revision + 1, audit: [...t.audit, { at, by: SYSTEM_CREATOR, from_status: t.status, to_status: t.status }] };
+  commit({ ...s, items: s.items.map((x) => (x.ticket_id === id ? next : x)) });
+  return true;
 }
 
 export function allowedNext(t: L0Ticket, role: Role): L0Status[] {
