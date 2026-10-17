@@ -46,7 +46,6 @@ function Account360Body({ report, hotelId }: { report?: PsReport | undefined; ho
   const healthRows = of(v?.v_ps_account_health);
   const contracts = of(v?.v_ps_lifecycle_flow);
   const renewals = of(v?.v_ps_renewal);
-  const nps = of(v?.v_ps_nps);
   const base: PsReportRow = { ...(healthRows[0] ?? { hotel_id: hotelId }), completeness: healthRows.some(r => r.completeness != null && r.completeness !== 'complete') ? 'incomplete' : healthRows[0]?.completeness ?? null };
   const h = accountHealthOf(base, { now, roi: v?.v_ps_roi ?? [], flow: v?.v_ps_lifecycle_flow ?? [], ratioMin: report?.demo ? DEMO_VALUE_RATIO_MIN : ROI_VALUE_RATIO_MIN });
   const name = String(base.hotel_name ?? contracts[0]?.hotel_name ?? hotelId);
@@ -74,10 +73,9 @@ function Account360Body({ report, hotelId }: { report?: PsReport | undefined; ho
     <Block title="④ Survey" to="/ps/ae-workspace/surveys">
       <Kv k="#1 ทีม" v="— (ระดับ cohort เท่านั้น)" />
       <Kv k="#2 ลูกค้า ล่าสุด" v={base.survey2 == null ? '—' : `${base.survey2}★`} />
-      {nps.map((r, i) => <Kv key={i} k={`ประวัติ ${String(r.billing_period ?? '').slice(0, 7)}`} v={`${r.promoters ? 'Promoter' : r.detractors ? 'Detractor' : 'Passive'}`} />)}
     </Block>
     <Block title="⑤ Flags" to="/ps/ae-workspace/meetings"><p className="text-muted-foreground">🔴 รอ Meeting (placeholder)</p></Block>
-    <Block title="⑥ WS-2 completeness" to="/ps/ae-workspace/property-info">
+    <Block title="⑥ Property Information Form completeness" to="/ps/ae-workspace/property-info">
       {healthRows.length ? healthRows.map((r, i) => <Kv key={i} k={String(r.service_line ?? '—')} v={String(r.completeness ?? '—')} />) : <p className="text-muted-foreground">รอ Cloud Sync seed</p>}
     </Block>
     <Block title="⑦ ROI / Performance (ORM)" {...(h.hasOrm ? { to: '/orm/dashboard' } : {})}>

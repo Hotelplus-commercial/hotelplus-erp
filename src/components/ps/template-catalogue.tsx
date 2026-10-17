@@ -49,14 +49,16 @@ export function TemplateCatalogue({ onDocuments }: { onDocuments: () => void }) 
 
 function FormCatalogue() {
   const w = useWs2();
+  const s = useServicing();
+  const [open, setOpen] = useState<Ws2Service | null>(null);
   return (
-    <Panel title="Form Templates · WS-2" subtitle="แก้ช่องข้อมูลอยู่ใน WS-2 · ฟอร์มเดิมคงเวอร์ชันตอน Generate">
+    <Panel title="Form Templates · Property Information Form" subtitle="ฟอร์มเดิมคงเวอร์ชันตอน Generate">
       <ul className="divide-y text-sm">
         {(Object.keys(SERVICE_LABEL) as Ws2Service[]).map((sv) => { const t = w.latestTemplate(sv); return (
-          <li key={sv} className="flex flex-wrap items-center gap-2 py-2"><span className="flex-1 font-medium">WS-2 · {SERVICE_LABEL[sv]}</span><Chip tone="info">Form</Chip><span className="text-xs text-muted-foreground">v{t.version}</span></li>
+          <li key={sv} className="flex flex-wrap items-center gap-2 py-2"><span className="min-w-0 flex-1 font-medium">Property Information Form · {SERVICE_LABEL[sv]}</span><Chip tone="info">Form</Chip><span className="text-xs text-muted-foreground">v{t.version}</span><Button size="sm" variant="outline" onClick={() => setOpen(open === sv ? null : sv)}>{canManageTemplates(s.role) ? 'Edit' : 'View'}</Button></li>
         ); })}
       </ul>
-      <div className="mt-3"><Ws2TemplateEditor /></div>
+      {open && <div className="mt-3"><Ws2TemplateEditor key={open} service={open} /></div>}
     </Panel>
   );
 }

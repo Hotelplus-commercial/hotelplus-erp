@@ -21,6 +21,7 @@ import {
 import { useDashboardGlobal, matchesBook, selectedPeriod } from '@/lib/ps-dashboard-global';
 import { demoHotels, buildDemoReport } from '@/lib/ps-demo-fixture';
 import { cn } from "@/lib/utils";
+import { PortfolioBreakdown } from './portfolio-breakdown';
 
 const pct = (n: number, total: number) => (total ? Math.round((n / total) * 100) : 0);
 
@@ -123,9 +124,7 @@ export function PsDashboard({ assignment, part = "all" }: { assignment?: Assignm
   const scopedHotels = rows.map(r => r.h);
   const totalTerms = scopedHotels.reduce((s, h) => s + h.terms.length, 0);
   const activeCount = rows.filter((r) => r.status === "active").length;
-  const upcoming = rows.filter((r) => r.start && r.start.getTime() > now.getTime()).length;
   const inactive = rows.filter((r) => r.status === "contract-end" || r.status === "terminated").length;
-  const draft = rows.filter((r) => !r.h.psSaved).length;
   const expiring60 = rows.filter((r) => r.left !== null && r.left >= 0 && r.left <= 60).length;
   const endingThisMonth = rows.filter(
     (r) =>
@@ -134,18 +133,6 @@ export function PsDashboard({ assignment, part = "all" }: { assignment?: Assignm
       r.end.getFullYear() === now.getFullYear(),
   ).length;
   const noStart = rows.filter((r) => !r.start).length;
-
-  const ormRows = rows.filter((r) => r.services.orm.length);
-  const reg = {
-    corporate: scopedHotels.filter((h) => h.registration === "corporate").length,
-    personal: scopedHotels.filter((h) => h.registration === "personal").length,
-    none: scopedHotels.filter((h) => !h.registration).length,
-  };
-  const model = {
-    flat: scopedHotels.filter((h) => h.model === "flat").length,
-    commission: scopedHotels.filter((h) => h.model === "commission").length,
-    none: scopedHotels.filter((h) => !h.model).length,
-  };
 
   const filtered = rows.filter((r) => {
     const term = q.trim().toLowerCase();
@@ -191,48 +178,19 @@ export function PsDashboard({ assignment, part = "all" }: { assignment?: Assignm
           </div>
         </div>
 
-        <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-4 grid gap-2 sm:grid-cols-2">
           <Stat label="Active" value={activeCount} sub={`${pct(activeCount, scopedHotels.length)}%`} />
-          <Stat label="Upcoming" value={upcoming} muted={!upcoming} />
           <Stat label="Inactive" value={inactive} sub={`${pct(inactive, scopedHotels.length)}%`} />
-          <Stat label="Draft" value={draft} sub={`${pct(draft, scopedHotels.length)}%`} />
         </div>
 
         <div className="mt-4 border-t pt-4">
-          <p className="text-xs font-semibold">
-            เฉพาะ ORM{" "}
-            <span className="font-normal text-muted-foreground">
-              {ormRows.length} โรงแรมที่ใช้งานอยู่
-            </span>
-          </p>
-          <div className="mt-2 grid gap-3 lg:grid-cols-2">
-            <div>
-              <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                การจดทะเบียน
-              </p>
-              <div className="grid grid-cols-3 gap-2">
-                <Stat label="Corporate" value={reg.corporate} sub={`${pct(reg.corporate, scopedHotels.length)}%`} />
-                <Stat label="Personal" value={reg.personal} sub={`${pct(reg.personal, scopedHotels.length)}%`} />
-                <Stat label="ไม่ระบุ" value={reg.none} sub={`${pct(reg.none, scopedHotels.length)}%`} />
-              </div>
-            </div>
-            <div>
-              <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                รูปแบบค่าบริการ
-              </p>
-              <div className="grid grid-cols-3 gap-2">
-                <Stat label="Flat Rate" value={model.flat} sub={`${pct(model.flat, scopedHotels.length)}%`} />
-                <Stat label="Commission" value={model.commission} sub={`${pct(model.commission, scopedHotels.length)}%`} />
-                <Stat label="ไม่ระบุ" value={model.none} sub={`${pct(model.none, scopedHotels.length)}%`} />
-              </div>
-            </div>
-          </div>
+          <PortfolioBreakdown hotels={scopedHotels} now={now} service={filter.service} />
         </div>
       </section>}
 
       {part !== "overview" && <section className="card-elevated p-4 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <span className="text-xs text-muted-foreground">{filtered.length} รายการ</span>
+          <span className="text-xs text-muted-foreground">{filtered.length} รายการ{demo ? ' · DEMO' : ''}</span>
         </div>
 
         <div className="mt-4 overflow-x-auto">

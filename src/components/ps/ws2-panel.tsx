@@ -55,7 +55,7 @@ export function Ws2Panel({ card, readOnly }: { card: OnboardingCard; readOnly: b
   return (
     <section className="space-y-3 rounded-lg border p-3" aria-label="Property Information Form">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-sm font-semibold">Property Information Form (WS-2)</h3>
+        <h3 className="text-sm font-semibold">Property Information Form</h3>
         <Ws2StatusChip card={card} />
       </div>
       <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs">

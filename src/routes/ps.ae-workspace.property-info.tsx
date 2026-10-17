@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import { Chip, Panel } from "@/components/crm/crm-ui";
 import { PageHeader } from "@/components/erp-ui";
 import { ServicingCardDrawer } from "@/components/ps/servicing-dashboard";
-import { Ws2TemplateEditor } from "@/components/ps/ws2-template-editor";
 import { Ws2StatusChip } from "@/components/ps/ws2-panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -62,7 +61,6 @@ function PropertyInfoTab() {
           {!hotels.length && <li className="p-6 text-center text-sm text-muted-foreground">ไม่พบโรงแรม</li>}
         </ul>
       </Panel>
-      <Ws2TemplateEditor />
       <ServicingCardDrawer key={open ?? "closed"} id={open} onClose={() => setOpen(null)} />
     </div>
   );
