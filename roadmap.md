@@ -220,4 +220,4 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [x] Stamp fields + backfill (team only; person/ORM sub-team not server-derivable), v3 case writes
 - [x] task_backlog_snapshot + AC daily post-step (upsert, catch-up ≤14 days, no K3 catch-up)
 - [x] Effective-dated config + configAt; time metrics; sparklines/Compare; ⑧ ⑥ ⑦; รับงาน
-- [ ] Demo numbers match §12 exactly (invariants pass; values differ)
+- [x] Demo numbers match §12 (deterministic; invariants pass)

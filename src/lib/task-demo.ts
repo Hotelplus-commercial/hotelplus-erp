@@ -57,7 +57,7 @@ function caseSpecs(): CaseSpec[] {
   const order: Lane[] = ['A', 'MARCOM', 'B', 'A', 'C', 'D', 'A', 'B', 'E', 'A', 'B', 'D', 'RE_ACTIVE', 'MARCOM'];
   order.forEach((lane, i) => {
     const created = D(5 + Math.floor(i / 3), [4, 9, 14][i % 3]!), closed = plus(created, CLOSE[lane]!);
-    s.push({ lane, created, closed, now: 'resolved', straight: i === 0, reopen: i === 4, ...(i === 1 ? { waitFrom: plus(created, ACCEPT.MARCOM! + 0.3), waitTo: plus(created, ACCEPT.MARCOM! + 1.3) } : {}) });
+    s.push({ lane, created, closed, now: 'resolved', straight: i === 0, reopen: i === 4, ...(i === 1 ? { waitFrom: plus(created, ACCEPT['MARCOM']! + 0.3), waitTo: plus(created, ACCEPT['MARCOM']! + 1.3) } : {}) });
   });
   return s;
 }
