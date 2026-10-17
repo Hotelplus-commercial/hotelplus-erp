@@ -113,9 +113,11 @@ export function AcTab({ views, loading, error, service, compare, demo }: AcTabPr
         openHotel={openHotel}
       />
       <SectionHead title="ลูกหนี้ & การเก็บเงิน" desc="ค้างเท่าไร · อยู่ขั้นไหน · ใครจ่ายช้า · ต้องตามใคร" />
-      <div className="ac-pair">
+      <div className="ac-row2">
         <OutstandingCard debtors={debtors.filter(svc)} breakdown={breakdown.filter(svc)} compare={compare} />
         <CollectionCard views={views} svc={svc} debtors={debtors.filter(svc)} compare={compare} />
+      </div>
+      <div className="ac-row2">
         <GradeCard gradeDist={gradeDist.filter(svc)} chip={chip} prevChip={prevChip} compare={compare} />
         <SystemFeeMock />
       </div>
@@ -1032,7 +1034,7 @@ function GradeCard({
                 })}
               </div>
               <p className="ac-footnote">
-                {chip} ยังไม่ปิดงวด: ใบที่ยังค้างนับเป็น C ไว้ก่อน และเป็น D ได้หลัง 15 ของเดือนถัดไป
+                {chip} ยังไม่ปิดงวด: ใบที่ยังค้างนับเป็น C ไว้ก่อน และเป็น D ได้หลัง {dAfter(chip)}
               </p>
             </>
           )}
@@ -1107,12 +1109,23 @@ function SystemFeeMock() {
         </table>
       </div>
       <div className="ac-mock-overlay">
-        <Lock className="size-5" />
-        <b>⑦ ค่าระบบ ORM · รอ email ingestion</b>
-        <span>ตัวอย่างหน้าตาเท่านั้น · จะแสดงข้อมูลจริงเมื่อเชื่อมแหล่งข้อมูลแล้ว</span>
+        <div className="ac-mock-label">
+          <Lock className="size-5 shrink-0" />
+          <div><b>⑦ ค่าระบบ ORM · รอ email ingestion</b>
+          <span>ตัวอย่างหน้าตาเท่านั้น · จะแสดงข้อมูลจริงเมื่อเชื่อมแหล่งข้อมูลแล้ว</span></div>
+        </div>
       </div>
     </section>
   );
+}
+
+/** Text only: open period M → D after the 15th of M+2 (grade engine rule). */
+function dAfter(chip: string): string {
+  const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const m = /^([A-Za-z]{3}) (\d{2})$/.exec(chip.trim());
+  if (!m || MON.indexOf(m[1]!) < 0) return "15 ของเดือน M+2";
+  const idx = MON.indexOf(m[1]!) + 2;
+  return `15 ${MON[idx % 12]} ${String((Number(m[2]) + Math.floor(idx / 12)) % 100).padStart(2, "0")}`;
 }
 
 /* ---------- ⑧ debtor follow-up worklist ---------- */
