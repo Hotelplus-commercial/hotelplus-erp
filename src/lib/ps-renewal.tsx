@@ -8,7 +8,7 @@ export type RenewalStatus = "NOT_STARTED" | "ON_PROCESS" | "COMPLETED" | "CHURN"
 
 /** PS Dashboard filter: Role + Team + Person combined with AND logic */
 export type AssignmentFilter = {
-  role: "none" | "AE" | "ORM" | "Marcom";
+  role: "none" | "AE" | "ORM" | "Marcom" | "PM";
   teams: string[];
   people: string[];
 };
