@@ -29,7 +29,7 @@ const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct
 export function monYY(period: string | null | undefined): string {
   const m = /^(\d{4})-(\d{2})/.exec(String(period ?? ""));
   if (!m) return "—";
-  return `${MON[Number(m[2]) - 1]} ${m[1].slice(2)}`;
+  return `${MON[Number(m[2]!) - 1] ?? ''} ${m[1]!.slice(2)}`;
 }
 
 export const bahtFull = (n: number) => "฿" + n.toLocaleString("th-TH", { maximumFractionDigits: 0 });

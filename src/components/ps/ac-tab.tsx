@@ -697,8 +697,8 @@ function OutstandingCard({
   const totalInv = collected + invCount;
   const overdueN = breakdown.reduce((s, r) => s + num(r.overdue_count), 0);
   const overdueAmt = breakdown.reduce((s, r) => s + num(r.overdue_amount), 0);
-  const notdueN = breakdown.reduce((s, r) => s + num(r.notdue_count), 0);
-  const notdueAmt = breakdown.reduce((s, r) => s + num(r.notdue_amount), 0);
+  const notdueN = breakdown.reduce((s, r) => s + num(r['notdue_count']), 0);
+  const notdueAmt = breakdown.reduce((s, r) => s + num(r['notdue_amount']), 0);
   const groups = (["ORM", "Marcom"] as const).flatMap((line) =>
     (["EXISTING", "NEW"] as const).map((seg) => {
       const rows = breakdown.filter((r) => r.service_line === line && r.customer_segment === seg);
@@ -1134,8 +1134,8 @@ function FollowUpCard({
   const wo = list.filter((r) => r.status === "WRITTEN_OFF");
   const shown = status === "ALL" ? list.filter((r) => r.status !== "PAUSED") : list.filter((r) => r.status === status);
   const counts = (s: CollectionStatus) => list.filter((r) => r.status === s).length;
-  const notdueN = breakdown.reduce((s, r) => s + num(r.notdue_count), 0);
-  const notdueAmt = breakdown.reduce((s, r) => s + num(r.notdue_amount), 0);
+  const notdueN = breakdown.reduce((s, r) => s + num(r['notdue_count']), 0);
+  const notdueAmt = breakdown.reduce((s, r) => s + num(r['notdue_amount']), 0);
   const gradeD = list.filter((r) => r.grade === "D" && r.status !== "WRITTEN_OFF");
   const dWithTicket = gradeD.filter((r) => ticketOf(r.hotel_id)).length;
   const legalRows = list.filter((r) => r.status === "LEGAL");
