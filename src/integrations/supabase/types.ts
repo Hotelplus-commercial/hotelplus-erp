@@ -713,15 +713,20 @@ export type Database = {
       }
       v_ac_invoice_ranking: {
         Row: {
-          amount: number | null
+          amount_thb: number | null
+          avg_rank: number | null
           billing_period: string | null
+          has_bill: boolean | null
           hotel_id: string | null
-          lifetime_average_rank: number | null
+          hotel_name: string | null
+          invoice_count: number | null
+          lens: string | null
           marcom_member_id: string | null
+          marcom_thb: number | null
           orm_team_id: string | null
-          previous_month_rank: number | null
+          orm_thb: number | null
+          prev_rank: number | null
           rank: number | null
-          service_line: Database["public"]["Enums"]["service_line"] | null
         }
         Relationships: []
       }
