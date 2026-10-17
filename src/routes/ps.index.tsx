@@ -54,7 +54,6 @@ function PsDashboardPage() {
                 <TeamActivityFeed />
               </>
             )}
-            <PsDashboard part="table" />
           </section>
         }
       />
