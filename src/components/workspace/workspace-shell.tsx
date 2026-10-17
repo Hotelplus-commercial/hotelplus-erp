@@ -230,6 +230,11 @@ function PmTester() {
         }}>สร้าง Ticket ไปแผนกนี้</Button>
       </div>
       {note && <p className="text-xs text-muted-foreground">{note}</p>}
+      <div className="flex flex-wrap items-center gap-2 border-t pt-2">
+        <Button size="sm" variant="outline" onClick={() => setBot(runAlertBot(demoScanInput()))}>ประมวลผล Alert (ชั่วคราว)</Button>
+        <span className="text-xs text-muted-foreground">BOT สาธิต · สแกนสัญญาณแล้วสร้าง ticket เข้า PM Workspace (เป้าหมาย PS)</span>
+      </div>
+      {bot && <p className="text-xs text-muted-foreground">ผลรอบ BOT ล่าสุด: สร้าง {bot.created} · ข้าม(ซ้ำ) {bot.skipped} · เงื่อนไขหาย {bot.cleared}</p>}
     </div>
   );
 }
