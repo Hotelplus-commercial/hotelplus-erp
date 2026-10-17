@@ -1,190 +1,109 @@
-/* PS Dashboard · Tab "Servicing" v1.0 — read-only cockpit over v_servicing_* + one write path (ระบุผู้ดูแล via existing v1.1 write). */
-import { useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
-import { AlertTriangle, ArrowRight, Plus } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
-
-import { Chip, Kpi } from "@/components/crm/crm-ui";
-import { AssignDialog } from "@/components/ps/assignment-ui";
-import { KpiView, ServicingCardDrawer } from "@/components/ps/servicing-dashboard";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useHrMembers, type AssignType } from "@/lib/hr-members";
-import { useDashboardGlobal } from "@/lib/ps-dashboard-global";
-import { demoOnboarding } from "@/lib/ps-demo-fixture";
-import { STAGE_LABEL, lineSequence, stageProgressLine, useServicing, type ServiceLine } from "@/lib/ps-servicing";
-import { readServicingDashboard } from "@/lib/servicing-dashboard.functions";
-import {
-  assignmentComplete, daysFrom, laneStage, median, missingCaretakers, servicingScope, servicingStats,
-  type CaretakerSlot, type ServicingReport, type ServicingRow,
-} from "@/lib/servicing-dashboard-types";
-
-const SLOT_LABEL: Record<CaretakerSlot, string> = { AE: "AE", SPECIALIST: "Specialist", ORM: "ORM team", MARCOM: "Marcom" };
-const stageName = (s: string) => (s === "go_live" ? "Go Live" : STAGE_LABEL[s] ?? s);
-
-function demoReport(): ServicingReport {
-  const rows: ServicingRow[] = demoOnboarding().map((c) => ({
-    card_id: c.id, hotel_id: c.property_id, hotel_name: c.property_name, service_line: c.service_line, service_variant: c.service_variant,
-    current_stage: c.current_stage, stage_entered_at: c.go_live_at ?? c.created_at, created_at: c.created_at, go_live_at: c.go_live_at,
-    progress_done: 0, progress_total: 0, last_updated: null,
-    ae_owner_id: c.assigned_ae_id || null, specialist_id: c.assigned_specialist_id || null,
-    orm_team: c.service_line === "ORM" ? c.assigned_service_owner_id || null : null,
-    marcom_owner_id: c.service_line === "MARCOM" ? c.assigned_service_owner_id || null : null,
-    hotel_status: c.go_live_at ? "ACTIVE" : null,
-  }));
-  return { rows, pending: false, demo: true };
+/* Servicing v2 cockpit: projections only; operational writes stay in the guided drawer/assignment master. */
+import { useQuery } from '@tanstack/react-query';
+import { useServerFn } from '@tanstack/react-start';
+import { useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AssignDialog } from './assignment-ui';
+import { ServicingCardDrawer } from './servicing-dashboard';
+import { OnboardingCardContent } from './onboarding-card';
+import { ChartHint, ChartSkeleton, DashCard } from './dash-card';
+import { ServicingPhaseChart } from './servicing-phase-chart';
+import { ServicingGoLiveChart } from './servicing-golive-chart';
+import { useHrMembers, type AssignType } from '@/lib/hr-members';
+import { selectedPeriod, useDashboardGlobal } from '@/lib/ps-dashboard-global';
+import { useServicing } from '@/lib/ps-servicing';
+import { readServicingDashboard } from '@/lib/servicing-dashboard.functions';
+import { assignmentComplete, missingCaretakers, servicingScope, servicingStats, type CaretakerSlot, type ServicingReport, type ServicingRow } from '@/lib/servicing-dashboard-types';
+import { demoServicingRows, demoServicingPhases, SERVICING_DEMO_NOW } from '@/lib/servicing-demo';
+import { calendarDays, cardStatus, MARCOM_REPORT_STAGES, ORM_REPORT_STAGES, phaseConfig, reportStageLabel, servicingLanes, servicing_sla_config, shortThaiDate, statusText, stallEventKey, type ServicingLane } from '@/lib/servicing-time';
+import { createServicingStall, stallRouting } from '@/lib/servicing-stall';
+import { OPEN_STATUSES, STATUS_TH, SYSTEM_CREATOR, useTickets, type L0Ticket } from '@/lib/tickets-l0';
+const SLOT_LABEL:Record<CaretakerSlot,string>={AE:'AE',SPECIALIST:'Specialist',ORM:'ORM team',MARCOM:'Marcom'};
+const stageName=reportStageLabel;
+const stageKey=(r:ServicingRow)=>r.current_stage==='completed'?'completed_handover':r.current_stage==='go_live'?(r.service_line==='ORM'?'orm_go_live':'marcom_go_live'):r.current_stage;
+const ownerClass=(stage:string,line:string)=>['new_property','introduction_sent_form','collect_data','property_pending','final_check'].includes(stage)?'sv-owner-ae':['approved','completed_handover'].includes(stage)?'sv-owner-specialist':line==='ORM'?'sv-owner-orm':'sv-owner-marcom';
+function Definitions({service}:{service:string}) {
+ const {p1,p2,p3}=servicing_sla_config;
+ return <section className="sv-definitions" aria-label="Servicing definitions">
+ {(['ORM','Marcom'] as const).filter(l=>service==='ALL'||service===l).map(l=><div key={l} className="sv-stage-def-row"><strong className={l==='ORM'?'text-primary':'text-series-2'}>{l}</strong><div>{(l==='ORM'?ORM_REPORT_STAGES:MARCOM_REPORT_STAGES).map(stage=><span key={stage} className="sv-stage-chip"><i className={ownerClass(stage,l)}/>{stage==='orm_prepare_data'&&<i className="sv-owner-specialist"/>}{stageName(stage)}</span>)}</div></div>)}
+ <div className="sv-owner-legend">{['AE','Specialist','ORM','Marcom'].map(l=><span key={l}><i className={`sv-owner-${l.toLowerCase()}`}/>{l}</span>)}<span>สีจุด = เจ้าของ stage · Prepare Data (ORM) ทำร่วม Specialist + ORM</span></div>
+ <div className="sv-rule-grid">
+ <div><strong>P1 · AE · SLA {p1.sla} วัน</strong><p>สร้างการ์ด (Day 0) → ผ่าน Final Check (เข้า Approved)</p></div>
+ <div><strong>P2 · Prepare · SLA {p2.sla} วัน (คู่ขนาน)</strong><p>นับจาก Approved · Specialist → ส่ง handover ครบ (row-1) · ORM / Marcom → สร้างนัดประชุม · GMB → Go Live</p></div>
+ <div><strong>รอประชุม · ไม่นับ</strong><p>สร้างนัดแล้ว → ถึงวันประชุม แสดงโทนกลาง · รอ ORM ตรวจรับ row-2 ก็ไม่นับเช่นกัน</p></div>
+ <div><strong>P3 · Go-Live · เป้า {p3.target} วัน · SLA {p3.sla} วัน</strong><p>วันประชุม (Rate Structure / First Sync) → Go Live</p></div>
+ </div>
+ <div className="sv-status-legend"><strong>สถานะ:</strong><span className="sv-text-ok">● เร็วกว่า SLA · P1/P2 วันที่ 0–{p1.ok_max} · P3 วันที่ 0–{p3.ok_max}</span><span className="sv-text-amber">● “เหลือเวลาอีก x วันของ SLA” · P1/P2 วันที่ {p1.ok_max+1}–{p1.sla} · P3 วันที่ {p3.ok_max+1}–{p3.sla}</span><span className="sv-text-red">● “เกิน SLA แล้ว x วัน” · เกิน {p1.sla} วันทุกช่วง · BOT สร้าง Ticket ให้หัวหน้างาน</span><span>● รอ (ไม่นับ) · นับวันปฏิทินเต็ม · เวลาไทย</span></div>
+ </section>;
 }
-
-function useServicingViews() {
-  const { demo } = useDashboardGlobal();
-  const read = useServerFn(readServicingDashboard);
-  const [ready, setReady] = useState(false);
-  useEffect(() => setReady(true), []);
-  const real = useQuery({ queryKey: ["servicing-dashboard-views"], queryFn: () => read(), staleTime: 60_000, enabled: ready && !demo });
-  const fixture = useMemo(() => (demo ? demoReport() : undefined), [demo]);
-  return demo ? { data: fixture, isLoading: false, isError: false } : real;
-}
-
 export function ServicingTab() {
-  const { filter, demo, now } = useDashboardGlobal();
-  const report = useServicingViews();
-  const s = useServicing();
-  const [view, setView] = useState<"pipeline" | "golive">("pipeline");
-  /** Optimistic in-session caretaker overlay (demo: never persisted to the spine). */
-  const [overlay, setOverlay] = useState<Record<string, Partial<ServicingRow>>>({});
-  const [assignRow, setAssignRow] = useState<ServicingRow | null>(null);
-  const [bulkOpen, setBulkOpen] = useState(false);
-  const [drawer, setDrawer] = useState<string | null>(null);
-  useEffect(() => setOverlay({}), [demo]);
-
-  const rows = useMemo(() => servicingScope((report.data?.rows ?? []).map((r) => ({ ...r, ...overlay[r.card_id] })), filter), [report.data, overlay, filter]);
-  const stats = servicingStats(rows);
-  const gaps = rows.filter((r) => !assignmentComplete(r));
-  const clock = demo ? now : new Date().toISOString();
-  const openDrawer = (id: string) => {
-    if (demo) { toast.info("DEMO · ไม่มีการ์ดจริงให้เปิด"); return; }
-    if (!s.cards.some((c) => c.id === id)) { toast.info("ยังไม่พบการ์ดนี้ในเครื่องนี้ · เปิดที่ On-boarding Process"); return; }
-    setDrawer(id);
-  };
-
-  if (report.isLoading) return <p className="py-8 text-center text-sm text-muted-foreground">กำลังโหลด…</p>;
-  if (report.isError) return <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">อ่านรายงาน Servicing ไม่สำเร็จ</p>;
-  const pending = !demo && (report.data?.pending ?? true);
-
-  return (
-    <section className="space-y-4" aria-label="Servicing">
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Servicing{demo ? " · DEMO" : ""}</p>
-        <h2 className="font-display text-xl font-semibold">การ์ดบริการทั้งบริษัท · ORM / Marcom</h2>
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <Kpi label="การ์ดบริการ" value={pending ? "—" : stats.cards} />
-        <Kpi label="โรงแรม" value={pending ? "—" : stats.hotels} />
-        <Kpi label="Go Live" value={pending ? "—" : stats.goLive} />
-        <Kpi label="กำลังดำเนินการ" value={pending ? "—" : stats.inProgress} />
-        <div className="rounded-xl border border-warning bg-warning/10 p-4">
-          <p className="flex items-center gap-1.5 text-xs font-medium text-warning-foreground"><AlertTriangle className="size-3.5" /> รอระบุผู้ดูแล</p>
-          <p className="mt-1 font-display text-2xl font-bold tabular-nums">{pending ? "—" : stats.awaiting}</p>
-          <Button size="sm" variant="outline" className="mt-2 h-7 border-warning text-xs" disabled={pending} onClick={() => setBulkOpen(true)}><Plus className="size-3.5" /> ระบุผู้ดูแล</Button>
-        </div>
-      </div>
-      <div role="tablist" aria-label="Servicing view" className="inline-flex rounded-full border p-0.5">
-        {([["pipeline", "Pipeline"], ["golive", "Overall days to Go-Live"]] as const).map(([k, l]) => (
-          <Button key={k} role="tab" aria-selected={view === k} size="sm" variant={view === k ? "default" : "ghost"} className="h-8 rounded-full" onClick={() => setView(k)}>{l}</Button>
-        ))}
-      </div>
-      {pending ? (
-        <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">รอ Cloud Sync seed — ยังไม่มีข้อมูล Servicing บน Cloud (หน้า On-boarding Process ยังทำงานตามปกติ)</p>
-      ) : view === "pipeline" ? (
-        <Pipeline rows={rows} clock={clock} compare={filter.compare} service={filter.service} onAssign={setAssignRow} onOpen={openDrawer} />
-      ) : (
-        <GoLiveDays rows={rows} />
-      )}
-
-      <Dialog open={bulkOpen} onOpenChange={setBulkOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader><DialogTitle>⚠ รอระบุผู้ดูแล · {gaps.length} การ์ด</DialogTitle></DialogHeader>
-          <ul className="max-h-[60vh] divide-y overflow-y-auto rounded-lg border">
-            {gaps.map((r) => (
-              <li key={r.card_id} className="flex flex-wrap items-center gap-2 p-3 text-sm">
-                <span className="min-w-[9rem] flex-1 font-medium">{r.hotel_name}</span>
-                <Chip tone="muted">{r.service_line === "ORM" ? "ORM" : r.service_line === "MARCOM" ? "Marcom" : "ไม่ระบุบริการ"}</Chip>
-                <span className="text-xs text-muted-foreground">{stageName(r.current_stage)} · ขาด {missingCaretakers(r).map((m) => SLOT_LABEL[m]).join(", ")}</span>
-                <Button size="sm" variant="outline" className="h-7 border-warning text-xs" onClick={() => { setBulkOpen(false); setAssignRow(r); }}>ระบุผู้ดูแล</Button>
-              </li>
-            ))}
-            {!gaps.length && <li className="p-6 text-center text-sm text-muted-foreground">ไม่มีการ์ดรอระบุผู้ดูแล</li>}
-          </ul>
-        </DialogContent>
-      </Dialog>
-      {assignRow && <CaretakerModal row={assignRow} demo={demo} onClose={() => setAssignRow(null)} onOptimistic={(patch) => setOverlay((o) => ({ ...o, [assignRow.card_id]: { ...o[assignRow.card_id], ...patch } }))} />}
-      <ServicingCardDrawer key={drawer ?? "closed"} id={drawer} readOnly onClose={() => setDrawer(null)} />
-    </section>
-  );
+ const {filter,demo}=useDashboardGlobal(),s=useServicing(),read=useServerFn(readServicingDashboard),tickets=useTickets();
+ const real=useQuery({queryKey:['servicing-dashboard-views-v2'],queryFn:()=>read(),enabled:!demo,staleTime:60_000});
+ const fixture=useMemo(()=>({rows:demoServicingRows(),phaseRows:demoServicingPhases(),pending:false,demo:true}),[]);
+ const report:ServicingReport|undefined=demo?fixture:real.data;
+ const [overlay,setOverlay]=useState<Record<string,Partial<ServicingRow>>>({}),[assignRow,setAssignRow]=useState<ServicingRow|null>(null),[drawer,setDrawer]=useState<string|null>(null),[drill,setDrill]=useState('flag'),[optimisticTickets,setOptimisticTickets]=useState<L0Ticket[]>([]);
+ useEffect(()=>{setOverlay({});setOptimisticTickets([]);setDrill('flag');},[demo]);
+ const clock=demo?SERVICING_DEMO_NOW:new Date().toISOString(),periodA=selectedPeriod(filter,new Date(clock)),periodB=selectedPeriod(filter,new Date(clock),'B');
+ const rows=servicingScope((report?.rows??[]).filter(r=>r.service_variant!=null).map(r=>({...r,...overlay[r.card_id]})),filter).filter(r=>!r.go_live_at||(r.go_live_at.slice(0,10)>=periodA.from&&r.go_live_at.slice(0,10)<=periodA.to));
+ const lanes=(r:ServicingRow)=>r.lanes??servicingLanes(r,clock),status=(r:ServicingRow)=>cardStatus(lanes(r)),stats=servicingStats(rows),inProgress=rows.filter(r=>!r.go_live_at),red=inProgress.filter(r=>status(r).tone==='red').length,amber=inProgress.filter(r=>status(r).tone==='amber').length,gaps=rows.filter(r=>!assignmentComplete(r));
+ const demoBadges=useMemo(()=>{
+  return fixture.rows.filter(r=>['c3','c9','c15'].includes(r.card_id)).map((r,i)=>{const cause=cardStatus(servicingLanes(r,SERVICING_DEMO_NOW)).cause;if(!cause)return null;const routing=stallRouting(cause);return {ticket_id:`TKT-SV-DEMO-${i+1}`,type:'SERVICING_STALL',target_dept:routing.target_dept,created_by:SYSTEM_CREATOR,source_app:'PS_DASHBOARD_BOT',subject_ref:{card_id:r.card_id,hotel_id:r.hotel_id,hotel_name:r.hotel_name,gap_service:''},payload:{readiness_tier:'',chips:[],note:'',event_key:stallEventKey(r.card_id,cause),recipient:routing.recipient},status:(['ACK','NEW','IN_PROGRESS'] as const)[i],created_at:SERVICING_DEMO_NOW,revision:0,audit:[]} as L0Ticket;}).filter((t):t is L0Ticket=>t!=null);
+ },[fixture]);
+ const allTickets=demo?[...demoBadges,...optimisticTickets]:tickets;
+ const openTicket=(r:ServicingRow)=>allTickets.find(t=>t.type==='SERVICING_STALL'&&t.subject_ref.card_id===r.card_id&&OPEN_STATUSES.includes(t.status));
+ const pending=!demo&&(report?.pending??true);
+ const selected=drill==='gap'?gaps:drill==='flag'?inProgress.filter(r=>['red','amber'].includes(status(r).tone??'')):rows.filter(r=>`${r.service_line}:${stageKey(r)}`===drill);
+ const order:Record<string,number>={red:0,amber:1,ok:2,wait:3};
+ const sorted=[...selected].sort((a,b)=>(order[status(a).tone??'wait']??4)-(order[status(b).tone??'wait']??4)||calendarDays(b.created_at,b.go_live_at??clock)-calendarDays(a.created_at,a.go_live_at??clock));
+ const periodLabel=filter.range==='mtd'?'เดือนนี้':filter.range==='all'?'ช่วงเวลาทั้งหมด':`${filter.range.replace('m','')} เดือนล่าสุด`;
+ const open=(r:ServicingRow)=>{if(demo){toast.info('DEMO · ไม่มีการ์ดจริงให้เปิด');return;}if(!s.cards.some(c=>c.id===r.card_id)){toast.info('ยังไม่พบการ์ดนี้ในเครื่องนี้ · เปิดที่ On-boarding Process');return;}setDrawer(r.card_id);};
+ const create=(r:ServicingRow)=>{
+  const cause=status(r).cause;if(!cause||openTicket(r))return;
+  const routing=stallRouting(cause);
+  if(demo){const ticket:L0Ticket={ticket_id:`TKT-SV-${optimisticTickets.length+1}`,type:'SERVICING_STALL',target_dept:routing.target_dept,created_by:'PM',source_app:'PS_DASHBOARD',subject_ref:{card_id:r.card_id,hotel_id:r.hotel_id,hotel_name:r.hotel_name,gap_service:''},payload:{readiness_tier:'',chips:[],note:'',event_key:stallEventKey(r.card_id,cause),recipient:routing.recipient},status:'NEW',created_at:clock,revision:0,audit:[]};setOptimisticTickets(t=>[...t,ticket]);toast.success(`สร้าง Ticket #${ticket.ticket_id} แล้ว · ส่งถึง ${routing.recipient} (ต้องกด ACK)${routing.target_dept!=='PS'?' · PM เห็นสถานะในฐานะ watcher':''}`);return;}
+  const result=createServicingStall(r,cause);toast.success(`สร้าง Ticket #${result.ticket_id} แล้ว · ส่งถึง ${routing.recipient} (ต้องกด ACK)${routing.target_dept!=='PS'?' · PM เห็นสถานะในฐานะ watcher':''}`);
+ };
+ const counts=(at:ServicingRow[])=>({ok:at.filter(r=>status(r).tone==='ok').length,amber:at.filter(r=>status(r).tone==='amber').length,red:at.filter(r=>status(r).tone==='red').length,wait:at.filter(r=>status(r).tone==='wait').length});
+ const stageGroups=Array.from(new Set(inProgress.map(r=>`${r.service_line}:${stageKey(r)}`))).map(key=>({key,n:inProgress.filter(r=>`${r.service_line}:${stageKey(r)}`===key).length})).sort((a,b)=>b.n-a.n),most=stageGroups[0];
+ const phaseRows=(report?.phaseRows??[]).filter(p=>rows.some(r=>r.card_id===p.card_id)||(!filter.compare?false:servicingScope(report?.rows??[],filter).some(r=>r.card_id===p.card_id)));
+ return <section className="sv-cockpit space-y-4" aria-label="Servicing">
+ {demo&&<p className="sv-demo-mark">DEMO · 17 ต.ค. 2026</p>}
+ <Definitions service={filter.service}/>
+ <div className="sv-stats">{[
+  ['การ์ดบริการทั้งหมด',stats.cards,'หลัง filter'],['โรงแรม',stats.hotels,'distinct'],['Go Live',stats.goLive,`ORM ${rows.filter(r=>r.go_live_at&&r.service_line==='ORM').length} · Marcom ${rows.filter(r=>r.go_live_at&&r.service_line==='MARCOM').length}`],['กำลังดำเนินการ',stats.inProgress,`เกิน SLA ${red} · ใกล้ครบ SLA ${amber}`],['⚠ รอระบุผู้ดูแล',stats.awaiting,'ORM team / Marcom ยังว่าง']
+ ].map(([label,value,sub],i)=><div className={`sv-stat ${i===4?'sv-stat-gap':''}`} key={label}><span>{label}</span><strong>{pending?'—':value}</strong><small>{sub}</small>{i===4&&<Button variant="outline" size="sm" disabled={pending} onClick={()=>setDrill('gap')}>+ ระบุผู้ดูแล</Button>}</div>)}</div>
+ {real.isError&&!demo&&<p className="text-sm text-destructive">อ่านรายงาน Servicing ไม่สำเร็จ</p>}
+ <DashCard title="① Pipeline ตอนนี้" question="การ์ดอยู่ stage ไหน และใบไหนใกล้ครบหรือเกิน SLA แล้ว? (1 การ์ด = 1 บริการ)" answer={pending?'—':`${stats.inProgress} การ์ด`} answerSub={<><span className="sv-text-red">เกิน SLA {red} · ใกล้ครบ SLA {amber}</span><div>กำลังดำเนินการ (ยังไม่ Go Live)</div></>} noteNamespace="servicing" noteKey="pipe" noteLines={pending?['ยังไม่มีข้อมูลพอสรุป']:[`เกิน SLA ${red} · ใกล้ครบ SLA ${amber} จาก ${stats.inProgress} การ์ดที่กำลังดำเนินการ`,...(most?[`stage ที่มีการ์ดมากสุดตอนนี้: ${stageName(most.key.split(':')[1]??'')} (${most.key.split(':')[0]==='ORM'?'ORM':'Marcom'}) ${most.n} การ์ด`]:[])]} howToRead="ตัวเลขในช่อง = จำนวนการ์ดที่อยู่ stage นั้นตอนนี้ · แถบสีใต้ตัวเลข = สัดส่วนเร็วกว่า SLA / ใกล้ครบ SLA / เกิน SLA · ชี้เพื่อดูรายละเอียด คลิกเพื่อดูรายการ์ด">
+ {filter.compare&&<p className="mb-3 text-xs text-muted-foreground">Pipeline เป็นภาพปัจจุบัน จึงไม่เทียบ A vs B · การเทียบดูได้ที่การ์ด ② และ ③</p>}
+ {pending?<ChartSkeleton text="รอ Cloud Sync seed"/>:<>
+ {(['ORM','MARCOM'] as const).filter(l=>filter.service==='ALL'||filter.service===(l==='ORM'?'ORM':'Marcom')).map(line=><div className="sv-pipeline-lane" key={line}><h3>{line==='ORM'?'ORM · Final Setup = เพดาน รอ handover ก่อนเข้า Training':'Marcom · GMB ข้าม First Sync · First Sync นับ MT เท่านั้น'}</h3><div className="sv-pipeline-scroll"><div className="sv-pipeline-grid" style={{gridTemplateColumns:`repeat(${line==='ORM'?12:10},minmax(96px,1fr))`}}>{(line==='ORM'?ORM_REPORT_STAGES:MARCOM_REPORT_STAGES).map(stage=>{
+ const at=rows.filter(r=>r.service_line===line&&stageKey(r)===stage&&(stage!=='marcom_first_sync'||r.service_variant==='MARCOM_META_TIKTOK')),c=counts(at),live=stage.endsWith('go_live'),key=`${line}:${stage}`,oldest=[...at].sort((a,b)=>calendarDays(b.stage_entered_at??b.created_at,clock)-calendarDays(a.stage_entered_at??a.created_at,clock))[0];
+ return <ChartHint key={stage} header={`${stageName(stage)} · ${line==='ORM'?'ORM':'Marcom'} · ${at.length} การ์ด`} lines={!at.length?['ไม่มีการ์ดใน stage นี้']:live?[`Go Live แล้ว ${at.length} การ์ด`]:[`เร็วกว่า SLA ${c.ok} · ใกล้ครบ SLA ${c.amber} · เกิน SLA ${c.red}${c.wait?` · รอ ${c.wait}`:''}`,oldest?`ค้าง stage นี้นานสุด ${calendarDays(oldest.stage_entered_at??oldest.created_at,clock)} วัน · ${oldest.hotel_name}`:'',...(!at.every(assignmentComplete)?[`รอระบุผู้ดูแล ${at.filter(r=>!assignmentComplete(r)).length} การ์ด`]:[])]}><Button variant="ghost" className={`sv-stage-cell ${drill===key?'sv-selected':''}`} aria-pressed={drill===key} onClick={()=>setDrill(key)}><span className={`sv-stage-owner-bar ${ownerClass(stage,line)}`}/><span className="sv-stage-label">{stageName(stage)}</span><strong className={!at.length?'sv-zero':''}>{at.length}</strong><span className="sv-proportion">{live?<i className="sv-dot-wait" style={{width:'100%'}}/>:(['ok','amber','red','wait'] as const).map(t=><i key={t} className={`sv-dot-${t}`} style={{width:`${at.length?c[t]/at.length*100:0}%`}}/>)}</span><small className={c.red?'sv-text-red':c.amber?'sv-text-amber':''}>{live?periodLabel:c.red?`เกิน SLA ${c.red}`:c.amber?`ใกล้ครบ SLA ${c.amber}`:c.wait?`รอประชุม ${c.wait}`:' '}</small></Button></ChartHint>;
+ })}</div></div></div>)}
+ <div className="sv-drill"><header><div><h3>{drill==='flag'?`การ์ดที่ต้องจับตา · ${selected.length} การ์ด`:drill==='gap'?`รอระบุผู้ดูแล · ${selected.length} การ์ด`:`${stageName(drill.split(':')[1]??'')} · ${drill.split(':')[0]==='ORM'?'ORM':'Marcom'} · ${selected.length} การ์ด`}</h3><p>{drill==='flag'?'เรียงเกิน SLA ก่อน แล้วใกล้ครบ SLA · คลิกช่อง stage เพื่อดูการ์ดใน stage นั้น':drill==='gap'?'ORM ต้องมี AE + Specialist + ORM team · Marcom ต้องมี AE + Specialist + Marcom':'ค้าง stage นี้ X วัน · Day N นับจากสร้างการ์ด'}</p></div><div className="sv-controls"><Button variant={drill==='flag'?'default':'outline'} size="sm" onClick={()=>setDrill('flag')}>ต้องจับตา (ใกล้ครบ + เกิน SLA) {red+amber}</Button><Button variant="outline" size="sm" onClick={()=>setDrill('gap')}>รอระบุผู้ดูแล {gaps.length}</Button></div></header>
+ {sorted.map(r=>{
+ const st=status(r),ticket=openTicket(r),live=Boolean(r.go_live_at);
+ return <article className="sv-drill-row" key={r.card_id} data-card-id={r.card_id}><div className="min-w-0 flex-1"><OnboardingCardContent row={r} form={!live}>
+ <span className="sv-card-meta"><span className={`sv-service-chip ${r.service_line==='ORM'?'sv-orm-chip':'sv-marcom-chip'}`}>{r.service_variant==='ORM'?'ORM':r.service_variant==='MARCOM_GMB'?'Marcom GMB':'Marcom MT'}</span><span>{stageName(stageKey(r))}</span>{!live&&<span className={`sv-lane-pill sv-tone-${st.tone??'wait'}`}>{st.label}</span>}</span>
+ {live?<span className="block text-xs">Go Live {shortThaiDate(r.go_live_at??clock)} · ใช้ทั้งหมด {calendarDays(r.created_at,r.go_live_at??clock)} วัน (สร้างการ์ด → Go Live)</span>:<><span className="sv-lane-pills">{lanes(r).map((l,i)=><LanePill key={i} lane={l} gmb={r.service_variant==='MARCOM_GMB'}/>)}</span><span className="block text-xs text-muted-foreground">ค้าง stage นี้ {calendarDays(r.stage_entered_at??r.created_at,clock)} วัน · Day {calendarDays(r.created_at,clock)}{r.progress_total?` · ${r.progress_done} of ${r.progress_total} tasks · updated ${r.last_updated??'—'}`:''}</span><span className="block text-xs">AE {r.ae_owner_id??'รอระบุ'} · Specialist {r.specialist_id??'รอระบุ'} · <span className={!(r.orm_team??r.marcom_owner_id)?'sv-tone-amber':''}>{r.service_line==='ORM'?`ORM ${r.orm_team?'Team '+r.orm_team:': รอระบุ'}`:`Marcom ${r.marcom_owner_id??': รอระบุ'}`}</span></span></>}
+ </OnboardingCardContent></div>{!live&&<div className="sv-row-actions">{ticket?<span className="sv-ticket-badge">#{ticket.ticket_id} · {STATUS_TH[ticket.status]} · ส่งถึง {ticket.payload.recipient??ticket.target_dept} · สร้างโดย {ticket.created_by===SYSTEM_CREATOR?'BOT':'PM'}</span>:filter.role==='PM'&&['red','amber'].includes(st.tone??'')&&<Button variant="outline" size="sm" className="sv-ticket-create" onClick={()=>create(r)}>+ สร้าง Ticket ติดตาม</Button>}<Button variant="outline" size="sm" className={!assignmentComplete(r)?'sv-assignment-gap':''} onClick={()=>setAssignRow(r)}>ระบุผู้ดูแล</Button><Button size="sm" onClick={()=>open(r)}>ดูรายละเอียด</Button></div>}</article>;
+ })}
+ {!selected.length&&<p className="p-5 text-center text-sm text-muted-foreground">ไม่มีการ์ดในกลุ่มนี้ตาม filter ปัจจุบัน · คลิกช่อง stage ด้านบนเพื่อดูการ์ด</p>}
+ </div></>}
+ <p className="mt-3 text-xs text-muted-foreground">หน้านี้ไม่เลื่อน stage · ดูรายละเอียดจะเปิด guided drawer เดิม · ปุ่มสร้าง Ticket เห็นเฉพาะ PM และเฉพาะการ์ดที่ใกล้ครบหรือเกิน SLA</p>
+ </DashCard>
+ <ServicingPhaseChart rows={phaseRows} service={filter.service} periodA={periodA} periodB={periodB} compare={filter.compare} pending={pending} periodLabel={periodLabel}/>
+ <ServicingGoLiveChart rows={servicingScope(report?.rows??[],filter)} service={filter.service} periodA={periodA} periodB={periodB} compare={filter.compare} pending={pending}/>
+ {assignRow&&<CaretakerModal row={assignRow} demo={demo} onClose={()=>setAssignRow(null)} onOptimistic={patch=>setOverlay(o=>({...o,[assignRow.card_id]:{...o[assignRow.card_id],...patch}}))}/>}
+ <ServicingCardDrawer key={drawer??'closed'} id={drawer} readOnly onClose={()=>setDrawer(null)}/>
+ </section>;
 }
-
-function Pipeline({ rows, clock, compare, service, onAssign, onOpen }: { rows: ServicingRow[]; clock: string; compare: boolean; service: string; onAssign: (r: ServicingRow) => void; onOpen: (id: string) => void }) {
-  const [open, setOpen] = useState<string | null>(null);
-  const lanes: { line: ServiceLine; label: string }[] = [
-    ...(service !== "Marcom" ? [{ line: "ORM" as const, label: "🟦 ORM" }] : []),
-    ...(service !== "ORM" ? [{ line: "MARCOM" as const, label: "🟪 Marcom" }] : []),
-  ];
-  return (
-    <div className="space-y-4">
-      {compare && <p className="text-xs text-muted-foreground">Pipeline = snapshot ปัจจุบัน · ไม่ใช้ Compare</p>}
-      {lanes.map(({ line, label }) => {
-        const stages = lineSequence(line);
-        const laneRows = rows.filter((r) => r.service_line === line);
-        const at = (stage: string) => laneRows.filter((r) => laneStage(r, stages) === stage);
-        const key = (stage: string) => `${line}:${stage}`;
-        const opened = open?.startsWith(`${line}:`) ? open.slice(line.length + 1) : null;
-        return (
-          <div key={line} className="space-y-2 rounded-lg border p-3">
-            <p className="text-sm font-semibold">{label} · {laneRows.length} การ์ด</p>
-            <div className="overflow-x-auto pb-1">
-              <div className="flex min-w-max gap-2">
-                {stages.map((stage) => (
-                  <button key={stage} type="button" aria-expanded={open === key(stage)} onClick={() => setOpen(open === key(stage) ? null : key(stage))}
-                    className={`w-28 shrink-0 rounded-md border p-2 text-left transition-colors hover:bg-muted ${open === key(stage) ? "border-primary bg-muted" : ""}`}>
-                    <span className="block text-[11px] leading-tight text-muted-foreground">{stage === "property_pending" ? "(Property Pending)" : stageName(stage)}{stage === "marcom_first_sync" ? " · MT" : ""}</span>
-                    <span className="mt-1 block font-display text-xl font-bold tabular-nums">{at(stage).length}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-            {opened && (
-              <ul className="divide-y rounded-md border">
-                {at(opened).map((r) => <StageCard key={r.card_id} row={r} clock={clock} onAssign={onAssign} onOpen={onOpen} />)}
-                {!at(opened).length && <li className="p-4 text-center text-xs text-muted-foreground">ไม่มีการ์ดในขั้นนี้</li>}
-              </ul>
-            )}
-          </div>
-        );
-      })}
-      {rows.some((r) => r.service_line == null) && service === "ALL" && <p className="text-xs text-muted-foreground">ไม่ระบุบริการ · {rows.filter((r) => r.service_line == null).length} การ์ด (นับเฉพาะ All)</p>}
-    </div>
-  );
+function LanePill({lane:l,gmb}:{lane:ServicingLane;gmb:boolean}) {
+ const text=l.state==='reserved'?'Specialist · สงวนไว้ (ยังไม่มี handover)':l.state==='none'?'—':l.state==='wait'?l.row2?'รอ ORM ตรวจรับ row-2':`รอประชุม ${shortThaiDate(l.wait_until??l.start_at??'2026-10-17')}`:l.state==='done'?l.lane==='Specialist'?`✓ Specialist ส่ง handover ครบ (วันที่ ${l.d})`:l.phase==='P2'&&l.lane!=='AE'?`✓ สร้างนัดแล้ว (วันที่ ${l.d})`:`✓ ${l.phase} · ${l.lane} · วันที่ ${l.d}`:`${l.phase} · ${gmb?'Marcom (GMB → Go Live)':l.lane} · วันที่ ${l.d} · ${statusText(l.phase,l.d??0)}`;
+ return <span className={`sv-lane-pill sv-tone-${l.tone??'wait'} ${l.state==='reserved'?'sv-reserved-pill':''}`}>{text}</span>;
 }
-
-function StageCard({ row, clock, onAssign, onOpen }: { row: ServicingRow; clock: string; onAssign: (r: ServicingRow) => void; onOpen: (id: string) => void }) {
-  const hr = useHrMembers();
-  const progress = stageProgressLine({ N: row.progress_done, M: row.progress_total, last_updated: row.last_updated } as Parameters<typeof stageProgressLine>[0]);
-  const v = (id: string | null) => (id ? hr.nick(id) ?? id : <span className="font-medium text-warning-foreground">— ยังไม่ระบุ</span>);
-  return (
-    <li className="space-y-1 p-3 text-sm">
-      <p className="font-medium">{row.hotel_name}</p>
-      <p className="text-xs text-muted-foreground">ค้าง stage นี้ {daysFrom(row.stage_entered_at ?? row.created_at, row.go_live_at ?? clock)} วัน · Day {daysFrom(row.created_at, row.go_live_at ?? clock)}</p>
-      {progress && <p className="text-xs text-muted-foreground">{progress}</p>}
-      <p className="text-xs text-muted-foreground">AE: {v(row.ae_owner_id)} · Specialist: {v(row.specialist_id)} · {row.service_line === "ORM" ? <>ORM: {v(row.orm_team)}</> : <>Marcom: {v(row.marcom_owner_id)}</>}</p>
-      <div className="flex flex-wrap gap-2 pt-1">
-        <Button size="sm" variant="outline" className={!assignmentComplete(row) ? "border-warning" : ""} onClick={() => onAssign(row)}>ระบุผู้ดูแล</Button>
-        <Button size="sm" variant="ghost" onClick={() => onOpen(row.card_id)}>ดูรายละเอียด <ArrowRight className="size-3.5" /></Button>
-      </div>
-    </li>
-  );
-}
-
 /** Opens the existing v1.1 AssignDialog per slot (same write + audit as Hotel Profile). Demo = in-session no-op. */
 function CaretakerModal({ row, demo, onClose, onOptimistic }: { row: ServicingRow; demo: boolean; onClose: () => void; onOptimistic: (p: Partial<ServicingRow>) => void }) {
   const s = useServicing();
@@ -239,20 +158,3 @@ function CaretakerModal({ row, demo, onClose, onOptimistic }: { row: ServicingRo
   );
 }
 
-/** Old KPI #4 (label changed only) + Compare A·B·Δ medians by go-live month cohort. */
-function GoLiveDays({ rows }: { rows: ServicingRow[] }) {
-  const { filter } = useDashboardGlobal();
-  const s = useServicing();
-  const { demo } = useDashboardGlobal();
-  const cards = demo ? demoOnboarding().filter((c) => rows.some((r) => r.card_id === c.id)) : s.cards.filter((c) => rows.some((r) => r.card_id === c.id));
-  const med = (p: { from: string; to: string }) => median(rows.filter((r) => r.go_live_at && r.go_live_at.slice(0, 10) >= p.from && r.go_live_at.slice(0, 10) <= p.to).map((r) => daysFrom(r.created_at, r.go_live_at!)));
-  const a = filter.compare ? med(filter.periodA) : null;
-  const b = filter.compare ? med(filter.periodB) : null;
-  const delta = a == null || b == null ? "Δ —" : `Δ ${a > b ? "▲ +" : a < b ? "▼ " : ""}${Math.round(a - b)} วัน`;
-  return (
-    <div className="space-y-3">
-      {filter.compare && <p className="text-sm text-muted-foreground">median A {a == null ? "—" : `D${Math.round(a)}`} · B {b == null ? "—" : `D${Math.round(b)}`} · {delta}</p>}
-      <KpiView cards={cards} />
-    </div>
-  );
-}

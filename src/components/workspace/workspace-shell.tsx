@@ -159,7 +159,9 @@ function Detail({ t, role, dept, onClose }: { t: L0Ticket; role: Role; dept: Dep
       {t.payload.unassigned_owner && <p className="rounded-md border border-warning/40 bg-warning/10 px-2 py-1 text-xs text-warning-foreground">⚠ ยังไม่ได้ระบุผู้ดูแล (AE) — โปรดระบุก่อน</p>}
       <dl className="grid grid-cols-[minmax(5rem,8rem)_minmax(0,1fr)] gap-1 break-words text-sm">
         <dt className="text-muted-foreground">โรงแรม</dt><dd>{t.subject_ref.hotel_name} ({t.subject_ref.hotel_id})</dd>
-        {t.type === "CONTRACT_FOLLOWUP" && t.payload.followup ? (
+        {t.type === "SERVICING_STALL" ? (
+          <><dt className="text-muted-foreground">บริการ</dt><dd>{t.subject_ref.service_variant ?? t.subject_ref.service_line}</dd><dt className="text-muted-foreground">ช่วงงาน</dt><dd>{t.payload.phase} · {t.payload.lane} · วันที่ {t.payload.days_in_phase} · SLA {t.payload.sla_days} วัน</dd><dt className="text-muted-foreground">ตอนนี้</dt><dd>{t.payload.current_stage}</dd><dt className="text-muted-foreground">ส่งถึง</dt><dd>{t.payload.recipient} {t.payload.recipient_member_id ? "" : "· รอระบุผู้รับ"}</dd></>
+        ) : t.type === "CONTRACT_FOLLOWUP" && t.payload.followup ? (
           <>
             <dt className="text-muted-foreground">ดีล</dt><dd>{t.subject_ref.deal_id}</dd>
             <dt className="text-muted-foreground">cohort</dt><dd>{t.payload.followup.cohort_month}</dd>
@@ -170,7 +172,7 @@ function Detail({ t, role, dept, onClose }: { t: L0Ticket; role: Role; dept: Dep
         ) : (
           <><dt className="text-muted-foreground">บริการที่ขาด</dt><dd>{t.subject_ref.gap_service}</dd></>
         )}
-        {t.type !== "CONTRACT_FOLLOWUP" && (isBot ? (
+        {t.type !== "CONTRACT_FOLLOWUP" && t.type !== "SERVICING_STALL" && (isBot ? (
           <>
             <dt className="text-muted-foreground">สัญญาณ</dt><dd>{t.payload.note || "—"}</dd>
             <dt className="text-muted-foreground">AE ผู้ดูแล</dt><dd>{t.payload.assigned_ae?.nickname ?? "— ยังไม่ระบุ"}</dd>
