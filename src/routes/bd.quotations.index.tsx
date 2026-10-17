@@ -7,6 +7,14 @@ import { thb } from "@/lib/crm-rules";
 import { useCrm } from "@/lib/crm-store";
 
 export const Route = createFileRoute("/bd/quotations/")({
+  head: () => ({ meta: [
+    { title: "Quotation Register | Meridia Hotel ERP" },
+    { name: "description", content: "Hotel quotations and linked commercial deals in Meridia Hotel ERP." },
+    { property: "og:title", content: "Quotation Register | Meridia Hotel ERP" },
+    { property: "og:description", content: "Hotel quotations and linked commercial deals in Meridia Hotel ERP." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary_large_image" },
+  ] }),
   component: QuotationsPage,
 });
 

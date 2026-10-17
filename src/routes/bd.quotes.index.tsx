@@ -20,6 +20,14 @@ import { thb } from "@/lib/crm-rules";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/bd/quotes/")({
+  head: () => ({ meta: [
+    { title: "BD Quote Dashboard | Meridia Hotel ERP" },
+    { name: "description", content: "Commercial quote pipeline and hotel deal tracking in Meridia Hotel ERP." },
+    { property: "og:title", content: "BD Quote Dashboard | Meridia Hotel ERP" },
+    { property: "og:description", content: "Commercial quote pipeline and hotel deal tracking in Meridia Hotel ERP." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary_large_image" },
+  ] }),
   component: QuoteDashboard,
 });
 

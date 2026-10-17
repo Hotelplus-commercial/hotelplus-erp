@@ -5,6 +5,14 @@ import { QuoteEditor } from "@/components/crm/quote-editor";
 import { useCrm } from "@/lib/crm-store";
 
 export const Route = createFileRoute("/bd/quotations/$quoteId")({
+  head: () => ({ meta: [
+    { title: "Quotation Editor | Meridia Hotel ERP" },
+    { name: "description", content: "Prepare and review hotel service quotations in Meridia Hotel ERP." },
+    { property: "og:title", content: "Quotation Editor | Meridia Hotel ERP" },
+    { property: "og:description", content: "Prepare and review hotel service quotations in Meridia Hotel ERP." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary_large_image" },
+  ] }),
   component: QuoteDetail,
 });
 

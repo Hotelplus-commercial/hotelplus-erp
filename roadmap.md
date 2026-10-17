@@ -1,3 +1,8 @@
+# PS Dashboard visual standard v1.0
+- [x] Apply authoritative tokens/font and shared cards, accessible tooltips and persistent deterministic summary notes.
+- [x] Replace headline with seven groups/tiles using existing values only; refresh PS visualizations and default PS entry. Missing MRR/service score/queue/collection percentage remain —; no added query or source.
+- [x] Verify existing report oracles (21 tests / 64 assertions), persistent notes, Account 360 opening, A=20% / B=0% churn, live empty states and 390px layout without page overflow. Preview build OK. Other tabs retain existing layouts.
+
 # Workspace Layer 1 patch v1.1
 - [x] Restore AUTO sidebar visibility using the registry; remove ORM/Marcom Overview surfaces, retaining layouts and Dashboard inboxes. Existing base URLs redirect to the corresponding Workspace.
 - [x] Surface ORM/Marcom pending assignments through existing v1.1 list/modal, due rule, master and audit; no assignment data migration or new write path.
