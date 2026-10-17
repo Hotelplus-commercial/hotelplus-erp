@@ -3,6 +3,7 @@ import {demoServicingRows,demoServicingPhases,SERVICING_DEMO_NOW} from '../src/l
 import {calendarDays,cardStatus,meetingDatePatch,servicingLanes,ORM_REPORT_STAGES} from '../src/lib/servicing-time';
 import {servicingStats,median} from '../src/lib/servicing-dashboard-types';
 import {quantile} from '../src/lib/ps-servicing';
+import {ownerAtPhaseEnd} from '../src/lib/servicing-owner-history';
 const rows=demoServicingRows(),phases=demoServicingPhases();
 describe('Servicing v2 concrete rules',()=>{
  test('37 cards, 35 hotels, 22 live, 15 in progress, 2 gaps',()=>{expect(servicingStats(rows)).toEqual({cards:37,hotels:35,goLive:22,inProgress:15,awaiting:2});});
@@ -15,4 +16,5 @@ describe('Servicing v2 concrete rules',()=>{
  test('legacy existing meeting does not backfill timestamp on edit',()=>{expect(meetingDatePatch({meeting_date:'2026-10-20'},'2026-10-21','2026-10-17T09:00:00Z').meeting_created_at).toBeNull();});
  test('Completed follows Final Setup without mutating engine',()=>{expect(ORM_REPORT_STAGES.indexOf('completed_handover')).toBe(ORM_REPORT_STAGES.indexOf('orm_final_setup')+1);});
  test('GMB has no P3 and reserved Specialist is never counted',()=>{const lanes=servicingLanes(rows[14],SERVICING_DEMO_NOW);expect(lanes.some(l=>l.phase==='P3')).toBe(false);expect(lanes.find(l=>l.lane==='Specialist')?.state).toBe('reserved');});
+ test('owner attribution uses last assignment at phase end, falls back only with no log',()=>{const lane=servicingLanes(rows[8],SERVICING_DEMO_NOW).find(l=>l.lane==='ORM');if(!lane)throw Error('missing lane');expect(ownerAtPhaseEnd(lane,'2026-10-10','C',[{field:'assign.orm_team',old_value:'A',new_value:'B',at:'2026-10-01'},{field:'assign.orm_team',old_value:'B',new_value:'C',at:'2026-10-12'}])).toEqual({owner_id:'B',fallback:false});expect(ownerAtPhaseEnd(lane,'2026-10-10','C',[])).toEqual({owner_id:'C',fallback:true});});
 });
