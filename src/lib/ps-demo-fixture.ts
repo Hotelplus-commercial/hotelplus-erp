@@ -119,22 +119,130 @@ export function buildDemoReport(filter?: GlobalFilter): PsReport {
 export function demoLifecycles(): ContractLifecycle[] {
   return contracts.map(c => ({ id: c.id, quote_id: c.id, contract_id: c.id, contract_service_line: c.line === 'ORM' ? 'ORM' : 'MARCOM', customer_id: hid(c.hotel), invoice_number: null, property_name: c.hotel, hotel_id: hid(c.hotel), hotel_name: c.hotel, customer_legal_name: c.hotel, service_line: c.line === 'ORM' ? 'ORM' : 'MARCOM', bd_owner_id: c.ae, current_stage: 11, live_link_token: null, live_link_sent_at: null, sent_to_ac_at: null, approved_at: NEW_PROPERTY[c.id] ?? c.start, send_contract_at: NEW_PROPERTY[c.id] ?? c.start, signed_at: NEW_PROPERTY[c.id] ?? c.start, payment_at: NEW_PROPERTY[c.id] ?? c.start, won_at: NEW_PROPERTY[c.id] ?? c.start, created_at: c.start, updated_at: c.start }));
 }
+/* ---------- AC Dashboard v2.0 demo fixture (§10) — A = Sep 26, B = Aug 26. ----------
+ * Revenue: 155 billed hotels in Sep (odd N → half = 78), 150 in Aug (5 new in Sep),
+ * 15 both-service hotels, 6 Active-unbilled, 2 hotels ≥ ฿100k, overlapping "Sala" names.
+ * Debtors: all 4 collection statuses + PAUSED + not-yet-due, one customer with 3 hotels.
+ * Grades: 6 periods, Sep still open (no D). Aggregates are derived from the debtor rows
+ * so I1–I7 hold by construction. */
+const AC_PERIODS = ['2026-04-01', '2026-05-01', '2026-06-01', '2026-07-01', '2026-08-01', '2026-09-01'];
+const AC_NAME_A = ['Sala', 'Baan', 'The', 'Grand', 'Villa', 'Anada', 'Nara', 'Chiva', 'Rim', 'Khao'];
+const AC_NAME_B = ['Riverside', 'Talay', 'Suan', 'Boutique', 'Bay', 'Hills', 'Garden', 'Old Town', 'Cliff', 'Heritage', 'Seaview', 'Pool', 'Residence', 'Lagoon', 'Terrace'];
+const AC_NAME_C = ['Hotel', 'Resort', 'Lodge', 'Inn', 'Villa', 'Retreat', 'Suites', 'House'];
+type AcDemoHotel = { id: string; name: string; orm: number; marcom: number; both: boolean };
+function acDemoHotels(): AcDemoHotel[] {
+  const out: AcDemoHotel[] = [];
+  for (let i = 0; i < 155; i++) {
+    const name = `${AC_NAME_A[i % 10]} ${AC_NAME_B[Math.floor(i / 10) % 15]} ${AC_NAME_C[i % 8]}${i >= 120 ? ' ' + (Math.floor(i / 8) % 10 + 2) : ''}`;
+    const both = i < 15;
+    // Deterministic descending curve; ranks 1–2 ≥ ฿100k.
+    const orm = i === 0 ? 132000 : i === 1 ? 118000 : Math.round(95000 - i * 580 + ((i * 37) % 11) * 40);
+    const marcom = both ? Math.round(orm * 0.35) : 0;
+    out.push({ id: hid(name), name, orm, marcom, both });
+  }
+  return out;
+}
 export function demoAcViews() {
   const views: Record<string, PsReportRow[]> = Object.fromEntries(['v_ac_debtors','v_ac_invoices_breakdown','v_ac_invoice_ranking','v_ac_grade_distribution','v_ac_overdue','v_ac_suspended','v_ac_legal','v_ac_system_fee'].map(k => [k, []]));
-  for (const [hotel, grades] of Object.entries(GRADES)) {
-    const c = contracts.find(c => c.hotel === hotel);
-    if (!c || !grades[0]) continue;
-    const common = { billing_period: '2026-09-01', hotel_id: hid(hotel), hotel_name: hotel, customer_id: hid(hotel), service_line: c.line, ae_owner_id: c.ae };
-    // Hotel collection oracle uses existing worst grade (Chaba B/D counts as D).
-    const grade = grades[1] ?? grades[0];
-    views['v_ac_grade_distribution']?.push({ ...common, grade, customer_count: 1 });
-    if (grade === 'C' || grade === 'D') {
-      const outstanding = grade === 'D' ? 5000 : 2500;
-      views['v_ac_debtors']?.push({ ...common, outstanding });
-      views['v_ac_overdue']?.push({ ...common, outstanding, customer_count: 1 });
-      views['v_ac_invoices_breakdown']?.push({ ...common, customer_segment: 'EXISTING', invoice_count: 1 });
-      views['v_ac_invoice_ranking']?.push({ ...common, amount: outstanding, rank: grade === 'D' ? 1 : 2 });
+  const hotels = acDemoHotels();
+  const NEW_IN_SEP = new Set(hotels.slice(-5).map(h => h.id)); // no previous period → "ใหม่"
+  const UNBILLED: AcDemoHotel[] = [0, 1, 2, 3, 4, 5].map(i => ({ id: hid('Unbilled ' + i), name: `Sala Unbilled ${i + 1}`, orm: 0, marcom: 0, both: false }));
+  // Rank rows per period × lens. Aug amounts ×0.94; earlier periods slightly lower still.
+  const periodFactor = (p: string) => (p === '2026-09-01' ? 1 : p === '2026-08-01' ? 0.94 : 0.9);
+  const rankOf = (rows: { id: string; name: string; amount: number }[]) =>
+    new Map([...rows].sort((a, b) => b.amount - a.amount || a.name.localeCompare(b.name)).map((r, i) => [r.id, i + 1]));
+  for (const p of AC_PERIODS) {
+    const f = periodFactor(p);
+    const billed = hotels.filter(h => !(p !== '2026-09-01' && NEW_IN_SEP.has(h.id)) && !(AC_PERIODS.indexOf(p) < 4 && h.id === hotels[154]!.id));
+    const lensRows = (lens: 'ALL' | 'ORM' | 'MARCOM') =>
+      billed
+        .map(h => ({ id: h.id, name: h.name, amount: Math.round((lens === 'ALL' ? h.orm + h.marcom : lens === 'ORM' ? h.orm : h.marcom) * f), h }))
+        .filter(r => r.amount > 0);
+    const prevP = AC_PERIODS[AC_PERIODS.indexOf(p) - 1];
+    for (const lens of ['ALL', 'ORM', 'MARCOM'] as const) {
+      const rows = lensRows(lens);
+      const ranks = rankOf(rows);
+      const prevRanks = prevP
+        ? rankOf(lensRows(lens).map(r => ({ ...r, amount: Math.round(r.amount / f) * periodFactor(prevP) })).map(r => ({ id: r.id, name: r.name, amount: r.amount })))
+        : new Map<string, number>();
+      // avg_rank over the periods so far (≥ 2 ranked periods, else null)
+      const hist = new Map<string, number[]>();
+      for (const hp of AC_PERIODS.slice(0, AC_PERIODS.indexOf(p) + 1)) {
+        const hf = periodFactor(hp);
+        const hr = rankOf(hotels.filter(h => !(hp !== '2026-09-01' && NEW_IN_SEP.has(h.id))).map(h => ({ id: h.id, name: h.name, amount: Math.round((lens === 'ALL' ? h.orm + h.marcom : lens === 'ORM' ? h.orm : h.marcom) * hf) })).filter(r => r.amount > 0));
+        for (const [id, rk] of hr) hist.set(id, [...(hist.get(id) ?? []), rk]);
+      }
+      for (const r of rows) {
+        const h = hist.get(r.id) ?? [];
+        views['v_ac_invoice_ranking']?.push({
+          billing_period: p, hotel_id: r.id, hotel_name: r.name, lens,
+          amount_thb: r.amount, orm_thb: Math.round(r.h.orm * f), marcom_thb: Math.round(r.h.marcom * f),
+          invoice_count: r.h.both ? 2 : 1, rank: ranks.get(r.id) ?? null,
+          prev_rank: prevRanks.get(r.id) ?? null,
+          avg_rank: h.length >= 2 ? Math.round((h.reduce((a, b) => a + b, 0) / h.length) * 10) / 10 : null,
+          has_bill: true,
+        });
+      }
+      for (const u of UNBILLED) {
+        if (lens === 'MARCOM') continue;
+        views['v_ac_invoice_ranking']?.push({ billing_period: p, hotel_id: u.id, hotel_name: u.name, lens, amount_thb: 0, orm_thb: 0, marcom_thb: 0, invoice_count: 0, rank: null, prev_rank: null, avg_rank: null, has_bill: false });
+      }
     }
+  }
+  // Grades — 6 periods; Sep 26 still open (no D). A+B% history: 78, 80, 79, 81, 80, 81 (both directions).
+  const GRADE_MIX: Record<string, [number, number, number, number]> = {
+    '2026-04-01': [88, 34, 14, 6], '2026-05-01': [90, 34, 12, 6], '2026-06-01': [89, 33, 14, 6],
+    '2026-07-01': [91, 35, 11, 5], '2026-08-01': [90, 34, 12, 6], '2026-09-01': [92, 35, 15, 0],
+  };
+  for (const p of AC_PERIODS) {
+    const mix = GRADE_MIX[p]!;
+    (['A', 'B', 'C', 'D'] as const).forEach((g, gi) => {
+      const total = mix[gi]!;
+      if (!total) return;
+      views['v_ac_grade_distribution']?.push({ billing_period: p, grade: g, customer_count: Math.ceil(total * 0.6), service_line: 'ORM' });
+      views['v_ac_grade_distribution']?.push({ billing_period: p, grade: g, customer_count: Math.floor(total * 0.4), service_line: 'Marcom' });
+    });
+  }
+  // Debtor worklist rows (per hotel) — one customer (Anan Group) owns 3 hotels.
+  const DEBTORS: [string, string, string, L, number, number, number, string, string, string | null][] = [
+    // hotel, customer, service, outstanding, invoices, overdueMonths, grade, status, caretaker
+    ['Chaba Grand', 'Chaba Group', 'ORM', 90000, 2, 2, 'D', 'SUSPENDED', 'C-Rev-01'],
+    ['Anjali', 'Anjali Co.', 'Marcom', 32000, 1, 1, 'C', 'OVERDUE', 'แนน'],
+    ['Dusit Pool Villa', 'Dusit Co.', 'ORM', 41000, 1, 1, 'C', 'OVERDUE', 'A-Rev-01'],
+    ['Sala Riverside Hotel', 'Anan Group', 'ORM', 55000, 1, 3, 'D', 'LEGAL', 'A-Rev-01'],
+    ['Sala Talay Resort', 'Anan Group', 'ORM', 28000, 1, 2, 'D', 'SUSPENDED', 'B-Rev-01'],
+    ['Sala Suan Lodge', 'Anan Group', 'Marcom', 12000, 1, 1, 'C', 'OVERDUE', 'บิว'],
+    ['Baan Boutique Inn', 'Baan Boutique Co.', 'ORM', 21000, 1, 4, 'D', 'WRITTEN_OFF', null],
+    ['The Bay Hotel', 'The Bay Co.', 'Marcom', 18000, 1, 1, 'C', 'OVERDUE', 'โบว์'],
+    ['Grand Hills Resort', 'Grand Hills Co.', 'ORM', 15000, 1, 0, 'B', 'PAUSED', 'A-Rev-01'],
+  ];
+  for (const [hotel, customer, line, outstanding, invoices, months, grade, status, caretaker] of DEBTORS) {
+    views['v_ac_debtors']?.push({
+      billing_period: '2026-09-01', customer_id: hid(customer), customer_name: customer,
+      hotel_id: hid(hotel), hotel_name: hotel, service_line: line, outstanding,
+      invoice_count: invoices, overdue_months: months, grade, collection_status: status, caretaker,
+      ae_owner_id: contracts.find(c => c.hotel === hotel)?.ae ?? null,
+    });
+  }
+  // Aggregate collection views derived from the debtor rows (I4 holds by construction).
+  const agg = (status: string) => {
+    const rows = DEBTORS.filter(d => d[7] === status);
+    return rows.length ? { billing_period: '2026-09-01', service_line: null, customer_count: rows.length, invoice_count: rows.reduce((s, d) => s + d[4], 0), outstanding: rows.reduce((s, d) => s + d[3], 0) } : null;
+  };
+  for (const [view, status] of [['v_ac_overdue', 'OVERDUE'], ['v_ac_suspended', 'SUSPENDED'], ['v_ac_legal', 'LEGAL']] as const) {
+    const a = agg(status);
+    if (a) views[view]?.push(a);
+  }
+  // Invoice breakdown: collected vs outstanding per segment × service (current state).
+  const BREAKDOWN: [string, L, number, number, number, number, number, number, number][] = [
+    // segment, service, invoice_count, collected, outstanding_count, outstanding, overdue_count, overdue_amount, notdue
+    ['EXISTING', 'ORM', 96, 88, 8, 178000, 5, 139000, 3],
+    ['EXISTING', 'Marcom', 40, 37, 3, 50000, 2, 38000, 1],
+    ['NEW', 'ORM', 14, 12, 2, 36000, 1, 28000, 1],
+    ['NEW', 'Marcom', 8, 7, 1, 12000, 1, 12000, 0],
+  ];
+  for (const [seg, line, inv, col, oc, os, odc, oda, nd] of BREAKDOWN) {
+    views['v_ac_invoices_breakdown']?.push({ billing_period: '2026-09-01', customer_segment: seg, service_line: line, invoice_count: inv, collected_count: col, outstanding_count: oc, outstanding: os, overdue_count: odc, overdue_amount: oda, notdue_count: nd, notdue_amount: nd * 9000 });
   }
   return views;
 }
