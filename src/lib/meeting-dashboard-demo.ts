@@ -15,13 +15,13 @@ type CardSpec = {
   hotel: string;
   name: string;
   service: "ORM" | "Marcom";
-  tier?: "A" | "B" | "C";
+  tier?: "A" | "B" | "C" | undefined;
   status: string;
-  date?: string;
+  date?: string | undefined;
   ae: string;
-  team?: string;
-  person?: string;
-  survey?: string; // CONFIRMED | PENDING | COMMENTED | undefined (AE ยังไม่ส่ง)
+  team?: string | undefined;
+  person?: string | undefined;
+  survey?: string | undefined; // CONFIRMED | PENDING | COMMENTED | undefined (AE ยังไม่ส่ง)
 };
 
 const ORM_CARDS: CardSpec[] = [
@@ -204,18 +204,18 @@ function surveyRows(cards: MeetingRow[], month: string): MeetingRow[] {
         prev = AUG_DEFAULT[q]!;
       }
       rows.push({
-        meeting_id: card["meeting_id"],
+        meeting_id: card["meeting_id"] ?? null,
         card_month: month,
         question: q,
-        service_line: card.service_line,
-        hotel_id: card.hotel_id,
-        hotel_name: card.hotel_name,
+        service_line: card.service_line ?? null,
+        hotel_id: card.hotel_id ?? null,
+        hotel_name: card.hotel_name ?? null,
         score,
         prev_score: prev,
         caretaker,
-        ae_owner_id: card["ae_owner_id"],
-        orm_team: card["orm_team"],
-        marcom_owner_id: card["marcom_owner_id"],
+        ae_owner_id: card["ae_owner_id"] ?? null,
+        orm_team: card["orm_team"] ?? null,
+        marcom_owner_id: card["marcom_owner_id"] ?? null,
         disputed: card["survey_status"] === "COMMENTED",
         comment:
           month === SEP && (q === "Q7" || q === "Q8") && String(card.hotel_id).endsWith("1")

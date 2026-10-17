@@ -25,9 +25,10 @@ export const readMeetingDashboard = createServerFn({ method: "GET" }).handler(
       MEETING_VIEWS.map(async (view) => {
         const rows: MeetingRow[] = [];
         for (let offset = 0; ; offset += 1000) {
-          const result = await client
-            .from(view)
-            .select("*")
+        const result = await client
+          // generated types snake-case v_meeting_tierA_pending → v_meeting_tiera_pending
+          .from(view === "v_meeting_tierA_pending" ? "v_meeting_tiera_pending" : view)
+          .select("*")
             .range(offset, offset + 999);
           if (result.error) throw new Error("อ่านรายงานประชุมไม่ได้");
           const page = (result.data ?? []) as MeetingRow[];
