@@ -151,25 +151,24 @@ export function demoAcViews() {
   const periodFactor = (p: string) => (p === '2026-09-01' ? 1 : p === '2026-08-01' ? 0.94 : 0.9);
   const rankOf = (rows: { id: string; name: string; amount: number }[]) =>
     new Map([...rows].sort((a, b) => b.amount - a.amount || a.name.localeCompare(b.name)).map((r, i) => [r.id, i + 1]));
+  const lensRowsFor = (p: string, lens: 'ALL' | 'ORM' | 'MARCOM') => {
+    const f = periodFactor(p);
+    return hotels
+      .filter(h => !(p !== '2026-09-01' && NEW_IN_SEP.has(h.id)))
+      .map(h => ({ id: h.id, name: h.name, amount: Math.round((lens === 'ALL' ? h.orm + h.marcom : lens === 'ORM' ? h.orm : h.marcom) * f), h }))
+      .filter(r => r.amount > 0);
+  };
   for (const p of AC_PERIODS) {
     const f = periodFactor(p);
-    const billed = hotels.filter(h => !(p !== '2026-09-01' && NEW_IN_SEP.has(h.id)) && !(AC_PERIODS.indexOf(p) < 4 && h.id === hotels[154]!.id));
-    const lensRows = (lens: 'ALL' | 'ORM' | 'MARCOM') =>
-      billed
-        .map(h => ({ id: h.id, name: h.name, amount: Math.round((lens === 'ALL' ? h.orm + h.marcom : lens === 'ORM' ? h.orm : h.marcom) * f), h }))
-        .filter(r => r.amount > 0);
     const prevP = AC_PERIODS[AC_PERIODS.indexOf(p) - 1];
     for (const lens of ['ALL', 'ORM', 'MARCOM'] as const) {
-      const rows = lensRows(lens);
+      const rows = lensRowsFor(p, lens);
       const ranks = rankOf(rows);
-      const prevRanks = prevP
-        ? rankOf(lensRows(lens).map(r => ({ ...r, amount: Math.round(r.amount / f) * periodFactor(prevP) })).map(r => ({ id: r.id, name: r.name, amount: r.amount })))
-        : new Map<string, number>();
+      const prevRanks = prevP ? rankOf(lensRowsFor(prevP, lens)) : new Map<string, number>();
       // avg_rank over the periods so far (≥ 2 ranked periods, else null)
       const hist = new Map<string, number[]>();
       for (const hp of AC_PERIODS.slice(0, AC_PERIODS.indexOf(p) + 1)) {
-        const hf = periodFactor(hp);
-        const hr = rankOf(hotels.filter(h => !(hp !== '2026-09-01' && NEW_IN_SEP.has(h.id))).map(h => ({ id: h.id, name: h.name, amount: Math.round((lens === 'ALL' ? h.orm + h.marcom : lens === 'ORM' ? h.orm : h.marcom) * hf) })).filter(r => r.amount > 0));
+        const hr = rankOf(lensRowsFor(hp, lens));
         for (const [id, rk] of hr) hist.set(id, [...(hist.get(id) ?? []), rk]);
       }
       for (const r of rows) {
