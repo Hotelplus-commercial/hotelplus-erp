@@ -50,7 +50,7 @@ function prevPeriod(period: Period): Period {
   return { from: prevFrom.toISOString().slice(0, 10), to: prevTo.toISOString().slice(0, 10) };
 }
 
-const normPending = (r: MeetingRow): MeetingRow => ({ ...r, ae_owner_id: r["owner_ae_id"] ?? r["ae_owner_id"] });
+const normPending = (r: MeetingRow): MeetingRow => ({ ...r, ae_owner_id: r["owner_ae_id"] ?? r["ae_owner_id"] ?? null });
 
 /* ================= KPI tiles ================= */
 function KpiTile({
@@ -78,10 +78,10 @@ function FunnelRow({
   counts: { A: number; B: number; C: number; total: number };
   base: number;
   rightTop: ReactNode;
-  rightBottom?: ReactNode;
-  drop?: string;
+  rightBottom?: ReactNode | undefined;
+  drop?: string | undefined;
   tooltip: ReactNode[];
-  late?: boolean;
+  late?: boolean | undefined;
 }) {
   const scale = base * MEETING_CONFIG.funnel_scale;
   const w = (n: number) => `${Math.min((n / Math.max(scale, 1)) * 100, 100)}%`;
@@ -110,7 +110,7 @@ function FunnelRow({
 }
 
 function MarcomRow({ label, count, base, drop, tooltip }: {
-  label: string; count: number; base: number; drop?: string; tooltip: ReactNode[];
+  label: string; count: number; base: number; drop?: string | undefined; tooltip: ReactNode[];
 }) {
   return (
     <div>
