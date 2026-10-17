@@ -112,7 +112,7 @@ export function PsReportTab({
   error: boolean;
   wonMtd?: number | undefined;
   compareSide?: "A" | "B";
-  comparisonFilter?: PsFilter;
+  comparisonFilter?: PsFilter | undefined;
 }) {
   const [groupBy, setGroupBy] = useState<"service_line" | "ae_owner_id">("service_line");
   const [tierFilter, setTierFilter] = useState<HealthTier | "all">("all");
@@ -275,12 +275,44 @@ export function PsReportTab({
   const gradeD = tiered.filter((h) => [h.row.latest_grade, h.row.worst_grade].includes("D")).length;
   const summaries = (metric: string, values: number[], rules: Parameters<typeof summaryRules>[1]) =>
     summaryRules({ metric, values, compare: !!compareSide, empty: !values.length }, rules);
-  const previousChurnRows = comparisonFilter ? latestPeriod(psScope(views?.v_ps_churn_monthly ?? [],comparisonFilter,'billing_period',0,now)) : [];
-  const comparisonChurn = comparisonFilter ? ratio(previousChurnRows,'out_count','active_at_start') : churnPrevious;
-  const comparisonCohort = comparisonFilter ? psScope(views?.v_ps_onboard_cohort ?? [],comparisonFilter,'billing_period',0,now).sort((a,b)=>String(a.billing_period).localeCompare(String(b.billing_period))).at(-1) : undefined;
-  const comparisonOnboard = comparisonFilter ? (typeof comparisonCohort?.['median_days']==='number'?comparisonCohort['median_days']:null) : previousMedian;
-  const comparisonLife = comparisonFilter ? quantile(psScope(views?.v_ps_contract_lifetime ?? [],comparisonFilter,'end_date',0,now).filter(r=>r.status==='INACTIVE'&&typeof r.age_days==='number').map(r=>n(r,'age_days')),.5) : null;
-  const compareSub = (value:number|null,unit='',lowerGood=false) => comparisonFilter ? <span>vs B {fmt(value,unit)} · <Delta a={unit===' วัน' ? (lowerGood?onboardMedian:median):gross} b={value} lowerGood={lowerGood} unit={unit==='%'?'pp':unit}/></span> : null;
+  const previousChurnRows = comparisonFilter
+    ? latestPeriod(
+        psScope(views?.v_ps_churn_monthly ?? [], comparisonFilter, "billing_period", 0, now),
+      )
+    : [];
+  const comparisonChurn = comparisonFilter
+    ? ratio(previousChurnRows, "out_count", "active_at_start")
+    : churnPrevious;
+  const comparisonCohort = comparisonFilter
+    ? psScope(views?.v_ps_onboard_cohort ?? [], comparisonFilter, "billing_period", 0, now)
+        .sort((a, b) => String(a.billing_period).localeCompare(String(b.billing_period)))
+        .at(-1)
+    : undefined;
+  const comparisonOnboard = comparisonFilter
+    ? typeof comparisonCohort?.["median_days"] === "number"
+      ? comparisonCohort["median_days"]
+      : null
+    : previousMedian;
+  const comparisonLife = comparisonFilter
+    ? quantile(
+        psScope(views?.v_ps_contract_lifetime ?? [], comparisonFilter, "end_date", 0, now)
+          .filter((r) => r.status === "INACTIVE" && typeof r.age_days === "number")
+          .map((r) => n(r, "age_days")),
+        0.5,
+      )
+    : null;
+  const compareSub = (value: number | null, unit = "", lowerGood = false) =>
+    comparisonFilter ? (
+      <span>
+        vs B {fmt(value, unit)} ·{" "}
+        <Delta
+          a={unit === " วัน" ? (lowerGood ? onboardMedian : median) : gross}
+          b={value}
+          lowerGood={lowerGood}
+          unit={unit === "%" ? "pp" : unit}
+        />
+      </span>
+    ) : null;
   const donutColors = ["var(--primary)", "var(--watch-line)", "var(--grade-action)"];
   const pointShape = (props: {
     cx?: number;
@@ -312,16 +344,75 @@ export function PsReportTab({
       </ChartHint>
     );
   };
-  const barShape = (kind: 'incoming' | 'outgoing' | 'median_days') => (props: { x?:number; y?:number; width?:number; height?:number; payload?: Record<string,unknown> }) => {
-    const r=props.payload; if(!r || props.x==null || props.y==null || props.width==null || props.height==null) return <g/>;
-    const val=Number(r[kind] ?? 0), period=String(r['month'] ?? r['billing_period'] ?? '').slice(0,7);
-    return <ChartHint header={`${period} · ${kind==='median_days'?'median':'เข้า / ออก'} ${Math.abs(val)}${kind==='median_days'?' วัน':''}`} lines={kind==='median_days' ? [`ORM ${r['orm_days'] ?? '—'} วัน · Marcom ${r['marcom_days'] ?? '—'} วัน`] : [`เข้า ${r['incoming']} · ออก ${Math.abs(Number(r['outgoing']))}`]}><rect x={props.x} y={props.y} width={props.width} height={Math.abs(props.height)} rx={4} fill={kind==='incoming'?'var(--primary)':kind==='outgoing'?'var(--neutral-bar)':'var(--series-2)'} tabIndex={0} role="button" aria-label={`${period} ${kind} ${Math.abs(val)}`} className="dash-bar-interactive" /></ChartHint>;
-  };
-  const churnDot = (line:'ORM'|'Marcom') => (props:{cx?:number;cy?:number;payload?:typeof churnChart[number]}) => {
-    const r=props.payload; if(!r||props.cx==null||props.cy==null) return <g/>;
-    const rows=r.rows.filter(x=>x.service_line===line),value=ratio(rows,'out_count','active_at_start');
-    return <ChartHint header={`${r.month} · ${line} ${fmt(value,'%')}`} lines={[`${sum(rows,'out_count')}/${sum(rows,'active_at_start')} โรงแรม`]}><circle cx={props.cx} cy={props.cy} r={4} fill={line==='ORM'?'var(--watch-line)':'var(--series-2)'} tabIndex={0} role="button" aria-label={`${r.month} ${line} ${fmt(value,'%')}`} className="dash-bar-interactive" /></ChartHint>;
-  };
+  const barShape =
+    (kind: "incoming" | "outgoing" | "median_days") =>
+    (props: {
+      x?: number;
+      y?: number;
+      width?: number;
+      height?: number;
+      payload?: Record<string, unknown>;
+    }) => {
+      const r = props.payload;
+      if (!r || props.x == null || props.y == null || props.width == null || props.height == null)
+        return <g />;
+      const val = Number(r[kind] ?? 0),
+        period = String(r["month"] ?? r["billing_period"] ?? "").slice(0, 7);
+      return (
+        <ChartHint
+          header={`${period} · ${kind === "median_days" ? "median" : "เข้า / ออก"} ${Math.abs(val)}${kind === "median_days" ? " วัน" : ""}`}
+          lines={
+            kind === "median_days"
+              ? [`ORM ${r["orm_days"] ?? "—"} วัน · Marcom ${r["marcom_days"] ?? "—"} วัน`]
+              : [`เข้า ${r["incoming"]} · ออก ${Math.abs(Number(r["outgoing"]))}`]
+          }
+        >
+          <rect
+            x={props.x}
+            y={props.y}
+            width={props.width}
+            height={Math.abs(props.height)}
+            rx={4}
+            fill={
+              kind === "incoming"
+                ? "var(--primary)"
+                : kind === "outgoing"
+                  ? "var(--neutral-bar)"
+                  : "var(--series-2)"
+            }
+            tabIndex={0}
+            role="button"
+            aria-label={`${period} ${kind} ${Math.abs(val)}`}
+            className="dash-bar-interactive"
+          />
+        </ChartHint>
+      );
+    };
+  const churnDot =
+    (line: "ORM" | "Marcom") =>
+    (props: { cx?: number; cy?: number; payload?: (typeof churnChart)[number] }) => {
+      const r = props.payload;
+      if (!r || props.cx == null || props.cy == null) return <g />;
+      const rows = r.rows.filter((x) => x.service_line === line),
+        value = ratio(rows, "out_count", "active_at_start");
+      return (
+        <ChartHint
+          header={`${r.month} · ${line} ${fmt(value, "%")}`}
+          lines={[`${sum(rows, "out_count")}/${sum(rows, "active_at_start")} โรงแรม`]}
+        >
+          <circle
+            cx={props.cx}
+            cy={props.cy}
+            r={4}
+            fill={line === "ORM" ? "var(--watch-line)" : "var(--series-2)"}
+            tabIndex={0}
+            role="button"
+            aria-label={`${r.month} ${line} ${fmt(value, "%")}`}
+            className="dash-bar-interactive"
+          />
+        </ChartHint>
+      );
+    };
   const lifePoints = (rows: PsReportRow[], isEnded: boolean) =>
     scatterRows(rows, !isEnded).map((p, i) => ({ ...p, row: rows[i] ?? {}, ended: isEnded }));
   return (
@@ -377,10 +468,20 @@ export function PsReportTab({
                       ) : null;
                     }}
                   />
-                  <Bar dataKey="incoming" fill="var(--primary)" shape={barShape("incoming")} radius={[4, 4, 0, 0]}>
+                  <Bar
+                    dataKey="incoming"
+                    fill="var(--primary)"
+                    shape={barShape("incoming")}
+                    radius={[4, 4, 0, 0]}
+                  >
                     {flowChart.length <= 8 && <LabelList dataKey="incoming" position="top" />}
                   </Bar>
-                  <Bar dataKey="outgoing" fill="var(--neutral-bar)" shape={barShape("outgoing")} radius={[0, 0, 4, 4]}>
+                  <Bar
+                    dataKey="outgoing"
+                    fill="var(--neutral-bar)"
+                    shape={barShape("outgoing")}
+                    radius={[0, 0, 4, 4]}
+                  >
                     {flowChart.length <= 8 && (
                       <LabelList
                         dataKey="outgoing"
@@ -413,7 +514,13 @@ export function PsReportTab({
         question="เดือนไหนหลุดผิดปกติ? แยก ORM / Marcom"
         answer={fmt(gross, "%")}
         answerTone="watch"
-        answerSub={comparisonFilter ? compareSub(comparisonChurn,"%",true) : <Delta a={gross} b={churnPrevious} lowerGood unit="pp" />}
+        answerSub={
+          comparisonFilter ? (
+            compareSub(comparisonChurn, "%", true)
+          ) : (
+            <Delta a={gross} b={churnPrevious} lowerGood unit="pp" />
+          )
+        }
         right={
           <Chip tone="warn">
             Renewal Churn{" "}
@@ -548,7 +655,44 @@ export function PsReportTab({
                 </Button>
               ))}
             </div>
-            <div className="mb-4 space-y-2">{groups.map(group=>{const g=renewals.filter(r=>String(r[groupBy]??'ไม่ระบุ')===group),gd=g.filter(r=>r.outcome!=='IN_PROGRESS'),nr=g.filter(r=>r.outcome==='RENEWED').length;return <ChartHint key={group} header={`${group} · ${gd.length?fmt(nr/gd.length*100,'%'):'—'}`} lines={[`ต่อสำเร็จ ${nr}/${gd.length} ราย`]}><Button variant="ghost" className="h-auto w-full justify-between gap-3 px-0 text-xs"><span className="w-20 shrink-0 text-left">{group}</span><svg className="h-5 min-w-0 flex-1" viewBox="0 0 200 20" preserveAspectRatio="none" aria-hidden="true"><rect width="200" height="20" rx="4" fill="var(--accent-soft)"/><rect width={gd.length?nr/gd.length*200:0} height="20" rx="4" fill="var(--primary)"/></svg><span>{gd.length?fmt(nr/gd.length*100,'%'):'—'} ({nr}/{gd.length})</span></Button></ChartHint>;})}</div>
+            <div className="mb-4 space-y-2">
+              {groups.map((group) => {
+                const g = renewals.filter((r) => String(r[groupBy] ?? "ไม่ระบุ") === group),
+                  gd = g.filter((r) => r.outcome !== "IN_PROGRESS"),
+                  nr = g.filter((r) => r.outcome === "RENEWED").length;
+                return (
+                  <ChartHint
+                    key={group}
+                    header={`${group} · ${gd.length ? fmt((nr / gd.length) * 100, "%") : "—"}`}
+                    lines={[`ต่อสำเร็จ ${nr}/${gd.length} ราย`]}
+                  >
+                    <Button
+                      variant="ghost"
+                      className="h-auto w-full justify-between gap-3 px-0 text-xs"
+                    >
+                      <span className="w-20 shrink-0 text-left">{group}</span>
+                      <svg
+                        className="h-5 min-w-0 flex-1"
+                        viewBox="0 0 200 20"
+                        preserveAspectRatio="none"
+                        aria-hidden="true"
+                      >
+                        <rect width="200" height="20" rx="4" fill="var(--accent-soft)" />
+                        <rect
+                          width={gd.length ? (nr / gd.length) * 200 : 0}
+                          height="20"
+                          rx="4"
+                          fill="var(--primary)"
+                        />
+                      </svg>
+                      <span>
+                        {gd.length ? fmt((nr / gd.length) * 100, "%") : "—"} ({nr}/{gd.length})
+                      </span>
+                    </Button>
+                  </ChartHint>
+                );
+              })}
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[420px] text-xs">
                 <thead>
@@ -593,7 +737,11 @@ export function PsReportTab({
         title="④ Contract Lifetime"
         question="ลูกค้าอยู่กับเรานานแค่ไหน?"
         answer={fmt(median, " วัน")}
-        answerSub={comparisonFilter ? compareSub(comparisonLife," วัน") : "ค่ากลาง (median) · สัญญาที่จบแล้ว"}
+        answerSub={
+          comparisonFilter
+            ? compareSub(comparisonLife, " วัน")
+            : "ค่ากลาง (median) · สัญญาที่จบแล้ว"
+        }
         noteKey="lifetime"
         noteLines={summaryRules(
           {
@@ -666,7 +814,13 @@ export function PsReportTab({
           question="เซ็นสัญญา → Go-Live ใช้กี่วัน?"
           answer={fmt(onboardMedian, " วัน")}
           answerTone="onboard"
-          answerSub={comparisonFilter ? compareSub(comparisonOnboard," วัน",true) : <Delta a={onboardMedian} b={previousMedian} lowerGood unit=" วัน" />}
+          answerSub={
+            comparisonFilter ? (
+              compareSub(comparisonOnboard, " วัน", true)
+            ) : (
+              <Delta a={onboardMedian} b={previousMedian} lowerGood unit=" วัน" />
+            )
+          }
           noteKey="onboard"
           noteLines={summaryRules(
             {

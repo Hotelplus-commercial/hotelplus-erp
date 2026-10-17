@@ -730,14 +730,20 @@
 
 /* PS Dashboard visual standard: shared semantic palette. */
 :root {
-  --bg-app: oklch(0.973 0.004 220); --bg-card: oklch(1 0 0);
-  --text-caption: oklch(0.573 0.018 229); --text-muted: var(--text-caption);
-  --series-2: oklch(0.537 0.128 290); --neutral-bar: oklch(0.674 0.019 229);
-  --tooltip-bg: var(--text-primary); --tooltip-detail: oklch(0.892 0.011 229);
-  --grade-good: oklch(0.629 0.1 181); --good-text: oklch(0.521 0.085 180);
-  --grade-watch: oklch(0.738 0.135 80); --watch-line: oklch(0.674 0.137 78); --watch-text: oklch(0.57 0.124 72);
-  --grade-action: oklch(0.594 0.153 35); --action-text: oklch(0.504 0.144 34);
-  --note-teal: oklch(0.974 0.006 196); --note-watch: oklch(0.975 0.015 84); --note-onboard: oklch(0.957 0.014 296);
+  --accent-soft: oklch(0.9472840 0.0159452 201.69779);
+  --accent-strong: oklch(0.4410696 0.0724969 205.34100);
+  --bdac-accent: oklch(0.5361854 0.0887599 205.03244);
+  --text-secondary: oklch(0.5169742 0.0249554 230.97189);
+  --text-primary: oklch(0.2792620 0.0250085 232.09176);
+  --border-subtle: oklch(0.9401440 0.0067342 233.64406);
+  --bg-app: oklch(0.9741482 0.0034710 219.53264); --bg-card: oklch(1 0 0);
+  --text-caption: oklch(0.5726003 0.0225973 229.33193); --text-muted: var(--text-caption);
+  --series-2: oklch(0.5464477 0.1277885 287.96397); --neutral-bar: oklch(0.6761390 0.0217719 229.21080);
+  --tooltip-bg: var(--text-primary); --tooltip-detail: oklch(0.8949056 0.0111845 225.99438);
+  --grade-good: oklch(0.6338993 0.1006331 182.13738); --good-text: oklch(0.5247107 0.0845255 182.12730);
+  --grade-watch: oklch(0.7443444 0.1325715 78.74065); --watch-line: oklch(0.6801153 0.1366178 74.73289); --watch-text: oklch(0.5797265 0.1251379 70.58950);
+  --grade-action: oklch(0.5928814 0.1521816 33.42601); --action-text: oklch(0.5051532 0.1418327 33.25019);
+  --note-teal: oklch(0.9753591 0.0053079 197.06950); --note-watch: oklch(0.9742803 0.0142623 84.58293); --note-onboard: oklch(0.9568406 0.0147864 294.46742);
   --dash-shadow: 0 1px 2px oklch(0.26 0.026 225 / .04), 0 2px 8px oklch(0.26 0.026 225 / .05);
   --background: var(--bg-app); --foreground: var(--text-primary); --card: var(--bg-card); --card-foreground: var(--text-primary);
   --border: var(--border-subtle); --input: var(--border-subtle); --primary: var(--bdac-accent); --primary-foreground: var(--bg-card);
@@ -794,3 +800,8 @@
 @media(max-width:1200px) { .dash-headline-groups { grid-template-columns:1fr; } .dash-onboard .dash-headline-tiles { grid-template-columns:repeat(3,minmax(0,1fr)); } }
 @media(max-width:640px) { .dash-card { padding:18px 16px; } .dash-headline-tiles,.dash-onboard .dash-headline-tiles { grid-template-columns:1fr; } .dash-kpi { min-height:132px; } }
 @media(prefers-reduced-motion:reduce) { .dash-note-toggle svg { transition:none; } }
+
+[data-compare-side="B"] .recharts-bar, [data-compare-side="B"] .recharts-line, [data-compare-side="B"] .recharts-scatter, [data-compare-side="B"] .recharts-pie { opacity:.5; }
+[data-compare-side="B"] .recharts-line-curve { stroke-dasharray:6 4; }
+[data-compare-side] { grid-template-columns:minmax(0,1fr); }
+.dash-tooltip strong { color:var(--bg-card); }

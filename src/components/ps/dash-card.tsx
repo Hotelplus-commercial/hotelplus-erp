@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode, type ReactElement } from "react";
+import { useEffect, useState, useRef, type ReactNode, type ReactElement } from "react";
 import { ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -155,13 +155,29 @@ export function ChartHint({
   children: ReactElement;
 }) {
   const [open, setOpen] = useState(false);
+  const pointerFocus = useRef(false);
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
         asChild
         onMouseEnter={() => setOpen(true)}
         onMouseLeave={() => setOpen(false)}
-        onFocus={() => setOpen(true)}
+        onPointerDown={() => {
+          pointerFocus.current = true;
+        }}
+        onFocus={() => {
+          if (!pointerFocus.current) setOpen(true);
+          pointerFocus.current = false;
+        }}
+        onKeyDown={(e) => {
+          if (
+            e.currentTarget.tagName.toLowerCase() !== "button" &&
+            (e.key === "Enter" || e.key === " ")
+          ) {
+            e.preventDefault();
+            setOpen((value) => !value);
+          }
+        }}
         onBlur={() => setOpen(false)}
       >
         {children}
