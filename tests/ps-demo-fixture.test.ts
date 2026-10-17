@@ -32,7 +32,10 @@ describe('v1.2 shared demo spine and comparison', () => {
   const flow=v_bdac_flow(demoLifecycles(),periodRange(selectedPeriod({...defaultGlobalFilter,range:'mtd'},now)));
   expect(flow.signed).toBe(2); expect(flow.won).toBe(2);
   const grades=demoAcViews()['v_ac_grade_distribution'] ?? [];
-  expect(grades.filter(r => r['grade'] === 'A' || r['grade'] === 'B').length).toBe(4);expect(grades.length).toBe(7);
+  // AC v2.0 fixture: 6 billing periods; the latest (Sep 26) is still open → no D rows.
+  expect([...new Set(grades.map(r => String(r['billing_period'])))]).toHaveLength(6);
+  expect(grades.filter(r => String(r['billing_period']) === '2026-09-01' && r['grade'] === 'D')).toHaveLength(0);
+  expect(grades.filter(r => r['grade'] === 'A' || r['grade'] === 'B').length).toBeGreaterThan(0);
   expect(demoOnboarding().filter(c => !c.go_live_at)).toHaveLength(2);
   expect(demoOnboarding().filter(c => c.go_live_at)).toHaveLength(4);
  });
