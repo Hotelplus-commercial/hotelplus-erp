@@ -1,3 +1,7 @@
+# Servicing patch v2.1
+- [x] Go-Live measured pixel geometry/anchored labels verified at 1280/1440/1920/390px; shared interpolated quartiles unchanged, phase strip circles undistorted.
+- [x] Persistent collapsed drill/toggles/group and stage auto-open verified; eight flag rows/two gap rows and July 18 tooltip unchanged; 82 tests pass, build OK. See SERVICING_V2_1_REPORT.md.
+
 # Servicing Dashboard v2.0
 - [x] Shared phase timing/config + first meeting timestamp and frozen PI chip; actual drawer set/edit/clear/reload verified without Cloud writes.
 - [x] Definitions/stats/Pipeline/owner timing/Go-Live stacked, existing drawer/assignment preserved, pending projection reads and 37/35/22/15/2 demo verified; hover-by-day, PM optimistic badge, Marcom filtering and 390px no page overflow.
