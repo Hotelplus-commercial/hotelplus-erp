@@ -49,7 +49,7 @@ export function rankRows(rows: PsReportRow[], period: string | null, lens: AcLen
     .filter(
       (r) =>
         String(r.billing_period ?? "").slice(0, 7) === (period ?? "").slice(0, 7) &&
-        String(r.lens ?? "ALL") === lens &&
+        String(r['lens'] ?? "ALL") === lens &&
         r['has_bill'] === true,
     )
     .map((r) => ({
@@ -62,8 +62,8 @@ export function rankRows(rows: PsReportRow[], period: string | null, lens: AcLen
       marcom_thb: num(r.marcom_thb),
       invoice_count: num(r.invoice_count),
       rank: r.rank == null ? null : num(r.rank),
-      prev_rank: r.prev_rank == null ? null : num(r.prev_rank),
-      avg_rank: r.avg_rank == null ? null : num(r.avg_rank),
+      prev_rank: r['prev_rank'] == null ? null : num(r['prev_rank']),
+      avg_rank: r['avg_rank'] == null ? null : num(r['avg_rank']),
       has_bill: true,
     }))
     .sort((a, b) => (a.rank ?? 9e9) - (b.rank ?? 9e9));
@@ -74,7 +74,7 @@ export function unbilledCount(rows: PsReportRow[], period: string | null, lens: 
   return rows.filter(
     (r) =>
       String(r.billing_period ?? "").slice(0, 7) === (period ?? "").slice(0, 7) &&
-      String(r.lens ?? "ALL") === lens &&
+      String(r['lens'] ?? "ALL") === lens &&
       r['has_bill'] === false,
   ).length;
 }
