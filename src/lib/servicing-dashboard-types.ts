@@ -1,7 +1,8 @@
 /* PS Dashboard · Servicing tab v1.0 — pure selectors over v_servicing_* rows (no writes, no new fields). */
 import type { GlobalFilter } from "./ps-dashboard-global";
+import type { ServicingLane } from './servicing-time';
 
-export const SERVICING_VIEWS = ["v_servicing_stage_cards", "v_servicing_stat", "v_servicing_pipeline", "v_servicing_golive_days", "v_servicing_assignment_gaps"] as const;
+export const SERVICING_VIEWS = ["v_servicing_stage_cards", "v_servicing_stat", "v_servicing_pipeline", "v_servicing_golive_days", "v_servicing_assignment_gaps", "v_servicing_phase_time", "v_servicing_stall_candidates"] as const;
 export type ServicingView = (typeof SERVICING_VIEWS)[number];
 
 export type ServicingRow = {
@@ -11,8 +12,13 @@ export type ServicingRow = {
   progress_done: number; progress_total: number; last_updated: string | null;
   ae_owner_id: string | null; specialist_id: string | null; orm_team: string | null; marcom_owner_id: string | null;
   hotel_status?: string | null;
+  meeting_date?: string | null; meeting_created_at?: string | null; specialist_handover_done_at?: string | null;
+  stage_events?: { stage_key: string; entered_at: string }[]; row2_complete?: boolean;
+  lanes?: ServicingLane[]; form_required_filled?: number | null; form_required_total?: number | null; form_all_pct?: number | null; form_status?: string | null;
+  owner_label?: string | null;
 };
-export type ServicingReport = { rows: ServicingRow[]; pending: boolean; demo?: boolean };
+export type PhaseTimeRow = { card_id: string; hotel_id?: string; hotel_name: string; service_variant: string; phase: 'P1'|'P2'|'P3'; lane: 'AE'|'Specialist'|'ORM'|'Marcom'; days: number; zone: 'ok'|'amber'|'red'; owner_id_at_end: string | null; owner_label: string; go_live_at: string; owner_fallback?: boolean };
+export type ServicingReport = { rows: ServicingRow[]; pending: boolean; demo?: boolean; phaseRows?: PhaseTimeRow[]; stallCandidates?: ServicingRow[] };
 
 export type CaretakerSlot = "AE" | "SPECIALIST" | "ORM" | "MARCOM";
 export const GO_LIVE = new Set(["orm_go_live", "marcom_go_live", "go_live"]);
@@ -47,11 +53,11 @@ export function servicingScope(rows: ServicingRow[], f: GlobalFilter) {
       const want = f.hotelStatus === "active" ? "ACTIVE" : f.hotelStatus === "contract-end" ? "INACTIVE" : f.hotelStatus.toUpperCase();
       if (String(r.hotel_status).toUpperCase() !== want) return false;
     }
-    const lens = f.role !== "none" || f.teams.length || f.people.length;
+    const lens = (f.role !== "none" && f.role !== "PM") || f.teams.length || f.people.length;
     if (!lens) return true;
     const o = currentOwner(r);
     if (!o.id) return false;
-    if (f.role !== "none" && o.role !== f.role) return false;
+    if (f.role !== "none" && f.role !== "PM" && o.role !== f.role) return false;
     const vals = [o.id, ...(f.ownerAliases?.[o.id] ?? [])];
     if (f.teams.length && !f.teams.some((t) => vals.includes(t))) return false;
     if (f.people.length && !f.people.some((p) => vals.includes(p))) return false;

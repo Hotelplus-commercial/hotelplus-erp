@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useServicing, type OnboardingCard } from "@/lib/ps-servicing";
 import { SERVICE_LABEL, STATUS_LABEL, canSeeRestricted, serviceForVariant, templateStats, useWs2, type ProfileStatus } from "@/lib/ws2-store";
+import { LocalPiFormChip } from './pi-form-chip';
 
 const toCardStatus = (st: ProfileStatus): "complete" | "not_started" | "in_progress" => (st === "submitted" ? "complete" : st === "not_sent" ? "not_started" : "in_progress");
 
@@ -16,8 +17,7 @@ export function useWs2Status(card: Pick<OnboardingCard, "property_id" | "service
 }
 
 export function Ws2StatusChip({ card }: { card: Pick<OnboardingCard, "property_id" | "service_variant"> }) {
-  const st = useWs2Status(card);
-  return <Chip tone={st === "submitted" ? "success" : st === "not_sent" ? "muted" : "info"}>Form · {STATUS_LABEL[st]}</Chip>;
+  return <LocalPiFormChip card={card} />;
 }
 
 /** WS-2 panel inside the shared drawer. Guidance only — never gates any stage. */

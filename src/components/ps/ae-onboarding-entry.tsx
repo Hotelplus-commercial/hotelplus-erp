@@ -7,7 +7,7 @@ import { Chip, Panel } from "@/components/crm/crm-ui";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Ws2StatusChip } from "@/components/ps/ws2-panel";
+import { OnboardingCardContent } from "./onboarding-card";
 import { AE_STAGES, CURRENT_AE, STAGE_LABEL, currentDay, useServicing, type OnboardingCard } from "@/lib/ps-servicing";
 
 export function AeOnboardingEntry() {
@@ -80,10 +80,9 @@ export function AeOnboardingEntry() {
 function Row({ card, filled, cta, onClick }: { card: OnboardingCard; filled: boolean; cta: string; onClick: () => void }) {
   return (
     <li className="flex flex-wrap items-center gap-3 p-3 text-sm">
-      <span className="min-w-[10rem] flex-1 font-medium">🏨 {card.property_name}</span>
+      <span className="min-w-[10rem] flex-1"><OnboardingCardContent card={card} /></span>
       <Chip tone={card.service_line === "ORM" ? "info" : "muted"}>{card.service_line === "ORM" ? "ORM" : "Marcom"}</Chip>
       <span className="min-w-[11rem] text-muted-foreground">{filled ? "●" : "○"} {STAGE_LABEL[card.current_stage]} · Day {currentDay(card)}</span>
-      <Ws2StatusChip card={card} />
       <Button asChild size="sm" variant={filled ? "ghost" : "outline"}><Link to="/ps/onboarding-process" hash={`${filled ? "z3-view" : "z3-work"}-${card.id}`} onClick={onClick}>{cta}</Link></Button>
     </li>
   );

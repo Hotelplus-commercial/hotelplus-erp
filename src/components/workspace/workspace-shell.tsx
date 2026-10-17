@@ -11,6 +11,9 @@ import { digestFor, runAlertBot, sortBotFirst, type BotRunResult } from "@/lib/a
 import { demoScanInput } from "@/lib/alert-bot-sources";
 import type { DateRange, WorkspaceConfig } from "@/lib/workspace-registry";
 import { cn } from "@/lib/utils";
+import { reportStageLabel, statusText } from '@/lib/servicing-time';
+import { servicingLanes } from '@/lib/servicing-time';
+import { demoServicingRows, SERVICING_DEMO_NOW } from '@/lib/servicing-demo';
 
 const fmt = (iso: string) => new Date(iso).toLocaleString("th-TH", { dateStyle: "medium", timeStyle: "short" });
 const RANGES: { key: DateRange; label: string }[] = [{ key: "today", label: "วันนี้" }, { key: "7d", label: "7 วัน" }, { key: "14d", label: "14 วัน" }];
@@ -159,7 +162,9 @@ function Detail({ t, role, dept, onClose }: { t: L0Ticket; role: Role; dept: Dep
       {t.payload.unassigned_owner && <p className="rounded-md border border-warning/40 bg-warning/10 px-2 py-1 text-xs text-warning-foreground">⚠ ยังไม่ได้ระบุผู้ดูแล (AE) — โปรดระบุก่อน</p>}
       <dl className="grid grid-cols-[minmax(5rem,8rem)_minmax(0,1fr)] gap-1 break-words text-sm">
         <dt className="text-muted-foreground">โรงแรม</dt><dd>{t.subject_ref.hotel_name} ({t.subject_ref.hotel_id})</dd>
-        {t.type === "CONTRACT_FOLLOWUP" && t.payload.followup ? (
+        {t.type === "SERVICING_STALL" ? (
+          <><dt className="text-muted-foreground">บริการ</dt><dd>{t.subject_ref.service_variant ?? t.subject_ref.service_line}</dd><dt className="text-muted-foreground">ช่วงงาน</dt><dd>{t.payload.phase} · {t.payload.lane} · วันที่ {t.payload.days_in_phase} · {t.payload.phase&&t.payload.days_in_phase!=null?statusText(t.payload.phase,t.payload.days_in_phase):'—'}</dd><dt className="text-muted-foreground">ตอนนี้</dt><dd>{reportStageLabel(t.payload.current_stage??'')}</dd><dt className="text-muted-foreground">ส่งถึง</dt><dd>{t.payload.recipient} {t.payload.recipient_member_id ? "" : "· รอระบุผู้รับ"}</dd></>
+        ) : t.type === "CONTRACT_FOLLOWUP" && t.payload.followup ? (
           <>
             <dt className="text-muted-foreground">ดีล</dt><dd>{t.subject_ref.deal_id}</dd>
             <dt className="text-muted-foreground">cohort</dt><dd>{t.payload.followup.cohort_month}</dd>
@@ -170,7 +175,7 @@ function Detail({ t, role, dept, onClose }: { t: L0Ticket; role: Role; dept: Dep
         ) : (
           <><dt className="text-muted-foreground">บริการที่ขาด</dt><dd>{t.subject_ref.gap_service}</dd></>
         )}
-        {t.type !== "CONTRACT_FOLLOWUP" && (isBot ? (
+        {t.type !== "CONTRACT_FOLLOWUP" && t.type !== "SERVICING_STALL" && (isBot ? (
           <>
             <dt className="text-muted-foreground">สัญญาณ</dt><dd>{t.payload.note || "—"}</dd>
             <dt className="text-muted-foreground">AE ผู้ดูแล</dt><dd>{t.payload.assigned_ae?.nickname ?? "— ยังไม่ระบุ"}</dd>
@@ -242,7 +247,7 @@ function PmTester() {
       </div>
       {note && <p className="text-xs text-muted-foreground">{note}</p>}
       <div className="flex flex-wrap items-center gap-2 border-t pt-2">
-        <Button size="sm" variant="outline" onClick={() => setBot(runAlertBot(demoScanInput()))}>ประมวลผล Alert (ชั่วคราว)</Button>
+        <Button size="sm" variant="outline" onClick={() => setBot(runAlertBot({...demoScanInput(),servicing:demoServicingRows().filter(r=>!r.go_live_at).flatMap(row=>servicingLanes(row,SERVICING_DEMO_NOW).filter(l=>l.state==='running'&&l.tone==='red').map(lane=>({row,lane})))}))}>ประมวลผล Alert (ชั่วคราว)</Button>
         <span className="text-xs text-muted-foreground">BOT สาธิต · สแกนสัญญาณแล้วสร้าง ticket เข้า PM Workspace (เป้าหมาย PS)</span>
       </div>
       {bot && <p className="text-xs text-muted-foreground">ผลรอบ BOT ล่าสุด: สร้าง {bot.created} · ข้าม(ซ้ำ) {bot.skipped} · เงื่อนไขหาย {bot.cleared}</p>}

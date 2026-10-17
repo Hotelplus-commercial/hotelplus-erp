@@ -1,6 +1,7 @@
 /* Servicing Revision 2: native stage actions with append-only timestamps.
  * Browser-local workflow prototype; role flags are not production authorization. */
 import { createContext, useContext, useEffect, useMemo, useState, useRef, useCallback, type ReactNode } from "react";
+import { meetingDatePatch } from './servicing-time';
 
 export type ServiceLine = "ORM" | "MARCOM";
 export type ExternalApp = "ORM_APP" | "MARCOM_APP";
@@ -32,6 +33,7 @@ export type OnboardingCard = {
   meeting_appointment_url?: string | null;
   /** v6.2: scheduled meeting date (yyyy-mm-dd) set at Prepare Data; gates the meeting stage and = billing start. */
   meeting_date?: string | null;
+  meeting_created_at?: string | null;
   /** v6.2: ORM handover part 4 "เปิดระบบ PMS / CM" — Specialist tick + ORM row-2 verify. */
   pms_specialist_at?: string | null;
   pms_verified_at?: string | null;
@@ -1017,7 +1019,7 @@ export function ServicingProvider({ children }: { children: ReactNode }) {
       },
       setMeetingDate: (cardId, date) => {
         if (!test_mode && role !== "service") return;
-        setState((s) => ({ ...s, cards: s.cards.map((c) => c.id === cardId && ["orm_prepare_data", "marcom_prepare_data"].includes(c.current_stage) && c.service_variant !== "MARCOM_GMB" ? { ...c, meeting_date: date } : c) }));
+        setState((s) => ({ ...s, cards: s.cards.map((c) => c.id === cardId && ["orm_prepare_data", "marcom_prepare_data"].includes(c.current_stage) && c.service_variant !== "MARCOM_GMB" ? { ...c, ...meetingDatePatch(c, date, new Date().toISOString()) } : c) }));
       },
       setMeetingRecord: (cardId, url) => {
         if (!test_mode && role !== "service") return;

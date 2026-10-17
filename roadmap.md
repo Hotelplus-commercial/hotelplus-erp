@@ -1,3 +1,11 @@
+# Servicing Dashboard v2.0
+- [x] Shared phase timing/config + first meeting timestamp and frozen PI chip; actual drawer set/edit/clear/reload verified without Cloud writes.
+- [x] Definitions/stats/Pipeline/owner timing/Go-Live stacked, existing drawer/assignment preserved, pending projection reads and 37/35/22/15/2 demo verified; hover-by-day, PM optimistic badge, Marcom filtering and 390px no page overflow.
+- [x] Stall tickets, department routing, BOT once-ever dedup/clear wired to manual AC daily action; 82 tests passed, existing IQR formula retained.
+- [ ] Live phase ownership/log fallback counts and leadership recipients await populated Cloud Servicing mirror/seed and member-level PM/GRM/MARCOM_LEAD flags (roster currently has only a simulated acting-role picker).
+- [ ] meeting_created_at Cloud registration awaits an operational Servicing mirror: onboarding_card is browser-local, no Cloud table; no migration of operational data permitted.
+- [ ] Headline queue equality and identical cross-tab demo spine cannot hold while headline must remain unchanged (currently —, older demo spine); left untouched per hard scope rule.
+
 # BD-AC patch v2.1 · Cycle time layout
 - [x] Card ④ full width on its own row; 3-zone header (title | controls | answer) + stat chips + owner legend (ราย BD only); time-scale X with tick-only labels (2–4d / weekly / monthly), Y gridlines every 2, single SLA label left + median pill right, deterministic jitter, hover-by-day tooltip flip. Numbers unchanged; tests 62 pass, build OK.
 

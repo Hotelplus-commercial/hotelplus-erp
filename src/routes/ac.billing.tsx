@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from '@tanstack/react-start';
+import { readServicingBotSignals } from '@/lib/servicing-dashboard.functions';
 import { FileText, Link2, Receipt } from "lucide-react";
 import { useMemo, useState } from "react";
 import { bangkokDate, outstandingOf, paymentSummary } from '@/lib/ac-v2-engine';
@@ -54,13 +56,16 @@ function BillingPage() {
   const [botResult, setBotResult] = useState<BotRunResult | null>(null);
   /* Daily processing: browser split docs only; debounced Cloud Sync pushes changed collections.
    * Alert BOT runs as a post-step (grade fresh first). Empty sources fire nothing — never fake. */
-  const daily = () => {
+  const readStalls=useServerFn(readServicingBotSignals);
+  const daily = async () => {
     const next = runDaily();
     hotelStore.hotels.forEach((h) => {
       const sum = paymentSummary(next, h);
       if (h.latePayments !== sum.late || h.overdueMonths !== sum.unpaidMonths) hotelStore.patch(h.id, { latePayments: sum.late, overdueMonths: sum.unpaidMonths });
     });
-    const bot = runAlertBot(liveScanInput(next, renewalCards, new Date().toISOString()));
+    const input=liveScanInput(next, renewalCards, new Date().toISOString());
+    try { input.servicing=await readStalls(); } catch { toast.info('ประมวลผลบัญชีแล้ว · ยังอ่านสัญญาณ Servicing ไม่ได้'); }
+    const bot = runAlertBot(input);
     setBotResult(bot);
     toast.success('ประมวลผลบัญชี ' + bangkokDate(), { description: `BOT: สร้าง ${bot.created} · ข้าม(ซ้ำ) ${bot.skipped} · เงื่อนไขหาย ${bot.cleared}` });
   };
