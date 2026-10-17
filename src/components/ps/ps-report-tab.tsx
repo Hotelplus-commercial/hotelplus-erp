@@ -104,6 +104,7 @@ export function PsReportTab({
   error,
   wonMtd,
   compareSide,
+  comparisonFilter,
 }: {
   report?: PsReport | undefined;
   filter: PsFilter;
@@ -111,6 +112,7 @@ export function PsReportTab({
   error: boolean;
   wonMtd?: number | undefined;
   compareSide?: "A" | "B";
+  comparisonFilter?: PsFilter;
 }) {
   const [groupBy, setGroupBy] = useState<"service_line" | "ae_owner_id">("service_line");
   const [tierFilter, setTierFilter] = useState<HealthTier | "all">("all");
@@ -273,6 +275,12 @@ export function PsReportTab({
   const gradeD = tiered.filter((h) => [h.row.latest_grade, h.row.worst_grade].includes("D")).length;
   const summaries = (metric: string, values: number[], rules: Parameters<typeof summaryRules>[1]) =>
     summaryRules({ metric, values, compare: !!compareSide, empty: !values.length }, rules);
+  const previousChurnRows = comparisonFilter ? latestPeriod(psScope(views?.v_ps_churn_monthly ?? [],comparisonFilter,'billing_period',0,now)) : [];
+  const comparisonChurn = comparisonFilter ? ratio(previousChurnRows,'out_count','active_at_start') : churnPrevious;
+  const comparisonCohort = comparisonFilter ? psScope(views?.v_ps_onboard_cohort ?? [],comparisonFilter,'billing_period',0,now).sort((a,b)=>String(a.billing_period).localeCompare(String(b.billing_period))).at(-1) : undefined;
+  const comparisonOnboard = comparisonFilter ? (typeof comparisonCohort?.['median_days']==='number'?comparisonCohort['median_days']:null) : previousMedian;
+  const comparisonLife = comparisonFilter ? quantile(psScope(views?.v_ps_contract_lifetime ?? [],comparisonFilter,'end_date',0,now).filter(r=>r.status==='INACTIVE'&&typeof r.age_days==='number').map(r=>n(r,'age_days')),.5) : null;
+  const compareSub = (value:number|null,unit='',lowerGood=false) => comparisonFilter ? <span>vs B {fmt(value,unit)} · <Delta a={unit===' วัน' ? (lowerGood?onboardMedian:median):gross} b={value} lowerGood={lowerGood} unit={unit==='%'?'pp':unit}/></span> : null;
   const donutColors = ["var(--primary)", "var(--watch-line)", "var(--grade-action)"];
   const pointShape = (props: {
     cx?: number;
@@ -405,7 +413,7 @@ export function PsReportTab({
         question="เดือนไหนหลุดผิดปกติ? แยก ORM / Marcom"
         answer={fmt(gross, "%")}
         answerTone="watch"
-        answerSub={<Delta a={gross} b={churnPrevious} lowerGood unit="pp" />}
+        answerSub={comparisonFilter ? compareSub(comparisonChurn,"%",true) : <Delta a={gross} b={churnPrevious} lowerGood unit="pp" />}
         right={
           <Chip tone="warn">
             Renewal Churn{" "}
@@ -585,7 +593,7 @@ export function PsReportTab({
         title="④ Contract Lifetime"
         question="ลูกค้าอยู่กับเรานานแค่ไหน?"
         answer={fmt(median, " วัน")}
-        answerSub="ค่ากลาง (median) · สัญญาที่จบแล้ว"
+        answerSub={comparisonFilter ? compareSub(comparisonLife," วัน") : "ค่ากลาง (median) · สัญญาที่จบแล้ว"}
         noteKey="lifetime"
         noteLines={summaryRules(
           {
@@ -658,7 +666,7 @@ export function PsReportTab({
           question="เซ็นสัญญา → Go-Live ใช้กี่วัน?"
           answer={fmt(onboardMedian, " วัน")}
           answerTone="onboard"
-          answerSub={<Delta a={onboardMedian} b={previousMedian} lowerGood unit=" วัน" />}
+          answerSub={comparisonFilter ? compareSub(comparisonOnboard," วัน",true) : <Delta a={onboardMedian} b={previousMedian} lowerGood unit=" วัน" />}
           noteKey="onboard"
           noteLines={summaryRules(
             {

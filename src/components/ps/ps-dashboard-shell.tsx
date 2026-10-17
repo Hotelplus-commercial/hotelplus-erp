@@ -350,6 +350,7 @@ export function DashboardShell({
                               filter={{ ...filter, period: selectedPeriod(filter, now, side) }}
                               loading={report.isLoading}
                               error={report.isError}
+                              comparisonFilter={side === "A" ? {...filter,period:selectedPeriod(filter,now,"B")} : undefined}
                               compareSide={side}
                             />
                           </div>

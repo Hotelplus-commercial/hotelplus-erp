@@ -30,6 +30,14 @@ import { thb } from "@/lib/crm-rules";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/bd/quotes/$quoteId")({
+  head: () => ({ meta: [
+    { title: "BD Quote Detail | Meridia Hotel ERP" },
+    { name: "description", content: "Commercial quote details and contract preparation in Meridia Hotel ERP." },
+    { property: "og:title", content: "BD Quote Detail | Meridia Hotel ERP" },
+    { property: "og:description", content: "Commercial quote details and contract preparation in Meridia Hotel ERP." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary_large_image" },
+  ] }),
   component: QuoteDetail,
 });
 
