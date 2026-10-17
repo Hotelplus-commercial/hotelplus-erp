@@ -5,7 +5,7 @@ import { useEffect, useState, useSyncExternalStore } from 'react';
 import { stageCloudDoc } from './cloud-sync';
 import { DEMO_NOW } from './ps-demo-fixture';
 
-export type TicketType = 'UPSELL_PITCH' | 'RENEWAL_DUE' | 'GRADE_RISK' | 'SURVEY_LOW';
+export type TicketType = 'UPSELL_PITCH' | 'RENEWAL_DUE' | 'GRADE_RISK' | 'SURVEY_LOW' | 'CONTRACT_FOLLOWUP';
 export type Dept = 'BD' | 'ORM' | 'MARCOM' | 'PS' | 'AC' | 'AUTO' | 'HR' | 'OFFICE';
 export type Role = 'PM' | Dept;
 /** Pseudo-user for BOT-generated tickets (display "The Office"); never a switcher role, so BOT tickets have no CANCEL action. */
@@ -18,11 +18,14 @@ export type BotPayload = {
   assigned_ae?: { member_id: string; nickname: string } | null;
   watchers?: { dept: Dept; member_id: string | null; nickname: string }[];
   generated_round?: string; condition_cleared_at?: string | null; unassigned_owner?: boolean;
+  /** CONTRACT_FOLLOWUP (BD-AC v2.0): carry-deal context, read-only in the ticket detail. */
+  followup?: { cohort_month: string; stage_label: string; substep: string | null; days_since_sent_contract: number; bd_name: string | null };
+  assigned_bd?: { member_id: string; nickname: string } | null;
 };
 export type L0Status = 'NEW' | 'ACK' | 'IN_PROGRESS' | 'DONE' | 'CANCELLED';
 export type L0Ticket = {
   ticket_id: string; type: TicketType; source_app: 'PS_DASHBOARD' | 'BD_APP' | 'PS_DASHBOARD_BOT'; created_by: Creator; target_dept: Dept;
-  subject_ref: { hotel_id: string; hotel_name: string; gap_service: string; service_line?: string };
+  subject_ref: { hotel_id: string; hotel_name: string; gap_service: string; service_line?: string; deal_id?: string };
   payload: { readiness_tier: string; chips: string[]; note: string } & BotPayload;
   status: L0Status; created_at: string; revision: number;
   audit: { at: string; by: Creator; from_status: L0Status | null; to_status: L0Status }[];
@@ -33,7 +36,7 @@ export const DEPTS: Dept[] = ['BD', 'ORM', 'MARCOM', 'PS', 'AC', 'AUTO', 'HR', '
 export const DEPTS_WITH_WORKSPACE: Dept[] = [...DEPTS];
 export const OPEN_STATUSES: L0Status[] = ['NEW', 'ACK', 'IN_PROGRESS'];
 export const STATUS_TH: Record<L0Status, string> = { NEW: 'ใหม่', ACK: 'รับแล้ว', IN_PROGRESS: 'กำลังทำ', DONE: 'เสร็จ', CANCELLED: 'ยกเลิก' };
-export const TYPE_TH: Record<TicketType, string> = { UPSELL_PITCH: 'เสนอขายบริการเพิ่ม', RENEWAL_DUE: 'ใกล้ครบสัญญา', GRADE_RISK: 'เสี่ยงเกรดการชำระ (D)', SURVEY_LOW: 'คะแนนบริการต่ำ' };
+export const TYPE_TH: Record<TicketType, string> = { UPSELL_PITCH: 'เสนอขายบริการเพิ่ม', RENEWAL_DUE: 'ใกล้ครบสัญญา', GRADE_RISK: 'เสี่ยงเกรดการชำระ (D)', SURVEY_LOW: 'คะแนนบริการต่ำ', CONTRACT_FOLLOWUP: 'ติดตามดีลค้างข้ามเดือน' };
 const OPEN: L0Status[] = ['NEW', 'ACK', 'IN_PROGRESS'];
 const NEXT: Partial<Record<L0Status, L0Status>> = { NEW: 'ACK', ACK: 'IN_PROGRESS', IN_PROGRESS: 'DONE' };
 const KEY = 'meridia.tickets.v1';
@@ -69,10 +72,14 @@ export function setTicketDemo(on: boolean) {
 export function findOpen(type: TicketType, hotel_id: string, gap_service: string) {
   return cur().items.find((t) => t.type === type && t.subject_ref.hotel_id === hotel_id && t.subject_ref.gap_service === gap_service && OPEN.includes(t.status));
 }
+/** CONTRACT_FOLLOWUP dedup: open ticket with the same (type + deal_id). */
+export function findOpenByDeal(type: TicketType, deal_id: string) {
+  return cur().items.find((t) => t.type === type && t.subject_ref.deal_id === deal_id && OPEN.includes(t.status));
+}
 
 /** Central generic engine. Returns the new id, or the existing open id (dedup). */
 export function createTask(i: { type: TicketType; target_dept: Dept; subject_ref: L0Ticket['subject_ref']; payload: L0Ticket['payload']; created_by: Creator; source_app?: L0Ticket['source_app'] }): { ticket_id: string; deduped: boolean } {
-  const existing = findOpen(i.type, i.subject_ref.hotel_id, i.subject_ref.gap_service);
+  const existing = i.subject_ref.deal_id ? findOpenByDeal(i.type, i.subject_ref.deal_id) : findOpen(i.type, i.subject_ref.hotel_id, i.subject_ref.gap_service);
   if (existing) return { ticket_id: existing.ticket_id, deduped: true };
   const s = cur(); const seq = s.seq + 1; const at = now(); // Level B: replace with revision-locked reservation.
   const t: L0Ticket = { ticket_id: `TKT-${String(seq).padStart(6, '0')}`, type: i.type, source_app: i.source_app ?? 'PS_DASHBOARD', created_by: i.created_by, target_dept: i.target_dept, subject_ref: i.subject_ref, payload: i.payload, status: 'NEW', created_at: at, revision: 0, audit: [{ at, by: i.created_by, from_status: null, to_status: 'NEW' }] };
