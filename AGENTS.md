@@ -13,7 +13,7 @@
 - Servicing stage events are append-only from gated in-app actions; demo history stays separate.
 - Servicing role flags and UAT checklist bypass are simulation only (never production security); Servicing stays browser-local, Cloud never migrates it.
 - Servicing links are service-stage-only, HTTP(S)-only, hydrate missing fields without replacing local data.
-- Prop Info uses root ServicingProvider; dedupe contract ref/service before handoff (no shadow cards).
+- Prop Info uses root ServicingProvider; dedupe ref/service. Why: no shadow cards.
 - Checklists come from PM templates per variant and never gate stages; handover/appointment gates are separate. Pending stage is a conditional column, shown in rails only when relevant.
 - ORM handover: one per-card OTA scope; Specialist row-1 parallel Approved→Final Setup; Completed (Handover) before System Training; Marcom has no Completed. Billing start + Survey #2 only from the customer-email action.
 - WS-2 is browser-local keyed by Hotel ID; reads cards without gating Servicing.
@@ -36,4 +36,6 @@
 - BOT ticket primary is always target_dept 'PS'; other departments are read-only watchers via payload.watchers[] and the additive 🎫 lane query (isWatcherOf). Why: no fan-out, one ticket per condition.
 - Sidebar module/child links must propagate the ?demo=1 search param so the Layer 0 demo session survives navigation. Why: demo store resets whenever demo mode toggles off.
 
-- PS visual summaries use only the pure summaryRules module and existing card inputs; shared DashCard/ChartHint own presentation and safe note persistence. Why: consistent accessible reports without new queries or business calculations.
+- PS summaries use pure summaryRules and shared DashCard/ChartHint. Why: consistent reports without new calculations.
+- PI required validation gates final saveAnswers only; template publish freezes flags and audits changes. Why: customer/AE share one validator.
+- Portfolio uses existing hotel terms, latest active start per service; missing SKU link stays placeholder. Contracts reuses the hotel list. Why: no guessed CRM joins.

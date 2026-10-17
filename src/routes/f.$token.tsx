@@ -9,7 +9,7 @@ import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 import { useServicing } from "@/lib/ps-servicing";
 import { SERVICE_LABEL, useWs2, type Answers, type TemplateField } from "@/lib/ws2-store";
-import { fieldTarget, missingRequired } from '@/lib/pi-form-rules';
+import { fieldTarget, missingRequired, photoEvidence } from '@/lib/pi-form-rules';
 import { cn } from '@/lib/utils';
 
 export const Route = createFileRoute("/f/$token")({
@@ -54,7 +54,8 @@ function CustomerForm() {
   const [answers, setAnswers] = useState<Answers>({});
   const [loaded, setLoaded] = useState(false);
   const [attempted, setAttempted] = useState(false);
-  const missing = useMemo(() => attempted && tpl ? missingRequired(tpl.def, answers) : [], [attempted, tpl, answers]);
+  const folders = useMemo(() => w.folders.filter((f) => f.property_id === form?.property_id && f.service === form?.service), [w.folders, form]);
+  const missing = useMemo(() => attempted && tpl && form ? missingRequired(tpl.def, answers, () => true, photoEvidence(tpl.def, answers, folders, form.service)) : [], [attempted, tpl, answers, folders, form]);
   const jump = (target: string) => {
     const wrapper = document.getElementById(`wrap-${target}`);
     wrapper?.scrollIntoView({ block: 'center', behavior: 'smooth' });
@@ -75,7 +76,7 @@ function CustomerForm() {
     setLoaded(true);
   }, [form, tpl, property, loaded]);
 
-  const folders = useMemo(() => w.folders.filter((f) => f.property_id === form?.property_id && f.service === form?.service), [w.folders, form]);
+
 
   if (!form || !tpl) return <div className="mx-auto max-w-xl py-16 text-center text-sm text-muted-foreground">ไม่พบฟอร์มนี้ · ลิงก์อาจไม่ถูกต้อง</div>;
   const submitted = form.status === "submitted";

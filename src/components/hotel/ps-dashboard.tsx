@@ -134,18 +134,6 @@ export function PsDashboard({ assignment, part = "all" }: { assignment?: Assignm
   ).length;
   const noStart = rows.filter((r) => !r.start).length;
 
-  const ormRows = rows.filter((r) => r.services.orm.length);
-  const reg = {
-    corporate: scopedHotels.filter((h) => h.registration === "corporate").length,
-    personal: scopedHotels.filter((h) => h.registration === "personal").length,
-    none: scopedHotels.filter((h) => !h.registration).length,
-  };
-  const model = {
-    flat: scopedHotels.filter((h) => h.model === "flat").length,
-    commission: scopedHotels.filter((h) => h.model === "commission").length,
-    none: scopedHotels.filter((h) => !h.model).length,
-  };
-
   const filtered = rows.filter((r) => {
     const term = q.trim().toLowerCase();
     const okQ =

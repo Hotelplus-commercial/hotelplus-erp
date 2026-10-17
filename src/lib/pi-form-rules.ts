@@ -15,13 +15,22 @@ export function isFilled(value: unknown): boolean {
   return typeof value === 'string' && value.trim().length > 0;
 }
 /** Only displayed inputs from the frozen version apply. A repeat section needs one complete row. */
-export function missingRequired(def: TemplateDef, answers: Answers, visible: (field: TemplateField) => boolean = () => true): MissingRequired[] {
+export function missingRequired(def: TemplateDef, answers: Answers, visible: (field: TemplateField) => boolean = () => true, uploaded: (sectionId: string, row: number) => boolean = () => false): MissingRequired[] {
   return def.sections.flatMap(s => {
     const fields = s.fields.filter(f => isInputField(f) && f.required && visible(f));
     if (!fields.length) return [];
-    const rows = answers[s.id]?.length ? answers[s.id] : [{}];
-    if (s.repeat_group && rows.some(row => fields.every(f => isFilled(row[f.id])))) return [];
+    const existing = answers[s.id];
+    const rows = existing?.length ? existing : [{}];
+    const filled = (f: TemplateField, i: number) => isFilled(rows[i]?.[f.id]) || (f.field_type === "file" && uploaded(s.id, i));
+    if (s.repeat_group && rows.some((_, i) => fields.every(f => filled(f, i)))) return [];
     const row = s.repeat_group ? rows.reduce((best, entry, i) => fields.filter(f => isFilled(entry[f.id])).length > fields.filter(f => isFilled(rows[best]?.[f.id])).length ? i : best, 0) : 0;
-    return fields.filter(f => !isFilled(rows[row]?.[f.id])).map(f => ({ sectionId: s.id, fieldId: f.id, row, label: f.label, target: fieldTarget(s.id, row, f.id) }));
+    return fields.filter(f => !filled(f, row)).map(f => ({ sectionId: s.id, fieldId: f.id, row, label: f.label, target: fieldTarget(s.id, row, f.id) }));
   });
+}
+export function photoEvidence(def: TemplateDef, answers: Answers, folders: { path: string; photo_count: number }[], service: string) {
+  return (sectionId: string, row: number) => {
+    const section = def.sections.find(s => s.id === sectionId);
+    const roomId = answers[sectionId]?.[row]?.["_rid"];
+    return folders.some(folder => folder.photo_count > 0 && (section?.repeat_group === "room_type" ? Boolean(roomId) && folder.path.endsWith(`/${String(roomId)}/`) : folder.path.endsWith(service === "MARCOM_GMB" ? "/_all/" : "/_property/")));
+  };
 }

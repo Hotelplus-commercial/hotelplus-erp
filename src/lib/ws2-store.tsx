@@ -7,7 +7,7 @@ import ormTpl from "@/lib/ws2/templates/orm.json";
 import mtTpl from "@/lib/ws2/templates/marcom-mt.json";
 import gmbTpl from "@/lib/ws2/templates/marcom-gmb.json";
 import type { ServiceVariant } from "@/lib/ps-servicing";
-import { applyRequiredFlags, missingRequired, normalizeRequired, requiredChanges, type MissingRequired } from './pi-form-rules';
+import { applyRequiredFlags, missingRequired, normalizeRequired, requiredChanges, photoEvidence, type MissingRequired } from './pi-form-rules';
 
 export type Ws2Service = "ORM" | "MARCOM_MT" | "MARCOM_GMB";
 export type FieldType = "text" | "number" | "select" | "multiselect" | "slider" | "file" | "freetext" | "heading" | "note";
@@ -214,7 +214,8 @@ export function Ws2Provider({ children }: { children: ReactNode }) {
     if (form.status === "submitted") return { ok: false, error: "ฟอร์มนี้ส่งแล้ว" };
     const tpl = s.templates.find((x) => x.service === form.service && x.version === form.template_version);
     if (!tpl) return { ok: false, error: "ไม่พบ template" };
-    const missing = submit ? missingRequired(tpl.def, answers) : [];
+    const folders = s.folders.filter(folder => folder.property_id === form.property_id && folder.service === form.service);
+    const missing = submit ? missingRequired(tpl.def, answers, () => true, photoEvidence(tpl.def, answers, folders, form.service)) : [];
     if (missing.length) return { ok: false, error: `ยังกรอกไม่ครบ ${missing.length} ข้อ`, missing };
     const app = "Customer form";
     const t = now();
@@ -278,7 +279,7 @@ export function Ws2Provider({ children }: { children: ReactNode }) {
       return { ...st, properties, profiles, restricted, folders, forms, log: [...st.log, ...logs] };
     });
     return { ok: true, otaLogins: submit ? otaLogins.filter((o) => o.ota) : [] };
-  }, [s.forms, s.templates]);
+  }, [s.forms, s.templates, s.folders]);
 
   const addPhotos = useCallback<Api["addPhotos"]>((folderId, count, user) => {
     setS((st) => {
