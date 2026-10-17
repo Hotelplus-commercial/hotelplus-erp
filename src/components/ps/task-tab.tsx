@@ -20,7 +20,7 @@ import { matchesBook, useDashboardGlobal, type GlobalFilter } from '@/lib/ps-das
 import { demoTaskHotels } from '@/lib/ps-demo-fixture';
 import {
   STATUSES, STATUS_LABEL, TEAMS, TEAM_LABEL, UNASSIGNED, WAITING_LABEL, readTaskMonitor, resetDemoTickets, responsibleOf, ticketApi, useDemoVersion, watchersOf,
-  type Category, type HotelCare, type Team, type Ticket, type TicketStatus, type WaitingReason, type TaskMonitorView,
+  type Category, type HotelCare, type MonitorRow, type Team, type Ticket, type TicketStatus, type WaitingReason, type TaskMonitorView,
 } from '@/lib/task-tickets';
 import { useWs2 } from '@/lib/ws2-store';
 import { cn } from '@/lib/utils';
@@ -112,14 +112,14 @@ export function TaskTab() {
   const unassigned=monitorScope(d.monitor?.v_task_unassigned??[],filter,care);
   const streams=monitorScope(d.monitor?.v_task_deadline_streams??[],filter,care).filter(r=>r.stream!=='coaching'&&r['renewed']!==true);
   const renewals=streams.filter(r=>r.stream==='renewal');
-  const past=renewals.filter(r=>d.demo?Number(r.age_days)<0:!!r.deadline&&String(r.deadline).slice(0,10)<d.now.toISOString().slice(0,10));
-  const soon=renewals.filter(r=>d.demo?Number(r.age_days)>=0&&Number(r.age_days)<=TASK_CONFIG.renewal_buckets[1]:!!r.deadline&&String(r.deadline)>=d.now.toISOString().slice(0,10)&&Date.parse(String(r.deadline))-d.now.getTime()<=TASK_CONFIG.renewal_buckets[1]*864e5);
+  const past=renewals.filter(r=>d.demo?Number(r.age_days)<0:!!r['deadline']&&String(r['deadline']).slice(0,10)<d.now.toISOString().slice(0,10));
+  const soon=renewals.filter(r=>d.demo?Number(r.age_days)>=0&&Number(r.age_days)<=TASK_CONFIG.renewal_buckets[1]:!!r['deadline']&&String(r['deadline'])>=d.now.toISOString().slice(0,10)&&Date.parse(String(r['deadline']))-d.now.getTime()<=TASK_CONFIG.renewal_buckets[1]*864e5);
   const active=rows.filter(r=>r.status_group!=='CLOSED'),ps=active.filter(r=>r.source_kind==='CASE'),l0=active.filter(r=>r.source_kind==='L0');
   const kpis=[{label:'งานเปิดทั้งหมด',value:active.length,unit:'งาน',tone:'accent',caption:`เคส PS ${ps.length} · Ticket ระบบ ${l0.length}`,header:`งานที่ยังไม่ปิด ${active.length} งาน`,lines:[`เคส PS ${ps.length} (เปิด ${ps.filter(r=>r.status_group==='OPEN').length} · กำลังทำ ${ps.filter(r=>r.status_group==='IN_PROGRESS').length} · รอ ${ps.filter(r=>r.status_group==='WAITING').length})`,`Ticket ระบบ ${l0.length} (ใหม่ ${l0.filter(r=>r.status_group==='OPEN').length} · รับแล้ว/กำลังทำ ${l0.filter(r=>r.status_group==='IN_PROGRESS').length})`,'ไม่รวมงานในส่วน “งานค้างจากระบบ”']},
   {label:'เคสเกินกำหนด',value:ps.filter(r=>r.is_overdue).length,unit:'เคส',tone:'watch',caption:`เคส PS ค้างเกิน ${TASK_CONFIG.case_overdue_days} วัน`,header:`เคส PS ที่ค้างเกินเกณฑ์ ${ps.filter(r=>r.is_overdue).length} เคส`,lines:['นับเฉพาะสถานะเปิด / กำลังทำ',`เกณฑ์ ${TASK_CONFIG.case_overdue_days} วัน (ปรับได้ · รายหมวดรอ PM)`,'Ticket ระบบยังไม่มี SLA จึงไม่นับ']},
   {label:'รอระบุผู้ดูแล',value:unassigned.length||null,unit:'รายการ',tone:'watch',caption:unassigned.length?[...new Set(unassigned.map(r=>r.role))].map(role=>`${role} ${unassigned.filter(r=>r.role===role).length}`).join(' · '):'รอข้อมูล',header:`โรงแรม-role ที่ยังตั้งผู้ดูแลไม่ครบ ${unassigned.length}`,lines:[`ค้างเกิน ${TASK_CONFIG.case_overdue_days} วัน ${unassigned.filter(r=>Number(r.age_days)>TASK_CONFIG.case_overdue_days).length} รายการ`,`เก่าสุด ${Math.max(0,...unassigned.map(r=>Number(r.age_days)))} วัน`,'ดูรายละเอียดที่การ์ด ②']},
   {label:'Coaching ค้าง',value:coaching.length||null,unit:'งาน',tone:'neutral',caption:coaching.length?`เปิด ${coaching.filter(r=>r.status==='open').length} · กำลังทำ ${coaching.filter(r=>r.status==='in-progress').length}`:'รอข้อมูล',header:`Coaching ที่ยังไม่ resolved ${coaching.length}`,lines:[[...new Set(coaching.map(r=>r.coach))].map(c=>`${c} ${coaching.filter(r=>r.coach===c).length}`).join(' · '),`เก่าสุด ${Math.max(0,...coaching.map(r=>Number(r.age_days)))} วัน`,'ดูรายละเอียดที่การ์ด ①']},
-  {label:'ต่ออายุเลยกำหนด',value:renewals.length?past.length:null,unit:'สัญญา',tone:past.length?'action':'neutral',caption:renewals.length?'เลยวันหมดอายุ ยังไม่ต่อ':'รอข้อมูล',header:`สัญญาที่เลยวันหมดอายุ ${past.length} สัญญา`,lines:past.slice(0,3).map(r=>`${r.hotel_name} · ${r.service_line} · เลยมา ${d.demo?Math.abs(Number(r.age_days)):Math.floor((d.now.getTime()-Date.parse(String(r.deadline)))/864e5)} วัน`)}];
+  {label:'ต่ออายุเลยกำหนด',value:renewals.length?past.length:null,unit:'สัญญา',tone:past.length?'action':'neutral',caption:renewals.length?'เลยวันหมดอายุ ยังไม่ต่อ':'รอข้อมูล',header:`สัญญาที่เลยวันหมดอายุ ${past.length} สัญญา`,lines:past.slice(0,3).map(r=>`${r.hotel_name} · ${r.service_line} · เลยมา ${d.demo?Math.abs(Number(r.age_days)):Math.floor((d.now.getTime()-Date.parse(String(r['deadline'])))/864e5)} วัน`)}];
   const refresh=()=>{qc.invalidateQueries({queryKey:['task-tickets']});qc.invalidateQueries({queryKey:['task-flow']});};
   const selected=d.tickets.find(t=>t.id===openId)??null;
   return <div className="task-v2" data-testid="task-tab">
