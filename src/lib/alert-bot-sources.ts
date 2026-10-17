@@ -7,6 +7,8 @@ import type { Dept } from './tickets-l0';
 import type { CrmData } from './crm-store';
 import type { RenewalCard } from './ps-renewal';
 import { DEMO_NOW } from './ps-demo-fixture';
+import { demoServicingRows, SERVICING_DEMO_NOW } from './servicing-demo';
+import { servicingLanes } from './servicing-time';
 
 type Ws2State = {
   properties?: { hotel_id: string; hotel_name_th: string; assigned_ae_id?: string | null }[];
@@ -102,5 +104,6 @@ export function demoScanInput(): BotScanInput {
       { hotel_id: 'DEMO-CHAAM', hotel_name: 'Chaam Peumsuk', survey_id: 'SV-2026-09-CHAAM', score: 4.5 },
     ],
     route,
+    servicing: demoServicingRows().filter(r=>!r.go_live_at).flatMap(row=>servicingLanes(row,SERVICING_DEMO_NOW).filter(l=>l.state==='running'&&l.tone==='red').map(lane=>({row,lane}))),
   };
 }

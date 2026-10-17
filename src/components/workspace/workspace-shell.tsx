@@ -11,6 +11,7 @@ import { digestFor, runAlertBot, sortBotFirst, type BotRunResult } from "@/lib/a
 import { demoScanInput } from "@/lib/alert-bot-sources";
 import type { DateRange, WorkspaceConfig } from "@/lib/workspace-registry";
 import { cn } from "@/lib/utils";
+import { reportStageLabel, statusText } from '@/lib/servicing-time';
 
 const fmt = (iso: string) => new Date(iso).toLocaleString("th-TH", { dateStyle: "medium", timeStyle: "short" });
 const RANGES: { key: DateRange; label: string }[] = [{ key: "today", label: "วันนี้" }, { key: "7d", label: "7 วัน" }, { key: "14d", label: "14 วัน" }];
@@ -160,7 +161,7 @@ function Detail({ t, role, dept, onClose }: { t: L0Ticket; role: Role; dept: Dep
       <dl className="grid grid-cols-[minmax(5rem,8rem)_minmax(0,1fr)] gap-1 break-words text-sm">
         <dt className="text-muted-foreground">โรงแรม</dt><dd>{t.subject_ref.hotel_name} ({t.subject_ref.hotel_id})</dd>
         {t.type === "SERVICING_STALL" ? (
-          <><dt className="text-muted-foreground">บริการ</dt><dd>{t.subject_ref.service_variant ?? t.subject_ref.service_line}</dd><dt className="text-muted-foreground">ช่วงงาน</dt><dd>{t.payload.phase} · {t.payload.lane} · วันที่ {t.payload.days_in_phase} · SLA {t.payload.sla_days} วัน</dd><dt className="text-muted-foreground">ตอนนี้</dt><dd>{t.payload.current_stage}</dd><dt className="text-muted-foreground">ส่งถึง</dt><dd>{t.payload.recipient} {t.payload.recipient_member_id ? "" : "· รอระบุผู้รับ"}</dd></>
+          <><dt className="text-muted-foreground">บริการ</dt><dd>{t.subject_ref.service_variant ?? t.subject_ref.service_line}</dd><dt className="text-muted-foreground">ช่วงงาน</dt><dd>{t.payload.phase} · {t.payload.lane} · วันที่ {t.payload.days_in_phase} · {t.payload.phase&&t.payload.days_in_phase!=null?statusText(t.payload.phase,t.payload.days_in_phase):'—'}</dd><dt className="text-muted-foreground">ตอนนี้</dt><dd>{reportStageLabel(t.payload.current_stage??'')}</dd><dt className="text-muted-foreground">ส่งถึง</dt><dd>{t.payload.recipient} {t.payload.recipient_member_id ? "" : "· รอระบุผู้รับ"}</dd></>
         ) : t.type === "CONTRACT_FOLLOWUP" && t.payload.followup ? (
           <>
             <dt className="text-muted-foreground">ดีล</dt><dd>{t.subject_ref.deal_id}</dd>
