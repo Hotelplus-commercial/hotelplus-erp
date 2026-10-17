@@ -1,55 +1,168 @@
-import type { Activity, Category, HotelCare, MonitorRow, SnapshotRow, Ticket } from './task-tickets';
+/* Task v2.1 demo fixture (§12) — deterministic: every date/count is hand-placed, no random values.
+ * Oracle (reconciles with §13): month-ends May–Oct K1 20,22,20,24,27,31 · K2 2,2,1,3,3,5 · K3 —,—,—,—,7,6 · K4 8,7,9,9,9,9 · K5 0,1,0,1,1,2;
+ * end of Apr K1 18 · K2 2 · K4 8 · K5 0; Nov–Apr K1 12,14,15,15,16,18; ⑥ PS 31 / L0 41; ⑦ ORM-A most incoming. */
+import type { Activity, Category, HotelCare, MonitorRow, SnapshotRow, Team, Ticket } from './task-tickets';
 import { stampOf } from './task-tickets';
 import { demoTaskHotels } from './ps-demo-fixture';
 import type { Dept, L0Ticket, L0Status, TicketType } from './tickets-l0';
 import type { FlowRow } from './task-worklist';
-export const TASK_DEMO_NOW='2026-10-17T12:00:00.000Z';
-const date=(month:number,day:number)=>`2026-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}T09:00:00.000Z`;
-const ORM_TEAM_CYCLE=['A','B','C','D','E','RE_ACTIVE'];
+export const TASK_DEMO_NOW = '2026-10-17T12:00:00.000Z';
+const DAY = 864e5;
+const ORM_TEAM_CYCLE = ['A', 'B', 'C', 'D', 'E', 'RE_ACTIVE'];
 /** Demo caretakers + an orm_team per hotel (so ORM rows always resolve a sub-team). */
-export function demoCareHotels():HotelCare[]{return demoTaskHotels().map((h,i)=>({...h,orm_team:ORM_TEAM_CYCLE[i%ORM_TEAM_CYCLE.length]??'A'}));}
-const plus=(iso:string,days:number)=>new Date(Date.parse(iso)+days*864e5).toISOString();
-export function taskDemo(categories:Category[],hotels:HotelCare[]) {
- const cases:Ticket[]=[],tickets:L0Ticket[]=[];let seq=0;
- const add=(dept:Dept,status:string,kind:'CASE'|'L0')=>{const i=seq++,h=hotels[i%hotels.length];if(!h)return;const at=date(10,16); if(kind==='CASE'){const c=categories.find(c=>c.domain===dept)??categories[0];if(!c)return;cases.push({id:`task-demo-case-${i}`,case_no:`Case-${String(i+1).padStart(6,'0')}`,hotel_id:h.hotel_id,hotel_name:h.hotel_name,title:['ตรวจสอบราคาและข้อมูลโรงแรม','ติดตามเอกสารจากลูกค้า','ตรวจสอบแผนบริการ'][i%3]??'ติดตามงาน',description:'ข้อมูลสาธิต',category_id:c.code,routed_team:c.domain,status:status as Ticket['status'],waiting_reason:status==='waiting'?'CUSTOMER':null,created_by:'PM (Alex)',created_at:at,updated_at:at,resolved_at:status==='resolved'?date(10,10):null,revision:0});} else {const types:TicketType[]=['GRADE_RISK','RENEWAL_DUE','SERVICING_STALL','CONTRACT_FOLLOWUP','UPSELL_PITCH'];const type=types[i%5]??'GRADE_RISK';tickets.push({ticket_id:`TKT-DEMO-${String(i+1).padStart(6,'0')}`,type,source_app:type==='GRADE_RISK'||type==='RENEWAL_DUE'?'PS_DASHBOARD_BOT':'PS_DASHBOARD',created_by:type==='GRADE_RISK'||type==='RENEWAL_DUE'?'SYSTEM:THE_OFFICE':'PM',target_dept:dept,subject_ref:{hotel_id:h.hotel_id,hotel_name:h.hotel_name,gap_service:'Marcom',service_line:dept==='MARCOM'?'Marcom':'ORM'},payload:{readiness_tier:'',chips:[],note:'ติดตามงานจากต้นทาง',event_key:'2026-10',signal_detail:{grade:'D',renewal_due_date:'2026-10-23'},phase:'P2',sla_days:7,days_in_phase:10},status:status as L0Status,created_at:at,revision:0,audit:[{at,by:'PM',from_status:null,to_status:'NEW'},...(['DONE','CANCELLED'].includes(status)?[{at:date(10,10),by:'PM' as const,from_status:'IN_PROGRESS' as const,to_status:status as L0Status}]:[])]});}};
- const open:[Dept,number[],number[]][]=[['ORM',[2,2,2],[1,2]],['MARCOM',[1,1,2],[1,1]],['BD',[0,0,0],[3,2]],['PS',[1,0,1],[1,2]],['AC',[1,0,1],[1,1]],['AUTO',[0,0,0],[1,0]],['OFFICE',[0,0,0],[0,1]]];
- for(const [dept,c,l]of open){c.forEach((n,j)=>{for(let k=0;k<n;k++)add(dept,['open','in-progress','waiting'][j]??'open','CASE');});l.forEach((n,j)=>{for(let k=0;k<n;k++)add(dept,j===0?'NEW':'ACK','L0');});}
- // 59 closures in May–Oct; 21 fall in the last 30 days (Sep 13 + Oct 8).
- const closed=[7,9,12,10,13,8];closed.forEach((n,j)=>{for(let k=0;k<n;k++){add(k%2?'ORM':'PS',k%2?'resolved':k===0&&j===5?'CANCELLED':'DONE',k%2?'CASE':'L0');const t=k%2?cases[cases.length-1]:tickets[tickets.length-1];if(!t)continue;const at=date(j+5,j===4?25:10);if('resolved_at'in t)t.resolved_at=at;else t.audit[t.audit.length-1]={at,by:'PM',from_status:'IN_PROGRESS',to_status:t.status};}});
- // One raw spine: fix eight actionable cases, then allocate remaining creation slots chronologically.
- const all=[...cases,...tickets];
- const actionable=cases.filter(t=>t.status==='open'||t.status==='in-progress');
- actionable.forEach((t,i)=>{t.created_at=i<5?date(10,1):date(10,16);});
- const others=all.filter(t=>!actionable.includes(t as Ticket)).sort((a,b)=>{
-  const close=(t:Ticket|L0Ticket)=>'resolved_at'in t?t.resolved_at??'9999':t.audit.find(x=>x.to_status==='DONE'||x.to_status==='CANCELLED')?.at??'9999';return close(a).localeCompare(close(b));
- });
- const creation=[...Array(18).fill(date(4,10)),...[9,11,10,14,16,4].flatMap((n,j)=>Array(n).fill(date(j+5,1)))];
- others.forEach((t,i)=>{t.created_at=creation[i]??date(4,10);if('updated_at'in t)t.updated_at=t.created_at;if('audit'in t&&t.audit[0])t.audit[0].at=t.created_at;});
- const override=cases.find(t=>t.routed_team==='MARCOM');if(override)override.category_id=categories.find(c=>c.domain==='ORM')?.code??override.category_id;
- const missing=cases.find(t=>t.routed_team==='ORM');const missingHotel=hotels.find(h=>h.orm&&!h.orm.member);if(missing&&missingHotel){missing.hotel_id=missingHotel.hotel_id;missing.hotel_name=missingHotel.hotel_name;}
- const base=(i:number)=>{const h=hotels[i%hotels.length];return {hotel_id:h?.hotel_id??null,hotel_name:h?.hotel_name??'—',service_line:i%2?'Marcom':'ORM'};};
- const coaching:MonitorRow[]=[];[['GRM',3,2,6],['Marcom Team Lead',2,1,4],['PM',1,0,2]].forEach(([coach,a,b,age],j)=>{for(let i=0;i<Number(a)+Number(b);i++)coaching.push({...base(j+i),coach:String(coach),status:i<Number(a)?'open':'in-progress',age_days:Number(age),resolved_30:0});});
- const unassigned:MonitorRow[]=[];[['ORM',[1,1,1]],['Marcom',[2,0,0]],['AE',[0,1,0]]].forEach(([role,counts])=>(counts as number[]).forEach((n,j)=>{for(let i=0;i<n;i++)unassigned.push({...base(i+j),role:String(role),age_days:[2,5,9][j]??0});}));
- const streams:MonitorRow[]=[];[['renewal',[20,18,12,9,3,-2,-4]],['onboarding',[1,2,2,3,5,6,7,10,16]],['survey',[6,7,10,16]]].forEach(([stream,ages])=>(ages as number[]).forEach((age,i)=>streams.push({...base(i),stream:String(stream),age_days:age,deadline:date(10,17+Math.min(10,age)).slice(0,10),overdue:stream==='renewal'?age<0:stream==='survey'?age>5:age>3,owner_id:'Nont',renewed:false})));
- const flow:FlowRow[]=[];for(const t of cases){for(const [at,kind]of [[t.created_at,'created'],[t.resolved_at,'closed']]as const){if(at)flow.push({month:at.slice(0,7)+'-01',hotel_id:t.hotel_id,hotel_name:t.hotel_name,routed_team:t.routed_team,created_count:kind==='created'?1:0,closed_count:kind==='closed'?1:0});}}
- // v2.1: status history + stamps (one straight close, one reopen, one BACKFILL, waiting intervals).
- const activity:Activity[]=[];const care=new Map(hotels.map(h=>[h.hotel_id,h]));const nowMs=Date.parse(TASK_DEMO_NOW);
- const act=(t:Ticket,type:Activity['type'],body:string,at:string)=>activity.push({id:`${t.id}-a${activity.length}`,ticket_id:t.id,actor_id:t.created_by,type,body,at});
- let straight=false,reopened=false;
- cases.forEach((t,i)=>{act(t,'CREATE',t.case_no,t.created_at);const h=0.2+(i%5)*0.2,accept=plus(t.created_at,h),c=care.get(t.hotel_id),st=stampOf(t.routed_team,c);
-  t.resp_id_at_create=st.resp_id;t.resp_team_at_create=st.resp_team;t.stamp_source=i===0?'BACKFILL':'LIVE';t.resp_id_at_close=null;t.resp_team_at_close=null;
-  if(t.status==='open')return;
-  if(t.status==='resolved'&&t.resolved_at){t.resp_id_at_close=st.resp_id;t.resp_team_at_close=st.resp_team;
-   if(!straight){straight=true;act(t,'STATUS_CHANGE','open → resolved',t.resolved_at);return;}
-   act(t,'STATUS_CHANGE','open → in-progress',accept);const span=(Date.parse(t.resolved_at)-Date.parse(accept))/864e5;
-   if(!reopened&&span>2){reopened=true;act(t,'STATUS_CHANGE','in-progress → resolved',plus(t.resolved_at,-1));act(t,'STATUS_CHANGE','resolved → in-progress',plus(t.resolved_at,-0.5));}
-   else if(i%4===0&&span>2){act(t,'STATUS_CHANGE','in-progress → waiting (CUSTOMER)',plus(accept,0.5));act(t,'STATUS_CHANGE','waiting (CUSTOMER) → in-progress',plus(accept,1.5));}
-   act(t,'STATUS_CHANGE','in-progress → resolved',t.resolved_at);return;}
-  act(t,'STATUS_CHANGE','open → in-progress',accept);
-  if(t.status==='waiting')act(t,'STATUS_CHANGE','in-progress → waiting (CUSTOMER)',new Date(Math.min(Date.parse(plus(accept,0.5)),nowMs-36e5)).toISOString());
- });
- for(const t of tickets){if(t.status==='NEW'||t.status==='CANCELLED')continue;const first=t.audit[0];if(!first)continue;const close=t.audit[1];const ack=new Date(Math.min(Date.parse(plus(t.created_at,0.5)),close?Date.parse(close.at)-36e5:nowMs-36e5)).toISOString();t.audit=[first,{at:ack,by:'PM',from_status:'NEW',to_status:'ACK'},...t.audit.slice(1)];}
- // K3 is not reconstructable: in-memory snapshots start 1 Sep (no writes in demo).
- const snapshots:SnapshotRow[]=[];for(let d=Date.parse('2026-09-01T00:00:00Z');d<Date.parse('2026-10-17T00:00:00Z');d+=864e5){const day=new Date(d).toISOString().slice(0,10),n=day==='2026-09-30'?7:day>'2026-09-30'?6+(new Date(d).getUTCDate()%3===0?1:0):6+(new Date(d).getUTCDate()%4===0?2:new Date(d).getUTCDate()%2);snapshots.push({snapshot_date:day,metric:'K3_UNASSIGNED',dim_key:'ALL',value:n,threshold_used:null,source:'JOB'});}
- return {cases,tickets,flow,activity,snapshots,monitor:{v_task_coaching_backlog:coaching,v_task_unassigned:unassigned,v_task_deadline_streams:streams}};
+export function demoCareHotels(): HotelCare[] { return demoTaskHotels().map((h, i) => ({ ...h, orm_team: ORM_TEAM_CYCLE[i % ORM_TEAM_CYCLE.length] ?? 'A' })); }
+/** 09:00Z on y-m-d plus fractional days. */
+const at = (y: number, m: number, d: number, plusDays = 0) => new Date(Date.UTC(y, m - 1, d, 9) + plusDays * DAY).toISOString();
+const D = (m: number, d: number, plus = 0) => at(2026, m, d, plus);
+const plus = (iso: string, days: number) => new Date(Date.parse(iso) + days * DAY).toISOString();
+
+type OrmTeam = 'A' | 'B' | 'C' | 'D' | 'E' | 'RE_ACTIVE';
+type Lane = OrmTeam | 'MARCOM' | 'PS' | 'AC' | 'BD' | 'AUTO' | 'OFFICE';
+const deptOf = (l: Lane): Dept => (l.length === 1 || l === 'RE_ACTIVE' ? 'ORM' : l as Dept);
+/** Spec §12 ⑦ medians used as per-lane accept / net-close durations (days). */
+const ACCEPT: Record<string, number> = { A: 0.4, B: 0.3, C: 0.8, D: 0.5, E: 0.2, RE_ACTIVE: 1.2, MARCOM: 0.6, PS: 0.5, AC: 0.7, BD: 1.0, AUTO: 0.5, OFFICE: 0.5 };
+const CLOSE: Record<string, number> = { A: 2.5, B: 1.8, C: 3.1, D: 2.0, E: 1.5, RE_ACTIVE: 4.0, MARCOM: 2.7, PS: 2.2, AC: 3.4, BD: 3.8, AUTO: 2, OFFICE: 2 };
+
+type CaseSpec = { lane: Lane; created: string; closed?: string; now: 'open' | 'in-progress' | 'waiting' | 'resolved'; waitFrom?: string; waitTo?: string; straight?: boolean; reopen?: boolean; backfill?: boolean };
+type L0Spec = { lane: Lane; created: string; closed?: string; cancelled?: boolean; now?: 'NEW' | 'ACK'; type?: TicketType };
+
+/* ---------- PS cases (31 in May–Oct + 3 before May) ---------- */
+function caseSpecs(): CaseSpec[] {
+  const s: CaseSpec[] = [
+    // before May: two long-running cases (K2 Apr/May/Jun) and one long wait
+    { lane: 'PS', created: D(4, 10), closed: D(6, 15), now: 'resolved', backfill: true },
+    { lane: 'AC', created: D(4, 20), closed: D(7, 10), now: 'resolved' },
+    { lane: 'MARCOM', created: D(1, 15), now: 'waiting', waitFrom: D(1, 16) },
+    // long-running in period (drive K2 month-ends)
+    { lane: 'MARCOM', created: D(6, 1), closed: D(7, 20), now: 'resolved' },
+    { lane: 'MARCOM', created: D(7, 10), closed: D(8, 20), now: 'resolved' },
+    { lane: 'MARCOM', created: D(8, 15), closed: D(9, 10), now: 'resolved' },
+    { lane: 'MARCOM', created: D(8, 20), closed: D(9, 12), now: 'resolved' },
+    // open today: five overdue + three young + five waiting
+    { lane: 'PS', created: D(8, 5), now: 'in-progress' },
+    { lane: 'PS', created: D(9, 5), now: 'in-progress' },
+    { lane: 'MARCOM', created: D(9, 15), now: 'waiting', waitFrom: D(10, 5) },
+    { lane: 'PS', created: D(10, 1), now: 'in-progress' },
+    { lane: 'AC', created: D(10, 2), now: 'in-progress' },
+    { lane: 'AC', created: D(10, 8), now: 'open' },
+    { lane: 'A', created: D(10, 15), now: 'open' },
+    { lane: 'MARCOM', created: D(10, 16), now: 'open' },
+    { lane: 'PS', created: D(10, 16), now: 'open' },
+    { lane: 'PS', created: D(10, 10), now: 'waiting', waitFrom: D(10, 10, 0.3) },
+    { lane: 'AC', created: D(10, 11), now: 'waiting', waitFrom: D(10, 11, 0.3) },
+    { lane: 'AC', created: D(10, 12), now: 'waiting', waitFrom: D(10, 12, 0.3) },
+    { lane: 'C', created: D(10, 13), now: 'waiting', waitFrom: D(10, 13, 0.3) },
+  ];
+  // 14 short cases (3 per month May–Aug, 2 in Sep), opened and closed inside the month.
+  const order: Lane[] = ['A', 'MARCOM', 'B', 'A', 'C', 'D', 'A', 'B', 'E', 'A', 'B', 'D', 'RE_ACTIVE', 'MARCOM'];
+  order.forEach((lane, i) => {
+    const created = D(5 + Math.floor(i / 3), [4, 9, 14][i % 3]!), closed = plus(created, CLOSE[lane]!);
+    s.push({ lane, created, closed, now: 'resolved', straight: i === 0, reopen: i === 4, ...(i === 1 ? { waitFrom: plus(created, ACCEPT['MARCOM']! + 0.3), waitTo: plus(created, ACCEPT['MARCOM']! + 1.3) } : {}) });
+  });
+  return s;
+}
+/** Category per routed domain (⑥ §12) — one ORM↔Marcom swap keeps domain totals and shows a dept override. */
+const CAT_QUEUE: Record<Team, string[]> = {
+  ORM: ['ORM-REV', 'ORM-REV', 'ORM-REV', 'ORM-REV', 'ORM-CONN', 'ORM-CONN', 'ORM-CONN', 'ORM-RATE', 'ORM-RATE', 'ORM-CONT', 'ORM-CONT', 'ORM-RESV', 'ORM-CAMP', 'ORM-INFO'],
+  MARCOM: ['MKT-CONT', 'MKT-CONT', 'MKT-CONT', 'MKT-ADS', 'MKT-ADS', 'MKT-ADS', 'MKT-KOL', 'MKT-OTHER'],
+  PS: ['PS-ONOFF', 'PS-ONOFF', 'PS-COMPLAIN', 'PS-COMPLAIN', 'PS-CONTRACT'],
+  AC: ['AC-PAY', 'AC-PAY', 'AC-PAY', 'AC-OTHER'],
+};
+
+/* ---------- L0 tickets (41 in May–Oct + 15 before May) ---------- */
+function l0Specs(): L0Spec[] {
+  const s: L0Spec[] = [];
+  // before May: 12 in Nov 25, 2 in Dec 25, 1 in Mar 26; twelve stay open, three close in Oct (one cancelled).
+  const preOpen: Lane[] = ['AUTO', 'OFFICE', 'A', 'A', 'B', 'B', 'C', 'D', 'E', 'MARCOM', 'MARCOM', 'MARCOM'];
+  const preCreated = [...Array.from({ length: 12 }, (_, i) => at(2025, 11, 5 + i)), at(2025, 12, 5), at(2025, 12, 12), at(2026, 3, 5)];
+  preOpen.forEach((lane, i) => s.push({ lane, created: preCreated[i]! }));
+  (['PS', 'AC', 'BD'] as Lane[]).forEach((lane, i) => s.push({ lane, created: preCreated[12 + i]!, closed: D(10, 3 + 2 * i), cancelled: i === 1 }));
+  // in period, per month: early (closed same month) · late (created ~26th, closed early next month) · open.
+  const plan: [number, number, number][] = [[4, 1, 1], [4, 2, 1], [5, 1, 0], [5, 2, 1], [7, 3, 2], [2, 0, 0]];
+  const closedLanes: Lane[] = ['PS', 'AC', 'BD', 'A', 'PS', 'AC', 'BD', 'B', 'MARCOM', 'PS', 'AC', 'BD', 'C', 'PS', 'AC', 'BD', 'D', 'MARCOM', 'PS', 'AC', 'BD', 'E', 'PS', 'AC', 'BD', 'RE_ACTIVE', 'MARCOM', 'PS', 'AC', 'BD', 'PS', 'AC', 'MARCOM', 'PS', 'AC', 'PS'];
+  let ci = 0;
+  plan.forEach(([early, late, open], j) => {
+    for (let k = 0; k < early; k++) { const c = D(5 + j, 2 + 2 * k), lane = closedLanes[ci++]!; s.push({ lane, created: c, closed: plus(c, CLOSE[lane]!) }); }
+    for (let k = 0; k < late; k++) { const closed = D(6 + j, 1, 0.2 * k), lane = closedLanes[ci++]!; s.push({ lane, created: plus(closed, -CLOSE[lane]!), closed }); }
+    for (let k = 0; k < open; k++) s.push({ lane: 'BD', created: D(5 + j, 16 + 2 * k) });
+  });
+  let nw = 0; for (const t of s) if (!t.closed) t.now = nw++ % 2 ? 'ACK' : 'NEW';
+  // Types (⑥ §12): ORM/Marcom → SERVICING_STALL · AC → GRADE_RISK · PS → RENEWAL_DUE ×8 + SURVEY_LOW ×2 · BD → CONTRACT_FOLLOWUP ×7 + UPSELL_PITCH ×5.
+  let ps = 0, bd = 0;
+  for (const t of s) {
+    const inPeriod = t.created >= '2026-05-01', dept = deptOf(t.lane);
+    t.type = dept === 'AC' ? 'GRADE_RISK' : dept === 'PS' ? (inPeriod && ps++ >= 8 ? 'SURVEY_LOW' : 'RENEWAL_DUE') : dept === 'BD' ? (inPeriod && bd++ >= 7 ? 'UPSELL_PITCH' : 'CONTRACT_FOLLOWUP') : 'SERVICING_STALL';
+  }
+  return s;
+}
+
+export function taskDemo(categories: Category[], hotels: HotelCare[]) {
+  const cases: Ticket[] = [], tickets: L0Ticket[] = [], activity: Activity[] = [];
+  const care = new Map(hotels.map(h => [h.hotel_id, h])), nowMs = Date.parse(TASK_DEMO_NOW);
+  const missing = hotels.find(h => h.orm && !h.orm.member);
+  const pools = new Map<Lane, HotelCare[]>(), cursor = new Map<Lane, number>();
+  const pool = (lane: Lane) => {
+    let p = pools.get(lane);
+    if (!p) {
+      const dept = deptOf(lane);
+      p = dept === 'ORM' ? [...hotels.filter(h => h.orm && h.orm_team === lane), ...hotels.filter(h => !h.orm && h.orm_team === lane)] : dept === 'MARCOM' ? hotels.filter(h => h.marcom) : hotels;
+      if (!p.length) p = hotels;
+      if (missing && p.includes(missing)) p = [missing, ...p.filter(h => h !== missing)];
+      pools.set(lane, p);
+    }
+    return p;
+  };
+  const hotelFor = (lane: Lane) => { const p = pool(lane), i = cursor.get(lane) ?? 0; cursor.set(lane, i + 1); return p[i % p.length]!; };
+  const queue = Object.fromEntries(Object.entries(CAT_QUEUE).map(([k, v]) => [k, [...v]])) as Record<Team, string[]>;
+
+  caseSpecs().forEach((sp, i) => {
+    const team = deptOf(sp.lane) as Team, h = hotelFor(sp.lane), code = queue[team].shift() ?? categories.find(c => c.domain === team)?.code ?? '';
+    const st = stampOf(team, care.get(h.hotel_id)), closed = sp.closed ?? null;
+    const t: Ticket = { id: `task-demo-case-${i}`, case_no: `Case-${String(i + 1).padStart(6, '0')}`, hotel_id: h.hotel_id, hotel_name: h.hotel_name, title: ['ตรวจสอบราคาและข้อมูลโรงแรม', 'ติดตามเอกสารจากลูกค้า', 'ตรวจสอบแผนบริการ'][i % 3]!, description: 'ข้อมูลสาธิต', category_id: code, routed_team: team, status: sp.now, waiting_reason: sp.now === 'waiting' ? 'CUSTOMER' : null, created_by: 'PM (Alex)', created_at: sp.created, updated_at: closed ?? sp.waitFrom ?? sp.created, resolved_at: closed, revision: 0,
+      resp_id_at_create: st.resp_id, resp_team_at_create: st.resp_team, resp_id_at_close: closed ? st.resp_id : null, resp_team_at_close: closed ? st.resp_team : null, stamp_source: sp.backfill ? 'BACKFILL' : 'LIVE' };
+    cases.push(t);
+    const act = (type: Activity['type'], body: string, when: string) => activity.push({ id: `${t.id}-a${activity.length}`, ticket_id: t.id, actor_id: t.created_by, type, body, at: when });
+    act('CREATE', t.case_no, t.created_at);
+    if (sp.straight && closed) { act('STATUS_CHANGE', 'open → resolved', closed); return; }
+    if (sp.now === 'open') return;
+    act('STATUS_CHANGE', 'open → in-progress', plus(t.created_at, Math.min(ACCEPT[sp.lane]!, sp.waitFrom ? (Date.parse(sp.waitFrom) - Date.parse(t.created_at)) / DAY / 2 : 99)));
+    if (sp.waitFrom) act('STATUS_CHANGE', 'in-progress → waiting (CUSTOMER)', sp.waitFrom);
+    if (sp.waitTo) act('STATUS_CHANGE', 'waiting (CUSTOMER) → in-progress', sp.waitTo);
+    if (closed) {
+      if (sp.reopen) { act('STATUS_CHANGE', 'in-progress → resolved', plus(closed, -1)); act('STATUS_CHANGE', 'resolved → in-progress', plus(closed, -0.5)); }
+      act('STATUS_CHANGE', 'in-progress → resolved', closed);
+    }
+  });
+  // Swap one ORM-routed and one Marcom-routed short case category (dept override, domain totals unchanged).
+  const ormShort = cases.find(c => c.routed_team === 'ORM' && c.created_at >= '2026-05-01' && c.resolved_at && c.category_id === 'ORM-INFO');
+  const mktShort = cases.find(c => c.routed_team === 'MARCOM' && c.created_at >= '2026-05-01' && c.resolved_at);
+  if (ormShort && mktShort) [ormShort.category_id, mktShort.category_id] = [mktShort.category_id, ormShort.category_id];
+
+  l0Specs().forEach((sp, i) => {
+    const dept = deptOf(sp.lane), h = hotelFor(sp.lane), type = sp.type ?? 'SERVICING_STALL', bot = type === 'GRADE_RISK' || type === 'RENEWAL_DUE' || type === 'SURVEY_LOW';
+    const final: L0Status = sp.closed ? (sp.cancelled ? 'CANCELLED' : 'DONE') : sp.now === 'ACK' ? 'ACK' : 'NEW';
+    const audit: L0Ticket['audit'] = [{ at: sp.created, by: 'PM', from_status: null, to_status: 'NEW' }];
+    if (final !== 'NEW' && final !== 'CANCELLED') audit.push({ at: plus(sp.created, ACCEPT[sp.lane]!), by: 'PM', from_status: 'NEW', to_status: 'ACK' });
+    if (sp.closed) audit.push({ at: sp.closed, by: 'PM', from_status: final === 'CANCELLED' ? 'NEW' : 'ACK', to_status: final });
+    tickets.push({ ticket_id: `TKT-DEMO-${String(i + 1).padStart(6, '0')}`, type, source_app: bot ? 'PS_DASHBOARD_BOT' : 'PS_DASHBOARD', created_by: bot ? 'SYSTEM:THE_OFFICE' : 'PM', target_dept: dept,
+      subject_ref: { hotel_id: h.hotel_id, hotel_name: h.hotel_name, gap_service: 'Marcom', service_line: dept === 'MARCOM' ? 'Marcom' : 'ORM' },
+      payload: { readiness_tier: '', chips: [], note: 'ติดตามงานจากต้นทาง', event_key: sp.created.slice(0, 7), signal_detail: { grade: 'D', renewal_due_date: '2026-10-23' }, phase: 'P2', sla_days: 7, days_in_phase: 10 },
+      status: final, created_at: sp.created, revision: 0, audit } as L0Ticket);
+  });
+
+  const base = (i: number) => { const h = hotels[i % hotels.length]; return { hotel_id: h?.hotel_id ?? null, hotel_name: h?.hotel_name ?? '—', service_line: i % 2 ? 'Marcom' : 'ORM' }; };
+  // K4: nine open coaching items (opened Apr ×5, Jun ×1, Jul ×3) + resolved history below.
+  const coachAges = [180, 180, 180, 180, 180, 120, 95, 95, 95];
+  const coaching: MonitorRow[] = []; let ci = 0;
+  ([['GRM', 3, 2], ['Marcom Team Lead', 2, 1], ['PM', 1, 0]] as const).forEach(([coach, a, b], j) => { for (let i = 0; i < a + b; i++) coaching.push({ ...base(j + i), coach, status: i < a ? 'open' : 'in-progress', age_days: coachAges[ci++] ?? 0, resolved_30: 0 }); });
+  const coachingClosed = [{ opened_at: D(3, 5), resolved_at: D(6, 10) }, { opened_at: D(3, 20), resolved_at: D(6, 20) }, { opened_at: D(4, 15), resolved_at: D(7, 5) }, { opened_at: D(8, 10), resolved_at: D(8, 20) }];
+  const unassigned: MonitorRow[] = []; ([['ORM', [1, 1, 1]], ['Marcom', [2, 0, 0]], ['AE', [0, 1, 0]]] as const).forEach(([role, counts]) => counts.forEach((n, j) => { for (let i = 0; i < n; i++) unassigned.push({ ...base(i + j), role, age_days: [2, 5, 9][j] ?? 0 }); }));
+  const streams: MonitorRow[] = []; ([['renewal', [20, 18, 12, 9, 3, -2, -4]], ['onboarding', [1, 2, 2, 3, 5, 6, 7, 10, 16]], ['survey', [6, 7, 10, 16]]] as const).forEach(([stream, ages]) => ages.forEach((age, i) => streams.push({ ...base(i), stream, age_days: age, deadline: plus(TASK_DEMO_NOW, age).slice(0, 10), overdue: stream === 'renewal' ? age < 0 : stream === 'survey' ? age > 5 : age > 3, owner_id: 'Nont', renewed: false })));
+  // K5 history: contracts that expired and were decided later (not in today's list).
+  const renewalsDecided = [{ end_date: '2026-06-05', decided_at: D(7, 3) }, { end_date: '2026-08-10', decided_at: D(9, 10) }, { end_date: '2026-09-20', decided_at: D(10, 5) }];
+  const flow: FlowRow[] = []; for (const t of cases) for (const [when, kind] of [[t.created_at, 'created'], [t.resolved_at, 'closed']] as const) if (when) flow.push({ month: when.slice(0, 7) + '-01', hotel_id: t.hotel_id, hotel_name: t.hotel_name, routed_team: t.routed_team, created_count: kind === 'created' ? 1 : 0, closed_count: kind === 'closed' ? 1 : 0 });
+  // K3 (not reconstructable): fixed in-memory snapshots from 1 Sep; Sep 30 = 7, peak 8.
+  const snapshots: SnapshotRow[] = [];
+  for (let d = Date.parse('2026-09-01T00:00:00Z'); d < nowMs - 12 * 36e5; d += DAY) { const day = new Date(d).toISOString().slice(0, 10), dom = new Date(d).getUTCDate(); const n = day === '2026-09-30' ? 7 : day > '2026-09-30' ? 6 + (dom % 3 === 0 ? 1 : 0) : 6 + (dom % 4 === 0 ? 2 : dom % 2); snapshots.push({ snapshot_date: day, metric: 'K3_UNASSIGNED', dim_key: 'ALL', value: n, threshold_used: null, source: 'JOB' }); }
+  return { cases, tickets, flow, activity, snapshots, history: { coachingClosed, renewalsDecided }, monitor: { v_task_coaching_backlog: coaching, v_task_unassigned: unassigned, v_task_deadline_streams: streams } };
 }

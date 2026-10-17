@@ -10,7 +10,7 @@ const care = demoCareHotels(), fx = taskDemo(SEED_CATEGORIES, care);
 const rows = getWorklist(fx.cases, fx.tickets, SEED_CATEGORIES, care, TASK_DEMO_NOW);
 const acts = H.indexActivity(fx.activity);
 const coaching = fx.monitor.v_task_coaching_backlog, renewals = fx.monitor.v_task_deadline_streams.filter(r => r.stream === 'renewal');
-const inp = { rows, acts, coaching, renewals, now: TASK_DEMO_NOW, config: TASK_DEMO_CONFIG_HISTORY, snapshots: fx.snapshots, k3Today: fx.monitor.v_task_unassigned.length };
+const inp = { rows, acts, coaching, renewals, now: TASK_DEMO_NOW, config: TASK_DEMO_CONFIG_HISTORY, snapshots: fx.snapshots, k3Today: fx.monitor.v_task_unassigned.length, ...fx.history };
 const P = { from: '2026-05-01', to: '2026-10-31' };
 
 describe('Task v2.1 history', () => {
@@ -67,5 +67,38 @@ describe('Task v2.1 history', () => {
     const pts = H.historyPoints(P, TASK_DEMO_NOW, 'month');
     expect(pts.at(-1)?.isToday).toBe(true);
     expect(H.backlogAsOf(pts.at(-1)!.T, inp).k1).toBe(31);
+  });
+  const at = (d: string) => H.backlogAsOf(H.endOfBkkDay(d), inp);
+  const ENDS = ['2026-05-31', '2026-06-30', '2026-07-31', '2026-08-31', '2026-09-30'];
+  test('§12 month-ends May–Oct match the approved prototype', () => {
+    const today = H.backlogAsOf(Date.parse(TASK_DEMO_NOW), inp), pts = [...ENDS.map(at), today];
+    expect(pts.map(b => b.k1)).toEqual([20, 22, 20, 24, 27, 31]);
+    expect(pts.map(b => b.k2)).toEqual([2, 2, 1, 3, 3, 5]);
+    expect(pts.map(b => b.k3)).toEqual([null, null, null, null, 7, 6]);
+    expect(pts.map(b => b.k4)).toEqual([8, 7, 9, 9, 9, 9]);
+    expect(pts.map(b => b.k5)).toEqual([0, 1, 0, 1, 1, 2]);
+  });
+  test('§12 period B: end of Apr and Nov–Apr K1 month-ends', () => {
+    const apr = at('2026-04-30');
+    expect([apr.k1, apr.k2, apr.k3, apr.k4, apr.k5]).toEqual([18, 2, null, 8, 0]);
+    expect(['2025-11-30', '2025-12-31', '2026-01-31', '2026-02-28', '2026-03-31', '2026-04-30'].map(d => at(d).k1)).toEqual([12, 14, 15, 15, 16, 18]);
+  });
+  test('§12 ⑥ PS cases 31 by domain/subcategory and L0 41 by type', () => {
+    const c = H.categoryIncoming(rows, SEED_CATEGORIES, P);
+    expect([c.psN, c.l0N]).toEqual([31, 41]);
+    expect(c.domains.map(d => [d.domain, d.n])).toEqual([['ORM', 14], ['MARCOM', 8], ['PS', 5], ['AC', 4]]);
+    expect(c.domains[0]!.subs.map(s => s.n)).toEqual([4, 3, 2, 2, 1, 1, 1]);
+    expect(c.domains[1]!.subs.map(s => s.n)).toEqual([3, 3, 1, 1]);
+    expect(c.types.map(t => [t.type, t.n])).toEqual([['SERVICING_STALL', 10], ['GRADE_RISK', 9], ['RENEWAL_DUE', 8], ['CONTRACT_FOLLOWUP', 7], ['UPSELL_PITCH', 5], ['SURVEY_LOW', 2]]);
+  });
+  test('§12 ⑦ in/closed/open per team; ORM-A has most incoming', () => {
+    const orm = H.workload('ORM', rows, acts, care, P);
+    expect(orm.map(r => [r.label, r.inN, r.closedN, r.openNow])).toEqual([['ORM-A', 6, 5, 3], ['ORM-B', 4, 4, 2], ['ORM-C', 3, 2, 2], ['ORM-D', 3, 3, 1], ['ORM-E', 2, 2, 1], ['Re-active', 2, 2, 0]]);
+    const one = (d: 'MARCOM' | 'PS' | 'AC' | 'BD') => { const r = H.workload(d, rows, acts, care, P)[0]!; return [r.inN, r.closedN, r.openNow]; };
+    expect([one('MARCOM'), one('PS'), one('AC'), one('BD')]).toEqual([[12, 10, 6], [15, 12, 5], [13, 11, 4], [12, 8, 5]]);
+    expect(orm[0]!.close.median).toBeCloseTo(2.5, 5);
+  });
+  test('fixture is deterministic', () => {
+    expect(JSON.stringify(taskDemo(SEED_CATEGORIES, demoCareHotels()))).toBe(JSON.stringify(fx));
   });
 });
