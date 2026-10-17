@@ -835,22 +835,31 @@ export type Database = {
         }
         Relationships: []
       }
+      v_meeting_by_owner: {
+        Row: {
+          a_base: number | null
+          a_completed: number | null
+          card_month: string | null
+          hotel_count: number | null
+          lens: string | null
+          mc_base: number | null
+          mc_completed: number | null
+          owner: string | null
+          pending_sync: boolean | null
+          scheduled_completed: number | null
+          scheduled_no_show: number | null
+          scheduled_waiting: number | null
+        }
+        Relationships: []
+      }
       v_meeting_completion: {
         Row: {
-          ae_owner_id: string | null
+          base: number | null
+          card_month: string | null
           completed: number | null
-          hotel_id: string | null
-          hotel_name: string | null
-          marcom_owner_id: string | null
-          meeting_date: string | null
           meeting_id: string | null
-          orm_owner_id: string | null
-          orm_team: string | null
           pending_sync: boolean | null
-          postponed_next_month: number | null
-          scheduled: number | null
           service_line: string | null
-          status: string | null
         }
         Relationships: []
       }
@@ -875,44 +884,43 @@ export type Database = {
         Row: {
           ae_owner_id: string | null
           age_days: number | null
-          comment: string | null
+          coaching_status: string | null
+          created_at: string | null
+          escalated_from_warning: boolean | null
+          escalated_to_pm: boolean | null
+          flag_id: string | null
+          flagged_user: string | null
+          group_name: string | null
           hotel_id: string | null
           hotel_name: string | null
           marcom_owner_id: string | null
-          meeting_date: string | null
           meeting_id: string | null
-          orm_owner_id: string | null
           orm_team: string | null
           pending_sync: boolean | null
-          red_count: number | null
           resolved_at: string | null
           route_target: string | null
+          score: number | null
           service_line: string | null
-          status: string | null
+          severity: string | null
           topic: string | null
-          warn_count: number | null
-          warning_progress: number | null
+          watch_until: string | null
         }
         Relationships: []
       }
       v_meeting_funnel: {
         Row: {
           ae_owner_id: string | null
-          completed: number | null
-          confirmed: number | null
+          card_month: string | null
           hotel_id: string | null
           hotel_name: string | null
           marcom_owner_id: string | null
           meeting_date: string | null
           meeting_id: string | null
-          orm_owner_id: string | null
           orm_team: string | null
           pending_sync: boolean | null
-          postponed_next_month: number | null
-          scheduled: number | null
           service_line: string | null
           status: string | null
-          survey: number | null
+          survey_status: string | null
           tier: string | null
         }
         Relationships: []
@@ -948,20 +956,35 @@ export type Database = {
       v_meeting_survey_scores: {
         Row: {
           ae_owner_id: string | null
+          card_month: string | null
+          caretaker: string | null
           comment: string | null
+          disputed: boolean | null
           hotel_id: string | null
           hotel_name: string | null
           marcom_owner_id: string | null
-          meeting_date: string | null
           meeting_id: string | null
-          orm_owner_id: string | null
           orm_team: string | null
           pending_sync: boolean | null
+          prev_score: number | null
           question: string | null
           score: number | null
           service_line: string | null
+        }
+        Relationships: []
+      }
+      v_meeting_tiera_pending: {
+        Row: {
+          card_month: string | null
+          days_to_cutoff: number | null
+          hotel_id: string | null
+          hotel_name: string | null
+          meeting_date: string | null
+          meeting_id: string | null
+          orm_team: string | null
+          owner_ae_id: string | null
+          pending_sync: boolean | null
           status: string | null
-          subject_owner_id: string | null
         }
         Relationships: []
       }
