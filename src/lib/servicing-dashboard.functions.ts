@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
-import type { ServicingReport, ServicingRow } from "./servicing-dashboard-types";
+import type { ServicingReport, ServicingRow, PhaseTimeRow } from "./servicing-dashboard-types";
 
 /** Reads only the granted v_servicing_stage_cards projection (empty + pending until seed+C5). */
 export const readServicingDashboard = createServerFn({ method: "GET" }).handler(async (): Promise<ServicingReport> => {
@@ -28,5 +28,13 @@ export const readServicingDashboard = createServerFn({ method: "GET" }).handler(
     if (page.length < 1000) break;
     if (offset >= 99000) throw new Error("ข้อมูล Servicing เกินขนาดที่รองรับ");
   }
-  return { rows, pending: rows.length === 0 };
+  const phaseRows: PhaseTimeRow[] = [];
+  for (let offset = 0; ; offset += 1000) {
+    const result = await client.from('v_servicing_phase_time').select('*').range(offset,offset+999);
+    if(result.error) throw new Error('อ่านเวลาราย owner ไม่สำเร็จ');
+    const page=(result.data??[]) as unknown as PhaseTimeRow[];
+    phaseRows.push(...page); if(page.length<1000)break;
+    if(offset>=99000)throw new Error('ข้อมูล Servicing เกินขนาดที่รองรับ');
+  }
+  return { rows:rows.filter(r=>r.service_variant!=null), phaseRows, pending: rows.length === 0 };
 });
