@@ -415,7 +415,7 @@ function HeadlineStrip() {
   const churnNow = ratio(churnRows, "out_count", "active_at_start");
   const q = useAcViews();
   const { lifecycles } = useContractLifecycle();
-  const lines = (global.demo ? demoLifecycles() : lifecycles).filter((d) =>
+  const lines = (global.demo ? demoBdacLifecycles() : lifecycles).filter((d) =>
     matchesBook(
       {
         service_line: d.service_line === "MARCOM" ? "Marcom" : d.service_line,
@@ -427,7 +427,7 @@ function HeadlineStrip() {
       f,
     ),
   );
-  const upcoming = v_bdac_deal_aging(lines, now.getTime());
+  const upcoming = v_bdac_deal_aging(lines, (global.demo ? new Date(BDAC_DEMO_NOW) : now).getTime());
   const active = (ps.data?.views.v_ps_account_health ?? []).filter(
     (r) => r.status === "ACTIVE" && r.active_services != null,
   );
