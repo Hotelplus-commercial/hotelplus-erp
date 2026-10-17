@@ -28,7 +28,15 @@ const rangeOf = (k: RangeKey, now: number): Range => {
   const m = k === "3m" ? -2 : -5;
   return { from: monthRange(m, now).from, to: monthRange(0, now).to };
 };
-const prevOf = (r: Range): Range => ({ from: r.from - (r.to - r.from), to: r.from });
+/** Previous comparison period: month-aligned ranges compare the same day window of the previous month; others shift by equal length. */
+const prevOf = (r: Range, now: number): Range => {
+  const d = new Date(r.from);
+  if (d.getDate() === 1 && d.getHours() === 0) {
+    const pFrom = new Date(d.getFullYear(), d.getMonth() - 1, 1).getTime();
+    return { from: pFrom, to: pFrom + Math.min(r.to - r.from, now - r.from + 86_400_000) };
+  }
+  return { from: r.from - (r.to - r.from), to: r.from };
+};
 const owner = (id: string | null | undefined) => (id ? (id.includes("@") ? (id.split("@")[0] ?? id) : id) : "—");
 const pct = (n: number, total: number) => (total ? Math.round((n / total) * 100) : 0);
 const fmtD = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
@@ -135,7 +143,7 @@ export function BdacTab({ source, globalFilter, clock }: { source?: ContractLife
   const [byOwner, setByOwner] = useState(false);
   const now = clock ?? Date.now();
   const range = globalFilter ? periodRange(selectedPeriod(globalFilter, new Date(now))) : rangeOf(rk, now);
-  const prev = prevOf(range);
+  const prev = prevOf(range, now);
   const rows = useMemo(() => source ?? filterLine(lifecycles, line), [source, lifecycles, line]);
   const { demo } = useDashboardGlobal();
   const isPm = globalFilter?.role === "PM";
