@@ -1,3 +1,8 @@
+# Task Dashboard v2.0
+- [ ] Normalize PS cases and read-only L0 tickets with shared config, scoped selectors, monthly flow view and reconciled demo.
+- [ ] Rebuild Task KPI row, monitor cards, flow/department charts, unified worklist and read-only L0 drawer; preserve PS case writes.
+- [ ] Verify rule tests, create/edit/readback, L0 navigation, filters/Compare and desktop/mobile layout.
+
 # AC Dashboard tab v2.0
 - [x] Re-grained v_ac_invoice_ranking (hotel × period × lens ALL/ORM/MARCOM; rank/prev_rank/avg_rank/has_bill; RECURRING only) via migration 0019; config AC_BAND_CONFIG (10k/100k) in src/lib/ac-revenue.ts.
 - [x] Rebuilt tab as Visual Standard cards ①–⑧ + definition strip (src/components/ps/ac-tab.tsx), reusing DashCard/ChartHint/summaryRules; Mon YY everywhere; red only on D/SUSPENDED/LEGAL/⑤ answer; no Tier/Pareto/no-service bucket.
