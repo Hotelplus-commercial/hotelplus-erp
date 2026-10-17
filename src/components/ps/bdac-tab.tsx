@@ -3,11 +3,11 @@
  * to the existing Contract Dashboard card. Median only — no average, no IQR on this tab. */
 import { useNavigate } from "@tanstack/react-router";
 import { LockKeyhole } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChartHint, ChartTooltip, DashCard } from "@/components/ps/dash-card";
+import { ChartHint, ChartTooltip, DashCard, SummaryNote } from "@/components/ps/dash-card";
 import { useContractLifecycle } from "@/lib/contract-lifecycle";
 import {
   LINE_LABEL, STAGE_LABEL, bdacConfig, bdacLine, cycleAgg, cycleLegLimit, filterLine, monthRange, thaiMonth, thaiShort,
