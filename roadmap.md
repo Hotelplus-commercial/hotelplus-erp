@@ -159,3 +159,12 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 
 - [x] Account Health + 360 v1.0 (demo verified)
 - [ ] Account Health live data: waits on Cloud mirrors for contract billing type, Production Report revenue, ORM tier; value-ratio cutoff + thresholds await business confirmation
+
+## Proactive Alert BOT v1.0 (done 2026-10-17)
+- [x] tickets extended: 3 BOT types (RENEWAL_DUE/GRADE_RISK/SURVEY_LOW), SYSTEM:THE_OFFICE creator, BOT payload fields — no new collection
+- [x] BOT scan engine (src/lib/alert-bot.ts) as post-step of AC Daily Job button; demo trigger "ประมวลผล Alert (ชั่วคราว)" in PM Workspace
+- [x] Dedup (hotel+type+event_key) + monthly grade-cycle cooldown; condition-cleared stamp, never auto-close; no CANCEL on BOT tickets
+- [x] 🎫 lane query extended additively (target_dept OR watchers) — watcher rows read-only 👁 FYI; digest header ใหม่/ค้าง/รอปิด
+- [x] Sidebar module links propagate ?demo=1 (demo follows navigation)
+- [x] 7 BOT tests + full suite 39 pass; browser-verified demo oracle (create/FYI/dedup)
+- [ ] Open: cross-machine delivery gated on Cloud Sync Level B (O-TK2); live signals fire only after Cloud Sync seed
