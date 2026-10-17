@@ -7,12 +7,13 @@ import ormTpl from "@/lib/ws2/templates/orm.json";
 import mtTpl from "@/lib/ws2/templates/marcom-mt.json";
 import gmbTpl from "@/lib/ws2/templates/marcom-gmb.json";
 import type { ServiceVariant } from "@/lib/ps-servicing";
+import { applyRequiredFlags, missingRequired, normalizeRequired, requiredChanges, type MissingRequired } from './pi-form-rules';
 
 export type Ws2Service = "ORM" | "MARCOM_MT" | "MARCOM_GMB";
 export type FieldType = "text" | "number" | "select" | "multiselect" | "slider" | "file" | "freetext" | "heading" | "note";
 export type Layer = "L1" | "L2" | "L3";
 export type RestrictedCategory = "ota_login" | "hotel_email" | "pms" | "bank" | "national_id" | "document";
-export type TemplateField = { id: string; label: string; field_type: FieldType; layer: Layer; restricted_category: RestrictedCategory | null; repeat_group: string | null; identity_key?: string; options?: string[] };
+export type TemplateField = { id: string; label: string; field_type: FieldType; layer: Layer; restricted_category: RestrictedCategory | null; repeat_group: string | null; required?: boolean; identity_key?: string; options?: string[] };
 export type TemplateSection = { id: string; title: string; repeat_group: string | null; fields: TemplateField[] };
 export type TemplateDef = { template_id: string; name: string; source: string; sections: TemplateSection[] };
 export type TemplateVersion = { service: Ws2Service; version: number; published_at: string; published_by: string; def: TemplateDef };
@@ -47,7 +48,7 @@ export const canEditTemplates = (role: string) => role === "pm" || role === "man
 export const IDENTITY_FIELDS = ["hotel_name_th", "hotel_name_en", "address_th", "address_en", "phone", "key_contact"] as const;
 
 const seedTemplates = (): TemplateVersion[] =>
-  ([["ORM", ormTpl], ["MARCOM_MT", mtTpl], ["MARCOM_GMB", gmbTpl]] as const).map(([service, def]) => ({ service, version: 1, published_at: now(), published_by: "seed", def: def as TemplateDef }));
+  ([["ORM", ormTpl], ["MARCOM_MT", mtTpl], ["MARCOM_GMB", gmbTpl]] as const).map(([service, def]) => ({ service, version: 1, published_at: now(), published_by: "seed", def: normalizeRequired(def as TemplateDef) }));
 
 /* Property Content v1.0 sample portfolio (mock photos; real file hosting deferred). */
 const PC_SEED: [string, number, Ws2Service[], string, string | null, string | null][] = [
@@ -99,7 +100,7 @@ type Api = State & {
   ensureProperty: (input: { hotel_id: string; hotel_name: string }, user: string) => void;
   updateProperty: (hotel_id: string, patch: Partial<Pick<Property, (typeof IDENTITY_FIELDS)[number]>>, user: string, app?: string) => void;
   formByToken: (token: string) => Ws2Form | undefined;
-  saveAnswers: (token: string, answers: Answers, user: string, submit: boolean) => { ok: boolean; error?: string; otaLogins?: { ota: string; hotel_id: string; username: string; password: string }[] };
+  saveAnswers: (token: string, answers: Answers, user: string, submit: boolean) => { ok: boolean; error?: string; missing?: MissingRequired[]; otaLogins?: { ota: string; hotel_id: string; username: string; password: string }[] };
   addPhotos: (folderId: string, count: number, user: string) => void;
   logRestrictedView: (property_id: string, service: Ws2Service, user: string, app: string) => void;
   /** Assignment master write (property- or service-scoped), audited; creates the property/profile row if missing. */
@@ -118,7 +119,7 @@ export function Ws2Provider({ children }: { children: ReactNode }) {
     try {
       const raw = localStorage.getItem(KEY);
       const p = raw ? (JSON.parse(raw) as State) : null;
-      setS(seedPortfolio(p ? { ...empty(), ...p, templates: p.templates?.length ? p.templates : seedTemplates() } : empty()));
+      setS(seedPortfolio(p ? { ...empty(), ...p, templates: p.templates?.length ? p.templates.map(t => ({ ...t, def: normalizeRequired(t.def) })) : seedTemplates() } : empty()));
     } catch { /* ignore corrupt local data */ }
     setReady(true);
   }, []);
@@ -213,6 +214,8 @@ export function Ws2Provider({ children }: { children: ReactNode }) {
     if (form.status === "submitted") return { ok: false, error: "ฟอร์มนี้ส่งแล้ว" };
     const tpl = s.templates.find((x) => x.service === form.service && x.version === form.template_version);
     if (!tpl) return { ok: false, error: "ไม่พบ template" };
+    const missing = submit ? missingRequired(tpl.def, answers) : [];
+    if (missing.length) return { ok: false, error: `ยังกรอกไม่ครบ ${missing.length} ข้อ`, missing };
     const app = "Customer form";
     const t = now();
     const l1: Record<string, string> = {};
@@ -295,10 +298,15 @@ export function Ws2Provider({ children }: { children: ReactNode }) {
   }, []);
 
   const publishTemplate = useCallback<Api["publishTemplate"]>((service, def, user) => {
+    const live = latestTemplate(service);
+    if (!canEditTemplates(user)) return live.version;
+    const frozen = applyRequiredFlags(live.def, def);
+    const changed = requiredChanges(live.def, frozen);
+    if (!changed.length) return live.version;
     const version = Math.max(...s.templates.filter((x) => x.service === service).map((x) => x.version)) + 1;
-    setS((st) => ({ ...st, templates: [...st.templates, { service, version, published_at: now(), published_by: user, def }] }));
+    setS((st) => ({ ...st, templates: [...st.templates, { service, version, published_at: now(), published_by: user, def: structuredClone(frozen) }], log: [...st.log, logRow({ property_id: '', service, app: APP, user, action: 'edit', field: `template.required.v${version}`, old_value: JSON.stringify(changed.map(c => ({ id: c.id, required: c.before }))), new_value: JSON.stringify(changed.map(c => ({ id: c.id, required: c.after }))) })] }));
     return version;
-  }, [s.templates]);
+  }, [s.templates, latestTemplate]);
 
   const api = useMemo<Api>(() => ({ ...s, latestTemplate, templateFor: (f) => s.templates.find((t) => t.service === f.service && t.version === f.template_version), formByToken: (tk) => s.forms.find((f) => f.form_token === tk), saveAnswers, addPhotos, logRestrictedView, publishTemplate, ensureProperty, updateProperty, updateProfileData, saveAssignment, generateForm }), [s, updateProfileData, saveAssignment, latestTemplate, saveAnswers, addPhotos, logRestrictedView, publishTemplate, ensureProperty, updateProperty, generateForm]);
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>;
