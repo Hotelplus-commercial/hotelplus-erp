@@ -2,7 +2,9 @@
  * No assignee_id / priority: responsible + watchers are derived at read time from the assignment master. */
 import { useSyncExternalStore } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { DEMO_NOW } from './ps-demo-fixture';
+import { demoTaskHotels } from './ps-demo-fixture';
+import { TASK_DEMO_NOW, taskDemo } from './task-demo';
+import { TASK_CONFIG } from './task-config';
 
 export type Team = 'ORM' | 'MARCOM' | 'AC' | 'PS';
 export type TicketStatus = 'open' | 'in-progress' | 'waiting' | 'resolved' | 'closed';
@@ -18,7 +20,7 @@ export const TEAM_LABEL: Record<Team, string> = { ORM: 'ORM', MARCOM: 'Marcom', 
 export const STATUSES: TicketStatus[] = ['open', 'in-progress', 'waiting', 'resolved', 'closed'];
 export const STATUS_LABEL: Record<TicketStatus, string> = { open: 'Open', 'in-progress': 'In progress', waiting: 'Waiting', resolved: 'Resolved', closed: 'Closed' };
 export const WAITING_LABEL: Record<WaitingReason, string> = { CUSTOMER: 'รอลูกค้า', INTERNAL: 'รอภายใน' };
-export const AGING_THRESHOLD_DAYS = 3; // O-T1: per-category values pending PM (config).
+export const AGING_THRESHOLD_DAYS = TASK_CONFIG.case_overdue_days; // O-T1: per-category values pending PM (config).
 export const UNASSIGNED = '— ยังไม่ระบุผู้ดูแล';
 
 /** §2 seed — mirrors the cloud ticket_category rows (used by demo; live reads the table). */
@@ -58,28 +60,17 @@ let demoState: { tickets: Ticket[]; activity: Activity[] } = { tickets: [], acti
 let demoVersion = 0;
 const listeners = new Set<() => void>();
 const emit = () => { demoVersion++; listeners.forEach(l => l()); };
-const daysAgo = (n: number) => new Date(new Date(DEMO_NOW).getTime() - n * 864e5).toISOString();
 export function resetDemoTickets() {
-  const rows: [string, string, string, string, TicketStatus, WaitingReason | null, number, Team?][] = [
-    ['DEMO-CHAAM-PEUMSUK', 'Chaam Peumsuk', 'ORM-RATE', 'ราคาบน Agoda ต่ำกว่าเว็บโรงแรม', 'open', null, 6],
-    ['DEMO-BAAN-TALAY', 'Baan Talay', 'ORM-CONN', 'Channel manager ไม่ sync ห้องว่าง', 'in-progress', null, 5],
-    ['DEMO-ANJALI', 'Anjali', 'MKT-ADS', 'ขอปรับงบโฆษณา Meta เดือนหน้า', 'waiting', 'CUSTOMER', 4],
-    ['DEMO-CHABA-GRAND', 'Chaba Grand', 'AC-PAY', 'ใบแจ้งหนี้ ก.ย. ยอดไม่ตรง', 'in-progress', null, 2],
-    ['DEMO-SEEFAH', 'Seefah', 'PS-PACKAGE', 'ปรึกษาเพิ่มบริการ Marcom', 'open', null, 1],
-    ['DEMO-BAAN-SUAN', 'Baan Suan', 'MKT-KOL', 'ขอรายชื่อ KOL สายครอบครัว', 'waiting', 'INTERNAL', 3],
-    ['DEMO-DUSIT-POOL-VILLA', 'Dusit Pool Villa', 'PS-COMPLAIN', 'ร้องเรียนการตอบกลับล่าช้า', 'resolved', null, 8],
-    ['DEMO-ANJALI', 'Anjali', 'ORM-INFO', 'ขอข้อมูลรูปโปรโมชันสำหรับโพสต์ (ส่ง Marcom)', 'waiting', 'INTERNAL', 2, 'MARCOM'],
-  ];
-  const tickets = rows.map(([hotel_id, hotel_name, cat, title, status, wr, ago, team], i): Ticket => ({ id: `demo-t${i + 1}`, case_no: `Case-${String(i + 1).padStart(6, '0')}`, hotel_id, hotel_name, title, description: null, category_id: cat, routed_team: team ?? SEED_CATEGORIES.find(c => c.code === cat)!.domain, status, waiting_reason: wr, created_by: 'Nont', created_at: daysAgo(ago), updated_at: daysAgo(Math.max(0, ago - 1)), resolved_at: status === 'resolved' ? daysAgo(1) : null, revision: status === 'open' ? 0 : 1 }));
-  const activity: Activity[] = tickets.flatMap(t => [{ id: `${t.id}-a0`, ticket_id: t.id, actor_id: 'Nont', type: 'CREATE' as const, body: t.case_no, at: t.created_at }, ...(t.status !== 'open' ? [{ id: `${t.id}-a1`, ticket_id: t.id, actor_id: 'Fern', type: 'STATUS_CHANGE' as const, body: `open → ${t.status}${t.waiting_reason ? ` (${t.waiting_reason})` : ''}`, at: t.updated_at }] : [])]);
+  const { cases: tickets } = taskDemo(SEED_CATEGORIES, demoTaskHotels());
+  const activity: Activity[] = tickets.flatMap(t => [{ id: `${t.id}-a0`, ticket_id: t.id, actor_id: t.created_by, type: 'CREATE' as const, body: t.case_no, at: t.created_at }]);
   demoState = { tickets, activity }; emit();
 }
 export function useDemoVersion() { return useSyncExternalStore(cb => { listeners.add(cb); return () => listeners.delete(cb); }, () => demoVersion, () => 0); }
 
-const nowIso = (demo: boolean) => (demo ? DEMO_NOW : new Date().toISOString());
+const nowIso = (demo: boolean) => (demo ? TASK_DEMO_NOW : new Date().toISOString());
 function applyUpdate(t: Ticket, i: UpdateInput, push: (a: Omit<Activity, 'id' | 'ticket_id' | 'at'>) => void): Ticket {
   const next = { ...t };
-  if (i.category && i.category !== t.category_id) { const c = SEED_CATEGORIES.find(x => x.code === i.category)!; push({ actor_id: i.actor, type: 'CATEGORY_CHANGE', body: `${t.category_id} → ${c.code}` }); next.category_id = c.code; next.routed_team = c.domain; }
+  if (i.category && i.category !== t.category_id) { const c = SEED_CATEGORIES.find(x => x.code === i.category); if (!c) throw new Error('ไม่พบหมวด'); push({ actor_id: i.actor, type: 'CATEGORY_CHANGE', body: `${t.category_id} → ${c.code}` }); next.category_id = c.code; next.routed_team = c.domain; }
   if (i.routed_team) next.routed_team = i.routed_team;
   if (next.routed_team !== t.routed_team) push({ actor_id: i.actor, type: 'DEPT_CHANGE', body: `${t.routed_team} → ${next.routed_team}` });
   const ns = i.status ?? t.status;
@@ -105,7 +96,7 @@ export const ticketApi = {
     if (demo) return [...demoState.tickets].sort((a, b) => b.case_no.localeCompare(a.case_no));
     const out: Ticket[] = [];
     for (let from = 0; ; from += 1000) {
-      const r = await supabase.from('ticket').select('*').order('case_no', { ascending: false }).range(from, from + 999);
+      const r = await supabase.from('v_task_tickets').select('*').order('case_no', { ascending: false }).range(from, from + 999);
       if (r.error) throw new Error('อ่านเคสไม่สำเร็จ');
       out.push(...(r.data as Ticket[]));
       if (r.data.length < 1000) break;
@@ -121,7 +112,7 @@ export const ticketApi = {
   async create(demo: boolean, i: CreateInput): Promise<Ticket> {
     if (!i.hotel_id || !i.title.trim() || !i.category || !i.actor) throw new Error('กรอกโรงแรม หมวด และหัวข้อ');
     if (demo) {
-      const c = SEED_CATEGORIES.find(x => x.code === i.category)!; const n = demoState.tickets.length + 1; const at = nowIso(true);
+      const c = SEED_CATEGORIES.find(x => x.code === i.category); if (!c) throw new Error('ไม่พบหมวด'); const n = demoState.tickets.length + 1; const at = nowIso(true);
       const t: Ticket = { id: `demo-t${n}-${Date.now()}`, case_no: `Case-${String(n).padStart(6, '0')}`, hotel_id: i.hotel_id, hotel_name: i.hotel_name, title: i.title.trim(), description: i.description.trim() || null, category_id: c.code, routed_team: i.routed_team ?? c.domain, status: 'open', waiting_reason: null, created_by: i.actor, created_at: at, updated_at: at, resolved_at: null, revision: 0 };
       demoState = { tickets: [...demoState.tickets, t], activity: [...demoState.activity, { id: `${t.id}-c`, ticket_id: t.id, actor_id: i.actor, type: 'CREATE', body: t.case_no, at }] }; emit();
       return t;
@@ -149,14 +140,20 @@ export const ticketApi = {
 };
 
 /* ---------------- monitor (read-only v_task_* · empty until seed + C5) ---------------- */
-export const TASK_MONITOR_VIEWS = ['v_task_coaching_backlog', 'v_task_unassigned', 'v_task_deadline_streams', 'v_task_onboard_cycle'] as const;
+export const TASK_MONITOR_VIEWS = ['v_task_coaching_backlog', 'v_task_unassigned', 'v_task_deadline_streams'] as const;
 export type TaskMonitorView = (typeof TASK_MONITOR_VIEWS)[number];
 type MonitorField = 'service_line' | 'go_live_at' | 'cycle_days' | 'owner_id' | 'coach' | 'hotel_name' | 'hotel_id' | 'role' | 'age_days' | 'stream' | 'overdue' | 'card_id' | 'status';
 export type MonitorRow = Partial<Record<MonitorField, string | number | boolean | null>> & Record<string, string | number | boolean | null | undefined>;
 export async function readTaskMonitor(): Promise<Record<TaskMonitorView, MonitorRow[]>> {
   const entries = await Promise.all(TASK_MONITOR_VIEWS.map(async v => {
-    const r = await supabase.from(v).select('*').range(0, 999);
-    return [v, r.error ? [] : (r.data as MonitorRow[])] as const;
+    const rows: MonitorRow[] = [];
+    for (let from = 0; ; from += 1000) {
+      const r = await supabase.from(v).select('*').range(from, from + 999);
+      if (r.error) throw new Error('อ่านข้อมูลงานค้างไม่สำเร็จ');
+      rows.push(...(r.data as MonitorRow[]));
+      if (r.data.length < 1000) break;
+    }
+    return [v, rows] as const;
   }));
   return Object.fromEntries(entries) as Record<TaskMonitorView, MonitorRow[]>;
 }
