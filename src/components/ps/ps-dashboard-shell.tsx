@@ -592,9 +592,10 @@ function AcTab() {
     const d = q.data;
     if (!d) return undefined;
     const per = selectedPeriod(f, now, "A");
+    const perB = f.compare ? selectedPeriod(f, now, "B") : null;
     const inRange = (r: Row) => {
       const p = String(r.billing_period ?? "").slice(0, 10);
-      return p >= per.from && p <= per.to;
+      return (p >= per.from && p <= per.to) || (perB != null && p >= perB.from && p <= perB.to);
     };
     return {
       ...d,
