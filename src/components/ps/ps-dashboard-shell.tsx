@@ -36,7 +36,7 @@ import {
 } from "@/lib/ps-dashboard-global";
 import { DashboardGlobalFilters } from "./dashboard-global-filters";
 import { DashboardCompare } from "./dashboard-compare";
-import { TaskTab, useOverdueTile } from "./task-tab";
+import { TaskTab } from "./task-tab";
 import { useHrMembers, teamLabel } from "@/lib/hr-members";
 import { cn } from "@/lib/utils";
 import { ChartHint, SummaryNote, Delta } from "./dash-card";
@@ -615,42 +615,3 @@ function AcTab() {
   );
 }
 
-/** Task tab Headline tiles: overdue tickets (live now, tickets only) + Avg onboarding cycle-time (empty until seed). */
-function TaskTiles() {
-  const t = useOverdueTile();
-  const f = useContext(FilterCtx);
-  const mark = t.demo ? " · DEMO" : "";
-  const ab = (a: number | null, b: number | null) =>
-    f.compare ? (
-      <span className="text-xs text-muted-foreground">
-        A {a == null ? "—" : a.toLocaleString("th-TH", { maximumFractionDigits: 1 })} · B{" "}
-        {b == null ? "—" : b.toLocaleString("th-TH", { maximumFractionDigits: 1 })} ·{" "}
-        {deltaText(a, b)}
-      </span>
-    ) : (
-      <Mom cur={a ?? 0} prev={b} />
-    );
-  return (
-    <>
-      {t.error ? (
-        <Tile label="งานค้างเกินกำหนด" placeholder="อ่านเคสไม่ได้" />
-      ) : (
-        <Tile
-          label={"งานค้างเกินกำหนด" + mark}
-          {...(t.overdue ? { tone: "warn" as const } : {})}
-          value={t.loading ? "…" : String(t.overdue)}
-          mom={ab(t.overdue, null)}
-        />
-      )}
-      {t.cycleA == null ? (
-        <Tile label={"Avg onboarding cycle-time" + mark} placeholder="รอ Cloud Sync seed" />
-      ) : (
-        <Tile
-          label={"Avg onboarding cycle-time" + mark}
-          value={`${t.cycleA.toFixed(1)} วัน`}
-          mom={ab(t.cycleA, t.cycleB)}
-        />
-      )}
-    </>
-  );
-}

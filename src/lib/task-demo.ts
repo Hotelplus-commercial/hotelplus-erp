@@ -14,7 +14,7 @@ export function taskDemo(categories:Category[],hotels:HotelCare[]) {
  const all=[...cases,...tickets];const creation=[...Array(18).fill(date(4,10)),...[9,11,10,14,16,12].flatMap((n,j)=>Array(n).fill(date(j+5,1)))];
  // Closed records consume earliest creation slots first, so every close is after creation.
  const ordered=[...all.filter(t=>'resolved_at'in t?!!t.resolved_at:['DONE','CANCELLED'].includes(t.status)),...all.filter(t=>'resolved_at'in t?!t.resolved_at:!['DONE','CANCELLED'].includes(t.status))];
- ordered.forEach((t,i)=>{t.created_at=creation[i]??date(4,10);t.updated_at && (t.updated_at=t.created_at);if('audit'in t&&t.audit[0])t.audit[0].at=t.created_at;});
+ ordered.forEach((t,i)=>{t.created_at=creation[i]??date(4,10);if('updated_at'in t)t.updated_at=t.created_at;if('audit'in t&&t.audit[0])t.audit[0].at=t.created_at;});
  // Exactly five overdue actionable PS cases; waiting still displays neutral age.
  cases.filter(t=>t.status==='open'||t.status==='in-progress').forEach((t,i)=>{t.created_at=i<5?date(10,1):date(10,16);});
  // Compensate replaced October creation slots using historical records, preserving monthly totals.
