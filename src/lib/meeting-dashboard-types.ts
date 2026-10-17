@@ -114,8 +114,12 @@ export function monthsInPeriod(period: Period): string[] {
 }
 export function meetingScope(rows: MeetingRow[], filter: GlobalFilter, period: Period) {
   const months = new Set(monthsInPeriod(period));
+  const term = filter.search.trim().toLowerCase();
   return rows.filter(
-    (row) => matchesBook(row, filter, true) && months.has(String(row["card_month"] ?? "")),
+    (row) =>
+      matchesBook(row, filter, false) &&
+      months.has(String(row["card_month"] ?? "")) &&
+      (!term || `${row.hotel_name ?? ""} ${row.hotel_id ?? ""}`.toLowerCase().includes(term)),
   );
 }
 export const meetingSum = (rows: MeetingRow[], key: string) =>
