@@ -99,12 +99,6 @@ function SlaBar({ on, amber, over, big = false }: { on: number; amber: number; o
   const total = on + over;
   if (!total) return <div className="grid h-10 place-items-center rounded-[10px] bg-[#EEF4F5] text-xs text-muted-foreground">ไม่มีดีล</div>;
   const onPct = (on / total) * 100;
-  const tip = (
-    <ChartTooltip
-      header={`ดีลค้างทั้งหมด ${total} ดีล`}
-      lines={[`On-time ${on} (${pct(on, total)}%) · ในนี้ครบ 2 วันวันนี้ ${amber}`, `เกิน SLA ${over} (${pct(over, total)}%)`]}
-    />
-  );
   return (
     <ChartHint header={`ดีลค้าง ${total} ดีล`} lines={[`On-time ${on} (${pct(on, total)}%) · ครบ 2 วันวันนี้ ${amber}`, `เกิน SLA ${over} (${pct(over, total)}%)`]}>
       <div className="flex h-10 w-full cursor-default gap-[3px]" aria-label={undefined}>
@@ -124,7 +118,6 @@ function SlaBar({ on, amber, over, big = false }: { on: number; amber: number; o
             {big ? `เกิน SLA ${over} ดีล (${pct(over, total)}%)` : `${over} ดีล (${pct(over, total)}%)`}
           </div>
         )}
-        <span className="hidden">{tip /* a11y noop */}</span>
       </div>
     </ChartHint>
   );
