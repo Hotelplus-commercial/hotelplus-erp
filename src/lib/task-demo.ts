@@ -26,38 +26,38 @@ const CLOSE: Record<string, number> = { A: 2.5, B: 1.8, C: 3.1, D: 2.0, E: 1.5, 
 type CaseSpec = { lane: Lane; created: string; closed?: string; now: 'open' | 'in-progress' | 'waiting' | 'resolved'; waitFrom?: string; waitTo?: string; straight?: boolean; reopen?: boolean; backfill?: boolean };
 type L0Spec = { lane: Lane; created: string; closed?: string; cancelled?: boolean; now?: 'NEW' | 'ACK'; type?: TicketType };
 
-/* ---------- PS cases (31 in May–Oct + 4 before May) ---------- */
+/* ---------- PS cases (31 in May–Oct + 3 before May) ---------- */
 function caseSpecs(): CaseSpec[] {
   const s: CaseSpec[] = [
-    // before May: two long-running cases (K2 Apr/May/Jun) and two long waits
-    { lane: 'A', created: D(4, 10), closed: D(6, 15), now: 'resolved', backfill: true },
-    { lane: 'B', created: D(4, 20), closed: D(7, 10), now: 'resolved' },
+    // before May: two long-running cases (K2 Apr/May/Jun) and one long wait
+    { lane: 'PS', created: D(4, 10), closed: D(6, 15), now: 'resolved', backfill: true },
+    { lane: 'AC', created: D(4, 20), closed: D(7, 10), now: 'resolved' },
     { lane: 'MARCOM', created: D(1, 15), now: 'waiting', waitFrom: D(1, 16) },
-    { lane: 'PS', created: D(3, 10), now: 'waiting', waitFrom: D(3, 11) },
     // long-running in period (drive K2 month-ends)
-    { lane: 'D', created: D(6, 1), closed: D(7, 20), now: 'resolved' },
-    { lane: 'D', created: D(7, 10), closed: D(8, 20), now: 'resolved' },
+    { lane: 'MARCOM', created: D(6, 1), closed: D(7, 20), now: 'resolved' },
+    { lane: 'MARCOM', created: D(7, 10), closed: D(8, 20), now: 'resolved' },
     { lane: 'MARCOM', created: D(8, 15), closed: D(9, 10), now: 'resolved' },
-    { lane: 'PS', created: D(8, 20), closed: D(9, 12), now: 'resolved' },
-    // open today: overdue five (C5, C8, C10, C11, C12) + three young + four waiting
-    { lane: 'A', created: D(8, 5), now: 'in-progress' },
-    { lane: 'A', created: D(9, 5), now: 'in-progress' },
+    { lane: 'MARCOM', created: D(8, 20), closed: D(9, 12), now: 'resolved' },
+    // open today: five overdue + three young + five waiting
+    { lane: 'PS', created: D(8, 5), now: 'in-progress' },
+    { lane: 'PS', created: D(9, 5), now: 'in-progress' },
     { lane: 'MARCOM', created: D(9, 15), now: 'waiting', waitFrom: D(10, 5) },
-    { lane: 'A', created: D(10, 1), now: 'in-progress' },
-    { lane: 'B', created: D(10, 2), now: 'in-progress' },
-    { lane: 'B', created: D(10, 8), now: 'open' },
-    { lane: 'C', created: D(10, 15), now: 'open' },
+    { lane: 'PS', created: D(10, 1), now: 'in-progress' },
+    { lane: 'AC', created: D(10, 2), now: 'in-progress' },
+    { lane: 'AC', created: D(10, 8), now: 'open' },
+    { lane: 'A', created: D(10, 15), now: 'open' },
     { lane: 'MARCOM', created: D(10, 16), now: 'open' },
     { lane: 'PS', created: D(10, 16), now: 'open' },
     { lane: 'PS', created: D(10, 10), now: 'waiting', waitFrom: D(10, 10, 0.3) },
     { lane: 'AC', created: D(10, 11), now: 'waiting', waitFrom: D(10, 11, 0.3) },
     { lane: 'AC', created: D(10, 12), now: 'waiting', waitFrom: D(10, 12, 0.3) },
+    { lane: 'C', created: D(10, 13), now: 'waiting', waitFrom: D(10, 13, 0.3) },
   ];
-  // 15 short cases, 3 per month May–Sep, opened and closed inside the month.
-  const order: Lane[] = ['A', 'MARCOM', 'PS', 'B', 'MARCOM', 'AC', 'C', 'MARCOM', 'PS', 'E', 'MARCOM', 'AC', 'RE_ACTIVE', 'MARCOM', 'A'];
+  // 14 short cases (3 per month May–Aug, 2 in Sep), opened and closed inside the month.
+  const order: Lane[] = ['A', 'MARCOM', 'B', 'A', 'C', 'D', 'A', 'B', 'E', 'A', 'B', 'D', 'RE_ACTIVE', 'MARCOM'];
   order.forEach((lane, i) => {
     const created = D(5 + Math.floor(i / 3), [4, 9, 14][i % 3]!), closed = plus(created, CLOSE[lane]!);
-    s.push({ lane, created, closed, now: 'resolved', straight: i === 0, reopen: i === 6, ...(i === 1 ? { waitFrom: plus(created, ACCEPT.MARCOM! + 0.3), waitTo: plus(created, ACCEPT.MARCOM! + 1.3) } : {}) });
+    s.push({ lane, created, closed, now: 'resolved', straight: i === 0, reopen: i === 4, ...(i === 1 ? { waitFrom: plus(created, ACCEPT.MARCOM! + 0.3), waitTo: plus(created, ACCEPT.MARCOM! + 1.3) } : {}) });
   });
   return s;
 }
@@ -69,24 +69,24 @@ const CAT_QUEUE: Record<Team, string[]> = {
   AC: ['AC-PAY', 'AC-PAY', 'AC-PAY', 'AC-OTHER'],
 };
 
-/* ---------- L0 tickets (41 in May–Oct + 14 before May) ---------- */
+/* ---------- L0 tickets (41 in May–Oct + 15 before May) ---------- */
 function l0Specs(): L0Spec[] {
   const s: L0Spec[] = [];
-  // before May: 12 in Nov 25 + 2 in Dec 25; four stay open, ten close in May–Oct (one cancelled).
-  const preClose = [D(5, 20), D(6, 20), D(7, 20), D(8, 20), D(9, 20), D(10, 2), D(10, 4), D(10, 6), D(10, 8), D(10, 10)];
-  const preLanes: Lane[] = ['A', 'B', 'C', 'D', 'E', 'MARCOM', 'PS', 'AC', 'AC', 'MARCOM'];
-  s.push({ lane: 'AUTO', created: at(2025, 11, 10), now: 'NEW' }, { lane: 'OFFICE', created: at(2025, 11, 12), now: 'ACK' }, { lane: 'BD', created: at(2025, 11, 14), now: 'NEW' }, { lane: 'MARCOM', created: at(2025, 12, 5), now: 'ACK' });
-  preLanes.forEach((lane, i) => s.push({ lane, created: i === 9 ? at(2025, 12, 12) : at(2025, 11, 16 + i), closed: preClose[i]!, cancelled: i === 7 }));
-  // in period: created per month / closed in the same month (others stay open).
-  const created = [6, 7, 6, 8, 11, 3], closedSame = [3, 4, 6, 5, 7, 3];
-  const openLanes: Lane[] = ['BD', 'PS', 'AC', 'BD', 'MARCOM', 'C', 'BD', 'PS', 'D', 'AC', 'BD', 'MARCOM', 'E'];
-  const closedLanes: Lane[] = ['PS', 'AC', 'BD', 'A', 'PS', 'AC', 'BD', 'MARCOM', 'PS', 'AC', 'BD', 'B', 'PS', 'AC', 'BD', 'MARCOM', 'PS', 'AC', 'BD', 'RE_ACTIVE', 'PS', 'AC', 'BD', 'PS', 'AC', 'BD', 'PS', 'BD'];
-  let oi = 0, ci = 0, nw = 0;
-  created.forEach((n, j) => { for (let k = 0; k < n; k++) {
-    const day = 2 + 2 * k, c = D(5 + j, day);
-    if (k < closedSame[j]!) { const lane = closedLanes[ci++]!; s.push({ lane, created: c, closed: plus(c, CLOSE[lane]!) }); }
-    else s.push({ lane: openLanes[oi++]!, created: c, now: nw++ % 2 ? 'ACK' : 'NEW' });
-  } });
+  // before May: 12 in Nov 25, 2 in Dec 25, 1 in Mar 26; twelve stay open, three close in Oct (one cancelled).
+  const preOpen: Lane[] = ['AUTO', 'OFFICE', 'A', 'A', 'B', 'B', 'C', 'D', 'E', 'MARCOM', 'MARCOM', 'MARCOM'];
+  const preCreated = [...Array.from({ length: 12 }, (_, i) => at(2025, 11, 5 + i)), at(2025, 12, 5), at(2025, 12, 12), at(2026, 3, 5)];
+  preOpen.forEach((lane, i) => s.push({ lane, created: preCreated[i]! }));
+  (['PS', 'AC', 'BD'] as Lane[]).forEach((lane, i) => s.push({ lane, created: preCreated[12 + i]!, closed: D(10, 3 + 2 * i), cancelled: i === 1 }));
+  // in period, per month: early (closed same month) · late (created ~26th, closed early next month) · open.
+  const plan: [number, number, number][] = [[4, 1, 1], [4, 2, 1], [5, 1, 0], [5, 2, 1], [7, 3, 2], [2, 0, 0]];
+  const closedLanes: Lane[] = ['PS', 'AC', 'BD', 'A', 'PS', 'AC', 'BD', 'B', 'MARCOM', 'PS', 'AC', 'BD', 'C', 'PS', 'AC', 'BD', 'D', 'MARCOM', 'PS', 'AC', 'BD', 'E', 'PS', 'AC', 'BD', 'RE_ACTIVE', 'MARCOM', 'PS', 'AC', 'BD', 'PS', 'AC', 'MARCOM', 'PS', 'AC', 'PS'];
+  let ci = 0;
+  plan.forEach(([early, late, open], j) => {
+    for (let k = 0; k < early; k++) { const c = D(5 + j, 2 + 2 * k), lane = closedLanes[ci++]!; s.push({ lane, created: c, closed: plus(c, CLOSE[lane]!) }); }
+    for (let k = 0; k < late; k++) { const c = D(5 + j, 26 + k), lane = closedLanes[ci++]!; s.push({ lane, created: c, closed: plus(c, Math.min(CLOSE[lane]!, 3.9)) }); }
+    for (let k = 0; k < open; k++) s.push({ lane: 'BD', created: D(5 + j, 16 + 2 * k) });
+  });
+  let nw = 0; for (const t of s) if (!t.closed) t.now = nw++ % 2 ? 'ACK' : 'NEW';
   // Types (⑥ §12): ORM/Marcom → SERVICING_STALL · AC → GRADE_RISK · PS → RENEWAL_DUE ×8 + SURVEY_LOW ×2 · BD → CONTRACT_FOLLOWUP ×7 + UPSELL_PITCH ×5.
   let ps = 0, bd = 0;
   for (const t of s) {
