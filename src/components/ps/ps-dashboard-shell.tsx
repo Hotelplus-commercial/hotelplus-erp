@@ -2,13 +2,11 @@
  * AC data comes only from the existing v_ac_* views (cloud mirror, C5); nothing here mutates
  * AC data. Signed/Won are re-homed from BD-AC using the unchanged v_bdac_flow projection. */
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { Clock, Minus, Triangle } from "lucide-react";
 import { createContext, useContext, useMemo, useState, useEffect, type ReactNode } from "react";
-import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 
-import { Chip, Panel } from "@/components/crm/crm-ui";
+import { Chip } from "@/components/crm/crm-ui";
 import { BdacTab } from "@/components/ps/bdac-tab";
 import { AcTab as AcTabV2 } from "@/components/ps/ac-tab";
 import { PsReportTab } from "@/components/ps/ps-report-tab";
@@ -67,12 +65,7 @@ type RowKey =
   | "previous_month_rank"
   | "lifetime_average_rank";
 type Row = Partial<Record<RowKey, string | number | boolean | null>>;
-const ym = (offset: number) => {
-  const d = new Date();
-  return new Date(Date.UTC(d.getFullYear(), d.getMonth() + offset, 1)).toISOString().slice(0, 7);
-};
 const num = (v: unknown) => Number(v ?? 0) || 0;
-const baht = (n: number) => "฿" + n.toLocaleString("th-TH", { maximumFractionDigits: 0 });
 
 /** Rows inside the selected window; shift=-1 gives the same window one month earlier (MoM). */
 function scope(rows: Row[], f: Filter, shift = 0, now = new Date()) {
