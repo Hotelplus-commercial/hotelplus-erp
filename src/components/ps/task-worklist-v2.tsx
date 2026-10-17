@@ -7,14 +7,14 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import { Sheet, SheetClose, SheetPortal, SheetOverlay, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { DEPTS } from '@/lib/tickets-l0';
-import { GROUP_LABEL, ORIGIN_LABEL, TASK_CONFIG, daysBetween, type WorkRow, type StatusGroup } from '@/lib/task-worklist';
+import { GROUP_LABEL, ORIGIN_LABEL, TASK_CONFIG, inClosedWindow, type WorkRow, type StatusGroup } from '@/lib/task-worklist';
 import type { Category, Ticket } from '@/lib/task-tickets';
 import { CurrentNote } from './task-monitor-v2';
 export const WorkChip=({row}:{row:WorkRow})=><span className={`task-chip task-origin-${row.origin}`}>{ORIGIN_LABEL[row.origin]}</span>;
 export function TaskWorklistV2({rows,categories,now,demo,compare,onCreate,onCase}:{rows:WorkRow[];categories:Category[];now:Date;demo:boolean;compare:boolean;onCreate:()=>void;onCase:(t:Ticket)=>void}){
  const [status,setStatus]=useState('ACTIVE'),[search,setSearch]=useState(''),[origin,setOrigin]=useState('ALL'),[dept,setDept]=useState('ALL'),[category,setCategory]=useState('ALL'),[page,setPage]=useState(1),[selected,setSelected]=useState<WorkRow|null>(null);const focusRow=useRef<HTMLButtonElement|null>(null);
  const base=rows.filter(r=>(origin==='ALL'||r.origin===origin)&&(dept==='ALL'||r.dept===dept)&&(category==='ALL'||r.category_key===category)&&r.search_text.includes(search.toLowerCase().trim()));
- const inStatus=(r:WorkRow,s:string)=>s==='ACTIVE'?r.status_group!=='CLOSED':s==='CLOSED'?r.status_group==='CLOSED'&&!!r.closed_at&&daysBetween(r.closed_at,now.toISOString())<=TASK_CONFIG.closed_window_days&&r.closed_at<=now.toISOString():r.status_group===s;
+ const inStatus=(r:WorkRow,s:string)=>s==='ACTIVE'?r.status_group!=='CLOSED':s==='CLOSED'?r.status_group==='CLOSED'&&inClosedWindow(r.closed_at,now.toISOString(),TASK_CONFIG.closed_window_days):r.status_group===s;
  const filtered=base.filter(r=>inStatus(r,status)).sort((a,b)=>status==='CLOSED'?(b.closed_at??'').localeCompare(a.closed_at??''):Number(b.is_overdue)-Number(a.is_overdue)||(b.aging_days??0)-(a.aging_days??0));
  const change=(fn:()=>void)=>{fn();setPage(1);};const shown=filtered.slice(0,page*TASK_CONFIG.list_page_size);
  return <section className="dash-card task-worklist"><header className="task-list-header"><div><h2>รายการงาน</h2><p className="dash-question">คลิกแถวเพื่อดูรายละเอียด · เคส PS แก้ไขได้ที่นี่ · Ticket ระบบจัดการใน Workspace ของแผนก</p></div><Button onClick={onCreate}>＋ สร้างเคส</Button></header><CurrentNote compare={compare}/>
