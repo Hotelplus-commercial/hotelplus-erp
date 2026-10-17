@@ -204,6 +204,7 @@ function Detail({ t, role, dept, onClose }: { t: L0Ticket; role: Role; dept: Dep
 function PmTester() {
   const [dept, setDept] = useState<Dept>("BD");
   const [note, setNote] = useState<string | null>(null);
+  const [bot, setBot] = useState<BotRunResult | null>(null);
   const subject = { hotel_id: "DEMO-SEEFAH", hotel_name: "Seefah", gap_service: "MARCOM" };
   const existing = useTicketReadBack("UPSELL_PITCH", subject.hotel_id, subject.gap_service);
   const otherSubject = { hotel_id: "DEMO-ANJALI", hotel_name: "Anjali", gap_service: "ORM" };
