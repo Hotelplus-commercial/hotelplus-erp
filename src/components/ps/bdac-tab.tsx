@@ -412,13 +412,13 @@ export function BdacTab({ source, globalFilter, clock }: { source?: ContractLife
             </div>
           </div>
         </DashCard>
-
-        {/* ④ Cycle time */}
-        <CycleCard
-          rows={cycleRows} agg={agg} leg={leg} setLeg={setLeg} byOwner={byOwner} setByOwner={setByOwner}
-          ownerGroups={ownerGroups} ownerRows={ownerRows} range={range}
-        />
       </div>
+
+      {/* ④ Cycle time — full width on its own row (v2.1) */}
+      <CycleCard
+        rows={cycleRows} agg={agg} leg={leg} setLeg={setLeg} byOwner={byOwner} setByOwner={setByOwner}
+        ownerGroups={ownerGroups} ownerRows={ownerRows} range={range}
+      />
 
       {/* ⑤ Deal table (full width, no SummaryNote) */}
       <section className="dash-card">
