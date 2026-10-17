@@ -131,7 +131,7 @@ export function TaskTab() {
   const acts=useMemo(()=>indexActivity(actsQ.data??[]),[actsQ.data]);
   const snapshots=d.demo?fixture.snapshots:snapsQ.data??[];
   const earliest=rows.length?bkkDate(Math.min(...rows.map(r=>Date.parse(r.created_at)))):undefined;
-  const inp:BacklogInput=useMemo(()=>({rows,acts,coaching,renewals,now:nowIso,config:d.demo?TASK_DEMO_CONFIG_HISTORY:undefined,snapshots,k3Today:d.monitor?unassigned.length:null}),[rows.length,rows.map(r=>r.work_id+r.status_raw+r.dept).join(),acts,coaching.length,renewals.length,nowIso,d.demo,snapshots,unassigned.length,!!d.monitor]); // eslint-disable-line react-hooks/exhaustive-deps
+  const inp:BacklogInput=useMemo(()=>({rows,acts,coaching,renewals,now:nowIso,config:d.demo?TASK_DEMO_CONFIG_HISTORY:undefined,snapshots,k3Today:d.monitor?unassigned.length:null,...(d.demo?fixture.history:{})}),[rows.length,rows.map(r=>r.work_id+r.status_raw+r.dept).join(),acts,coaching.length,renewals.length,nowIso,d.demo,snapshots,unassigned.length,!!d.monitor]); // eslint-disable-line react-hooks/exhaustive-deps
   const firstSnap=snapshots.filter(s=>s.metric==='K3_UNASSIGNED'&&s.dim_key==='ALL').map(s=>s.snapshot_date).sort()[0];
   const weekly=periodMonths(pA,nowIso)<3,sparkPts=historyPoints(pA,nowIso,weekly?'week':'month',earliest);
   const hist=useMemo(()=>{const daily=historyPoints(pA,nowIso,'day',earliest).map(p=>backlogAsOf(p.T,inp));const spark=sparkPts.map(p=>({p,b:backlogAsOf(p.T,inp)}));const at=(date:string)=>backlogAsOf(date>=nowIso.slice(0,10)?Date.parse(nowIso):endOfBkkDay(date),inp);return {daily,spark,endA:at(pA.to),endB:at(pB.to),prev:at(monthPeriod(d.now,-1).to)};},[inp,pA.from,pA.to,pB.to,weekly]); // eslint-disable-line react-hooks/exhaustive-deps

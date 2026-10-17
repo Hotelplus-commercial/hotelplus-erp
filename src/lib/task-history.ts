@@ -43,7 +43,7 @@ export function l0StatusAt(t: L0Ticket, T: number): string | null {
   return s;
 }
 
-export type BacklogInput = { rows: WorkRow[]; acts: ActMap; coaching: MonitorRow[]; renewals: MonitorRow[]; now: string; config?: TaskConfigHistory | undefined; snapshots: SnapshotRow[]; k3Today: number | null };
+export type BacklogInput = { rows: WorkRow[]; acts: ActMap; coaching: MonitorRow[]; renewals: MonitorRow[]; now: string; config?: TaskConfigHistory | undefined; snapshots: SnapshotRow[]; k3Today: number | null; coachingClosed?: { opened_at: string; resolved_at: string }[]; renewalsDecided?: { end_date: string; decided_at: string }[] };
 export type Backlog = { k1: number; k1Case: number; k1L0: number; k2: number; k2Threshold: number; k3: number | null; k4: number; k5: number; dept: Record<string, [number, number, number]>; k2ByDept: Record<string, number> };
 const GROUP_IDX: Partial<Record<StatusGroup, number>> = { OPEN: 0, IN_PROGRESS: 1, WAITING: 2 };
 /** backlogAsOf(T): T = end of a Bangkok day, or `now` for today (invariant: equals live K1/K2/K4/K5/⑤). */
@@ -59,8 +59,10 @@ export function backlogAsOf(T: number, inp: BacklogInput): Backlog {
     if (r.source_kind === 'CASE' && (s === 'open' || s === 'in-progress') && Math.floor((T - Date.parse(r.created_at)) / DAY) > threshold) out.k2ByDept[dept] = (out.k2ByDept[dept] ?? 0) + 1;
     const gi = GROUP_IDX[g] ?? 0; v[gi] = (v[gi] ?? 0) + 1; out.dept[dept] = v;
   }
-  out.k4 = inp.coaching.filter(c => nowMs - Number(c.age_days ?? 0) * DAY <= T).length;
-  out.k5 = inp.renewals.filter(c => { const end = c['deadline'] ? String(c['deadline']).slice(0, 10) : bkkDate(nowMs + Number(c.age_days ?? 0) * DAY); return end < date; }).length;
+  out.k4 = inp.coaching.filter(c => nowMs - Number(c.age_days ?? 0) * DAY <= T).length
+    + (inp.coachingClosed ?? []).filter(c => Date.parse(c.opened_at) <= T && Date.parse(c.resolved_at) > T).length;
+  out.k5 = inp.renewals.filter(c => { const end = c['deadline'] ? String(c['deadline']).slice(0, 10) : bkkDate(nowMs + Number(c.age_days ?? 0) * DAY); return end < date; }).length
+    + (inp.renewalsDecided ?? []).filter(r => r.end_date < date && bkkDate(Date.parse(r.decided_at)) > date).length;
   out.k3 = date === bkkDate(nowMs) ? inp.k3Today : inp.snapshots.find(s => s.metric === 'K3_UNASSIGNED' && s.dim_key === 'ALL' && s.snapshot_date === date)?.value ?? null;
   return out;
 }
