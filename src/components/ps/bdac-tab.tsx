@@ -414,7 +414,14 @@ export function BdacTab({ source, globalFilter, clock }: { source?: ContractLife
         </DashCard>
       </div>
 
-      {/* ④ Cycle time v2.1 — full-width card, time-scale X axis with tick-only labels, median + SLA lines. */
+      {/* ④ Cycle time — full width on its own row (v2.1) */}
+      <CycleCard
+        rows={cycleRows} agg={agg} leg={leg} setLeg={setLeg} byOwner={byOwner} setByOwner={setByOwner}
+        ownerGroups={ownerGroups} ownerRows={ownerRows} range={range}
+      />
+
+
+/* ④ Cycle time v2.1 — full-width card, time-scale X axis with tick-only labels, median + SLA lines. *//* ④ Cycle time v2.1
 const THAI_MON = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
 const DAY_MS = 86_400_000;
 
