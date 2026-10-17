@@ -221,3 +221,9 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [x] task_backlog_snapshot + AC daily post-step (upsert, catch-up ≤14 days, no K3 catch-up)
 - [x] Effective-dated config + configAt; time metrics; sparklines/Compare; ⑧ ⑥ ⑦; รับงาน
 - [x] Demo numbers match §12 (deterministic; invariants pass)
+
+## Meeting & Analyzer v2.0 (done 2026-10-17)
+- [x] Views recast (funnel/survey_scores/flags rewritten; tierA_pending + by_owner added; count_by_ae + survey_collection deprecated, kept); completion retargeted off Headline
+- [x] Tab rebuilt: 5 KPI tiles, ① funnel A/B/C segments + drop lines, ② pending Tier A (cutoff red rule), ④ lens toggle + ④a/④b, ⑤ Q cards (median/histogram/pinned lists/breakdown strips), ⑥ Flag Board + watch list, ⑦ slim rubric row
+- [x] Bangkok card-month scoping, isTierALate helper, median-only; demo fixture deterministic with §6 anchors; 15 tests pin anchors + invariants §5
+- [ ] Open: live data waits on Cloud Sync seed (views return empty + pending_sync); field mapping card-month ↔ real schema to note at seed time
