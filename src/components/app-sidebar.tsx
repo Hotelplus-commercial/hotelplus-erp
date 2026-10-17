@@ -158,7 +158,7 @@ export function AppSidebar() {
                       isActive={pathname === m.to}
                       tooltip={`${m.code} App`}
                     >
-                      <Link to={m.to} className="flex items-center gap-2">
+                      <Link to={m.to} search={{ demo: ticketDemo ? 1 : undefined }} className="flex items-center gap-2">
                         <m.icon className="size-4 shrink-0" />
                         <span className="truncate">{m.code} App</span>
                       </Link>
@@ -168,7 +168,7 @@ export function AppSidebar() {
                         {children.map((c) => (
                           <SidebarMenuSubItem key={c.url}>
                             <SidebarMenuSubButton asChild isActive={pathname === c.url}>
-                              <Link to={c.url} className="flex items-center gap-2">
+                              <Link to={c.url} search={{ demo: ticketDemo ? 1 : undefined }} className="flex items-center gap-2">
                                 <c.icon className="size-3.5 shrink-0" />
                                 <span className="truncate">{c.title}</span>
                               </Link>

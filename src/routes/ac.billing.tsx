@@ -17,6 +17,9 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { missingReports, monthName, thb } from "@/lib/crm-rules";
 import { crmUsers, lastPeriod, useCrm } from "@/lib/crm-store";
+import { usePsRenewal } from "@/lib/ps-renewal";
+import { runAlertBot, type BotRunResult } from "@/lib/alert-bot";
+import { liveScanInput } from "@/lib/alert-bot-sources";
 import type { InvoiceLine } from "@/lib/crm-types";
 
 export const Route = createFileRoute("/ac/billing")({
@@ -47,14 +50,19 @@ function BillingPage() {
   } = useCrm();
   const { runDaily } = useCrm();
   const hotelStore = useHotelStore();
-  /* Daily processing: browser split docs only; debounced Cloud Sync pushes changed collections. */
+  const { cards: renewalCards } = usePsRenewal();
+  const [botResult, setBotResult] = useState<BotRunResult | null>(null);
+  /* Daily processing: browser split docs only; debounced Cloud Sync pushes changed collections.
+   * Alert BOT runs as a post-step (grade fresh first). Empty sources fire nothing — never fake. */
   const daily = () => {
     const next = runDaily();
     hotelStore.hotels.forEach((h) => {
       const sum = paymentSummary(next, h);
       if (h.latePayments !== sum.late || h.overdueMonths !== sum.unpaidMonths) hotelStore.patch(h.id, { latePayments: sum.late, overdueMonths: sum.unpaidMonths });
     });
-    toast.success('ประมวลผลบัญชี ' + bangkokDate());
+    const bot = runAlertBot(liveScanInput(next, renewalCards, new Date().toISOString()));
+    setBotResult(bot);
+    toast.success('ประมวลผลบัญชี ' + bangkokDate(), { description: `BOT: สร้าง ${bot.created} · ข้าม(ซ้ำ) ${bot.skipped} · เงื่อนไขหาย ${bot.cleared}` });
   };
 
   const [year, setYear] = useState(String(lastPeriod.year));
@@ -111,7 +119,8 @@ function BillingPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Select value={actor} onValueChange={setActor}><SelectTrigger className="w-52" aria-label="ผู้บันทึกบัญชี"><SelectValue /></SelectTrigger><SelectContent>{crmUsers.map(u=><SelectItem key={u.email} value={u.email}>{u.name}</SelectItem>)}</SelectContent></Select>
-        <div className="flex flex-wrap items-center gap-2"><p className="text-xs text-muted-foreground">ข้อมูลบันทึกในเบราว์เซอร์และส่งขึ้น Cloud อัตโนมัติ (ดูปุ่ม Cloud Sync มุมขวาบน)</p><Button variant="outline" size="sm" onClick={daily}>ประมวลผลงานรายวัน</Button></div>
+<div className="flex flex-wrap items-center gap-2"><p className="text-xs text-muted-foreground">ข้อมูลบันทึกในเบราว์เซอร์และส่งขึ้น Cloud อัตโนมัติ (ดูปุ่ม Cloud Sync มุมขวาบน)</p><Button variant="outline" size="sm" onClick={daily}>ประมวลผลงานรายวัน</Button></div>
+      {botResult && <p className="text-xs text-muted-foreground">ผลรอบ BOT ล่าสุด: สร้าง {botResult.created} · ข้าม(ซ้ำ) {botResult.skipped} · เงื่อนไขหาย {botResult.cleared}</p>}
       </div>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Kpi label="คำขอออกใบแจ้งหนี้" value={invRequests.filter((r) => r.status !== "completed").length} />

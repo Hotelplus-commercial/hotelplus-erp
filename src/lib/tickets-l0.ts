@@ -5,16 +5,27 @@ import { useEffect, useState, useSyncExternalStore } from 'react';
 import { stageCloudDoc } from './cloud-sync';
 import { DEMO_NOW } from './ps-demo-fixture';
 
-export type TicketType = 'UPSELL_PITCH';
+export type TicketType = 'UPSELL_PITCH' | 'RENEWAL_DUE' | 'GRADE_RISK' | 'SURVEY_LOW';
 export type Dept = 'BD' | 'ORM' | 'MARCOM' | 'PS' | 'AC' | 'AUTO' | 'HR' | 'OFFICE';
 export type Role = 'PM' | Dept;
+/** Pseudo-user for BOT-generated tickets (display "The Office"); never a switcher role, so BOT tickets have no CANCEL action. */
+export const SYSTEM_CREATOR = 'SYSTEM:THE_OFFICE' as const;
+export type Creator = Role | typeof SYSTEM_CREATOR;
+export type Severity = 'high' | 'medium' | 'low';
+export type BotPayload = {
+  severity?: Severity; event_key?: string;
+  signal_detail?: { grade?: string; renewal_due_date?: string; days_left?: number; survey_id?: string; score?: number };
+  assigned_ae?: { member_id: string; nickname: string } | null;
+  watchers?: { dept: Dept; member_id: string | null; nickname: string }[];
+  generated_round?: string; condition_cleared_at?: string | null; unassigned_owner?: boolean;
+};
 export type L0Status = 'NEW' | 'ACK' | 'IN_PROGRESS' | 'DONE' | 'CANCELLED';
 export type L0Ticket = {
-  ticket_id: string; type: TicketType; source_app: 'PS_DASHBOARD' | 'BD_APP'; created_by: Role; target_dept: Dept;
-  subject_ref: { hotel_id: string; hotel_name: string; gap_service: string };
-  payload: { readiness_tier: string; chips: string[]; note: string };
+  ticket_id: string; type: TicketType; source_app: 'PS_DASHBOARD' | 'BD_APP' | 'PS_DASHBOARD_BOT'; created_by: Creator; target_dept: Dept;
+  subject_ref: { hotel_id: string; hotel_name: string; gap_service: string; service_line?: string };
+  payload: { readiness_tier: string; chips: string[]; note: string } & BotPayload;
   status: L0Status; created_at: string; revision: number;
-  audit: { at: string; by: Role; from_status: L0Status | null; to_status: L0Status }[];
+  audit: { at: string; by: Creator; from_status: L0Status | null; to_status: L0Status }[];
 };
 
 export const DEPTS: Dept[] = ['BD', 'ORM', 'MARCOM', 'PS', 'AC', 'AUTO', 'HR', 'OFFICE'];
@@ -22,7 +33,7 @@ export const DEPTS: Dept[] = ['BD', 'ORM', 'MARCOM', 'PS', 'AC', 'AUTO', 'HR', '
 export const DEPTS_WITH_WORKSPACE: Dept[] = [...DEPTS];
 export const OPEN_STATUSES: L0Status[] = ['NEW', 'ACK', 'IN_PROGRESS'];
 export const STATUS_TH: Record<L0Status, string> = { NEW: 'ใหม่', ACK: 'รับแล้ว', IN_PROGRESS: 'กำลังทำ', DONE: 'เสร็จ', CANCELLED: 'ยกเลิก' };
-export const TYPE_TH: Record<TicketType, string> = { UPSELL_PITCH: 'เสนอขายบริการเพิ่ม' };
+export const TYPE_TH: Record<TicketType, string> = { UPSELL_PITCH: 'เสนอขายบริการเพิ่ม', RENEWAL_DUE: 'ใกล้ครบสัญญา', GRADE_RISK: 'เสี่ยงเกรดการชำระ (D)', SURVEY_LOW: 'คะแนนบริการต่ำ' };
 const OPEN: L0Status[] = ['NEW', 'ACK', 'IN_PROGRESS'];
 const NEXT: Partial<Record<L0Status, L0Status>> = { NEW: 'ACK', ACK: 'IN_PROGRESS', IN_PROGRESS: 'DONE' };
 const KEY = 'meridia.tickets.v1';
@@ -60,7 +71,7 @@ export function findOpen(type: TicketType, hotel_id: string, gap_service: string
 }
 
 /** Central generic engine. Returns the new id, or the existing open id (dedup). */
-export function createTask(i: { type: TicketType; target_dept: Dept; subject_ref: L0Ticket['subject_ref']; payload: L0Ticket['payload']; created_by: Role; source_app?: L0Ticket['source_app'] }): { ticket_id: string; deduped: boolean } {
+export function createTask(i: { type: TicketType; target_dept: Dept; subject_ref: L0Ticket['subject_ref']; payload: L0Ticket['payload']; created_by: Creator; source_app?: L0Ticket['source_app'] }): { ticket_id: string; deduped: boolean } {
   const existing = findOpen(i.type, i.subject_ref.hotel_id, i.subject_ref.gap_service);
   if (existing) return { ticket_id: existing.ticket_id, deduped: true };
   const s = cur(); const seq = s.seq + 1; const at = now(); // Level B: replace with revision-locked reservation.
@@ -69,12 +80,42 @@ export function createTask(i: { type: TicketType; target_dept: Dept; subject_ref
   return { ticket_id: t.ticket_id, deduped: false };
 }
 
+/** BOT dedup: open ticket with same (hotel_id + type + event_key). */
+export function findOpenByEvent(type: TicketType, hotel_id: string, event_key: string) {
+  return cur().items.find((t) => t.type === type && t.subject_ref.hotel_id === hotel_id && t.payload.event_key === event_key && OPEN.includes(t.status));
+}
+/** Open BOT tickets of a type for a hotel, regardless of event_key (for condition-cleared checks). */
+export function openOfType(type: TicketType, hotel_id: string) {
+  return cur().items.filter((t) => t.type === type && t.subject_ref.hotel_id === hotel_id && OPEN.includes(t.status));
+}
+/** Refresh generated_round/severity on a deduped ticket (no new ticket, no status change). */
+export function refreshBotTicket(id: string, patch: Pick<BotPayload, 'generated_round' | 'severity'>) {
+  const s = cur(); const t = s.items.find((x) => x.ticket_id === id);
+  if (!t) return false;
+  commit({ ...s, items: s.items.map((x) => (x.ticket_id === id ? { ...x, payload: { ...x.payload, ...patch } } : x)) });
+  return true;
+}
+/** Condition-cleared stamp (AL5/AL12): sets payload.condition_cleared_at, appends audit, bumps revision. Never changes status. */
+export function stampConditionCleared(id: string): boolean {
+  const s = cur(); const t = s.items.find((x) => x.ticket_id === id);
+  if (!t || !OPEN.includes(t.status) || t.payload.condition_cleared_at) return false;
+  const at = now();
+  const next: L0Ticket = { ...t, payload: { ...t.payload, condition_cleared_at: at }, revision: t.revision + 1, audit: [...t.audit, { at, by: SYSTEM_CREATOR, from_status: t.status, to_status: t.status }] };
+  commit({ ...s, items: s.items.map((x) => (x.ticket_id === id ? next : x)) });
+  return true;
+}
+
 export function allowedNext(t: L0Ticket, role: Role): L0Status[] {
   const out: L0Status[] = [];
   const n = NEXT[t.status]; if (n && role === t.target_dept) out.push(n);
+  // BOT tickets: the primary party may press "Solved" (DONE) directly from any open status; no CANCEL (creator is SYSTEM).
+  if (t.created_by === SYSTEM_CREATOR && OPEN.includes(t.status) && role === t.target_dept && !out.includes('DONE')) out.push('DONE');
   if (OPEN.includes(t.status) && role === t.created_by) out.push('CANCELLED');
   return out;
 }
+
+/** True when `dept` sees this ticket only as a read-only watcher (👁 FYI). */
+export const isWatcherOf = (t: L0Ticket, dept: Dept) => t.target_dept !== dept && (t.payload.watchers ?? []).some((w) => w.dept === dept);
 
 /** Status transition with revision check. Returns false on conflict / not allowed. */
 export function transition(id: string, revision: number, to: L0Status, by: Role): boolean {
