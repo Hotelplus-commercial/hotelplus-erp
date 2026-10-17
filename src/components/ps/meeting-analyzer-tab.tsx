@@ -1085,7 +1085,7 @@ export function MeetingAnalyzerTab({
                 late ? `ผ่าน cutoff · ขาด ${orm.base - orm.completed.A} ใบ` : `เหลือ ${dtc} วันถึง cutoff · ค้าง ${pendingRows.length} ใบ (ดู ②)`,
                 filter.compare ? deltaText(aPct, aPctPrev, "pp") : "",
               ]}
-              compare={filter.compare ? <>A {fmt(aPct, "%")} · B {fmt(aPctPrev, "%")} · {deltaText(aPct, aPctPrev, "pp")}</> : !late ? <>เหลือ {dtc} วันถึง cutoff · ค้าง {pendingRows.length} ใบ (ดู ②)</> : deltaText(aPct, aPctPrev, "pp")}
+              compare={filter.compare ? <>A {fmt(aPct, "%")} · B {fmt(aPctPrev, "%")} · {deltaText(aPct, aPctPrev, "pp")}</> : !late ? <>เหลือ {dtc} วันถึง cutoff · ค้าง {pendingRows.length} ใบ (ดู ②)</> : aPct != null && aPctPrev != null ? <>Δ {aPct - aPctPrev > 0 ? "▲ +" : "▼ "}{Math.abs(aPct - aPctPrev).toLocaleString("th-TH", { maximumFractionDigits: 1 })}pp จาก {prevLabel}</> : null}
             />
             <KpiTile
               label="นัดสำเร็จ % (ทุกบริการ)"
