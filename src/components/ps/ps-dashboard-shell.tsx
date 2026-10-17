@@ -337,15 +337,15 @@ export function DashboardShell({
                         <div key={side} className="min-w-0">
                           <h2 className="mb-3 text-sm font-semibold">Period {side}</h2>
                           <BdacTab
-                            source={lines}
-                            globalFilter={{ ...filter, periodA: selectedPeriod(filter, now, side) }}
-                            clock={now.getTime()}
+                            source={bdacLines}
+                            globalFilter={{ ...filter, periodA: selectedPeriod(filter, bdacNow, side) }}
+                            clock={bdacNow.getTime()}
                           />
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <BdacTab source={lines} globalFilter={filter} clock={now.getTime()} />
+                    <BdacTab source={bdacLines} globalFilter={filter} clock={bdacNow.getTime()} />
                   ))}
                 {tab === "ac" && <AcTab />}
                 {tab === "ps" && (
