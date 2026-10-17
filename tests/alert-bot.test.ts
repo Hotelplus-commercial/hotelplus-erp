@@ -80,6 +80,6 @@ describe('Proactive Alert BOT', () => {
     input.grades = [{ hotel_id: 'DEMO-X', hotel_name: 'X', billing_period: '2026-09-30', grade: 'C' }]; // C does NOT fire
     const r = runAlertBot(input);
     expect(openOfType('GRADE_RISK', 'DEMO-X')).toHaveLength(0);
-    expect(r.created).toBe(4); // only the fixture's own four
+    expect(r.created).toBe(3); // fixture's grade-D case was replaced; C never fires
   });
 });

@@ -53,7 +53,7 @@ export function liveScanInput(crm: Pick<CrmData, 'gradeRecords' | 'customers'>, 
     .filter((g) => g.basis.length > 0)
     .map((g) => {
       const cust = crm.customers.find((c) => c.customer_id === g.customer_id);
-      const name = cust?.hotel_name ?? cust?.legal_name ?? g.customer_id;
+      const name = cust?.hotels[0]?.name ?? cust?.legal_name ?? g.customer_id;
       return { hotel_id: idFor(name), hotel_name: name, billing_period: g.billing_period, grade: g.grade };
     });
   const renewalRows = renewals.map((c) => ({
