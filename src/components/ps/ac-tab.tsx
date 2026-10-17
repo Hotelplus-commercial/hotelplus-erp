@@ -66,7 +66,7 @@ export function AcTab({ views, loading, error, service, compare, demo }: AcTabPr
   const latest = periods.at(-1) ?? null;
   const prev = periods.at(-2) ?? null;
   const rows = useMemo(() => rankRows(rankAll, latest, lens), [rankAll, latest, lens]);
-  const brows = useMemo(() => (compare ? rankRows(rankAll, prev, lens) : []), [rankAll, prev, lens, compare]);
+  const brows = useMemo(() => rankRows(rankAll, prev, lens), [rankAll, prev, lens]);
   const stats = useMemo(() => splitStats(rows), [rows]);
   const bstats = useMemo(() => splitStats(brows), [brows]);
   const unbilled = latest ? unbilledCount(rankAll, latest, lens) : 0;
