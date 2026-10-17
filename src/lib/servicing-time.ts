@@ -32,7 +32,7 @@ export function servicingLanes(c: TimingCard, now: string): ServicingLane[] {
 }
 export function cardStatus(lanes: ServicingLane[]) { const cause = ['red', 'amber', 'ok'].flatMap(t => lanes.filter(l => l.state === 'running' && l.tone === t))[0]; return { tone: cause?.tone ?? (lanes.some(l => l.state === 'wait') ? 'wait' : null), cause, label: cause?.d != null ? statusText(cause.phase, cause.d) : lanes.some(l => l.state === 'wait') ? 'รอ · ไม่นับ' : '—' }; }
 export const stallEventKey = (card_id: string, l: Pick<ServicingLane, 'phase' | 'lane'>) => `${card_id}:${l.phase}:${l.lane}`;
-export const meetingDatePatch = (c: { meeting_created_at?: string | null }, date: string | null, now: string) => ({ meeting_date: date, meeting_created_at: c.meeting_created_at ?? (date ? now : null) });
+export const meetingDatePatch = (c: { meeting_created_at?: string | null; meeting_date?:string|null }, date: string | null, now: string) => ({ meeting_date: date, meeting_created_at: c.meeting_created_at ?? (date && !c.meeting_date ? now : null) });
 export const shortThaiDate = (s: string) => new Intl.DateTimeFormat('th-TH', { day: 'numeric', month: 'short', timeZone: servicing_sla_config.tz }).format(new Date(s.length === 10 ? `${s}T00:00:00+07:00` : s));
 export const ORM_REPORT_STAGES = ['new_property','introduction_sent_form','collect_data','property_pending','final_check','approved','orm_prepare_data','orm_rate_structure','orm_final_setup','completed_handover','orm_system_training','orm_go_live'];
 export const MARCOM_REPORT_STAGES = ['new_property','introduction_sent_form','collect_data','property_pending','final_check','approved','completed_handover','marcom_prepare_data','marcom_first_sync','marcom_go_live'];
