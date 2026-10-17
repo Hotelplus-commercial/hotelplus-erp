@@ -154,7 +154,7 @@ export function BdacTab({ source, globalFilter, clock }: { source?: ContractLife
   const bin = v_bdac_diagnostic_bin();
 
   const open = (id: string) => !demo && void navigate({ to: "/ps/contract-dashboard", hash: `contract-card-${id}` });
-  const prevLabel = thaiMonth(new Date(prev.from).toISOString().slice(0, 7));
+  const prevLabel = range.to - range.from > 32 * 86_400_000 ? "ช่วงก่อนหน้า" : thaiMonth(new Date(prev.from).toISOString().slice(0, 7));
   const rangeLabel = `${thaiShort(new Date(range.from).toISOString())} – ${thaiShort(new Date(range.to - 1).toISOString())}`;
 
   /* ② numbers */
