@@ -92,7 +92,9 @@ function TicketsLane({ dept, role, initialTicket }: { dept: Dept; role: Role; in
   const inbound = tickets.filter((t) => t.target_dept === dept || isWatcherOf(t, dept));
   const rows = sortBotFirst(inbound.filter((t) => OPEN_STATUSES.includes(t.status) !== showClosed));
   const open = inbound.find((t) => t.ticket_id === openId) ?? null;
-  const digest = digestFor(inbound, new Date().toISOString().slice(0, 10));
+  // Digest round = the latest BOT round present in this lane (demo clock-safe), fallback to today.
+  const round = inbound.map((t) => t.payload.generated_round).filter((r): r is string => !!r).sort().pop() ?? new Date().toISOString().slice(0, 10);
+  const digest = digestFor(inbound, round);
   const breakdown = (Object.entries(digest.byType) as [keyof typeof TYPE_TH, number][]).map(([k, n]) => `${TYPE_TH[k]} ${n}`).join(" · ");
   return (
     <div className="space-y-3">
