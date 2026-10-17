@@ -167,10 +167,10 @@ function HeadlineStrip() {
   const activeIds=new Set(active.map(r=>r.hotel_id));
   const cohort=latestPeriod(psScope(ps.data?.views.v_ps_onboard_cohort??[],pf,'billing_period',0,now));
   // Queue and collection percentage are not exposed by the current sources. Never substitute a different metric.
-  const median=cohort.length===1&&typeof cohort[0]?.median_days==='number'?cohort[0].median_days:null;
+  const median=cohort.length===1&&typeof cohort[0]?.['median_days']==='number'?cohort[0]['median_days']:null;
   const grades=scope((q.data?.['v_ac_grade_distribution']??[]) as Row[],f,0,now);
-  const dCount=grades.length?grades.filter(r=>r.grade==='D').reduce((n,r)=>n+num(r.customer_count),0):null;
-  const lost=churnRows.length&&churnRows.every(r=>r.hotel_id!=null)?new Set(churnRows.filter(r=>num(r.out_count)>0).map(r=>r.hotel_id)).size:null;
+  const dCount=grades.length?grades.filter(r=>r.grade==='D').reduce((n,r)=>n+num(r['customer_count']),0):null;
+  const lost=churnRows.length&&churnRows.every(r=>r.hotel_id!=null)?new Set(churnRows.filter(r=>num(r['out_count'])>0).map(r=>r.hotel_id)).size:null;
   const serviceCount=(line:string)=>new Set(active.filter(r=>r.service_line===line).map(r=>r.hotel_id)).size;
   const empty=summaryRules({metric:'ภาพรวม',empty:true},['R-EMPTY']);
   const growth=summaryRules({metric:'Upcoming Hotel',current:upcoming.length},['R-DELTA']);
@@ -185,7 +185,7 @@ function HeadlineStrip() {
     </div></div>
     <div className="dash-headline-group dash-onboard"><p className="dash-headline-label">On-board</p><div className="dash-headline-tiles">{tile('Onboarding','—',median==null?'median —':`median ${median.toLocaleString('th-TH')} วัน`,'รอข้อมูลคิว',['รอข้อมูลคิว',...(median==null?[]:[`median ${median.toLocaleString('th-TH')} วัน`])])}</div></div>
     <div className="dash-headline-group dash-risk"><p className="dash-headline-label">สุขภาพ / เสี่ยง</p><div className="dash-headline-tiles">
-      {tile('Churn เดือนนี้',lost==null?'—':String(lost),<><Delta a={churnNow} b={churnPrev} lowerGood unit="pp"/> · {churnNow==null?'—':churnNow.toFixed(1)+'%'}</>,'โรงแรมที่หลุด ≥1 บริการ',churnRows.length?['ORM','Marcom'].filter(line=>f.service==='ALL'||f.service===line).map(line=>{const rows=churnRows.filter(r=>r.service_line===line),base=rows.reduce((s,r)=>s+num(r.active_at_start),0),n=rows.reduce((s,r)=>s+num(r.out_count),0);return `${line} ${ratio(rows,'out_count','active_at_start')?.toFixed(1)??'—'}% (${n}/${base} โรงแรม)`;}):['รอข้อมูล'])}
+      {tile('Churn เดือนนี้',lost==null?'—':String(lost),<><Delta a={churnNow} b={churnPrev} lowerGood unit="pp"/> · {churnNow==null?'—':churnNow.toFixed(1)+'%'}</>,'โรงแรมที่หลุด ≥1 บริการ',churnRows.length?['ORM','Marcom'].filter(line=>f.service==='ALL'||f.service===line).map(line=>{const rows=churnRows.filter(r=>r.service_line===line),base=rows.reduce((s,r)=>s+num(r['active_at_start']),0),n=rows.reduce((s,r)=>s+num(r['out_count']),0);return `${line} ${ratio(rows,'out_count','active_at_start')?.toFixed(1)??'—'}% (${n}/${base} โรงแรม)`;}):['รอข้อมูล'])}
       {tile('คะแนนบริการ','—',<Delta a={null} b={null}/>,'รอข้อมูล',['รอข้อมูลคะแนนบริการ / 5'])}
       {tile('Collection','—',<span className="text-dash-watch">ลูกหนี้เกรด D {dCount??'—'} · Δ —</span>,'รอข้อมูล % collected',['รอข้อมูล collected / total',`ลูกหนี้เกรด D ${dCount??'—'}`])}
     </div></div>
