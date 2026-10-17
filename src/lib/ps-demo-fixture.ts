@@ -203,7 +203,7 @@ export function demoAcViews() {
     });
   }
   // Debtor worklist rows (per hotel) — one customer (Anan Group) owns 3 hotels.
-  const DEBTORS: [string, string, string, L, number, number, number, string, string, string | null][] = [
+  const DEBTORS: [string, string, L, number, number, number, string, string, string | null][] = [
     // hotel, customer, service, outstanding, invoices, overdueMonths, grade, status, caretaker
     ['Chaba Grand', 'Chaba Group', 'ORM', 90000, 2, 2, 'D', 'SUSPENDED', 'C-Rev-01'],
     ['Anjali', 'Anjali Co.', 'Marcom', 32000, 1, 1, 'C', 'OVERDUE', 'แนน'],
