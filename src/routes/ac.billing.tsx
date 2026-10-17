@@ -119,7 +119,8 @@ function BillingPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Select value={actor} onValueChange={setActor}><SelectTrigger className="w-52" aria-label="ผู้บันทึกบัญชี"><SelectValue /></SelectTrigger><SelectContent>{crmUsers.map(u=><SelectItem key={u.email} value={u.email}>{u.name}</SelectItem>)}</SelectContent></Select>
-        <div className="flex flex-wrap items-center gap-2"><p className="text-xs text-muted-foreground">ข้อมูลบันทึกในเบราว์เซอร์และส่งขึ้น Cloud อัตโนมัติ (ดูปุ่ม Cloud Sync มุมขวาบน)</p><Button variant="outline" size="sm" onClick={daily}>ประมวลผลงานรายวัน</Button></div>
+<div className="flex flex-wrap items-center gap-2"><p className="text-xs text-muted-foreground">ข้อมูลบันทึกในเบราว์เซอร์และส่งขึ้น Cloud อัตโนมัติ (ดูปุ่ม Cloud Sync มุมขวาบน)</p><Button variant="outline" size="sm" onClick={daily}>ประมวลผลงานรายวัน</Button></div>
+      {botResult && <p className="text-xs text-muted-foreground">ผลรอบ BOT ล่าสุด: สร้าง {botResult.created} · ข้าม(ซ้ำ) {botResult.skipped} · เงื่อนไขหาย {botResult.cleared}</p>}
       </div>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Kpi label="คำขอออกใบแจ้งหนี้" value={invRequests.filter((r) => r.status !== "completed").length} />
