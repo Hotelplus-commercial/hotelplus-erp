@@ -12,6 +12,8 @@ import { demoScanInput } from "@/lib/alert-bot-sources";
 import type { DateRange, WorkspaceConfig } from "@/lib/workspace-registry";
 import { cn } from "@/lib/utils";
 import { reportStageLabel, statusText } from '@/lib/servicing-time';
+import { servicingLanes } from '@/lib/servicing-time';
+import { demoServicingRows, SERVICING_DEMO_NOW } from '@/lib/servicing-demo';
 
 const fmt = (iso: string) => new Date(iso).toLocaleString("th-TH", { dateStyle: "medium", timeStyle: "short" });
 const RANGES: { key: DateRange; label: string }[] = [{ key: "today", label: "วันนี้" }, { key: "7d", label: "7 วัน" }, { key: "14d", label: "14 วัน" }];
@@ -245,7 +247,7 @@ function PmTester() {
       </div>
       {note && <p className="text-xs text-muted-foreground">{note}</p>}
       <div className="flex flex-wrap items-center gap-2 border-t pt-2">
-        <Button size="sm" variant="outline" onClick={() => setBot(runAlertBot(demoScanInput()))}>ประมวลผล Alert (ชั่วคราว)</Button>
+        <Button size="sm" variant="outline" onClick={() => setBot(runAlertBot({...demoScanInput(),servicing:demoServicingRows().filter(r=>!r.go_live_at).flatMap(row=>servicingLanes(row,SERVICING_DEMO_NOW).filter(l=>l.state==='running'&&l.tone==='red').map(lane=>({row,lane})))}))}>ประมวลผล Alert (ชั่วคราว)</Button>
         <span className="text-xs text-muted-foreground">BOT สาธิต · สแกนสัญญาณแล้วสร้าง ticket เข้า PM Workspace (เป้าหมาย PS)</span>
       </div>
       {bot && <p className="text-xs text-muted-foreground">ผลรอบ BOT ล่าสุด: สร้าง {bot.created} · ข้าม(ซ้ำ) {bot.skipped} · เงื่อนไขหาย {bot.cleared}</p>}

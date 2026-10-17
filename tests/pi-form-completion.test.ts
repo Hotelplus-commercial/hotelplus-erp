@@ -1,0 +1,8 @@
+import {expect,test} from 'bun:test';
+import {piFormCompletion} from '../src/lib/pi-form-completion';
+import type {TemplateDef,TemplateField} from '../src/lib/ws2-store';
+const field=(id:string,extra:Partial<TemplateField>={}):TemplateField=>({id,label:id,field_type:'text',layer:'L2',restricted_category:null,repeat_group:null,required:true,...extra});
+const def=(fields:TemplateField[]):TemplateDef=>({template_id:'T',name:'T',source:'T',sections:[{id:'S',title:'S',repeat_group:null,fields}]});
+test('PI counts visible frozen required inputs only, not credentials or caretaker',()=>{const d=def([field('name'),field('hidden'),field('login',{restricted_category:'ota_login'}),field('assigned_ae')]);expect(piFormCompletion(d,{S:[{name:'Hotel',login:'secret'}]},()=>false,f=>f.id!=='hidden')).toEqual({required_total:1,required_filled:1,all_pct:100});});
+test('no required fields uses whole-form completion percentage',()=>{expect(piFormCompletion(def([field('a',{required:false}),field('b',{required:false})]),{S:[{a:'x'}]})).toEqual({required_total:0,required_filled:0,all_pct:50});});
+test('repeat required fields must be complete in same row and one photo suffices',()=>{const d=def([field('a'),field('b')]);if(d.sections[0])d.sections[0].repeat_group='room_type';expect(piFormCompletion(d,{S:[{a:'x'},{b:'y'}]}).required_filled).toBe(1);expect(piFormCompletion(def([field('photo',{field_type:'file'})]),{},()=>true).required_filled).toBe(1);});
