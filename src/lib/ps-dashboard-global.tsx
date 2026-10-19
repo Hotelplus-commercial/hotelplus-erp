@@ -43,7 +43,7 @@ export function deltaText(a: number | null, b: number | null, unit: 'pp' | '%' |
   if (a == null || b == null) return 'Δ —';
   const diff = a - b;
   const value = unit === '%' ? (b === 0 ? null : diff / Math.abs(b) * 100) : diff;
-  return value == null ? 'Δ —' : `Δ ${diff > 0 ? '▲ +' : diff < 0 ? '▼ ' : ''}${value.toLocaleString('th-TH', { maximumFractionDigits: 1 })}${unit === 'pp' ? ' จุด' : unit}`;
+  return value == null ? 'Δ —' : `Δ ${diff > 0 ? '▲ +' : diff < 0 ? '▼ ' : ''}${Math.abs(value).toLocaleString('th-TH', { maximumFractionDigits: 1 })}${unit === 'pp' ? ' จุด' : unit}`;
 }
 /** Max custom range = 24 months; end ≥ start. */
 export function validCustomRange(p: Period) {
