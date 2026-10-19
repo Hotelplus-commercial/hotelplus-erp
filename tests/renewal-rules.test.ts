@@ -104,3 +104,39 @@ describe('§0.3 wizard entry points', () => {
     expect(readFileSync('src/routes/ps.contract-wizard.new.tsx', 'utf8')).toContain('if (!search.quote_id) throw redirect');
   });
 });
+
+describe('v1.1 patch', () => {
+  test('no rollback path exists in store, provider or glossary', async () => {
+    const store = await import('../src/lib/renewal-store');
+    const g = await import('../src/lib/ps-glossary');
+    expect('recordRollback' in store).toBe(false);
+    expect(Object.keys(g.RENEWAL_LABEL_TH)).not.toContain('rollback');
+    expect(Object.keys(g.RENEWAL_LABEL_TH)).not.toContain('recordDecline');
+  });
+  test('demo case 7: SIGNED, card not closed → signed badge; marked done → badge cleared', async () => {
+    const s = await import('../src/lib/renewal-store');
+    s.setRenewalDemo(true);
+    const c7 = s.DEMO_EXTRA_CARDS.find((c) => c.id === 'RN-D7')!;
+    expect(s.latestRequestFor(c7.id)?.status).toBe('SIGNED');
+    expect(s.signedAwaitingDone(c7)).toBe(true);
+    expect(s.signedAwaitingDone({ ...c7, status: 'COMPLETED' })).toBe(false);
+    s.setRenewalDemo(false);
+  });
+  test('signing does not close the card: LINK_SENT → SIGNED leaves the card open', async () => {
+    const s = await import('../src/lib/renewal-store');
+    s.setRenewalDemo(true);
+    const c6 = s.DEMO_EXTRA_CARDS.find((c) => c.id === 'RN-D6')!;
+    const r = s.latestRequestFor(c6.id)!;
+    expect(s.signRequest(r.id).ok).toBe(true);
+    expect(s.signedAwaitingDone(c6)).toBe(true);
+    s.setRenewalDemo(false);
+  });
+  test('create & send in one action: no-approval draft → LINK_SENT', async () => {
+    const s = await import('../src/lib/renewal-store');
+    s.setRenewalDemo(true);
+    const o = s.startRenewal({ id: 'RN-1', hotelId: 'HTL0055', hotel: 'Ocean View Phuket', owner: 'AE001-Nont' });
+    expect(o.ok).toBe(true);
+    if (o.ok && !o.req.approval_required) expect(s.createAndSendLink(o.req.id).ok && s.requestById(o.req.id)?.status).toBe('LINK_SENT');
+    s.setRenewalDemo(false);
+  });
+});

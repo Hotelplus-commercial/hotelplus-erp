@@ -25,14 +25,16 @@ const SAMPLE_CONTRACTS: SourceContract[] = [
 const DEMO_CONTRACTS: SourceContract[] = [
   { contract_id: 'CT-HTL0118', hotel_id: 'HTL0118', customer_id: 'CUS-0118', legal_entity: 'บริษัท ล้านนา เฮอริเทจ จำกัด', signatory: 'คุณกมล ใจดี', kyc_docs: ['หนังสือรับรองบริษัท.pdf'], terms: { fee_amount: 25000, commission_pct: 0, term_months: 12, package: 'ORM Full', start_date: '2025-11-01', end_date: '2026-10-31' } },
   { contract_id: 'CT-HTL0124', hotel_id: 'HTL0124', customer_id: 'CUS-0124', legal_entity: 'บริษัท บ้านสวน หัวหิน จำกัด', signatory: 'คุณปรีชา สวนงาม', kyc_docs: ['หนังสือรับรองบริษัท.pdf'], terms: { fee_amount: 20000, commission_pct: 0, term_months: 12, package: 'ORM Lite', start_date: '2025-11-06', end_date: '2026-11-05' } },
+  { contract_id: 'CT-HTL0137', hotel_id: 'HTL0137', customer_id: 'CUS-0137', legal_entity: 'บริษัท กระบี่ คลิฟ วิลล่า จำกัด', signatory: 'คุณวิไล ผาสูง', kyc_docs: ['หนังสือรับรองบริษัท.pdf'], terms: { fee_amount: 24000, commission_pct: 0, term_months: 12, package: 'ORM Full', start_date: '2025-10-21', end_date: '2026-10-20' } },
   { contract_id: 'CT-HTL0131', hotel_id: 'HTL0131', customer_id: 'CUS-0131', legal_entity: 'บริษัท สมุย เบย์ รีสอร์ท จำกัด', signatory: 'คุณนภา ทะเลใส', kyc_docs: ['หนังสือรับรองบริษัท.pdf'], terms: { fee_amount: 16000, commission_pct: 0, term_months: 12, package: 'Marcom', start_date: '2025-10-16', end_date: '2026-10-15' } },
 ];
 const contact = (name: string) => ({ name, phone: '08x-xxx-xxxx', email: '—', line: '—' });
-/** Demo-only renewal cards (§8 cases 4–6). Cases 1–3 reuse the bundled cards HTL0055 / HTL0042 / HTL0071. */
+/** Demo-only renewal cards (§8 cases 4–7). Cases 1–3 reuse the bundled cards HTL0055 / HTL0042 / HTL0071. */
 export const DEMO_EXTRA_CARDS: RenewalCard[] = [
   { id: 'RN-D4', hotelId: 'HTL0118', hotel: 'Lanna Heritage Chiang Mai', contractEnd: '31 Oct 2026', daysLeft: 31, status: 'ON_PROCESS', owner: 'AE001-Nont', contact: contact('คุณกมล ใจดี'), contractFile: 'Contract_v1_2025.pdf', contractGeneratedAt: '20 Oct 2025', activities: [] },
   { id: 'RN-D5', hotelId: 'HTL0124', hotel: 'Baan Suan Hua Hin', contractEnd: '5 Nov 2026', daysLeft: 36, status: 'ON_PROCESS', owner: 'AE001-Nont', contact: contact('คุณปรีชา สวนงาม'), contractFile: 'Contract_v1_2025.pdf', contractGeneratedAt: '25 Oct 2025', activities: [] },
   { id: 'RN-D6', hotelId: 'HTL0131', hotel: 'Koh Samui Bay Resort', contractEnd: '15 Oct 2026', daysLeft: 15, status: 'ON_PROCESS', owner: 'AE001-Nont', contact: contact('คุณนภา ทะเลใส'), contractFile: 'Contract_v1_2025.pdf', contractGeneratedAt: '10 Oct 2025', activities: [] },
+  { id: 'RN-D7', hotelId: 'HTL0137', hotel: 'Krabi Cliff Villa', contractEnd: '20 Oct 2026', daysLeft: 20, status: 'ON_PROCESS', owner: 'AE001-Nont', contact: contact('คุณวิไล ผาสูง'), contractFile: 'Contract_v1_2025.pdf', contractGeneratedAt: '15 Oct 2025', activities: [] },
 ];
 
 /** Demo v_ps_repricing rows, produced by the same repricingRow() engine with demo constants. */
@@ -43,10 +45,11 @@ function demoRepricing(): PsReportRow[] {
     repricingRow(base('HTL0042', 'Grand Palace Bangkok', 30000, 'moderate'), EXPANSION_DEMO, now),
     repricingRow(base('HTL0071', 'City Center Bangkok', 22000, 'declining'), EXPANSION_DEMO, now),
     repricingRow(base('HTL0118', 'Lanna Heritage Chiang Mai', 25000, 'moderate'), EXPANSION_DEMO, now),
+    repricingRow(base('HTL0137', 'Krabi Cliff Villa', 24000, 'moderate'), EXPANSION_DEMO, now),
   ].filter((r): r is PsReportRow => !!r);
 }
 
-type State = { seq: number; requests: RenewalRequest[]; history: PriceHistoryRow[]; rollbacks: { card_id: string; by: string; reason: string; at: string; new_contract_id: string | null }[] };
+type State = { seq: number; requests: RenewalRequest[]; history: PriceHistoryRow[] };
 const KEY = 'meridia.renewals.v1';
 let live: State | null = null; let demo: State | null = null; let demoOn = false; let version = 0;
 const listeners = new Set<() => void>();
@@ -58,7 +61,7 @@ const backfill = (): PriceHistoryRow[] => initialHistory(contracts());
 function liveState(): State {
   if (live) return live;
   try { live = JSON.parse(localStorage.getItem(KEY) ?? '') as State; } catch { live = null; }
-  if (!live?.requests) live = { seq: 0, requests: [], history: backfill(), rollbacks: [] };
+  if (!live?.requests) live = { seq: 0, requests: [], history: backfill() };
   return live;
 }
 const cur = (): State => (demoOn ? (demo ??= seedDemo()) : liveState());
@@ -87,9 +90,9 @@ function newRequest(card: Pick<RenewalCard, 'id' | 'hotelId' | 'hotel' | 'owner'
 }
 
 function seedDemo(): State {
-  const s: State = { seq: 0, requests: [], history: initialHistory([...SAMPLE_CONTRACTS, ...DEMO_CONTRACTS]), rollbacks: [] };
+  const s: State = { seq: 0, requests: [], history: initialHistory([...SAMPLE_CONTRACTS, ...DEMO_CONTRACTS]) };
   const mk = (card: RenewalCard) => { s.seq++; return newRequest(card, sourceContractFor(card.hotelId)!, s.seq, DEMO_NOW); };
-  const [c4, c5, c6] = DEMO_EXTRA_CARDS as [RenewalCard, RenewalCard, RenewalCard];
+  const [c4, c5, c6, c7] = DEMO_EXTRA_CARDS as [RenewalCard, RenewalCard, RenewalCard, RenewalCard];
   const r4 = mk(c4); const fee4 = r4.new_terms.fee_amount;
   s.requests.push({ ...r4, status: 'PENDING_APPROVAL', submitted_at: '2026-09-27T03:00:00.000Z', new_terms: { ...r4.new_terms, fee_amount: fee4 } });
   const r5 = mk(c5);
@@ -98,6 +101,11 @@ function seedDemo(): State {
   s.requests.push({ ...r5, entity_change: true, entity_ticket_id: t.ticket_id, entity_detail: { what: 'ผู้มีอำนาจลงนาม', detail: 'ผู้ลงนามใหม่: คุณสุดา สวนงาม' } });
   const r6 = mk(c6);
   s.requests.push({ ...r6, status: 'LINK_SENT', link_sent_at: '2026-09-29T04:00:00.000Z' });
+  const r7 = mk(c7); const lo = r7.reco_snapshot.band_min_pct ?? 0;
+  const t7 = { ...r7.new_terms, fee_amount: Math.round(r7.old_terms.fee_amount * (1 + lo / 100)) };
+  const e7 = evaluate(r7.reco_snapshot, r7.old_terms, t7, renewalConfig.renewal_reco_mode);
+  const signed7 = { ...r7, ...e7, new_terms: t7, status: 'SIGNED' as const, submitted_at: '2026-09-22T03:00:00.000Z', approved_by: 'PM001-Alex', approver_role: 'PM' as const, approved_at: '2026-09-23T03:00:00.000Z', link_sent_at: '2026-09-24T03:00:00.000Z', signed_at: '2026-09-28T07:15:00.000Z', new_contract_id: `${r7.source_contract_id}-R${r7.id.slice(-4)}` };
+  s.requests.push(signed7); s.history.push(renewalHistoryRow(signed7, 1));
   return s;
 }
 
@@ -144,19 +152,29 @@ export function raiseEntityChange(id: string, what: 'นิติบุคคล
   return put({ ...r, entity_change: true, entity_ticket_id: t.ticket_id, entity_detail: { what, detail: detail.trim() }, updated_at: nowIso() });
 }
 
-/** Signing ends the process: new ACTIVE contract from new start + RENEWAL price-history row. Card outcome is set by the caller. */
+/** Signing: new ACTIVE contract from new start + RENEWAL price-history row. v1.1: the card closes only via Mark as Done. */
 export function signRequest(id: string): Out {
   const r = cur().requests.find((x) => x.id === id); if (!r) return { ok: false, error: 'ไม่พบคำขอ' };
   const o = sign(r, nowIso()); if (!o.ok) return o;
   const s = cur(); const prev = Math.max(0, ...s.history.filter((h) => h.contract_id === r.source_contract_id || h.renewal_request_id != null && s.requests.find((q) => q.id === h.renewal_request_id)?.source_contract_id === r.source_contract_id).map((h) => h.cycle_no));
   return put(o.req, { history: [...s.history, renewalHistoryRow(o.req, prev)] });
 }
-export function recordRollback(cardId: string, by: string, reason: string): Out | { ok: true } {
-  if (!reason.trim()) return { ok: false, error: 'ต้องระบุเหตุผล' };
-  const s = cur(); const req = [...s.requests].reverse().find((r) => r.renewal_card_id === cardId && r.status === 'SIGNED');
-  commit({ ...s, rollbacks: [...s.rollbacks, { card_id: cardId, by, reason: reason.trim(), at: nowIso(), new_contract_id: req?.new_contract_id ?? null }] });
-  return { ok: true };
-}
 export const requestById = (id: string) => cur().requests.find((r) => r.id === id) ?? null;
 /** Customer signing page path (renewal: no payment step). */
 export const renewalSignPath = (id: string) => `/l/renew/${id}`;
+
+/** v1.1 signed badge: latest request SIGNED and the card not yet marked done. */
+export const signedAwaitingDone = (card: Pick<RenewalCard, 'id' | 'status'>) => card.status !== 'COMPLETED' && card.status !== 'CHURN' && latestRequestFor(card.id)?.status === 'SIGNED';
+/** Customer page in AE preview mode (signature disabled, banner). */
+export const renewalPreviewPath = (id: string) => `/l/renew/${id}?preview=1${demoOn ? '&demo=1' : ''}`;
+/** "สร้าง live link และส่งให้ลูกค้า": submit (gates) then send in one action. */
+export function createAndSendLink(id: string): Out {
+  const r = cur().requests.find((x) => x.id === id); if (!r) return { ok: false, error: 'ไม่พบคำขอ' };
+  let o: Out = { ok: true, req: r };
+  if (r.status === 'DRAFT' || r.status === 'RETURNED') o = submitRequest(id);
+  else if (r.status === 'APPROVED') o = recheckGate(id);
+  if (!o.ok) return o;
+  if (o.req.status === 'PENDING_APPROVAL') return o;
+  if (o.req.status !== 'READY_TO_SEND') return { ok: false, error: 'รอ AC ปิด ticket เปลี่ยนนิติบุคคล' };
+  return sendRenewalLink(id);
+}
