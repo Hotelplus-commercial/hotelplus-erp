@@ -42,11 +42,12 @@ export function recommend(row: PsReportRow | null | undefined, old: Terms, hasDa
   const base = { band_min_pct: null, band_max_pct: null, inputs: {}, computed_at: computedAt };
   if (!hasData) return { ...base, type: 'NONE', reasons: ['ยังไม่มีข้อมูล Repricing ของสัญญานี้'] };
   if (!(old.fee_amount > 0)) return { ...base, type: 'KEEP', reasons: ['สัญญาคิดค่าคอมมิชชันอย่างเดียว · Repricing แนะนำเฉพาะค่าบริการรายเดือน'] };
-  const listed = !!row && row['gate_pass'] === true && (row['trigger'] !== 'none' || row['trigger_pending'] === true);
-  if (!row || !listed) return { ...base, type: 'KEEP', reasons: ['ไม่อยู่ในรายการ Repricing'] };
+  if (!row || row['trigger'] === 'none') return { ...base, type: 'KEEP', reasons: ['ไม่อยู่ในรายการ Repricing'] };
   const why = String(row['why_chips'] ?? '').split('|').filter(Boolean);
   const inputs = { trigger: row['trigger'], revenue_profile: row['revenue_profile'], months_since_increase: row['months_since_increase'] };
-  if (row['revenue_profile'] === 'declining' || row['band_min_pct'] == null) return { ...base, inputs, type: 'HOLD', reasons: why.length ? why : ['รายได้ขาลง'] };
+  if (row['revenue_profile'] === 'declining') return { ...base, inputs, type: 'HOLD', reasons: [...why, 'รายได้ขาลง'] };
+  if (row['gate_pass'] !== true) return { ...base, inputs, type: 'KEEP', reasons: ['ไม่อยู่ในรายการ Repricing'] };
+  if (row['band_min_pct'] == null) return { ...base, inputs, type: 'NONE', reasons: ['ไม่มีข้อมูลรายได้พอประเมินช่วงราคา'] };
   return { band_min_pct: Number(row['band_min_pct']), band_max_pct: Number(row['band_max_pct']), inputs, computed_at: computedAt, type: 'RAISE', reasons: why };
 }
 /** Default new terms: RAISE → fee × (1 + band midpoint), Math.round like the Repricing box; else old terms. Dates roll forward. */

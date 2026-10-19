@@ -18,7 +18,7 @@ import { DashboardGlobal, defaultGlobalFilter, selectedPeriod } from '../src/lib
 import { buildDemoReport, DEMO_NOW } from '../src/lib/ps-demo-fixture';
 import { demoMeetingReport, MEETING_DEMO_NOW } from '../src/lib/meeting-dashboard-demo';
 
-const FORBIDDEN = ['SERVICING_STALL', 'CONTRACT_FOLLOWUP', 'UPSELL_PITCH', 'RENEWAL_DUE', 'GRADE_RISK', 'SURVEY_LOW', 'ASSIGNMENT_PENDING', 'RENEWED', 'NOT_RENEWED', 'IN_PROGRESS', 'LOST', 'NPS', 'row-1', '★', 'เพดาน', 'เคส PS', 'Ticket ระบบ', 'HTL-'];
+const FORBIDDEN = ['RENEWAL_TERMS_APPROVAL', 'CUSTOMER_ENTITY_CHANGE', 'SOFT_FORCE', 'ADVISORY', 'SERVICING_STALL', 'CONTRACT_FOLLOWUP', 'UPSELL_PITCH', 'RENEWAL_DUE', 'GRADE_RISK', 'SURVEY_LOW', 'ASSIGNMENT_PENDING', 'RENEWED', 'NOT_RENEWED', 'IN_PROGRESS', 'LOST', 'NPS', 'row-1', '★', 'เพดาน', 'เคส PS', 'Ticket ระบบ', 'HTL-'];
 const visibleText = (html: string) => html.replace(/<[^>]*>/g, ' ').replace(/&quot;/g, '"').replace(/&amp;/g, '&');
 function hits(text: string) {
   const found = FORBIDDEN.filter((w) => text.includes(w));

@@ -351,6 +351,8 @@ type Ctx = {
     effectiveEnd?: string,
   ) => void;
   markAllRead: () => void;
+  /** Renewal v1.0 RN20: PM rolls a RENEWED (COMPLETED) outcome back to On Process; audit lives in the renewal store. */
+  rollbackRenewed: (cardId: string, by: string, reason: string) => void;
 };
 
 const PsRenewalContext = createContext<Ctx | null>(null);
@@ -413,6 +415,10 @@ export function PsRenewalProvider({ children }: { children: ReactNode }) {
           ]);
       },
       markAllRead: () => setUpdates((prev) => prev.map((u) => ({ ...u, read: true }))),
+      rollbackRenewed: (cardId, by, reason) =>
+        setCards((prev) => prev.map((c) => c.id === cardId && c.status === "COMPLETED"
+          ? { ...c, status: "ON_PROCESS", markedBy: undefined, markedAt: undefined, activities: [{ id: `${cardId}-rb-${Date.now()}`, type: "Contract", at: "วันนี้", note: `PM ย้อนผลต่อสัญญา: ${reason}`, by }, ...c.activities] }
+          : c)),
     }),
     [cards, updates],
   );

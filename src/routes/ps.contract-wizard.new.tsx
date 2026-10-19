@@ -1,5 +1,5 @@
 /* PS App v2.3 · Fix 1 + Fix 3 — the single wizard entry: /ps/contract-wizard/new?quote_id=… */
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 import { ContractWizard } from "@/components/ps/contract-wizard";
 import { useBd } from "@/lib/bd-store";
@@ -8,6 +8,10 @@ export const Route = createFileRoute("/ps/contract-wizard/new")({
   validateSearch: (search: Record<string, unknown>) => ({
     quote_id: typeof search['quote_id'] === "string" ? (search['quote_id'] as string) : "",
   }),
+  /* Renewal v1.0 §0.3: no deal / quote id → create nothing, back to Contract Dashboard. */
+  beforeLoad: ({ search }) => {
+    if (!search.quote_id) throw redirect({ to: "/ps/contract-dashboard", replace: true });
+  },
   head: () => ({
     meta: [
       { title: "Contract Wizard — PS App | Meridia Hotel ERP" },
