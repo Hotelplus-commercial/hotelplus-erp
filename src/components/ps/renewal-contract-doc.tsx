@@ -13,7 +13,7 @@ export const thDate = (iso: string) => new Date(`${iso.slice(0, 10)}T00:00:00+07
 /** A4Canvas = cover page + one terms page. */
 export const RENEWAL_DOC_PAGES = 2;
 
-export function RenewalContractDoc({ r, src, signer, signedDate }: { r: RenewalRequest; src: SourceContract; signer?: string; signedDate?: string | null }) {
+export function RenewalContractDoc({ r, src, signer, signedDate }: { r: RenewalRequest; src: SourceContract; signer?: string | undefined; signedDate?: string | null }) {
   const t = r.new_terms;
   return (
     <A4Canvas serviceLine={lineOf(t.package)} contractCode={`${r.source_contract_id} · ต่ออายุ`} hotelName={r.hotel_name}>
