@@ -41,6 +41,8 @@ import {
   type RenewalStatus,
 } from "@/lib/ps-renewal";
 import { cn } from "@/lib/utils";
+import { useBd } from "@/lib/bd-store";
+import { renewalWizardDealId } from "@/lib/renewal-wizard";
 
 const statusTone: Record<RenewalStatus, "muted" | "info" | "success" | "danger"> = {
   NOT_STARTED: "muted",
@@ -177,6 +179,7 @@ export function RenewalCardModal({
   onClose: () => void;
 }) {
   const { cards, addActivity, markDone } = usePsRenewal();
+  const { deals } = useBd();
   const card = cards.find((c) => c.id === cardId);
   const [type, setType] = useState<ActivityType | null>(startAdd ? "Call" : null);
   const [date, setDate] = useState("");
@@ -289,7 +292,7 @@ export function RenewalCardModal({
             </div>
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <Button size="sm" asChild>
-                <Link to="/ps/contract-dashboard">Generate from Contract Dashboard →</Link>
+                <Link to="/ps/contract-wizard/$dealId" params={{ dealId: renewalWizardDealId(card, deals) }} search={{ quote_id: "" }}>Generate contract →</Link>
               </Button>
               <span className="text-xs text-muted-foreground">Signed Contract:</span>
               {card.signedFile ? (
