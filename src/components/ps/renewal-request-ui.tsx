@@ -57,7 +57,7 @@ export function RenewalRequestPanel({ card, currentUser, canOverride }: { card: 
   const go = () => {
     const o = startRenewal(card);
     if (!o.ok) { toast.error(o.error); return; }
-    void navigate({ to: "/ps/contract-wizard/renew/$contractId", params: { contractId: o.req.source_contract_id }, search: (isRenewalDemo() ? { demo: "1" } : {}) as never });
+    void navigate({ to: "/ps/contract-wizard/renew/$contractId", params: { contractId: o.req.source_contract_id }, search: (isRenewalDemo() ? { demo: 1 } : {}) as never });
   };
   const send = (r: RenewalRequest) => { const o = sendRenewalLink(r.id); o.ok ? toast.success(r.status === "LINK_SENT" ? L.resendLink : L.sendLink) : toast.error(o.error); };
   const simulate = (r: RenewalRequest) => {
