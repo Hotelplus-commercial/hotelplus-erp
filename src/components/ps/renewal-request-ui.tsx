@@ -11,7 +11,7 @@ import { APPROVER_ROLE_TH, RENEWAL_LABEL_TH as L, RENEWAL_RECO_TH, renewalReqSta
 import { usePsRenewal, type RenewalCard } from "@/lib/ps-renewal";
 import { isOverdue, type ApproverRole, type RecoSnapshot, type RenewalRequest } from "@/lib/renewal-rules";
 import {
-  approveRequest, entityClosed, isRenewalDemo, renewalSignPath, latestRequestFor,
+  approveRequest, entityClosed, isRenewalDemo, liveLinkPathFor, latestRequestFor,
   renewalConfig, renewalNow, returnBack, sendRenewalLink, signRequest, signedAwaitingDone, startRenewal, useRenewalStore,
 } from "@/lib/renewal-store";
 import { addAttachment, attachmentError, ticketById, useTickets, STATUS_TH, type L0Ticket } from "@/lib/tickets-l0";
@@ -73,7 +73,7 @@ export function RenewalRequestPanel({ card, currentUser }: { card: RenewalCard; 
   };
   const entityTicket = req?.entity_ticket_id ? ticketById(req.entity_ticket_id) : undefined;
   const st = req?.status;
-  const liveHref = req ? `${renewalSignPath(req.id)}${isRenewalDemo() ? "?demo=1" : ""}` : "";
+  const liveHref = req ? liveLinkPathFor(req.id) : null;
 
   return (
     <section className="space-y-2 rounded-xl border p-3">
@@ -95,7 +95,7 @@ export function RenewalRequestPanel({ card, currentUser }: { card: RenewalCard; 
             <span className="text-xs text-muted-foreground">ส่งเมื่อ {fmtDT(req.link_sent_at)}</span>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button size="sm" variant="outline" asChild><a href={liveHref} target="_blank" rel="noreferrer">{L.openLive}</a></Button>
+            {liveHref ? <Button size="sm" variant="outline" asChild><a href={liveHref} target="_blank" rel="noreferrer">{L.openLive}</a></Button> : <span className="text-xs text-warning-foreground">ไม่พบ live link · กด {L.resendLive}</span>}
             {st === "LINK_SENT" && owner && !done && <Button size="sm" variant="outline" onClick={() => resend(req)}>{L.resendLive}</Button>}
             {st === "LINK_SENT" && isRenewalDemo() && !done && <Button size="sm" variant="ghost" onClick={() => simulate(req)}>{L.simulateSign}</Button>}
           </div>
