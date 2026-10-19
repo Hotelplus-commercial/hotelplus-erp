@@ -5,7 +5,7 @@ import { useEffect, useState, useSyncExternalStore } from 'react';
 import { stageCloudDoc } from './cloud-sync';
 import { DEMO_NOW } from './ps-demo-fixture';
 
-export type TicketType = 'UPSELL_PITCH' | 'RENEWAL_DUE' | 'GRADE_RISK' | 'SURVEY_LOW' | 'CONTRACT_FOLLOWUP' | 'SERVICING_STALL';
+export type TicketType = 'UPSELL_PITCH' | 'RENEWAL_DUE' | 'GRADE_RISK' | 'SURVEY_LOW' | 'CONTRACT_FOLLOWUP' | 'SERVICING_STALL' | 'CUSTOMER_ENTITY_CHANGE';
 export type Dept = 'BD' | 'ORM' | 'MARCOM' | 'PS' | 'AC' | 'AUTO' | 'HR' | 'OFFICE';
 export type Role = 'PM' | Dept;
 /** Pseudo-user for BOT-generated tickets (display "The Office"); never a switcher role, so BOT tickets have no CANCEL action. */
@@ -21,8 +21,22 @@ export type BotPayload = {
   /** CONTRACT_FOLLOWUP (BD-AC v2.0): carry-deal context, read-only in the ticket detail. */
   followup?: { cohort_month: string; stage_label: string; substep: string | null; days_since_sent_contract: number; bd_name: string | null };
   assigned_bd?: { member_id: string; nickname: string } | null;
+  /** Renewal v1.0: link to the renewal request + entity-change form. */
+  renewal_request_id?: string; entity_change?: { what: string; detail: string };
+  /** Ticket attachments (any type): ≤5 files, ≤5 MB each, PDF/JPG/PNG — stored with the ticket in browser canonical storage. */
+  attachments?: TicketAttachment[];
   phase?: 'P1'|'P2'|'P3'; lane?: 'AE'|'Specialist'|'ORM'|'Marcom'; days_in_phase?: number; sla_days?: number; target_days?: number; tone?: 'ok'|'amber'|'red'; current_stage?: string; owner_id?: string|null; recipient?: string; recipient_member_id?: string|null;
 };
+export type TicketAttachment = { id: string; name: string; size: number; mime: string; by: string; at: string; data_url: string };
+export const ATTACH_MAX_FILES = 5, ATTACH_MAX_BYTES = 5 * 1024 * 1024;
+export const ATTACH_MIME = ['application/pdf', 'image/jpeg', 'image/png'];
+/** Pure validation for one more file on a ticket. */
+export function attachmentError(existing: number, f: { size: number; mime: string }): string | null {
+  if (existing >= ATTACH_MAX_FILES) return 'แนบได้สูงสุด 5 ไฟล์';
+  if (f.size > ATTACH_MAX_BYTES) return 'ไฟล์ต้องไม่เกิน 5 MB';
+  if (!ATTACH_MIME.includes(f.mime)) return 'รองรับเฉพาะ PDF / JPG / PNG';
+  return null;
+}
 export type L0Status = 'NEW' | 'ACK' | 'IN_PROGRESS' | 'DONE' | 'CANCELLED';
 export type L0Ticket = {
   ticket_id: string; type: TicketType; source_app: 'PS_DASHBOARD' | 'BD_APP' | 'PS_DASHBOARD_BOT'; created_by: Creator; target_dept: Dept;
@@ -37,7 +51,7 @@ export const DEPTS: Dept[] = ['BD', 'ORM', 'MARCOM', 'PS', 'AC', 'AUTO', 'HR', '
 export const DEPTS_WITH_WORKSPACE: Dept[] = [...DEPTS];
 export const OPEN_STATUSES: L0Status[] = ['NEW', 'ACK', 'IN_PROGRESS'];
 export const STATUS_TH: Record<L0Status, string> = { NEW: 'ใหม่', ACK: 'รับแล้ว', IN_PROGRESS: 'กำลังทำ', DONE: 'เสร็จ', CANCELLED: 'ยกเลิก' };
-export const TYPE_TH: Record<TicketType, string> = { UPSELL_PITCH: 'เสนอขายบริการเพิ่ม', RENEWAL_DUE: 'ใกล้ครบสัญญา', GRADE_RISK: 'เสี่ยงเกรดการชำระ (D)', SURVEY_LOW: 'คะแนนบริการต่ำ', CONTRACT_FOLLOWUP: 'ติดตามดีลค้างข้ามเดือน', SERVICING_STALL: 'ติดตามการ์ดเกิน SLA' };
+export const TYPE_TH: Record<TicketType, string> = { UPSELL_PITCH: 'เสนอขายบริการเพิ่ม', RENEWAL_DUE: 'ใกล้ครบสัญญา', GRADE_RISK: 'เสี่ยงเกรดการชำระ (D)', SURVEY_LOW: 'คะแนนบริการต่ำ', CONTRACT_FOLLOWUP: 'ติดตามดีลค้างข้ามเดือน', SERVICING_STALL: 'ติดตามการ์ดเกิน SLA', CUSTOMER_ENTITY_CHANGE: 'เปลี่ยนนิติบุคคล / ผู้ลงนาม' };
 const OPEN: L0Status[] = ['NEW', 'ACK', 'IN_PROGRESS'];
 const NEXT: Partial<Record<L0Status, L0Status>> = { NEW: 'ACK', ACK: 'IN_PROGRESS', IN_PROGRESS: 'DONE' };
 const KEY = 'meridia.tickets.v1';
@@ -87,6 +101,17 @@ export function createTask(i: { type: TicketType; target_dept: Dept; subject_ref
   commit({ seq, items: [...s.items, t] });
   return { ticket_id: t.ticket_id, deduped: false };
 }
+
+/** Add an attachment (no status / routing change). */
+export function addAttachment(id: string, a: Omit<TicketAttachment, 'id' | 'at'>): string | null {
+  const s = cur(); const t = s.items.find((x) => x.ticket_id === id); if (!t) return 'ไม่พบ ticket';
+  const list = t.payload.attachments ?? []; const err = attachmentError(list.length, a); if (err) return err;
+  const att: TicketAttachment = { ...a, id: `${id}-A${list.length + 1}`, at: now() };
+  commit({ ...s, items: s.items.map((x) => (x.ticket_id === id ? { ...x, payload: { ...x.payload, attachments: [...list, att] } } : x)) });
+  return null;
+}
+export const ticketById = (id: string | null | undefined) => (id ? cur().items.find((t) => t.ticket_id === id) : undefined);
+export const isDemoTickets = () => demoOn;
 
 /** BOT dedup: open ticket with same (hotel_id + type + event_key). */
 export function findOpenByEvent(type: TicketType, hotel_id: string, event_key: string) {

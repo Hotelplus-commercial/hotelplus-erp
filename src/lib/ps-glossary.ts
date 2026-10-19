@@ -61,3 +61,25 @@ export function aeNameTh(id: unknown): string {
   return m ? m[1]! : s;
 }
 export const GRADE_D_LABEL = "ลูกค้าเกรด D";
+
+/** Contract Renewal v1.0 — display labels (internal codes never render). */
+export const RENEWAL_REQ_STATUS_TH: Record<string, string> = {
+  DRAFT: "ร่าง", PENDING_APPROVAL: "รอ PM อนุมัติ", APPROVED: "อนุมัติแล้ว", RETURNED: "ส่งกลับ", READY_TO_SEND: "พร้อมส่ง",
+  LINK_SENT: "ส่ง link แล้ว", SIGNED: "เซ็นแล้ว", DECLINED: "ลูกค้าไม่ต่อ", CANCELLED: "ยกเลิก",
+};
+export const renewalReqStatusTh = (s: string) => RENEWAL_REQ_STATUS_TH[s] ?? s;
+export const RENEWAL_RECO_TH = {
+  RAISE: (min: number, max: number) => `แนะนำขึ้นค่าบริการ +${min}–${max}%`,
+  HOLD: "ยังไม่แนะนำให้ขึ้น", KEEP: "ต่อตามเงื่อนไขเดิม", NONE: "ไม่มีคำแนะนำ",
+} as const;
+export const RENEWAL_LABEL_TH = {
+  renew: "ต่อสัญญา", needApproval: "ต้องให้ PM อนุมัติ", overdue: (d: number) => `รออนุมัติเกิน ${d} วัน`,
+  sendLink: "ส่ง link ให้ลูกค้า", resendLink: "ส่ง link อีกครั้ง", recordDecline: "บันทึกไม่ต่อ", simulateSign: "จำลองลูกค้าเซ็น",
+  createAndLink: "สร้างสัญญาและ live link", submitPm: "ส่งให้ PM อนุมัติ", approve: "อนุมัติ", returnBack: "ส่งกลับ", cancel: "ยกเลิก",
+  approvalItem: (h: string) => `อนุมัติเงื่อนไขต่อสัญญา · ${h}`, entityItem: (h: string) => `เปลี่ยนนิติบุคคล / ผู้ลงนาม · ${h}`,
+  entityCheckbox: "ลูกค้าเปลี่ยนนิติบุคคลหรือผู้มีอำนาจลงนาม", waitEntity: "รอ AC ปิด ticket เปลี่ยนนิติบุคคล",
+  rollback: "ย้อนผลต่อสัญญา", rollbackFlag: "สัญญาใหม่รอ PM ตรวจใน สัญญา & บริการ",
+  fields: { fee_amount: "ค่าบริการ/เดือน", commission_pct: "ค่าคอมมิชชัน %", term_months: "ระยะสัญญา (เดือน)", package: "แพ็กเกจ", start_date: "เริ่ม", end_date: "สิ้นสุด" },
+  ruleNote: "คำแนะนำนี้มาจากกฎตายตัวของกล่อง Repricing (ไม่ใช่ AI): ครบรอบขึ้นราคา · ราคาต่ำกว่ามูลค่าเทียบเคียง · แนวโน้มรายได้",
+} as const;
+export const APPROVER_ROLE_TH: Record<string, string> = { PM: "PM", HOC: "Head of Commercial", MD: "MD" };
