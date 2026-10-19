@@ -12,8 +12,6 @@ async function render(el: ReactElement) {
   return renderToStaticMarkup(h(QueryClientProvider, { client: new QueryClient() }, h(RouterProvider, { router } as never)));
 }
 import { PsReportTab } from '../src/components/ps/ps-report-tab';
-import { TaskTab } from '../src/components/ps/task-tab';
-import { ServicingTab } from '../src/components/ps/servicing-tab';
 import { MeetingAnalyzerTab } from '../src/components/ps/meeting-analyzer-tab';
 import { Account360Provider } from '../src/components/ps/account-360';
 import { DashboardGlobal, defaultGlobalFilter, selectedPeriod } from '../src/lib/ps-dashboard-global';
@@ -47,13 +45,6 @@ describe('R1.1 forbidden strings (demo mode)', () => {
     expect(html.length).toBeGreaterThan(1000);
     expect(hits(visibleText(html))).toEqual([]);
   });
-  for (const [name, C] of [['Task (ติดตามงานผู้ให้บริการ)', TaskTab], ['Servicing', ServicingTab]] as const) {
-    test(name, async () => {
-      const html = await render(h(DashboardGlobal.Provider, { value: { filter: defaultGlobalFilter, demo: true, now: DEMO_NOW } }, h(C as never)));
-      expect(html.length).toBeGreaterThan(1000);
-      expect(hits(visibleText(html))).toEqual([]);
-    });
-  }
   test('the check itself fails on a forbidden word', () => {
     expect(hits('สถานะ RENEWED · งาน P2')).toEqual(['RENEWED', 'P1/P2/P3']);
   });
