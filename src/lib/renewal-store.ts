@@ -68,7 +68,7 @@ function commit(s: State) {
 }
 export function setRenewalDemo(on: boolean) {
   if (on === demoOn) return;
-  demoOn = on; demo = null; setTicketDemo(on); version++; listeners.forEach((l) => l());
+  demoOn = on; setTicketDemo(on); demo = on ? seedDemo() : null; version++; listeners.forEach((l) => l());
 }
 export const isRenewalDemo = () => demoOn;
 

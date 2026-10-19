@@ -11,6 +11,9 @@ import { digestFor, runAlertBot, sortBotFirst, type BotRunResult } from "@/lib/a
 import { demoScanInput } from "@/lib/alert-bot-sources";
 import type { DateRange, WorkspaceConfig } from "@/lib/workspace-registry";
 import { cn } from "@/lib/utils";
+import { setRenewalDemo } from "@/lib/renewal-store";
+import { RenewalApprovalList } from "@/components/ps/renewal-request-ui";
+import { TicketAttachments } from "@/components/ps/renewal-request-ui";
 import { reportStageLabel, statusText } from '@/lib/servicing-time';
 import { servicingLanes } from '@/lib/servicing-time';
 import { demoServicingRows, SERVICING_DEMO_NOW } from '@/lib/servicing-demo';
@@ -21,7 +24,7 @@ const RANGES: { key: DateRange; label: string }[] = [{ key: "today", label: "ว
 /** ONE generic shell (spec Layer 1 §2). Renders only from `config`. */
 export function WorkspaceShell({ config, demo, ticket }: { config: WorkspaceConfig; demo: boolean; ticket?: string | undefined }) {
   const [ready, setReady] = useState(false);
-  useEffect(() => { setTicketDemo(demo); setReady(true); }, [demo]);
+  useEffect(() => { setRenewalDemo(demo); setTicketDemo(demo); setReady(true); }, [demo]);
   const [role, setRole] = useState<Role>(config.dept_key);
   const [range, setRange] = useState<DateRange>("today");
   useEffect(() => { setRole(config.dept_key); }, [config.dept_key]);
@@ -57,7 +60,8 @@ export function WorkspaceShell({ config, demo, ticket }: { config: WorkspaceConf
           {config.lanes.scheduled ? null : <Empty text="ยังไม่มีนัดหมาย" />}
         </Lane>
         <Lane title="✅ งานที่ต้องทำ">
-          {config.lanes.todo.length === 0 ? <Empty text="ไม่มีงานค้าง 🎉" /> : null}
+          {(config.dept_key === "PS" || config.dept_key === "OFFICE") && <RenewalApprovalList scope={config.dept_key === "PS" ? "PM" : "OVERDUE"} />}
+          {config.lanes.todo.length === 0 && config.dept_key !== "PS" && config.dept_key !== "OFFICE" ? <Empty text="ไม่มีงานค้าง 🎉" /> : null}
           {config.lanes.todo.map((group) => (
             <div key={group.key} className="min-w-0 space-y-2">
               <h4 className="flex items-center gap-1.5 text-sm font-medium text-warning-foreground"><span aria-hidden="true">{group.icon}</span>{group.label_th}</h4>
@@ -189,6 +193,7 @@ function Detail({ t, role, dept, onClose }: { t: L0Ticket; role: Role; dept: Dep
             <dt className="text-muted-foreground">หมายเหตุ</dt><dd>{t.payload.note || "—"}</dd>
           </>
         ))}
+        {t.type === "CUSTOMER_ENTITY_CHANGE" && t.payload.entity_change && <><dt className="text-muted-foreground">สิ่งที่เปลี่ยน</dt><dd>{t.payload.entity_change.what} · {t.payload.entity_change.detail}</dd></>}
         <dt className="text-muted-foreground">ผู้สร้าง → แผนก</dt><dd>{isBot ? "The Office" : t.created_by} → {t.target_dept}</dd>
       </dl>
       {t.payload.condition_cleared_at && OPEN_STATUSES.includes(t.status) && (
@@ -209,6 +214,7 @@ function Detail({ t, role, dept, onClose }: { t: L0Ticket; role: Role; dept: Dep
         ))}
       </div>
       {msg && <p role="alert" className="text-xs text-warning-foreground">{msg}</p>}
+      <TicketAttachments t={t} by={role} readOnly={watcher} />
       <ol className="space-y-1 border-t pt-2 text-xs text-muted-foreground">
         {t.audit.map((a, i) => <li key={i}>{fmt(a.at)} · {a.by === SYSTEM_CREATOR ? "The Office" : a.by} · {a.from_status ? (a.from_status === a.to_status ? "เงื่อนไขหายแล้ว" : STATUS_TH[a.from_status]) : "—"} → {STATUS_TH[a.to_status]}</li>)}
       </ol>
