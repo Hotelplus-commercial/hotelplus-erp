@@ -60,13 +60,13 @@ export function RenewalWizard({ contractId }: { contractId: string }) {
   };
   const entityTicket = ticketById(req.entity_ticket_id);
   const addFile = (f: File | undefined) => {
-    if (!f) return; const e = attachmentError(files.length, { size: f.size, mime: f.type }); if (e) return toast.error(e);
+    if (!f) return; const e = attachmentError(files.length, { size: f.size, mime: f.type }); if (e) { toast.error(e); return; }
     const rd = new FileReader(); rd.onload = () => setFiles((p) => [...p, { name: f.name, size: f.size, mime: f.type, data_url: String(rd.result) }]); rd.readAsDataURL(f);
   };
-  const sendEntity = () => { const o = raiseEntityChange(req.id, what, detail, files, currentUser); if (!o.ok) return toast.error(o.error); setEntityOpen(false); toast.success(L.entityItem(card.hotel)); };
+  const sendEntity = () => { const o = raiseEntityChange(req.id, what, detail, files, currentUser); if (!o.ok) { toast.error(o.error); return; } setEntityOpen(false); toast.success(L.entityItem(card.hotel)); };
   const primary = () => {
-    const o = submitRequest(req.id); if (!o.ok) return toast.error(o.error);
-    if (o.req.status === "DRAFT") return toast.info(L.waitEntity);
+    const o = submitRequest(req.id); if (!o.ok) { toast.error(o.error); return; }
+    if (o.req.status === "DRAFT") { toast.info(L.waitEntity); return; }
     toast.success(renewalReqStatusTh(o.req.status));
     void navigate({ to: "/ps/ae-workspace/dashboard", hash: "renewal-activities" });
   };

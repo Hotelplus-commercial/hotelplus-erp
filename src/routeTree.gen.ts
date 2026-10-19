@@ -86,6 +86,7 @@ import { Route as PsPropertyContentHotelIdRouteImport } from './routes/ps.proper
 import { Route as PsTemplatesIndexRouteImport } from './routes/ps.templates.index'
 import { Route as PsTemplatesTemplateIdRouteImport } from './routes/ps.templates.$templateId'
 import { Route as PsTemplatesAutoFieldsRouteImport } from './routes/ps.templates.auto-fields'
+import { Route as PsContractWizardRenewContractIdRouteImport } from './routes/ps.contract-wizard.renew.$contractId'
 import { Route as PsTemplatesBlockGroupsGroupIdRouteImport } from './routes/ps.templates.block-groups.$groupId'
 import { Route as PsTemplatesPreviewTemplateIdRouteImport } from './routes/ps.templates.preview.$templateId'
 
@@ -476,6 +477,12 @@ const PsTemplatesAutoFieldsRoute = PsTemplatesAutoFieldsRouteImport.update({
   path: '/templates/auto-fields',
   getParentRoute: () => PsRoute,
 } as any)
+const PsContractWizardRenewContractIdRoute =
+  PsContractWizardRenewContractIdRouteImport.update({
+    id: '/renew/$contractId',
+    path: '/renew/$contractId',
+    getParentRoute: () => PsContractWizardRoute,
+  } as any)
 const PsTemplatesBlockGroupsGroupIdRoute =
   PsTemplatesBlockGroupsGroupIdRouteImport.update({
     id: '/templates/block-groups/$groupId',
@@ -567,6 +574,7 @@ export interface FileRoutesByFullPath {
   '/ps/contract-wizard/': typeof PsContractWizardIndexRoute
   '/ps/property-content/': typeof PsPropertyContentIndexRoute
   '/ps/templates/': typeof PsTemplatesIndexRoute
+  '/ps/contract-wizard/renew/$contractId': typeof PsContractWizardRenewContractIdRoute
   '/ps/templates/block-groups/$groupId': typeof PsTemplatesBlockGroupsGroupIdRoute
   '/ps/templates/preview/$templateId': typeof PsTemplatesPreviewTemplateIdRoute
 }
@@ -638,6 +646,7 @@ export interface FileRoutesByTo {
   '/ps/contract-wizard': typeof PsContractWizardIndexRoute
   '/ps/property-content': typeof PsPropertyContentIndexRoute
   '/ps/templates': typeof PsTemplatesIndexRoute
+  '/ps/contract-wizard/renew/$contractId': typeof PsContractWizardRenewContractIdRoute
   '/ps/templates/block-groups/$groupId': typeof PsTemplatesBlockGroupsGroupIdRoute
   '/ps/templates/preview/$templateId': typeof PsTemplatesPreviewTemplateIdRoute
 }
@@ -720,6 +729,7 @@ export interface FileRoutesById {
   '/ps/contract-wizard/': typeof PsContractWizardIndexRoute
   '/ps/property-content/': typeof PsPropertyContentIndexRoute
   '/ps/templates/': typeof PsTemplatesIndexRoute
+  '/ps/contract-wizard/renew/$contractId': typeof PsContractWizardRenewContractIdRoute
   '/ps/templates/block-groups/$groupId': typeof PsTemplatesBlockGroupsGroupIdRoute
   '/ps/templates/preview/$templateId': typeof PsTemplatesPreviewTemplateIdRoute
 }
@@ -803,6 +813,7 @@ export interface FileRouteTypes {
     | '/ps/contract-wizard/'
     | '/ps/property-content/'
     | '/ps/templates/'
+    | '/ps/contract-wizard/renew/$contractId'
     | '/ps/templates/block-groups/$groupId'
     | '/ps/templates/preview/$templateId'
   fileRoutesByTo: FileRoutesByTo
@@ -874,6 +885,7 @@ export interface FileRouteTypes {
     | '/ps/contract-wizard'
     | '/ps/property-content'
     | '/ps/templates'
+    | '/ps/contract-wizard/renew/$contractId'
     | '/ps/templates/block-groups/$groupId'
     | '/ps/templates/preview/$templateId'
   id:
@@ -955,6 +967,7 @@ export interface FileRouteTypes {
     | '/ps/contract-wizard/'
     | '/ps/property-content/'
     | '/ps/templates/'
+    | '/ps/contract-wizard/renew/$contractId'
     | '/ps/templates/block-groups/$groupId'
     | '/ps/templates/preview/$templateId'
   fileRoutesById: FileRoutesById
@@ -1519,6 +1532,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PsTemplatesAutoFieldsRouteImport
       parentRoute: typeof PsRoute
     }
+    '/ps/contract-wizard/renew/$contractId': {
+      id: '/ps/contract-wizard/renew/$contractId'
+      path: '/renew/$contractId'
+      fullPath: '/ps/contract-wizard/renew/$contractId'
+      preLoaderRoute: typeof PsContractWizardRenewContractIdRouteImport
+      parentRoute: typeof PsContractWizardRoute
+    }
     '/ps/templates/block-groups/$groupId': {
       id: '/ps/templates/block-groups/$groupId'
       path: '/templates/block-groups/$groupId'
@@ -1710,6 +1730,7 @@ interface PsContractWizardRouteChildren {
   PsContractWizardClassicRoute: typeof PsContractWizardClassicRoute
   PsContractWizardNewRoute: typeof PsContractWizardNewRoute
   PsContractWizardIndexRoute: typeof PsContractWizardIndexRoute
+  PsContractWizardRenewContractIdRoute: typeof PsContractWizardRenewContractIdRoute
 }
 
 const PsContractWizardRouteChildren: PsContractWizardRouteChildren = {
@@ -1717,6 +1738,7 @@ const PsContractWizardRouteChildren: PsContractWizardRouteChildren = {
   PsContractWizardClassicRoute: PsContractWizardClassicRoute,
   PsContractWizardNewRoute: PsContractWizardNewRoute,
   PsContractWizardIndexRoute: PsContractWizardIndexRoute,
+  PsContractWizardRenewContractIdRoute: PsContractWizardRenewContractIdRoute,
 }
 
 const PsContractWizardRouteWithChildren =

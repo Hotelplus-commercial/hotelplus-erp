@@ -56,24 +56,24 @@ export function RenewalRequestPanel({ card, currentUser, canOverride }: { card: 
   const done = card.status === "COMPLETED" || card.status === "CHURN";
   const go = () => {
     const o = startRenewal(card);
-    if (!o.ok) return toast.error(o.error);
+    if (!o.ok) { toast.error(o.error); return; }
     void navigate({ to: "/ps/contract-wizard/renew/$contractId", params: { contractId: o.req.source_contract_id } });
   };
   const send = (r: RenewalRequest) => { const o = sendRenewalLink(r.id); o.ok ? toast.success(r.status === "LINK_SENT" ? L.resendLink : L.sendLink) : toast.error(o.error); };
   const simulate = (r: RenewalRequest) => {
-    const o = signRequest(r.id); if (!o.ok) return toast.error(o.error);
+    const o = signRequest(r.id); if (!o.ok) { toast.error(o.error); return; }
     addActivity(card.id, { type: "Contract", at: "วันนี้", note: `ลูกค้าเซ็นสัญญาต่ออายุ · เริ่ม ${o.req.new_terms.start_date}`, file: `${o.req.new_contract_id}.pdf`, by: "ลูกค้า" });
     markDone(card.id, "COMPLETED", currentUser);
     toast.success(renewalReqStatusTh("SIGNED"));
   };
   const doDecline = () => {
-    if (!reason.trim()) return toast.error("กรอกเหตุผล");
-    if (open) { const o = declineRequest(open.id, reason); if (!o.ok) return toast.error(o.error); }
+    if (!reason.trim()) { toast.error("กรอกเหตุผล"); return; }
+    if (open) { const o = declineRequest(open.id, reason); if (!o.ok) { toast.error(o.error); return; } }
     markDone(card.id, "CHURN", currentUser, "ไม่ต่อ (Non-renewal)", reason.trim(), card.contractEnd);
     setDeclineOpen(false); toast.success(renewalReqStatusTh("DECLINED"));
   };
   const rollback = () => {
-    const o = recordRollback(card.id, currentUser, rbReason); if (!o.ok) return toast.error("error" in o ? o.error : "");
+    const o = recordRollback(card.id, currentUser, rbReason); if (!o.ok) { toast.error("error" in o ? o.error : ""); return; }
     rollbackRenewed(card.id, currentUser, rbReason.trim()); setRbReason(""); toast.success(L.rollbackFlag);
   };
   const entityTicket = req?.entity_ticket_id ? ticketById(req.entity_ticket_id) : undefined;
@@ -132,7 +132,7 @@ export function RenewalApprovalList({ scope }: { scope: "PM" | "OVERDUE" }) {
   const by = role === "PM" ? "PM001-Alex" : role;
   const act = (r: RenewalRequest, kind: "approve" | "return") => {
     const o = kind === "approve" ? approveRequest(r.id, by, role) : returnBack(r.id, by, role, comment);
-    if (!o.ok) return toast.error(o.error);
+    if (!o.ok) { toast.error(o.error); return; }
     setComment(""); setOpenId(null); toast.success(renewalReqStatusTh(o.req.status));
   };
   return (
@@ -186,7 +186,7 @@ export function TicketAttachments({ t, by, readOnly }: { t: L0Ticket; by: string
   const [err, setErr] = useState<string | null>(null);
   const onFile = (f: File | undefined) => {
     if (!f) return;
-    const e = attachmentError(list.length, { size: f.size, mime: f.type }); if (e) return setErr(e);
+    const e = attachmentError(list.length, { size: f.size, mime: f.type }); if (e) { setErr(e); return; }
     const rd = new FileReader();
     rd.onload = () => setErr(addAttachment(t.ticket_id, { name: f.name, size: f.size, mime: f.type, by, data_url: String(rd.result) }));
     rd.readAsDataURL(f);
