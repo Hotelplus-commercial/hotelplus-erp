@@ -73,10 +73,10 @@ function PropertyInfoInternal() {
 
   return (
     <div className="flex flex-col gap-4">
-      <PageHeader eyebrow="PS App · Property Content · Property Info (ทีม)" title={property.hotel_name_th}
+      <PageHeader eyebrow="PS App · ข้อมูลโรงแรม · Property Info (ทีม)" title={property.hotel_name_th}
         description={`Hotel ID: ${property.hotel_id} · Start year: ${property.start_year ?? "—"} · Owner AE: ${property.owner_ae ?? "—"}`}
         actions={<div className="flex gap-2">
-          <Button asChild variant="outline" size="sm"><Link to="/ps/property-content">← Property Content</Link></Button>
+          <Button asChild variant="outline" size="sm"><Link to="/ps/property-content">← ข้อมูลโรงแรม</Link></Button>
           {cardId && <Button asChild variant="outline" size="sm"><Link to="/ps/onboarding-process" hash={`servicing-card-${cardId}`}>↩ Back to card</Link></Button>}
         </div>} />
       <div className="flex flex-wrap gap-2">

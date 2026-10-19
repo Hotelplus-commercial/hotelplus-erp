@@ -2,6 +2,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { phaseTh, plainSv } from '@/lib/ps-glossary';
+import { servicingInfo } from './servicing-phase-chart';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -21,23 +23,9 @@ import { calendarDays, cardStatus, MARCOM_REPORT_STAGES, ORM_REPORT_STAGES, repo
 import { createServicingStall, stallRouting } from '@/lib/servicing-stall';
 import { OPEN_STATUSES, STATUS_TH, SYSTEM_CREATOR, useTickets, type L0Ticket } from '@/lib/tickets-l0';
 const SLOT_LABEL:Record<CaretakerSlot,string>={AE:'AE',SPECIALIST:'Specialist',ORM:'ORM team',MARCOM:'Marcom'};
-const stageName=reportStageLabel;
+const stageName=(s:string)=>plainSv(reportStageLabel(s));
 const stageKey=(r:ServicingRow)=>r.current_stage==='completed'?'completed_handover':r.current_stage==='go_live'?(r.service_line==='ORM'?'orm_go_live':'marcom_go_live'):r.current_stage;
 const ownerClass=(stage:string,line:string)=>['new_property','introduction_sent_form','collect_data','property_pending','final_check'].includes(stage)?'sv-owner-ae':['approved','completed_handover'].includes(stage)?'sv-owner-specialist':line==='ORM'?'sv-owner-orm':'sv-owner-marcom';
-function Definitions({service}:{service:string}) {
- const {p1,p2,p3}=servicing_sla_config;
- return <section className="sv-definitions" aria-label="Servicing definitions">
- {(['ORM','Marcom'] as const).filter(l=>service==='ALL'||service===l).map(l=><div key={l} className="sv-stage-def-row"><strong className={l==='ORM'?'text-primary':'text-series-2'}>{l}</strong><div>{(l==='ORM'?ORM_REPORT_STAGES:MARCOM_REPORT_STAGES).map(stage=><span key={stage} className="sv-stage-chip"><i className={ownerClass(stage,l)}/>{stage==='orm_prepare_data'&&<i className="sv-owner-specialist"/>}{stageName(stage)}</span>)}</div></div>)}
- <div className="sv-owner-legend">{['AE','Specialist','ORM','Marcom'].map(l=><span key={l}><i className={`sv-owner-${l.toLowerCase()}`}/>{l}</span>)}<span>สีจุด = เจ้าของ stage · Prepare Data (ORM) ทำร่วม Specialist + ORM</span></div>
- <div className="sv-rule-grid">
- <div><strong>P1 · AE · SLA {p1.sla} วัน</strong><p>สร้างการ์ด (Day 0) → ผ่าน Final Check (เข้า Approved)</p></div>
- <div><strong>P2 · Prepare · SLA {p2.sla} วัน (คู่ขนาน)</strong><p>นับจาก Approved · Specialist → ส่ง handover ครบ (row-1) · ORM / Marcom → สร้างนัดประชุม · GMB → Go Live</p></div>
- <div><strong>รอประชุม · ไม่นับ</strong><p>สร้างนัดแล้ว → ถึงวันประชุม แสดงโทนกลาง · รอ ORM ตรวจรับ row-2 ก็ไม่นับเช่นกัน</p></div>
- <div><strong>P3 · Go-Live · เป้า {p3.target} วัน · SLA {p3.sla} วัน</strong><p>วันประชุม (Rate Structure / First Sync) → Go Live</p></div>
- </div>
- <div className="sv-status-legend"><strong>สถานะ:</strong><span className="sv-text-ok">● เร็วกว่า SLA · P1/P2 วันที่ 0–{p1.ok_max} · P3 วันที่ 0–{p3.ok_max}</span><span className="sv-text-amber">● “เหลือเวลาอีก x วันของ SLA” · P1/P2 วันที่ {p1.ok_max+1}–{p1.sla} · P3 วันที่ {p3.ok_max+1}–{p3.sla}</span><span className="sv-text-red">● “เกิน SLA แล้ว x วัน” · เกิน {p1.sla} วันทุกช่วง · BOT สร้าง Ticket ให้หัวหน้างาน</span><span>● รอ (ไม่นับ) · นับวันปฏิทินเต็ม · เวลาไทย</span></div>
- </section>;
-}
 export function ServicingTab() {
  const {filter,demo}=useDashboardGlobal(),s=useServicing(),read=useServerFn(readServicingDashboard),tickets=useTickets();
  const real=useQuery({queryKey:['servicing-dashboard-views-v2'],queryFn:()=>read(),enabled:!demo,staleTime:60_000});
@@ -66,7 +54,7 @@ export function ServicingTab() {
  const selected=drill==='gap'?gaps:drill==='flag'?inProgress.filter(r=>['red','amber'].includes(status(r).tone??'')):rows.filter(r=>`${r.service_line}:${stageKey(r)}`===drill);
  const order:Record<string,number>={red:0,amber:1,ok:2,wait:3};
  const sorted=[...selected].sort((a,b)=>(order[status(a).tone??'wait']??4)-(order[status(b).tone??'wait']??4)||calendarDays(b.created_at,b.go_live_at??clock)-calendarDays(a.created_at,a.go_live_at??clock));
- const periodLabel=filter.range==='mtd'?'เดือนนี้':filter.range==='all'?'ช่วงเวลาทั้งหมด':`${filter.range.replace('m','')} เดือนล่าสุด`;
+ const periodLabel=filter.range==='mtd'?'เดือนนี้':filter.range==='all'?'ช่วงเวลาทั้งหมด':filter.range==='custom'?`${filter.customPeriod?.from ?? ''} – ${filter.customPeriod?.to ?? ''}`:`${filter.range.replace('m','')} เดือนล่าสุด`;
  const open=(r:ServicingRow)=>{if(demo){toast.info('DEMO · ไม่มีการ์ดจริงให้เปิด');return;}if(!s.cards.some(c=>c.id===r.card_id)){toast.info('ยังไม่พบการ์ดนี้ในเครื่องนี้ · เปิดที่ On-boarding Process');return;}setDrawer(r.card_id);};
  const create=(r:ServicingRow)=>{
   const cause=status(r).cause;if(!cause||openTicket(r))return;
@@ -79,24 +67,23 @@ export function ServicingTab() {
  const phaseRows=(report?.phaseRows??[]).filter(p=>rows.some(r=>r.card_id===p.card_id)||(!filter.compare?false:servicingScope(report?.rows??[],filter).some(r=>r.card_id===p.card_id)));
  return <section className="sv-cockpit space-y-4" aria-label="Servicing">
  {demo&&<p className="sv-demo-mark">DEMO · 17 ต.ค. 2026</p>}
- <Definitions service={filter.service}/>
  <div className="sv-stats">{[
-  ['การ์ดบริการทั้งหมด',stats.cards,'หลัง filter'],['โรงแรม',stats.hotels,'distinct'],['Go Live',stats.goLive,`ORM ${rows.filter(r=>r.go_live_at&&r.service_line==='ORM').length} · Marcom ${rows.filter(r=>r.go_live_at&&r.service_line==='MARCOM').length}`],['กำลังดำเนินการ',stats.inProgress,`เกิน SLA ${red} · ใกล้ครบ SLA ${amber}`],['⚠ รอระบุผู้ดูแล',stats.awaiting,'ORM team / Marcom ยังว่าง']
+  ['การ์ดบริการทั้งหมด',stats.cards,'หลัง filter'],['โรงแรม',stats.hotels,'นับโรงแรมละ 1'],['Go Live',stats.goLive,`ORM ${rows.filter(r=>r.go_live_at&&r.service_line==='ORM').length} · Marcom ${rows.filter(r=>r.go_live_at&&r.service_line==='MARCOM').length}`],['กำลังดำเนินการ',stats.inProgress,`เลยกำหนด ${red} · ใกล้ถึงกำหนด ${amber}`],['⚠ รอระบุผู้ดูแล',stats.awaiting,'ORM team / Marcom ยังว่าง']
  ].map(([label,value,sub],i)=><div className={`sv-stat ${i===4?'sv-stat-gap':''}`} key={label}><span>{label}</span><strong>{pending?'—':value}</strong><small>{pending?'รอ source':sub}</small>{i===4&&<Button variant="outline" size="sm" disabled={pending} onClick={()=>selectDrill('gap')}>+ ระบุผู้ดูแล</Button>}</div>)}</div>
  {real.isError&&!demo&&<p className="text-sm text-destructive">อ่านรายงาน Servicing ไม่สำเร็จ</p>}
- <DashCard title="① Pipeline ตอนนี้" question="การ์ดอยู่ stage ไหน และใบไหนใกล้ครบหรือเกิน SLA แล้ว? (1 การ์ด = 1 บริการ)" answer={pending?'—':`${stats.inProgress} การ์ด`} answerSub={pending?undefined:<><span className="sv-text-red">เกิน SLA {red} · ใกล้ครบ SLA {amber}</span><div>กำลังดำเนินการ (ยังไม่ Go Live)</div></>} noteNamespace="servicing" noteKey="pipe" noteLines={pending?['ยังไม่มีข้อมูลพอสรุป']:[`เกิน SLA ${red} · ใกล้ครบ SLA ${amber} จาก ${stats.inProgress} การ์ดที่กำลังดำเนินการ`,...(most?[`stage ที่มีการ์ดมากสุดตอนนี้: ${stageName(most.key.split(':')[1]??'')} (${most.key.split(':')[0]==='ORM'?'ORM':'Marcom'}) ${most.n} การ์ด`]:[])]} howToRead="ตัวเลขในช่อง = จำนวนการ์ดที่อยู่ stage นั้นตอนนี้ · แถบสีใต้ตัวเลข = สัดส่วนเร็วกว่า SLA / ใกล้ครบ SLA / เกิน SLA · ชี้เพื่อดูรายละเอียด คลิกเพื่อดูรายการ์ด">
+ <DashCard info={servicingInfo()} title="① Pipeline ตอนนี้" question="การ์ดอยู่ stage ไหน และใบไหนใกล้ถึงหรือเลยกำหนดแล้ว? (1 การ์ด = 1 บริการ)" answer={pending?'—':`${stats.inProgress} การ์ด`} answerSub={pending?undefined:<><span className="sv-text-red">เลยกำหนด {red} · ใกล้ถึงกำหนด {amber}</span><div>กำลังดำเนินการ (ยังไม่ Go Live)</div></>} noteNamespace="servicing" noteKey="pipe" noteLines={pending?['ยังไม่มีข้อมูลพอสรุป']:[`เลยกำหนด ${red} · ใกล้ถึงกำหนด ${amber} จาก ${stats.inProgress} การ์ดที่กำลังดำเนินการ`,...(most?[`stage ที่มีการ์ดมากสุดตอนนี้: ${stageName(most.key.split(':')[1]??'')} (${most.key.split(':')[0]==='ORM'?'ORM':'Marcom'}) ${most.n} การ์ด`]:[])]} howToRead="ตัวเลขในช่อง = จำนวนการ์ดที่อยู่ stage นั้นตอนนี้ · แถบสีใต้ตัวเลข = สัดส่วนทันกำหนด / ใกล้ถึงกำหนด / เลยกำหนด · ชี้เพื่อดูรายละเอียด คลิกเพื่อดูรายการ์ด">
  {filter.compare&&<p className="mb-3 text-xs text-muted-foreground">Pipeline เป็นภาพปัจจุบัน จึงไม่เทียบ A vs B · การเทียบดูได้ที่การ์ด ② และ ③</p>}
  {pending?<ChartSkeleton text="รอ Cloud Sync seed"/>:<>
- {(['ORM','MARCOM'] as const).filter(l=>filter.service==='ALL'||filter.service===(l==='ORM'?'ORM':'Marcom')).map(line=><div className="sv-pipeline-lane" key={line}><h3>{line==='ORM'?'ORM · Final Setup = เพดาน รอ handover ก่อนเข้า Training':'Marcom · GMB ข้าม First Sync · First Sync นับ MT เท่านั้น'}</h3><div className="sv-pipeline-scroll"><div className="sv-pipeline-grid" style={{gridTemplateColumns:`repeat(${line==='ORM'?12:10},minmax(96px,1fr))`}}>{(line==='ORM'?ORM_REPORT_STAGES:MARCOM_REPORT_STAGES).map(stage=>{
+ {(['ORM','MARCOM'] as const).filter(l=>filter.service==='ALL'||filter.service===(l==='ORM'?'ORM':'Marcom')).map(line=><div className="sv-pipeline-lane" key={line}><h3>{line==='ORM'?'ORM · Final Setup (รอ handover ก่อน Training)':'Marcom · GMB ข้าม First Sync · First Sync นับ MT เท่านั้น'}</h3><div className="sv-pipeline-scroll"><div className="sv-pipeline-grid" style={{gridTemplateColumns:`repeat(${line==='ORM'?12:10},minmax(96px,1fr))`}}>{(line==='ORM'?ORM_REPORT_STAGES:MARCOM_REPORT_STAGES).map(stage=>{
  const at=rows.filter(r=>r.service_line===line&&stageKey(r)===stage&&(stage!=='marcom_first_sync'||r.service_variant==='MARCOM_META_TIKTOK')),c=counts(at),live=stage.endsWith('go_live'),key=`${line}:${stage}`,oldest=[...at].sort((a,b)=>calendarDays(b.stage_entered_at??b.created_at,clock)-calendarDays(a.stage_entered_at??a.created_at,clock))[0];
- return <ChartHint key={stage} header={`${stageName(stage)} · ${line==='ORM'?'ORM':'Marcom'} · ${at.length} การ์ด`} lines={!at.length?['ไม่มีการ์ดใน stage นี้']:live?[`Go Live แล้ว ${at.length} การ์ด`]:[`เร็วกว่า SLA ${c.ok} · ใกล้ครบ SLA ${c.amber} · เกิน SLA ${c.red}${c.wait?` · รอ ${c.wait}`:''}`,oldest?`ค้าง stage นี้นานสุด ${calendarDays(oldest.stage_entered_at??oldest.created_at,clock)} วัน · ${oldest.hotel_name}`:'',...(!at.every(assignmentComplete)?[`รอระบุผู้ดูแล ${at.filter(r=>!assignmentComplete(r)).length} การ์ด`]:[])]}><Button variant="ghost" className={`sv-stage-cell ${drill===key?'sv-selected':''}`} aria-pressed={drill===key} onClick={()=>selectDrill(key,true)}><span className={`sv-stage-owner-bar ${ownerClass(stage,line)}`}/><span className="sv-stage-label">{stageName(stage)}</span><strong className={!at.length?'sv-zero':''}>{at.length}</strong><span className="sv-proportion">{live?<i className="sv-dot-wait" style={{width:'100%'}}/>:(['ok','amber','red','wait'] as const).map(t=><i key={t} className={`sv-dot-${t}`} style={{width:`${at.length?c[t]/at.length*100:0}%`}}/>)}</span><small className={c.red?'sv-text-red':c.amber?'sv-text-amber':''}>{live?periodLabel:c.red?`เกิน SLA ${c.red}`:c.amber?`ใกล้ครบ SLA ${c.amber}`:c.wait?`รอประชุม ${c.wait}`:' '}</small></Button></ChartHint>;
+ return <ChartHint key={stage} header={`${stageName(stage)} · ${line==='ORM'?'ORM':'Marcom'} · ${at.length} การ์ด`} lines={!at.length?['ไม่มีการ์ดใน stage นี้']:live?[`Go Live แล้ว ${at.length} การ์ด`]:[`ทันกำหนด ${c.ok} · ใกล้ถึงกำหนด ${c.amber} · เลยกำหนด ${c.red}${c.wait?` · รอ ${c.wait}`:''}`,oldest?`ค้าง stage นี้นานสุด ${calendarDays(oldest.stage_entered_at??oldest.created_at,clock)} วัน · ${oldest.hotel_name}`:'',...(!at.every(assignmentComplete)?[`รอระบุผู้ดูแล ${at.filter(r=>!assignmentComplete(r)).length} การ์ด`]:[])]}><Button variant="ghost" className={`sv-stage-cell ${drill===key?'sv-selected':''}`} aria-pressed={drill===key} onClick={()=>selectDrill(key,true)}><span className={`sv-stage-owner-bar ${ownerClass(stage,line)}`}/><span className="sv-stage-label">{stageName(stage)}</span><strong className={!at.length?'sv-zero':''}>{at.length}</strong><span className="sv-proportion">{live?<i className="sv-dot-wait" style={{width:'100%'}}/>:(['ok','amber','red','wait'] as const).map(t=><i key={t} className={`sv-dot-${t}`} style={{width:`${at.length?c[t]/at.length*100:0}%`}}/>)}</span><small className={c.red?'sv-text-red':c.amber?'sv-text-amber':''}>{live?periodLabel:c.red?`เลยกำหนด ${c.red}`:c.amber?`ใกล้ถึงกำหนด ${c.amber}`:c.wait?`รอประชุม ${c.wait}`:' '}</small></Button></ChartHint>;
  })}</div></div></div>)}
  <div className="sv-drill"><header ref={drillHeader}>
  <Button variant="ghost" className="sv-drill-toggle" aria-expanded={drillOpen} aria-controls={drillListId} onClick={()=>changeDrillOpen(!drillOpen)}>
  <span className={`sv-drill-chevron ${drillOpen?'sv-drill-chevron-open':''}`} aria-hidden="true">▸</span><span className="sv-drill-heading"><span className="sv-drill-title">{drill==='flag'?`การ์ดที่ต้องจับตา · ${selected.length} การ์ด`:drill==='gap'?`รอระบุผู้ดูแล · ${selected.length} การ์ด`:`${stageName(drill.split(':')[1]??'')} · ${drill.split(':')[0]==='ORM'?'ORM':'Marcom'} · ${selected.length} การ์ด`}</span>
- {!drillOpen&&<span className="sv-drill-counts">{drill==='gap'?`ORM ${selected.filter(r=>r.service_line==='ORM').length} · Marcom ${selected.filter(r=>r.service_line==='MARCOM').length}`:<>{counts(selected).red>0&&<span className="sv-text-red">เกิน SLA {counts(selected).red}</span>}{counts(selected).amber>0&&<span className="sv-text-amber">{counts(selected).red>0?' · ':''}ใกล้ครบ SLA {counts(selected).amber}</span>}</>}</span>}
- <span className="sv-drill-subtitle">{drill==='flag'?'เรียงเกิน SLA ก่อน แล้วใกล้ครบ SLA · คลิกช่อง stage เพื่อดูการ์ดใน stage นั้น':drill==='gap'?'ORM ต้องมี AE + Specialist + ORM team · Marcom ต้องมี AE + Specialist + Marcom':'ค้าง stage นี้ X วัน · Day N นับจากสร้างการ์ด'}</span></span></Button>
- <div className="sv-controls"><Button variant={drill==='flag'?'default':'outline'} size="sm" onClick={()=>selectDrill('flag')}>ต้องจับตา (ใกล้ครบ + เกิน SLA) {red+amber}</Button><Button variant="outline" size="sm" onClick={()=>selectDrill('gap')}>รอระบุผู้ดูแล {gaps.length}</Button><Button variant="link" size="sm" aria-expanded={drillOpen} aria-controls={drillListId} onClick={()=>changeDrillOpen(!drillOpen)}>{drillOpen?'ซ่อนรายการ์ด':'ดูรายการ์ด'}</Button></div></header>
+ {!drillOpen&&<span className="sv-drill-counts">{drill==='gap'?`ORM ${selected.filter(r=>r.service_line==='ORM').length} · Marcom ${selected.filter(r=>r.service_line==='MARCOM').length}`:<>{counts(selected).red>0&&<span className="sv-text-red">เลยกำหนด {counts(selected).red}</span>}{counts(selected).amber>0&&<span className="sv-text-amber">{counts(selected).red>0?' · ':''}ใกล้ถึงกำหนด {counts(selected).amber}</span>}</>}</span>}
+ <span className="sv-drill-subtitle">{drill==='flag'?'เรียงเลยกำหนดก่อน แล้วใกล้ถึงกำหนด · คลิกช่อง stage เพื่อดูการ์ดใน stage นั้น':drill==='gap'?'ORM ต้องมี AE + Specialist + ORM team · Marcom ต้องมี AE + Specialist + Marcom':'ค้าง stage นี้ X วัน · Day N นับจากสร้างการ์ด'}</span></span></Button>
+ <div className="sv-controls"><Button variant={drill==='flag'?'default':'outline'} size="sm" onClick={()=>selectDrill('flag')}>ต้องจับตา (ใกล้ถึง + เลยกำหนด) {red+amber}</Button><Button variant="outline" size="sm" onClick={()=>selectDrill('gap')}>รอระบุผู้ดูแล {gaps.length}</Button><Button variant="link" size="sm" aria-expanded={drillOpen} aria-controls={drillListId} onClick={()=>changeDrillOpen(!drillOpen)}>{drillOpen?'ซ่อนรายการ์ด':'ดูรายการ์ด'}</Button></div></header>
  <div id={drillListId} hidden={!drillOpen}>
  {sorted.map(r=>{
  const st=status(r),ticket=openTicket(r),live=Boolean(r.go_live_at);
@@ -107,7 +94,7 @@ export function ServicingTab() {
  })}
  {!selected.length&&<p className="p-5 text-center text-sm text-muted-foreground">ไม่มีการ์ดในกลุ่มนี้ตาม filter ปัจจุบัน · คลิกช่อง stage ด้านบนเพื่อดูการ์ด</p>}
  </div></div></>}
- {drillOpen&&<p className="mt-3 text-xs text-muted-foreground">หน้านี้ไม่เลื่อน stage · ดูรายละเอียดจะเปิด guided drawer เดิม · ปุ่มสร้าง Ticket เห็นเฉพาะ PM และเฉพาะการ์ดที่ใกล้ครบหรือเกิน SLA</p>}
+ {drillOpen&&<p className="mt-3 text-xs text-muted-foreground">หน้านี้ไม่เลื่อน stage · ดูรายละเอียดจะเปิด guided drawer เดิม · ปุ่มสร้าง Ticket เห็นเฉพาะ PM และเฉพาะการ์ดที่ใกล้ถึงหรือเลยกำหนด</p>}
  </DashCard>
  <ServicingPhaseChart rows={phaseRows} service={filter.service} periodA={periodA} periodB={periodB} compare={filter.compare} pending={pending} periodLabel={periodLabel}/>
  <ServicingGoLiveChart rows={servicingScope(report?.rows??[],filter)} service={filter.service} periodA={periodA} periodB={periodB} compare={filter.compare} pending={pending}/>
@@ -116,7 +103,7 @@ export function ServicingTab() {
  </section>;
 }
 function LanePill({lane:l,gmb}:{lane:ServicingLane;gmb:boolean}) {
- const text=l.state==='reserved'?'Specialist · สงวนไว้ (ยังไม่มี handover)':l.state==='none'?'—':l.state==='wait'?l.row2?'รอ ORM ตรวจรับ row-2':`รอประชุม ${shortThaiDate(l.wait_until??l.start_at??'2026-10-17')}`:l.state==='done'?l.lane==='Specialist'?`✓ Specialist ส่ง handover ครบ (วันที่ ${l.d})`:l.phase==='P2'&&l.lane!=='AE'?`✓ สร้างนัดแล้ว (วันที่ ${l.d})`:`✓ ${l.phase} · ${l.lane} · วันที่ ${l.d}`:`${l.phase} · ${gmb?'Marcom (GMB → Go Live)':l.lane} · วันที่ ${l.d} · ${statusText(l.phase,l.d??0)}`;
+ const text=l.state==='reserved'?'Specialist · สงวนไว้ (ยังไม่มี handover)':l.state==='none'?'—':l.state==='wait'?l.row2?'รอ ORM ตรวจรับ row-2':`รอประชุม ${shortThaiDate(l.wait_until??l.start_at??'2026-10-17')}`:l.state==='done'?l.lane==='Specialist'?`✓ Specialist ส่ง handover ครบ (วันที่ ${l.d})`:l.phase==='P2'&&l.lane!=='AE'?`✓ สร้างนัดแล้ว (วันที่ ${l.d})`:`✓ ${phaseTh(l.phase)} · ${l.lane} · วันที่ ${l.d}`:`${phaseTh(l.phase)} · ${gmb?'Marcom (GMB → Go Live)':l.lane} · วันที่ ${l.d} · ${plainSv(statusText(l.phase,l.d??0))}`;
  return <span className={`sv-lane-pill sv-tone-${l.tone??'wait'} ${l.state==='reserved'?'sv-reserved-pill':''}`}>{text}</span>;
 }
 /** Opens the existing v1.1 AssignDialog per slot (same write + audit as Hotel Profile). Demo = in-session no-op. */

@@ -38,6 +38,11 @@ const FINISHED: [string, string, L, number, number, number | null, number | null
   ['2026-09-02', '2026-09-16', 'ORM', 5, 3, 8, null, 4],
   ['2026-09-01', '2026-09-21', 'Marcom', 7, 4, null, 13, 5],
 ];
+const HISTORY_MONTHS = ['2025-07-01','2025-08-01','2025-09-01','2025-10-01','2025-11-01','2025-12-01','2026-01-01','2026-02-01','2026-03-01','2026-04-01','2026-05-01','2026-06-01'];
+/** [month, median, p25, p75, n] — prior-year finished cohorts (no survey history). */
+const COHORT_HISTORY: [string, number, number, number, number][] = [['2025-08-01',21,18,24,2],['2025-09-01',19,16,23,3],['2025-10-01',20,17,22,2],['2025-11-01',18,15,21,2],['2025-12-01',22,19,25,1],['2026-01-01',20,18,23,2],['2026-02-01',19,17,22,2],['2026-03-01',18,16,21,3],['2026-04-01',17,15,20,2],['2026-05-01',18,16,20,2],['2026-06-01',17,15,19,2],['2026-07-01',16,14,19,2]];
+/** Prior renewal cycle (Sep 2025) — not owned by Nont so the owner-AND oracle is unchanged. */
+const RENEWAL_HISTORY: [string, string, string, string][] = [['RH1', 'C05', '2025-09-08', 'RENEWED'], ['RH2', 'C09', '2025-09-18', 'RENEWED'], ['RH3', 'C14', '2025-09-22', 'NOT_RENEWED'], ['RH4', 'C06', '2025-09-26', 'LOST']];
 const RENEWALS: [string, string, string, string][] = [['R1', 'C01', '2026-09-10', 'RENEWED'], ['R2', 'C02', '2026-09-15', 'RENEWED'], ['R3', 'C04', '2026-09-20', 'RENEWED'], ['R4', 'C05', '2026-09-25', 'NOT_RENEWED'], ['R5', 'C06', '2026-09-28', 'IN_PROGRESS']];
 const SURVEY2: Record<string, [number, number]> = { 'Chaam Peumsuk': [5, 10], Seefah: [5, 9], 'Chaba Grand': [4, 9], 'Baan Suan': [4, 8], 'Dusit Pool Villa': [3, 5] };
 const GRADES: Record<string, [string | null, string | null]> = { 'Chaam Peumsuk': ['A', 'A'], Seefah: ['A', 'A'], 'Erawan Boutique': [null, null], Anjali: ['C', 'C'], 'Baan Suan': ['B', 'B'], 'Baan Talay': ['B', 'B'], 'Dusit Pool Villa': ['C', 'C'], 'Chaba Grand': ['B', 'D'] };
@@ -67,7 +72,8 @@ export function buildDemoReport(filter?: GlobalFilter): PsReport {
   const now = DEMO_NOW.slice(0, 10);
   const views = Object.fromEntries(PS_VIEWS.map(v => [v, [] as PsReportRow[]])) as Record<PsView, PsReportRow[]>;
   views.v_ps_lifecycle_flow = contracts.map(c => ({ contract_id: c.id, hotel_id: hid(c.hotel), hotel_name: c.hotel, service_line: c.line, ae_owner_id: c.ae, status: c.status, start_date: c.start, inactivated_at: c.inact, created_at: NEW_PROPERTY[c.id] ?? null }));
-  for (const m of ['2026-07-01', '2026-08-01', '2026-09-01']) {
+  // R1 §10: 12 extra months back (2025-07 … 2026-06) derived from the same contracts; existing months unchanged.
+  for (const m of [...HISTORY_MONTHS, '2026-07-01', '2026-08-01', '2026-09-01']) {
     const next = new Date(Date.UTC(+m.slice(0, 4), +m.slice(5, 7), 1)).toISOString().slice(0, 10);
     for (const line of ['ORM', 'Marcom'] as L[]) {
       const cs = contracts.filter(c => c.line === line);
@@ -89,6 +95,10 @@ export function buildDemoReport(filter?: GlobalFilter): PsReport {
       promoters: sv.filter(x => x[1] >= 9).length, detractors: sv.filter(x => x[1] <= 6).length, responses: sv.length,
     });
   }
+  // R1 §10: on-board history cohorts (deterministic, prior year only) so "เดือนนี้ vs เดือนเดียวกันปีก่อน" has B data.
+  for (const [m, med, p25, p75, n] of COHORT_HISTORY) views.v_ps_onboard_cohort.push({ billing_period: m, service_line: null, median_days: med, p25_days: p25, p75_days: p75, ae_n: n, specialist_n: n, survey1_n: 0, survey2_n: 0, responses: 0, promoters: 0, detractors: 0 });
+  views.v_ps_onboard_cohort.sort((x, y) => String(x.billing_period).localeCompare(String(y.billing_period)));
+  for (const [rid, cid, due, outcome] of RENEWAL_HISTORY) { const c = contracts.find(x => x.id === cid); if (c) views.v_ps_renewal.push({ renewal_id: rid, contract_id: cid, hotel_id: hid(c.hotel), hotel_name: c.hotel, service_line: c.line, ae_owner_id: c.ae, renewal_due_date: due, outcome }); }
   const sv = Object.values(SURVEY2);
   views.v_ps_nps = Object.entries(SURVEY2).map(([hotel, scores]) => ({ billing_period: '2026-09-01', hotel_id: hid(hotel), hotel_name: hotel, ae_owner_id: contracts.find(c => c.hotel === hotel)?.ae ?? null, service_line: null, responses: 1, promoters: scores[1] >= 9 ? 1 : 0, detractors: scores[1] <= 6 ? 1 : 0 }));
   const active = contracts.filter(c => c.status === 'ACTIVE');

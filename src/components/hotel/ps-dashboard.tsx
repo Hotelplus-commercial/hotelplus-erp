@@ -122,7 +122,6 @@ export function PsDashboard({ assignment, part = "all" }: { assignment?: Assignm
   const window = selectedPeriod(filter,now);
   const rows = allRows.filter(r => { const term=q.trim().toLowerCase(); return r.h.terms.some(t => (!t.start || t.start.toISOString().slice(0,10) <= window.to) && (!t.end || t.end.toISOString().slice(0,10) >= window.from)) && (!term || `${r.h.name} ${r.h.code}`.toLowerCase().includes(term)) && (status === 'all' || r.status === status) && matchAssignment(r.assignees,assignment); });
   const scopedHotels = rows.map(r => r.h);
-  const totalTerms = scopedHotels.reduce((s, h) => s + h.terms.length, 0);
   const activeCount = rows.filter((r) => r.status === "active").length;
   const inactive = rows.filter((r) => r.status === "contract-end" || r.status === "terminated").length;
   const expiring60 = rows.filter((r) => r.left !== null && r.left >= 0 && r.left <= 60).length;
@@ -132,6 +131,8 @@ export function PsDashboard({ assignment, part = "all" }: { assignment?: Assignm
       r.end.getMonth() === now.getMonth() &&
       r.end.getFullYear() === now.getFullYear(),
   ).length;
+  // R1 [top2-1]: one base for the whole snapshot = ใช้งาน + สิ้นสุด (same filters).
+  const base = activeCount + inactive;
   const noStart = rows.filter((r) => !r.start).length;
 
   const filtered = rows.filter((r) => {
@@ -159,10 +160,10 @@ export function PsDashboard({ assignment, part = "all" }: { assignment?: Assignm
           <div className="flex items-baseline gap-2">
             <span className="font-display text-4xl font-bold">{activeCount}</span>
             <span className="text-sm text-muted-foreground">
-              / {totalTerms} ฉบับที่ใช้งานอยู่
+              / {base} โรงแรม ใช้งาน
             </span>
             <span className="rounded-full bg-warning/20 px-2 py-0.5 text-xs font-bold text-warning-foreground">
-              {pct(activeCount, scopedHotels.length)}%
+              {pct(activeCount, base)}%
             </span>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -179,8 +180,8 @@ export function PsDashboard({ assignment, part = "all" }: { assignment?: Assignm
         </div>
 
         <div className="mt-4 grid gap-2 sm:grid-cols-2">
-          <Stat label="Active" value={activeCount} sub={`${pct(activeCount, scopedHotels.length)}%`} />
-          <Stat label="Inactive" value={inactive} sub={`${pct(inactive, scopedHotels.length)}%`} />
+          <Stat label="ใช้งาน" value={`${activeCount} / ${base}`} sub={`${base ? pct(activeCount, base) : 0}%`} />
+          <Stat label="สิ้นสุด" value={`${inactive} / ${base}`} sub={`${base ? 100 - pct(activeCount, base) : 0}%`} />
         </div>
 
         <div className="mt-4 border-t pt-4">

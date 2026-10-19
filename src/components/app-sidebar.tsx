@@ -44,7 +44,7 @@ import {
 } from "@/components/ui/sidebar";
 import { modules } from "@/lib/erp-data";
 import { useMeetingMgmt } from "@/lib/orm-meeting";
-import { HOST_OF_MODULE, workspacesFor, workspaceByDept } from "@/lib/workspace-registry";
+import { HOST_OF_MODULE, workspacesFor, workspaceByDept, psAppMenu } from "@/lib/workspace-registry";
 
 const moduleChildren: Record<string, { title: string; url: string; icon: typeof BuildingIcon }[]> = {
   bd: [
@@ -72,20 +72,11 @@ const moduleChildren: Record<string, { title: string; url: string; icon: typeof 
     { title: "Customer Master", url: "/ac/customers", icon: Users },
     { title: "Invoice & ใบเสร็จ", url: "/ac/billing", icon: Receipt },
   ],
-  ps: [
-    { title: "PS Dashboard", url: "/ps", icon: LayoutDashboard },
-    { title: "สัญญา & บริการ", url: "/ps/contracts", icon: FileSignature },
-    { title: "Contract Dashboard", url: "/ps/contract-dashboard", icon: LayoutDashboard },
-    { title: "Production Report", url: "/ps/production", icon: BarChart3 },
-    { title: "Templates", url: "/ps/templates", icon: FileText },
-    { title: "PM Workspace", url: "/workspace/ps", icon: Ticket },
-    { title: "AE Workspace", url: "/ps/ae-workspace/dashboard", icon: CalendarCheck },
-    { title: "On-boarding Process", url: "/ps/onboarding-process", icon: ClipboardCheck },
-    { title: "Property Content", url: "/ps/property-content", icon: FolderOpen },
-  ],
 
 };
 
+
+const PS_ICON: Record<string, typeof BuildingIcon> = { workspace: Ticket, dashboard: LayoutDashboard, "contract-dashboard": LayoutDashboard, onboard: ClipboardCheck, contracts: FileSignature, property: FolderOpen, production: BarChart3, settings: Settings };
 
 const systemItems = [
   { title: "Configuration", url: "/settings", icon: Settings },
@@ -146,8 +137,10 @@ export function AppSidebar() {
               {modules.map((m) => {
                 const children = (moduleChildren[m.slug] ?? []).filter((c) => !hiddenUrls.has(c.url));
                 const host = HOST_OF_MODULE[m.slug];
-                const extraWs = host ? workspacesFor(host).filter((w) => !children.some((c) => c.url === w.path)) : [];
-                const inSection = pathname === m.to || pathname.startsWith(`${m.to}/`) || extraWs.some((w) => w.path === pathname) || children.some((c) => c.url === pathname);
+                const psMenu = m.slug === "ps" ? psAppMenu() : null;
+                const extraWs = host && !psMenu ? workspacesFor(host).filter((w) => !children.some((c) => c.url === w.path)) : [];
+                const psMatch = (it: { url: string; also: string[] }) => pathname === it.url || (it.url !== "/ps" && pathname.startsWith(`${it.url}/`)) || it.also.some((a) => pathname === a || pathname.startsWith(`${a}/`));
+                const inSection = pathname === m.to || pathname.startsWith(`${m.to}/`) || extraWs.some((w) => w.path === pathname) || children.some((c) => c.url === pathname) || (!!psMenu && psMenu.some((g) => g.items.some(psMatch)));
                 const officeWs = workspaceByDept("OFFICE");
                 const officeActive = pathname.startsWith("/the-office-app") || pathname === officeWs.path;
                 return (
@@ -163,7 +156,26 @@ export function AppSidebar() {
                         <span className="truncate">{m.code} App</span>
                       </Link>
                     </SidebarMenuButton>
-                    {!collapsed && (children.length > 0 || extraWs.length > 0) && inSection && (
+                    {!collapsed && psMenu && inSection && (
+                      <SidebarMenuSub>
+                        {psMenu.map((g) => (
+                          <Fragment key={g.group}>
+                            <li className="px-2 pb-0.5 pt-2 text-[10.5px] font-semibold uppercase tracking-wide text-sidebar-foreground/60" aria-hidden="true">{g.group}</li>
+                            {g.items.map((c) => (
+                              <SidebarMenuSubItem key={c.key}>
+                                <SidebarMenuSubButton asChild isActive={psMatch(c)}>
+                                  <Link to={c.url} search={{ demo: ticketDemo ? 1 : undefined }} className="flex items-center gap-2">
+                                    {(() => { const I = PS_ICON[c.key] ?? Ticket; return <I className="size-3.5 shrink-0" />; })()}
+                                    <span className="truncate">{c.title}</span>
+                                  </Link>
+                                </SidebarMenuSubButton>
+                              </SidebarMenuSubItem>
+                            ))}
+                          </Fragment>
+                        ))}
+                      </SidebarMenuSub>
+                    )}
+                    {!collapsed && !psMenu && (children.length > 0 || extraWs.length > 0) && inSection && (
                       <SidebarMenuSub>
                         {children.map((c) => (
                           <SidebarMenuSubItem key={c.url}>

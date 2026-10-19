@@ -5,7 +5,7 @@ export const PS_VIEWS = ['v_ps_lifecycle_flow', 'v_ps_churn_monthly', 'v_ps_rene
 export type PsView = (typeof PS_VIEWS)[number];
 /** demo/now are set only by the bundled preview fixture (fixed clock). */
 export type PsReport = { views: Record<PsView, PsReportRow[]>; pending: PsView[]; demo?: boolean; now?: string; wonMtd?: number };
-export type PsFilter = { service: 'ALL' | 'ORM' | 'Marcom'; range: 'mtd' | '3m' | '6m' | '12m' | 'all'; period?: { from: string; to: string } };
+export type PsFilter = { service: 'ALL' | 'ORM' | 'Marcom'; range: 'mtd' | '3m' | '6m' | '12m' | 'all' | 'custom'; period?: { from: string; to: string }; customPeriod?: { from: string; to: string } };
 export type RiskRules = { grades: string[]; monthlySurveyBelow: number; monthlyBillingBelow: number; monthlyBillingAbove: number };
 export const DEFAULT_RISK_RULES: RiskRules = { grades: ['C', 'D'], monthlySurveyBelow: 7, monthlyBillingBelow: 10000, monthlyBillingAbove: 100000 };
 export function riskReasons(row: PsReportRow, rules: RiskRules) {
@@ -16,7 +16,8 @@ export function riskReasons(row: PsReportRow, rules: RiskRules) {
   return reasons;
 }
 export function psScope(rows: PsReportRow[], filter: PsFilter, dateKey = 'billing_period', shift = 0, now = new Date()) {
-  const months = { mtd: 1, '3m': 3, '6m': 6, '12m': 12, all: null }[filter.range];
+  if (!filter.period && filter.range === 'custom' && filter.customPeriod) filter = { ...filter, period: shiftPeriodMonths(filter.customPeriod, shift) };
+  const months = { mtd: 1, '3m': 3, '6m': 6, '12m': 12, all: null, custom: 1 }[filter.range];
   const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + shift + 1, 1)).toISOString().slice(0, 10);
   const start = months === null ? '0000-01-01' : new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + shift - months + 1, 1)).toISOString().slice(0, 10);
   return rows.filter(row => (filter.service === 'ALL' || row.service_line === filter.service) && (dateKey === 'none' || (row[dateKey] != null && (filter.period ? String(row[dateKey]).slice(0,10) >= filter.period.from && String(row[dateKey]).slice(0,10) <= filter.period.to : String(row[dateKey]) >= start && String(row[dateKey]) < end))));
@@ -44,4 +45,16 @@ export function healthOf(row: PsReportRow, rules: RiskRules, now = new Date()): 
   if (row.end_date) { const d = (new Date(String(row.end_date)).getTime() - now.getTime()) / 864e5; if (d >= 0 && d <= NEAR_END_DAYS) dims.push('nearEnd'); }
   if (row.active_services == null) return { dims, tier: 'pending' };
   return { dims, tier: row.worst_grade === 'D' || dims.length >= 2 ? 'high' : dims.length === 1 ? 'watch' : 'healthy' };
+}
+
+/** Shift a Bangkok-calendar period by whole months (end-of-month safe). */
+export function shiftPeriodMonths(p: { from: string; to: string }, months: number) {
+  if (!months) return p;
+  const mv = (iso: string, endSnap: boolean) => {
+    const [y, m, d] = iso.split('-').map(Number) as [number, number, number];
+    const last = new Date(Date.UTC(y, m - 1 + months + 1, 0)).getUTCDate();
+    const isEnd = d === new Date(Date.UTC(y, m, 0)).getUTCDate();
+    return new Date(Date.UTC(y, m - 1 + months, endSnap && isEnd ? last : Math.min(d, last))).toISOString().slice(0, 10);
+  };
+  return { from: mv(p.from, false), to: mv(p.to, true) };
 }

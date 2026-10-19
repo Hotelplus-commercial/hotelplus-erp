@@ -1,4 +1,4 @@
-// Meeting & Analyzer tab v2.0 — read-only rework per spec. Card-month grain, Bangkok dates,
+// Meeting & Survey tab (was Meeting & Analyzer) v2.0 — read-only rework per spec. Card-month grain, Bangkok dates,
 // medians only, no writes, Q8 is never NPS. Deprecated views are not read here.
 import { useMemo, useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
@@ -32,6 +32,8 @@ import {
   type MeetingRow,
 } from "@/lib/meeting-dashboard-types";
 import { DashCard, ChartHint, ChartSkeleton, toneClass } from "./dash-card";
+const FLAG_RED_MAX = MEETING_CONFIG.flag_red_max;
+const FLAG_WARN_SCORE = MEETING_CONFIG.flag_warn_score;
 
 const fmt = (v: number | null, suffix = "") =>
   v == null ? "—" : v.toLocaleString("th-TH", { maximumFractionDigits: 1 }) + suffix;
@@ -42,6 +44,10 @@ const thDay = (d: string) =>
   new Date(`${d.slice(0, 10)}T00:00:00Z`).toLocaleDateString("th-TH", { day: "numeric", month: "short", timeZone: "Asia/Bangkok" });
 
 /** previous period = same span, shifted back (for "vs previous month" lines). */
+function nextMonth(ym: string) {
+  const [y, m] = ym.split("-").map(Number) as [number, number];
+  return new Date(Date.UTC(y, m, 1)).toISOString().slice(0, 7);
+}
 function prevPeriod(period: Period): Period {
   const months = monthsInPeriod(period).length;
   const from = new Date(`${period.from}T00:00:00Z`);
@@ -50,6 +56,11 @@ function prevPeriod(period: Period): Period {
   return { from: prevFrom.toISOString().slice(0, 10), to: prevTo.toISOString().slice(0, 10) };
 }
 
+/** R1 [mt3-4]: hotel name primary, service secondary; never the HTL code. */
+export const hotelNameOf = (r: MeetingRow) => (r.hotel_name ? String(r.hotel_name) : "ไม่พบชื่อโรงแรม");
+function HotelCell({ r, link }: { r: MeetingRow; link?: ReactNode }) {
+  return <span className="inline-flex flex-col leading-tight">{link ?? <b>{hotelNameOf(r)}</b>}{r.service_line ? <span className="text-[10.5px] font-normal text-muted-foreground">{String(r.service_line)}</span> : null}</span>;
+}
 const normPending = (r: MeetingRow): MeetingRow => ({ ...r, ae_owner_id: r["owner_ae_id"] ?? r["ae_owner_id"] ?? null });
 
 /* ================= KPI tiles ================= */
@@ -331,7 +342,7 @@ function TierAPending({ rows, now }: { rows: MeetingRow[]; now: Date }) {
                   const d = Number(r["days_to_cutoff"] ?? 0);
                   return (
                     <tr key={String(r["meeting_id"])}>
-                      <td className="font-semibold">{String(r.hotel_id)} · {String(r.hotel_name)}</td>
+                      <td className="font-semibold"><HotelCell r={r} /></td>
                       <td>{String(r["owner_ae_id"] ?? "—")}</td>
                       <td>ทีม {String(r["orm_team"] ?? "—")}</td>
                       <td><span className={cn("mt-chip", cls)}>{label}</span></td>
@@ -505,14 +516,17 @@ function OwnerCards({ rows, rowsB, lens, setLens, months, now, compare, service 
 const SCORE_CLASS = (s: number) => (s <= 5 ? "mt-hist-s1" : s === 6 ? "mt-hist-s6" : s <= 8 ? "mt-hist-s78" : "mt-hist-s910");
 const scoreColor = (s: number) => (s <= 5 ? "var(--action-text)" : s === 6 ? "var(--watch-text)" : "var(--text-primary)");
 
-function QCard({ q, label, rows, prevRows, flags, compare, prevLabel }: {
-  q: string; label: string; rows: MeetingRow[]; prevRows: MeetingRow[]; flags: MeetingRow[]; compare: boolean; prevLabel: string;
+function QCard({ q, label, rows, curRows, prevRows, flags, compare, prevLabel }: {
+  q: string; label: string; rows: MeetingRow[]; curRows: MeetingRow[]; prevRows: MeetingRow[]; flags: MeetingRow[]; compare: boolean; prevLabel: string;
 }) {
   const [pinned, setPinned] = useState<number | null>(null);
   const scores = rows.map((r) => Number(r["score"])).filter((s) => s >= 1 && s <= 10);
   const med = median(scores);
   const prevMed = median(prevRows.map((r) => Number(r["score"])).filter((s) => s >= 1 && s <= 10));
   const le6 = scores.filter((s) => s <= 6).length;
+  // R1 [mt1-2]: "vs เดือนก่อน" = card month M vs M−1.
+  const medM = median(curRows.map((r) => Number(r["score"])).filter((s) => s >= 1 && s <= 10));
+  const le6M = curRows.filter((r) => Number(r["score"]) <= 6).length;
   const prevLe6 = prevRows.filter((r) => Number(r["score"]) <= 6).length;
   const hist = Array.from({ length: 10 }, (_, i) => scores.filter((s) => s === i + 1).length);
   const maxHist = Math.max(1, ...hist);
@@ -520,8 +534,8 @@ function QCard({ q, label, rows, prevRows, flags, compare, prevLabel }: {
   const noted = rows.filter((r) => r["prev_score"] != null && Number(r["score"]) >= 7 && Number(r["prev_score"]) - Number(r["score"]) >= MEETING_CONFIG.decline_note_pts);
   const flagOf = (hotel: string) =>
     flags.find((f) => f["hotel_id"] === hotel && f["topic"] === q && f["severity"] === "FLAG") ? "ธงแดง"
-      : flags.find((f) => f["hotel_id"] === hotel && f["topic"] === q) ? "เตือน" : null;
-  const delta = med != null && prevMed != null ? med - prevMed : null;
+      : flags.find((f) => f["hotel_id"] === hotel && f["topic"] === q) ? "ธงเหลือง" : null;
+  const delta = medM != null && prevMed != null ? medM - prevMed : null;
   const pinnedRows = pinned == null ? [] : rows.filter((r) => Number(r["score"]) === pinned);
 
   return (
@@ -529,8 +543,8 @@ function QCard({ q, label, rows, prevRows, flags, compare, prevLabel }: {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm font-semibold">{q} {label}</p>
-          <p className={cn("mt-0.5 text-[11.5px]", le6 > prevLe6 ? "text-dash-watch" : "text-muted-foreground")}>
-            ≤6: {le6} ราย ({le6 > prevLe6 ? `▲${le6 - prevLe6}` : le6 < prevLe6 ? `▼${prevLe6 - le6}` : "เท่าเดิม"} จาก {prevLabel}) · n {scores.length}
+          <p className={cn("mt-0.5 text-[11.5px]", le6M > prevLe6 ? "text-dash-watch" : "text-muted-foreground")}>
+            ≤6: {le6} ราย ({le6M > prevLe6 ? `▲${le6M - prevLe6}` : le6M < prevLe6 ? `▼${prevLe6 - le6M}` : "เท่าเดิม"} จาก {prevLabel}) · n {scores.length}
           </p>
         </div>
         <div className="text-right">
@@ -568,7 +582,7 @@ function QCard({ q, label, rows, prevRows, flags, compare, prevLabel }: {
             {pinnedRows.map((r, i) => (
               <li key={i} className="flex flex-wrap items-center gap-x-2 text-xs">
                 <Link to="/ps/ae-workspace/meetings" hash={String(r["meeting_id"])} className="font-semibold text-primary">
-                  {String(r.hotel_id)}
+                  {hotelNameOf(r)}
                 </Link>
                 <span>{String(r["caretaker"] ?? "—")}</span>
                 <span className="text-muted-foreground">AE {String(r["ae_owner_id"] ?? "—")}</span>
@@ -593,7 +607,7 @@ function QCard({ q, label, rows, prevRows, flags, compare, prevLabel }: {
               const badge = flagOf(String(r.hotel_id));
               return (
                 <p key={i} className="mt-0.5">
-                  – <b>{String(r.hotel_id)}</b> {String(r["prev_score"])} → {String(r["score"])} · {String(r["caretaker"])} · AE {String(r["ae_owner_id"])}
+                  – <HotelCell r={r} /> {String(r["prev_score"])} → {String(r["score"])} · {String(r["caretaker"])} · AE {String(r["ae_owner_id"])}
                   {badge && <span className={cn("mt-chip ml-1", badge === "ธงแดง" ? "mt-chip-red" : "mt-chip-amber")}>{badge}</span>}
                 </p>
               );
@@ -602,10 +616,10 @@ function QCard({ q, label, rows, prevRows, flags, compare, prevLabel }: {
           <div>
             <p className="font-semibold">ลดลง ≥{MEETING_CONFIG.decline_note_pts} แต่ยังอยู่ ≥7 — {noted.length} โรงแรม (โน้ตเท่านั้น ไม่เข้า flag)</p>
             {noted.map((r, i) => (
-              <p key={i} className="mt-0.5">– <b>{String(r.hotel_id)}</b> {String(r["prev_score"])} → {String(r["score"])} · {String(r["caretaker"])} · AE {String(r["ae_owner_id"])}</p>
+              <p key={i} className="mt-0.5">– <HotelCell r={r} /> {String(r["prev_score"])} → {String(r["score"])} · {String(r["caretaker"])} · AE {String(r["ae_owner_id"])}</p>
             ))}
           </div>
-          <p className="text-muted-foreground">ป้ายธงแดง / เตือน อ่านจาก flag ที่ระบบสร้างไว้ (คะแนน ≤5 = แดง · 6 = เตือน) · ตัวเลข = คะแนน {prevLabel} → เดือนนี้</p>
+          <p className="text-muted-foreground">ป้ายธงแดง / ธงเหลือง อ่านจากธงที่ระบบสร้างไว้ (คะแนน ≤{FLAG_RED_MAX} = ธงแดง · {FLAG_WARN_SCORE} = ธงเหลือง) · ตัวเลข = คะแนน {prevLabel} → เดือนนี้</p>
         </div>
       </details>
     </div>
@@ -692,7 +706,7 @@ function BreakdownStrip({ title, hint, rowNames, rowKey, qs, rows, prevRows, fla
               <ul className="space-y-1.5">
                 {selectedRows.map((r, i) => (
                   <li key={i} className="flex flex-wrap items-center gap-x-2 text-xs">
-                    <Link to="/ps/ae-workspace/meetings" hash={String(r["meeting_id"])} className="font-semibold text-primary">{String(r.hotel_id)}</Link>
+                    <Link to="/ps/ae-workspace/meetings" hash={String(r["meeting_id"])} className="font-semibold text-primary">{hotelNameOf(r)}</Link>
                     <span className="font-bold tabular-nums" style={{ color: scoreColor(Number(r["score"])) }}>
                       {String(r["score"])}{r["prev_score"] != null ? ` (${thMonth(String(r["card_month"])) === "ก.ย. 69" ? "ส.ค." : "ก่อน"} ${String(r["prev_score"])})` : ""}
                     </span>
@@ -711,13 +725,13 @@ function BreakdownStrip({ title, hint, rowNames, rowKey, qs, rows, prevRows, fla
   );
 }
 
-function SurveySection({ surveys, prevSurveys, flags, service, compare, prevLabel }: {
-  surveys: MeetingRow[]; prevSurveys: MeetingRow[]; flags: MeetingRow[]; service: string; compare: boolean; prevLabel: string;
+function SurveySection({ surveys, curSurveys, prevSurveys, flags, service, compare, prevLabel }: {
+  surveys: MeetingRow[]; curSurveys: MeetingRow[]; prevSurveys: MeetingRow[]; flags: MeetingRow[]; service: string; compare: boolean; prevLabel: string;
 }) {
   const groups = [
-    { key: "ภาพรวม", qs: QUESTIONS.filter(([q]) => q === "Q7" || q === "Q8"), rows: surveys, prev: prevSurveys },
-    { key: "ORM", qs: QUESTIONS.filter(([, , g]) => g === "ORM"), rows: surveys.filter((r) => r.service_line === "ORM"), prev: prevSurveys.filter((r) => r.service_line === "ORM") },
-    { key: "Marcom", qs: QUESTIONS.filter(([, , g]) => g === "Marcom"), rows: surveys.filter((r) => r.service_line === "Marcom"), prev: prevSurveys.filter((r) => r.service_line === "Marcom") },
+    { key: "ภาพรวม", qs: QUESTIONS.filter(([q]) => q === "Q7" || q === "Q8"), rows: surveys, cur: curSurveys, prev: prevSurveys },
+    { key: "ORM", qs: QUESTIONS.filter(([, , g]) => g === "ORM"), rows: surveys.filter((r) => r.service_line === "ORM"), cur: curSurveys.filter((r) => r.service_line === "ORM"), prev: prevSurveys.filter((r) => r.service_line === "ORM") },
+    { key: "Marcom", qs: QUESTIONS.filter(([, , g]) => g === "Marcom"), rows: surveys.filter((r) => r.service_line === "Marcom"), cur: curSurveys.filter((r) => r.service_line === "Marcom"), prev: prevSurveys.filter((r) => r.service_line === "Marcom") },
   ].filter((g) => g.key === "ภาพรวม" || service === "ALL" || service === g.key);
 
   return (
@@ -732,8 +746,8 @@ function SurveySection({ surveys, prevSurveys, flags, service, compare, prevLabe
       howToRead="ชี้แท่ง = จำนวนโรงแรม · คลิกแท่ง = ดูรายชื่อ"
       legend={
         <>
-          <span><i className="mt-hist-bar mt-hist-s1" style={{ width: 10, height: 10, display: "inline-block" }} /> 1–5 (flag)</span>
-          <span><i className="mt-hist-bar mt-hist-s6" style={{ width: 10, height: 10, display: "inline-block" }} /> 6 (เตือน)</span>
+          <span><i className="mt-hist-bar mt-hist-s1" style={{ width: 10, height: 10, display: "inline-block" }} /> 1–5 (ธงแดง)</span>
+          <span><i className="mt-hist-bar mt-hist-s6" style={{ width: 10, height: 10, display: "inline-block" }} /> 6 (ธงเหลือง)</span>
           <span><i className="mt-hist-bar mt-hist-s78" style={{ width: 10, height: 10, display: "inline-block" }} /> 7–8</span>
           <span><i className="mt-hist-bar mt-hist-s910" style={{ width: 10, height: 10, display: "inline-block" }} /> 9–10</span>
         </>
@@ -756,6 +770,7 @@ function SurveySection({ surveys, prevSurveys, flags, service, compare, prevLabe
                     q={q}
                     label={label}
                     rows={g.rows.filter((r) => r["question"] === q)}
+                    curRows={g.cur.filter((r) => r["question"] === q)}
                     prevRows={g.prev.filter((r) => r["question"] === q)}
                     flags={flags}
                     compare={compare}
@@ -828,7 +843,7 @@ function Q9Expander({ rows }: { rows: MeetingRow[] }) {
       <ul className="mt-3 space-y-3">
         {commented.map((r) => (
           <li key={String(r["meeting_id"])} className="border-l-2 pl-3 text-sm">
-            <p className="text-xs text-muted-foreground">{String(r.hotel_id)} · {String(r.service_line)}</p>
+            <p className="text-xs text-muted-foreground">{hotelNameOf(r)} · {String(r.service_line ?? "")}</p>
             <p>{String(r["comment"])}</p>
             <Link to="/ps/ae-workspace/meetings" hash={String(r["meeting_id"])} className="inline-flex items-center gap-1 text-xs font-semibold text-primary">
               เปิดต้นทาง <ArrowUpRight className="size-3" />
@@ -858,20 +873,19 @@ function FlagBoard({ flags, period, compare, periodB, service }: {
 
   return (
     <DashCard
-      title="⑥ Flag Board"
+      title="⑥ ธงแดง / ธงเหลือง"
+      info={{
+        formula: `ธงเกิดเมื่อ: คะแนน ≤${FLAG_RED_MAX} → ธงแดงทันที · คะแนน ${FLAG_WARN_SCORE} → ธงเหลือง · ได้ ${FLAG_WARN_SCORE} อีกครั้งใน ${MEETING_CONFIG.warning_window_months} เดือน → ธงแดง · ลูกค้าปฏิเสธนัด → ธงแดง · ธงแดง → ระบบสร้างงาน Coaching ส่งถึงหัวหน้าที่รับผิดชอบ`,
+        read: "แสดงต้นทาง (ธง) เท่านั้น · จำนวนงาน Coaching ค้างดูที่แท็บ ติดตามงานผู้ให้บริการ (ไม่นับซ้ำ) · ค้าง ใช้สีกลางจนกว่าจะตั้งเกณฑ์วัน",
+      }}
       question="มีปัญหาอะไรค้างอยู่ ใครต้องจัดการ?"
       answer={<span className={cn(open.length > 0 && "text-dash-action")}>{open.length}</span>}
       answerSub={`ธงแดงใหม่เดือนนี้ ${newCount} · ปิดแล้ว ${closedCount}`}
       answerTone={open.length > 0 ? "action" : "neutral"}
       noteKey="meeting.flags"
-      noteLines={[`เปิดค้าง ${open.length} ธง · เฝ้าระวัง ${watch.length} รายการ`]}
-      howToRead="แสดงต้นทาง (flag) เท่านั้น · จำนวนงาน coaching ค้างดูที่ tab Task (ไม่นับซ้ำ) · ค้าง ใช้สีกลางจนกว่าจะตั้งเกณฑ์ aging"
+      noteLines={[`ธงแดงเปิดค้าง ${open.length} ธง · ธงเหลือง ${watch.length} รายการ`]}
+      howToRead="ชี้ ⓘ ที่หัวการ์ดเพื่อดูกติกาการเกิดธง"
     >
-      <p className="mt-rule">
-        ธงเกิดเมื่อ: <i className="inline-block size-2 rounded-full" style={{ background: "var(--grade-action)" }} /> คะแนน ≤5 → ธงแดงทันที ·{" "}
-        <i className="inline-block size-2 rounded-full" style={{ background: "var(--grade-watch)" }} /> คะแนน 6 → เตือน · ได้ 6 อีกครั้งใน 3 เดือน → ธงแดง ·{" "}
-        <i className="inline-block size-2 rounded-full" style={{ background: "var(--grade-action)" }} /> ลูกค้าปฏิเสธนัด → ธงแดง · ธงแดง → ระบบสร้างงาน Coaching ส่งถึงหัวหน้าที่รับผิดชอบ
-      </p>
       <div className="mt-tiles mt-4">
         {visibleGroups.map((g) => {
           const gOpen = open.filter((r) => r["group_name"] === g.key).length;
@@ -906,10 +920,10 @@ function FlagBoard({ flags, period, compare, periodB, service }: {
               const qLabel = QUESTIONS.find(([q]) => q === r["topic"])?.[1];
               return (
                 <tr key={String(r["flag_id"])}>
-                  <td className="font-semibold">{String(r.hotel_id)}</td>
+                  <td className="font-semibold"><HotelCell r={r} /></td>
                   <td>
                     <span className="block text-[10.5px] text-muted-foreground">{group?.title}</span>
-                    {r["topic"] === "REJECTED" ? "ลูกค้าปฏิเสธนัด (REJECTED)" : `${String(r["topic"])} ${qLabel ?? ""}`}
+                    {r["topic"] === "REJECTED" ? "ลูกค้าปฏิเสธนัด" : `${String(r["topic"])} ${qLabel ?? ""}`}
                   </td>
                   <td>
                     {r["score"] != null ? (
@@ -917,7 +931,7 @@ function FlagBoard({ flags, period, compare, periodB, service }: {
                         {String(r["score"])}
                       </span>
                     ) : "—"}
-                    {r["escalated_from_warning"] ? <span className="ml-1 text-[10.5px] text-muted-foreground">เตือนครั้งที่ 2</span> : null}
+                    {r["escalated_from_warning"] ? <span className="ml-1 text-[10.5px] text-muted-foreground">ธงเหลืองครั้งที่ 2</span> : null}
                   </td>
                   <td>{String(r["flagged_user"] ?? "—")}</td>
                   <td className="text-xs">{String(r["route_target"] ?? "—")}</td>
@@ -944,17 +958,17 @@ function FlagBoard({ flags, period, compare, periodB, service }: {
 
       <div className="mt-strip mt-strip-watch mt-4">
         <button type="button" aria-expanded={watchOpen} onClick={() => setWatchOpen(!watchOpen)}>
-          <span>{watchOpen ? "▾" : "▸"} เฝ้าระวัง (เตือน คะแนน 6) · {watch.length} รายการ</span>
-          <span className="text-xs font-normal text-muted-foreground">ได้ 6 อีกครั้งก่อนวันหมดช่วง → ธงแดง</span>
+          <span>{watchOpen ? "▾" : "▸"} ธงเหลือง (คะแนน {FLAG_WARN_SCORE}) · {watch.length} รายการ</span>
+          <span className="text-xs font-normal text-muted-foreground">ได้ {FLAG_WARN_SCORE} อีกครั้งก่อนวันหมดช่วง → ธงแดง</span>
         </button>
         {watchOpen && (
           <ul className="space-y-1.5 border-t p-3 text-xs">
             {watch.map((r) => (
               <li key={String(r["flag_id"])} className="flex flex-wrap gap-x-2">
-                <b>{String(r.hotel_id)}</b>
+                <HotelCell r={r} />
                 <span>{String(r["topic"])} {QUESTIONS.find(([q]) => q === r["topic"])?.[1] ?? ""}</span>
                 <span className="text-muted-foreground">{String(r["flagged_user"])}</span>
-                <span className="text-dash-watch">หมดช่วงเฝ้าระวัง {r["watch_until"] ? thDay(String(r["watch_until"])) : "—"}</span>
+                <span className="text-dash-watch">หมดช่วงธงเหลือง {r["watch_until"] ? thDay(String(r["watch_until"])) : "—"}</span>
               </li>
             ))}
           </ul>
@@ -1003,7 +1017,10 @@ export function MeetingAnalyzerTab({
   const [lens, setLens] = useState<Lens>("ORM_TEAM");
   const periodA = selectedPeriod(filter, now);
   const periodB = filter.compare ? selectedPeriod(filter, now, "B") : prevPeriod(periodA);
-  const prev = prevPeriod(periodA);
+  // R1 [mt1-2]: M = latest card month in A; "vs เดือนก่อน" always compares M with M−1.
+  const monthM = monthsInPeriod(periodA).at(-1) ?? periodA.to.slice(0, 7);
+  const periodM = prevPeriod({ from: `${nextMonth(monthM)}-01`, to: `${nextMonth(monthM)}-01` });
+  const prev = prevPeriod(periodM);
   const monthsA = monthsInPeriod(periodA);
   const effectiveLens: Lens =
     filter.service === "Marcom" && lens === "ORM_TEAM" ? "MARCOM_PERSON" : filter.service === "ORM" && lens === "MARCOM_PERSON" ? "ORM_TEAM" : lens;
@@ -1013,6 +1030,8 @@ export function MeetingAnalyzerTab({
   const cardsB = useMemo(() => meetingScope(views?.v_meeting_funnel ?? [], filter, periodB), [views, filter, periodB]);
   const cardsPrev = useMemo(() => meetingScope(views?.v_meeting_funnel ?? [], filter, prev), [views, filter, prev]);
   const surveys = useMemo(() => meetingScope(views?.v_meeting_survey_scores ?? [], filter, periodA), [views, filter, periodA]);
+  const cardsM = useMemo(() => meetingScope(views?.v_meeting_funnel ?? [], filter, periodM), [views, filter, periodM]);
+  const surveysM = useMemo(() => meetingScope(views?.v_meeting_survey_scores ?? [], filter, periodM), [views, filter, periodM]);
   const surveysPrev = useMemo(() => meetingScope(views?.v_meeting_survey_scores ?? [], filter, prev), [views, filter, prev]);
   const ownerRows = useMemo(
     () => (views?.v_meeting_by_owner ?? []).filter((r) => monthsA.includes(String(r["card_month"])) && r["lens"] === effectiveLens),
@@ -1038,7 +1057,13 @@ export function MeetingAnalyzerTab({
   // tiles
   const aPct = pctOf(orm.completed.A, orm.base);
   const aPctPrev = pctOf(ormPrev.completed.A, ormPrev.base);
+  const ormM = aggregateFunnel(cardsM, "ORM", now);
+  const aPctM = pctOf(ormM.completed.A, ormM.base);
+  const ormB = aggregateFunnel(cardsB, "ORM", now);
+  const aPctB = pctOf(ormB.completed.A, ormB.base);
   const tile2 = completionRatio(cards, now);
+  const tile2M = completionRatio(cardsM, now);
+  const tile2B = completionRatio(cardsB, now);
   const tile2Prev = completionRatio(cardsPrev, now);
   const doneAll = orm.completed.total + mc.completed.total;
   const successAll = orm.surveySuccess.total + mc.surveySuccess.total;
@@ -1048,6 +1073,8 @@ export function MeetingAnalyzerTab({
   const q7 = median(surveys.filter((r) => r["question"] === "Q7").map((r) => Number(r["score"])));
   const q7Prev = median(surveysPrev.filter((r) => r["question"] === "Q7").map((r) => Number(r["score"])));
   const q7le6 = surveys.filter((r) => r["question"] === "Q7" && Number(r["score"]) <= 6).length;
+  const q7M = median(surveysM.filter((r) => r["question"] === "Q7").map((r) => Number(r["score"])));
+  const q7le6M = surveysM.filter((r) => r["question"] === "Q7" && Number(r["score"]) <= 6).length;
   const q7le6Prev = surveysPrev.filter((r) => r["question"] === "Q7" && Number(r["score"]) <= 6).length;
   const openFlags = flags.filter((r) => !r["resolved_at"] && r["severity"] === "FLAG");
   const inPeriod = (d: unknown, p: Period) => d != null && String(d).slice(0, 10) >= p.from && String(d).slice(0, 10) <= p.to;
@@ -1061,7 +1088,7 @@ export function MeetingAnalyzerTab({
   return (
     <div data-testid="meeting-analyzer" className="min-w-0 space-y-5">
       <div>
-        <h2 className="text-xl font-semibold">Meeting & Analyzer</h2>
+        <h2 className="text-xl font-semibold">Meeting & Survey</h2>
         <p className="text-xs text-muted-foreground">ตัวชี้วัดของ tab{demo ? " · DEMO · 30 ก.ย. 2026" : ""}</p>
       </div>
 
@@ -1083,18 +1110,18 @@ export function MeetingAnalyzerTab({
               lines={[
                 "base = การ์ด Tier A − เลื่อนเดือนหน้า · นับที่ COMPLETED · เป้า 100%",
                 late ? `ผ่าน cutoff · ขาด ${orm.base - orm.completed.A} ใบ` : `เหลือ ${dtc} วันถึง cutoff · ค้าง ${pendingRows.length} ใบ (ดู ②)`,
-                filter.compare ? deltaText(aPct, aPctPrev, "pp") : "",
+                filter.compare ? deltaText(aPct, aPctB, "pp") : "",
               ]}
-              compare={filter.compare ? <>A {fmt(aPct, "%")} · B {fmt(aPctPrev, "%")} · {deltaText(aPct, aPctPrev, "pp")}</> : !late ? <>เหลือ {dtc} วันถึง cutoff · ค้าง {pendingRows.length} ใบ (ดู ②)</> : aPct != null && aPctPrev != null ? <>Δ {aPct - aPctPrev > 0 ? "▲ +" : "▼ "}{Math.abs(aPct - aPctPrev).toLocaleString("th-TH", { maximumFractionDigits: 1 })}pp จาก {prevLabel}</> : null}
+              compare={filter.compare ? <>A {fmt(aPct, "%")} · B {fmt(aPctB, "%")} · {deltaText(aPct, aPctB, "pp")}</> : !late ? <>เหลือ {dtc} วันถึง cutoff · ค้าง {pendingRows.length} ใบ (ดู ②)</> : aPctM != null && aPctPrev != null ? <>Δ {aPctM - aPctPrev > 0 ? "▲ +" : "▼ "}{Math.abs(aPctM - aPctPrev).toLocaleString("th-TH", { maximumFractionDigits: 1 })} จุด จาก {prevLabel}</> : null}
             />
             <KpiTile
               label="นัดสำเร็จ % (ทุกบริการ)"
               value={<>{fmt(tile2.pct, "%")} <small>{tile2.done}/{tile2.base}</small></>}
-              sub={<>{deltaText(tile2.pct, tile2Prev.pct, "pp")} vs {prevLabel}</>}
+              sub={filter.compare ? <>A {fmt(tile2.pct, "%")} · B {fmt(tile2B.pct, "%")} · {deltaText(tile2.pct, tile2B.pct, "pp")}</> : <>{deltaText(tile2M.pct, tile2Prev.pct, "pp")} vs {prevLabel}</>}
               lines={[
                 `ORM ${orm.completed.total}/${orm.base} · Marcom ${mc.completed.total}/${mc.base}`,
                 "ORM base = Tier A · Marcom base = ทุกโรงแรม · เกิน 100% ได้",
-                filter.compare ? `B ${fmt(tile2Prev.pct, "%")}` : "",
+                filter.compare ? `B ${fmt(tile2B.pct, "%")}` : "",
               ]}
             />
             <KpiTile
@@ -1109,19 +1136,19 @@ export function MeetingAnalyzerTab({
             <KpiTile
               label="พึงพอใจรวม (Q7)"
               value={<>{fmtMedian(q7)} <small>median /10</small></>}
-              sub={<>{deltaText(q7, q7Prev)} · ≤6: {q7le6} ราย ({q7le6 > q7le6Prev ? `▲${q7le6 - q7le6Prev}` : q7le6 < q7le6Prev ? `▼${q7le6Prev - q7le6}` : "เท่าเดิม"})</>}
+              sub={<>{deltaText(q7M, q7Prev)} · ≤6: {q7le6} ราย ({q7le6M > q7le6Prev ? `▲${q7le6M - q7le6Prev}` : q7le6M < q7le6Prev ? `▼${q7le6Prev - q7le6M}` : "เท่าเดิม"})</>}
               lines={[
                 `median ORM ${fmtMedian(median(surveys.filter((r) => r["question"] === "Q7" && r.service_line === "ORM").map((r) => Number(r["score"]))))} · Marcom ${fmtMedian(median(surveys.filter((r) => r["question"] === "Q7" && r.service_line === "Marcom").map((r) => Number(r["score"]))))}`,
                 `≤6: ${q7le6} ราย`,
               ]}
             />
             <KpiTile
-              label="Flag เปิดค้าง"
+              label="ธงแดงเปิดค้าง"
               value={openFlags.length}
               sub={<>ใหม่ {newFlags} · ปิดแล้ว {closedFlags} · ค้างนานสุด {oldest} วัน</>}
               lines={[
                 ...FLAG_GROUPS.map((g) => `${g.title}: ${openFlags.filter((r) => r["group_name"] === g.key).length}`),
-                "งาน coaching ค้างดูที่ tab Task",
+                "งาน Coaching ค้างดูที่แท็บ ติดตามงานผู้ให้บริการ",
               ]}
             />
           </div>
@@ -1145,10 +1172,11 @@ export function MeetingAnalyzerTab({
 
           <div className="mt-section-title">
             <h2>B · ประชุมแล้วได้คุณภาพไหม</h2>
-            <p>คะแนน survey รายข้อ · flag board</p>
+            <p>คะแนน survey รายข้อ · ธงแดง / ธงเหลือง</p>
           </div>
           <SurveySection
             surveys={surveys}
+            curSurveys={surveysM}
             prevSurveys={surveysPrev}
             flags={flags}
             service={filter.service}

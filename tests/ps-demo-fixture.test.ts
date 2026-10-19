@@ -44,6 +44,6 @@ describe('v1.2 shared demo spine and comparison', () => {
   const owned=buildDemoReport(f);expect(owned.views.v_ps_renewal).toHaveLength(2);
   expect(owned.views.v_ps_lifecycle_flow.every(r => r['ae_owner_id'] === 'Nont')).toBe(true);
   expect(scopePeriod(owned.views.v_ps_renewal,f,f.periodB,'renewal_due_date')).toHaveLength(0);
-  expect(deltaText(20,0,'pp')).toBe('Δ ▲ +20pp');expect(deltaText(20,null,'pp')).toBe('Δ —');
+  expect(deltaText(20,0,'pp')).toBe('Δ ▲ +20 จุด');expect(deltaText(20,null,'pp')).toBe('Δ —');
  });
 });

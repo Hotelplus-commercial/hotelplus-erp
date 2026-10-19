@@ -231,7 +231,7 @@ export function ContractLifecycleProvider({ children }: { children: ReactNode })
     }
     if (result.created.length) {
       toast.success(`สร้างการ์ด On-boarding แล้ว: ${l.contract_service_line === "BOTH" ? "ORM และ Marcom" : l.contract_service_line === "MARCOM" ? "Marcom" : "ORM"} — ${l.property_name || l.hotel_name}`, {
-        action: { label: "On-boarding Process", onClick: () => { void navigate({ to: "/ps/onboarding-process", hash: `servicing-card-${result.created[0]}` }); } },
+        action: { label: "On-board", onClick: () => { void navigate({ to: "/ps/onboarding-process", hash: `servicing-card-${result.created[0]}` }); } },
       });
     }
     return true;

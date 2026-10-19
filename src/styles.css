@@ -1101,3 +1101,10 @@
 .mt-tile-indigo{border-top-color:var(--series-2);}
 .mt-rubric{border:1.5px dashed var(--border-subtle);border-radius:12px;}
 .mt-rubric>button{display:flex;flex-wrap:wrap;align-items:center;gap:10px;width:100%;padding:14px 16px;background:none;border:none;text-align:left;font-size:13.5px;font-weight:600;cursor:pointer;}
+
+/* MD Review R1 — shared ⓘ */
+.dash-info-btn { display:inline-grid; place-items:center; min-width:32px; min-height:32px; margin-left:2px; border-radius:9999px; color:var(--text-secondary,#5A6B74); font-size:14px; line-height:1; vertical-align:middle; background:transparent; }
+.dash-info-btn:hover, .dash-info-btn:focus-visible { color:var(--accent,#0E7C86); background:var(--accent-soft,#E2F1F2); outline:none; }
+.dash-info-pop { max-width:360px; max-height:min(60vh,420px); overflow-y:auto; background:var(--tooltip-bg,#1C2B33) !important; color:#fff !important; border:none !important; font-size:13px; line-height:1.5; padding:12px 14px; }
+.dash-info-block + .dash-info-block { margin-top:8px; }
+.dash-info-block strong { display:block; font-size:12px; opacity:.75; font-weight:600; }

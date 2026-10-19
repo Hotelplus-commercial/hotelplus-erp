@@ -6,14 +6,14 @@ import { getModule } from "@/lib/erp-data";
 const mod = getModule("ps");
 
 export const psTabs = [
+  { label: "Workspace", to: "/ps/workspace" },
   { label: "PS Dashboard", to: "/ps" },
-  { label: "สัญญา & บริการ", to: "/ps/contracts" },
   { label: "Contract Dashboard", to: "/ps/contract-dashboard" },
+  { label: "On-board", to: "/ps/onboarding-process" },
+  { label: "สัญญา & บริการ", to: "/ps/contracts" },
+  { label: "ข้อมูลโรงแรม", to: "/ps/property-content" },
   { label: "Production Report", to: "/ps/production" },
-  { label: "Templates", to: "/ps/templates" },
-  { label: "AE Workspace", to: "/ps/ae-workspace/dashboard" },
-  { label: "On-boarding Process", to: "/ps/onboarding-process" },
-  { label: "Property Content", to: "/ps/property-content" },
+  { label: "ตั้งค่า", to: "/ps/settings" },
 ];
 
 

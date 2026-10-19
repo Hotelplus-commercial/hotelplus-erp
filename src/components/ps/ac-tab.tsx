@@ -934,8 +934,8 @@ function GradeCard({
       answerSub={
         total
           ? compare && abPrev != null
-            ? `A ${ab}% · B ${abPrev}% · Δ ${ab - abPrev >= 0 ? "▲ +" : "▼ "}${ab - abPrev}pp`
-            : `${abPrev != null ? `▲ +${ab - abPrev}pp จาก ${prevChip} · ` : ""}เกรด A+B · ${cur[0]!.n + cur[1]!.n} / ${total} ราย`
+            ? `A ${ab}% · B ${abPrev}% · Δ ${ab - abPrev >= 0 ? "▲ +" : "▼ "}${ab - abPrev} จุด`
+            : `${abPrev != null ? `▲ +${ab - abPrev} จุด จาก ${prevChip} · ` : ""}เกรด A+B · ${cur[0]!.n + cur[1]!.n} / ${total} ราย`
           : undefined
       }
       noteKey="grades"
@@ -944,7 +944,7 @@ function GradeCard({
         total
           ? [
               ...(abPrev != null && ab !== abPrev
-                ? [`เกรด A+B ${ab > abPrev ? "เพิ่มขึ้น" : "ลดลง"} ${Math.abs(ab - abPrev)}pp จาก ${prevChip}`]
+                ? [`เกรด A+B ${ab > abPrev ? "เพิ่มขึ้น" : "ลดลง"} ${Math.abs(ab - abPrev)} จุด จาก ${prevChip}`]
                 : []),
               `เกรด D ${dCount} จาก ${total} ราย (${pct(dCount, total)}%)`,
             ]
@@ -1175,7 +1175,7 @@ function FollowUpCard({
         list.length
           ? [
               `ส่งฟ้อง ${legalRows.length} ราย รวม ${bahtFull(legalRows.reduce((s, r) => s + r.outstanding, 0))}`,
-              `ticket GRADE_RISK เปิดอยู่ ${dWithTicket} จาก ${gradeD.length} รายเกรด D`,
+              `ticket เกรดการชำระเงินเสี่ยง เปิดอยู่ ${dWithTicket} จาก ${gradeD.length} รายเกรด D`,
             ]
           : summaryRules({ metric: "ลูกหนี้ติดตาม", empty: true }, ["R-EMPTY"])
       }
@@ -1210,7 +1210,7 @@ function FollowUpCard({
                   <th>ค้างมาแล้ว</th>
                   <th>เกรด</th>
                   <th>สถานะ</th>
-                  <th>Ticket GRADE_RISK</th>
+                  <th>ticket เกรดการชำระเงินเสี่ยง</th>
                 </tr>
               </thead>
               <tbody>

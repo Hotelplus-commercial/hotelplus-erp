@@ -21,7 +21,7 @@ import { useMeetingMgmt } from "@/lib/orm-meeting";
 import { activityFeed, feedTypes } from "@/lib/ps-v4";
 
 const description =
-  "PS Dashboard: รายงานวงจรบริการ การต่อสัญญา Churn สุขภาพ Account และ Meeting & Analyzer พร้อมภาพรวมสัญญา ORM / Marcom";
+  "PS Dashboard: รายงานวงจรบริการ การต่อสัญญา Churn สุขภาพ Account และ Meeting & Survey พร้อมภาพรวมสัญญา ORM / Marcom";
 
 export const Route = createFileRoute("/ps/")({
   head: () => ({

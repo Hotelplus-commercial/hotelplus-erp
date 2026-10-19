@@ -93,7 +93,7 @@ function TemplateCard({ t }: { t: Template }) {
   );
 }
 
-function TemplatesDashboard() {
+export function TemplatesDashboard() {
   const { templates, hydrated, resetTemplates, isLegalAdmin, setLegalAdmin } = usePsTemplates();
   const [tab, setTab] = useState<TemplateType>("quote");
   const [q, setQ] = useState("");
@@ -118,6 +118,7 @@ function TemplatesDashboard() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">ตั้งค่า › Template</p>
           <h1 className="font-display text-2xl font-bold tracking-tight">Templates</h1>
           <p className="text-sm text-muted-foreground">
             ที่เดียวสำหรับทุกแม่แบบ (Form · Checklist · Survey · Email · Documents) · แก้ไขได้เฉพาะ PM และ System Admin · Contract ใช้โครงสร้าง flat แบบ 1 SKU ต่อ 1 template และ snapshot ล็อกตอนสร้างเอกสาร

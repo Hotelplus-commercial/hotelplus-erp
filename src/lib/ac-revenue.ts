@@ -224,3 +224,17 @@ export const sortDebtors = (rows: DebtorRow[]) =>
   [...rows].sort(
     (a, b) => COLLECTION_META[a.status].order - COLLECTION_META[b.status].order || b.outstanding - a.outstanding,
   );
+
+/** Headline tile 7 ≡ Tab AC ⑥: latest billing period inside the range, same service lens, grade D customers. */
+export function latestGradeD(rows: PsReportRow[], period: { from: string; to: string }, service: "ALL" | "ORM" | "Marcom") {
+  const inRange = rows.filter((r) => {
+    const p = String(r.billing_period ?? "").slice(0, 10);
+    return p >= period.from && p <= period.to && (service === "ALL" || r.service_line == null || String(r.service_line) === service);
+  });
+  const latest = [...new Set(inRange.map((r) => String(r.billing_period).slice(0, 7)))].sort().at(-1);
+  if (!latest) return null;
+  return {
+    period: latest,
+    d: inRange.filter((r) => String(r.billing_period).slice(0, 7) === latest && r.grade === "D").reduce((s, r) => s + (Number(r["customer_count"]) || 0), 0),
+  };
+}

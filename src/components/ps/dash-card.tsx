@@ -96,6 +96,7 @@ export function DashCard({
   howToRead,
   right,
   noteNamespace = 'ps',
+  info,
 }: {
   title: ReactNode;
   question: string;
@@ -109,12 +110,13 @@ export function DashCard({
   howToRead: string;
   right?: ReactNode;
   noteNamespace?: string;
+  info?: InfoBlocks;
 }) {
   return (
     <section className="dash-card">
       <header className="dash-card-header">
         <div className="min-w-0">
-          <h2>{title}</h2>
+          <h2>{title}{info && <InfoButton info={info} />}</h2>
           <p className="dash-question">{question}</p>
         </div>
         <div className="dash-answer-block">
@@ -239,7 +241,30 @@ export function Delta({
     >
       {d > 0 ? "▲ +" : d < 0 ? "▼ " : ""}
       {d.toLocaleString("th-TH", { maximumFractionDigits: 1 })}
-      {unit}
+      {unit === "pp" ? " จุด" : unit}
     </span>
+  );
+}
+
+export type InfoBlocks = { source?: ReactNode; count?: ReactNode; formula?: ReactNode; read?: ReactNode; extra?: { label: string; body: ReactNode }[] };
+/** Shared ⓘ: long explanations, rules and legends live here, not on the card face. */
+export function InfoButton({ info, label = "คำอธิบาย" }: { info: InfoBlocks; label?: string }) {
+  const [open, setOpen] = useState(false);
+  const id = useRef(`info-${Math.random().toString(36).slice(2, 9)}`).current;
+  const blocks: [string, ReactNode | undefined][] = [
+    ["ที่มา", info.source], ["นับอย่างไร", info.count], ["สูตร", info.formula], ["อ่านอย่างไร", info.read],
+    ...(info.extra ?? []).map((b) => [b.label, b.body] as [string, ReactNode]),
+  ];
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button type="button" className="dash-info-btn" aria-label={label} aria-expanded={open} aria-controls={id} onClick={(e) => e.stopPropagation()}>ⓘ</button>
+      </PopoverTrigger>
+      <PopoverContent id={id} side="bottom" align="start" sideOffset={6} className="dash-info-pop">
+        {blocks.filter(([, b]) => b != null && b !== "").map(([k, b]) => (
+          <div key={k} className="dash-info-block"><strong>{k}</strong><div>{b}</div></div>
+        ))}
+      </PopoverContent>
+    </Popover>
   );
 }

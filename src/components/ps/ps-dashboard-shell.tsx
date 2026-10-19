@@ -40,6 +40,9 @@ import { useHrMembers, teamLabel } from "@/lib/hr-members";
 import { cn } from "@/lib/utils";
 import { ChartHint, SummaryNote, Delta } from "./dash-card";
 import { summaryRules } from "@/lib/summaryRules";
+import { latestGradeD, monYY } from "@/lib/ac-revenue";
+import { InfoButton, type InfoBlocks } from "./dash-card";
+import type { PsReportRow } from "@/lib/ps-dashboard-types";
 
 type Filter = GlobalFilter;
 const FilterCtx = createContext<Filter>(defaultGlobalFilter);
@@ -265,7 +268,7 @@ export function DashboardShell({
   );
   const periodFilter = {
     ...filter,
-    ...(filter.compare ? { period: selectedPeriod(filter, now) } : {}),
+    ...(filter.compare || filter.range === "custom" ? { period: selectedPeriod(filter, now) } : {}),
   };
   return (
     <DashboardGlobal.Provider value={{ filter, demo, now: nowString }}>
@@ -291,8 +294,8 @@ export function DashboardShell({
                   ["bdac", "BD-AC"],
                   ["ac", "AC"],
                   ["ps", "PS"],
-                  ["meeting", "Meeting & Analyzer"],
-                  ["task", "Task"],
+                  ["meeting", "Meeting & Survey"],
+                  ["task", "ติดตามงานผู้ให้บริการ"],
                   ["servicing", "Servicing"],
                 ].map(([k, l]) => (
                   <Button
@@ -433,10 +436,8 @@ function HeadlineStrip() {
     cohort.length === 1 && typeof cohort[0]?.["median_days"] === "number"
       ? cohort[0]["median_days"]
       : null;
-  const grades = scope((q.data?.["v_ac_grade_distribution"] ?? []) as Row[], f, 0, now);
-  const dCount = grades.length
-    ? grades.filter((r) => r.grade === "D").reduce((n, r) => n + num(r["customer_count"]), 0)
-    : null;
+  const gradeD = latestGradeD((q.data?.["v_ac_grade_distribution"] ?? []) as PsReportRow[], selectedPeriod(f, now, "A"), f.service);
+  const dCount = gradeD?.d ?? null;
   const lost =
     churnRows.length && churnRows.every((r) => r.hotel_id != null)
       ? new Set(churnRows.filter((r) => num(r["out_count"]) > 0).map((r) => r.hotel_id)).size
@@ -444,7 +445,10 @@ function HeadlineStrip() {
   const serviceCount = (line: string) =>
     new Set(active.filter((r) => r.service_line === line).map((r) => r.hotel_id)).size;
   const empty = summaryRules({ metric: "ภาพรวม", empty: true }, ["R-EMPTY"]);
-  const growth = summaryRules({ metric: "Upcoming Hotel", current: upcoming.length }, ["R-DELTA"]);
+  const growth = [
+    ...summaryRules({ metric: "Upcoming Hotel", current: upcoming.length }, ["R-DELTA"]),
+    ...summaryRules({ metric: "Active Hotel", current: activeIds.size }, ["R-DELTA"]),
+  ];
   const onboard = summaryRules(
     { metric: "On-board", current: median, unit: " วัน", empty: median == null },
     ["R-SPLIT"],
@@ -461,7 +465,10 @@ function HeadlineStrip() {
     sub: ReactNode,
     caption: string,
     details: string[],
+    info: InfoBlocks,
   ) => (
+    <div className="relative">
+    <span className="absolute right-1 top-1 z-10"><InfoButton info={info} label={`ที่มา ${label}`} /></span>
     <ChartHint header={`${label} · ${value}`} lines={details}>
       <Button variant="ghost" className="dash-kpi">
         <span className="dash-kpi-label">{label}</span>
@@ -470,12 +477,13 @@ function HeadlineStrip() {
         <span className="dash-kpi-caption">{caption}</span>
       </Button>
     </ChartHint>
+    </div>
   );
   return (
     <div data-testid="headline-strip">
       <div className="dash-headline-groups">
         <div className="dash-headline-group dash-growth">
-          <p className="dash-headline-label">โต / รายได้</p>
+          <p className="dash-headline-label">โต</p>
           <div className="dash-headline-tiles">
             {tile(
               "Upcoming Hotel",
@@ -485,13 +493,10 @@ function HeadlineStrip() {
               [
                 `ORM ${upcoming.filter((r) => r.deal.service_line === "ORM").length} · Marcom ${upcoming.filter((r) => r.deal.service_line === "MARCOM").length}`,
                 "นับรายดีล stage 6–9",
-                "ที่มา: BD-AC",
+                "ที่มา: Contract Dashboard",
               ],
+              { source: "Contract Dashboard (ฝั่ง BD)", count: "จำนวนดีลที่อยู่ stage 6–9 ณ วันนี้ (ไม่ย้อนตามวันสุดท้ายของช่วง) · 1 ดีล = 1 บริการ" },
             )}
-            {tile("มูลค่าเซ็นรอ Go-Live (คาด)", "—", <Delta a={null} b={null} />, "รอข้อมูล", [
-              "รอข้อมูล",
-              "ซ่อนจากลูกค้า",
-            ])}
             {tile(
               "Active Hotel",
               active.length ? String(activeIds.size) : "—",
@@ -505,6 +510,7 @@ function HeadlineStrip() {
                     "ยอดย่อยรวมมากกว่า total ได้",
                   ]
                 : ["รอข้อมูล"],
+              { source: "สัญญา & บริการ", count: "โรงแรมที่มีสัญญาสถานะใช้งาน ณ วันนี้ (สถานะปัจจุบัน ไม่ย้อนตามช่วง) · โรงแรมที่ใช้ทั้ง ORM และ Marcom นับ 1" },
             )}
           </div>
         </div>
@@ -520,6 +526,7 @@ function HeadlineStrip() {
                 "รอข้อมูลคิว",
                 ...(median == null ? [] : [`median ${median.toLocaleString("th-TH")} วัน`]),
               ],
+              { source: "On-board", count: "การ์ดที่ยังไม่ Go Live (ยังไม่มีข้อมูลคิว จึงแสดง —) · ค่ากลางวัน = จากเซ็นสัญญาถึง Go Live ของการ์ดที่ Go Live ในเดือนล่าสุดของช่วง" },
             )}
           </div>
         </div>
@@ -530,7 +537,7 @@ function HeadlineStrip() {
               "Churn เดือนนี้",
               lost == null ? "—" : String(lost),
               <>
-                <Delta a={churnNow} b={churnPrev} lowerGood unit="pp" /> ·{" "}
+                <Delta a={churnNow} b={churnPrev} lowerGood unit=" จุด" /> ·{" "}
                 {churnNow == null ? "—" : churnNow.toFixed(1) + "%"}
               </>,
               "โรงแรมที่หลุด ≥1 บริการ",
@@ -544,16 +551,18 @@ function HeadlineStrip() {
                       return `${line} ${ratio(rows, "out_count", "active_at_start")?.toFixed(1) ?? "—"}% (${n}/${base} โรงแรม)`;
                     })
                 : ["รอข้อมูล"],
+              { source: "สัญญา & บริการ (วันที่สัญญาสิ้นสุด)", count: "โรงแรมที่หลุดอย่างน้อย 1 บริการในเดือน ÷ โรงแรมที่ใช้งานต้นเดือน (เดือนล่าสุดของช่วง)" },
             )}
             {tile("คะแนนบริการ", "—", <Delta a={null} b={null} />, "รอข้อมูล", [
               "รอข้อมูลคะแนนบริการ / 5",
-            ])}
+            ], { source: "ยังไม่มีข้อมูล", count: "จะคำนวณจากเซอร์เวย์ลูกค้าเมื่อกำหนดเกณฑ์แล้ว" })}
             {tile(
               "Collection",
               "—",
-              <span className="text-dash-watch">ลูกหนี้เกรด D {dCount ?? "—"} · Δ —</span>,
+              <span className="text-dash-watch">ลูกค้าเกรด D {dCount ?? "—"}</span>,
               "รอข้อมูล % collected",
-              ["รอข้อมูล collected / total", `ลูกหนี้เกรด D ${dCount ?? "—"}`],
+              ["รอข้อมูล collected / total", `ลูกค้าเกรด D ${dCount ?? "—"}${gradeD ? ` · งวด ${monYY(gradeD.period + "-01")}` : ""}`],
+              { source: "AC Billing · เกรดคำนวณโดยงานประจำวันของ AC", count: "% เก็บแล้ว = เหมือนการ์ดลูกหนี้ในแท็บ AC เมื่อเลือกเดือนปัจจุบัน (ยังไม่มีข้อมูล จึงแสดง —) · ลูกค้าเกรด D = จำนวนลูกค้าที่ได้เกรด D ในงวดบิลล่าสุดของช่วง = ตัวเลขเดียวกับการ์ดเกรดในแท็บ AC" },
             )}
           </div>
         </div>
