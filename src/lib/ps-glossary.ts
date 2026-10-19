@@ -24,7 +24,7 @@ const STATUS_TH: Record<string, string> = {
 };
 /** Ticket status (PS case + L0). waiting with a non-customer reason → "รอ · {reason}". */
 export function ticketStatusTh(status: string, waitingReason?: string | null, reasonLabel?: string) {
-  if (status === "waiting" && waitingReason && waitingReason !== "customer") return `รอ · ${reasonLabel ?? waitingReason}`;
+  if (status === "waiting" && waitingReason && waitingReason.toUpperCase() !== "CUSTOMER") return `รอ · ${reasonLabel ?? waitingReason}`;
   return STATUS_TH[status] ?? status;
 }
 export const SOURCE_LABEL = { PS_CASE: "PS เปิดเอง", FOLLOWUP: "ติดตามจากแท็บอื่น", BOT: "ระบบสร้าง" } as const;
