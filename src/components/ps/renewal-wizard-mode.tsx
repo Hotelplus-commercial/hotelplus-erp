@@ -1,5 +1,5 @@
 /* Contract Renewal v1.0 — Contract Wizard in renewal mode (3 steps). No KYC, no upload, no payment. */
-import { Link, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -21,6 +21,7 @@ import {
 import { attachmentError, ticketById, STATUS_TH } from "@/lib/tickets-l0";
 import { cn } from "@/lib/utils";
 
+const backHref = () => `/ps/ae-workspace/dashboard${typeof window !== "undefined" && new URLSearchParams(window.location.search).get("demo") === "1" ? "?demo=1" : ""}#renewal-activities`;
 const STEPS = ["ข้อมูลลูกค้า", "เงื่อนไขใหม่", "ตรวจและส่ง"];
 const thb = (n: number) => `฿${n.toLocaleString("th-TH")}`;
 
@@ -68,7 +69,7 @@ export function RenewalWizard({ contractId }: { contractId: string }) {
     const o = submitRequest(req.id); if (!o.ok) { toast.error(o.error); return; }
     if (o.req.status === "DRAFT") { toast.info(L.waitEntity); return; }
     toast.success(renewalReqStatusTh(o.req.status));
-    void navigate({ to: "/ps/ae-workspace/dashboard", hash: "renewal-activities" });
+    void navigate({ href: backHref() });
   };
 
   return (
@@ -77,7 +78,7 @@ export function RenewalWizard({ contractId }: { contractId: string }) {
         <h1 className="font-display text-2xl font-bold tracking-tight">{L.renew} · {card.hotel}</h1>
         <div className="flex items-center gap-2">
           <Chip tone="info">{renewalReqStatusTh(req.status)}</Chip>
-          <Button variant="outline" size="sm" asChild><Link to="/ps/ae-workspace/dashboard" hash="renewal-activities">บันทึกและกลับ</Link></Button>
+          <Button variant="outline" size="sm" asChild><a href={backHref()}>บันทึกและกลับ</a></Button>
         </div>
       </div>
       <ol className="flex flex-wrap gap-2 text-sm">
@@ -163,7 +164,7 @@ export function RenewalWizard({ contractId }: { contractId: string }) {
           <div className="mt-4 flex flex-wrap justify-between gap-2">
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setStep(1)}>ย้อนกลับ</Button>
-              {editable && <Button variant="ghost" onClick={() => { const o = cancelRequest(req.id); if (o.ok) { toast.success(renewalReqStatusTh("CANCELLED")); void navigate({ to: "/ps/ae-workspace/dashboard", hash: "renewal-activities" }); } }}>{L.cancel}</Button>}
+              {editable && <Button variant="ghost" onClick={() => { const o = cancelRequest(req.id); if (o.ok) { toast.success(renewalReqStatusTh("CANCELLED")); void navigate({ href: backHref() }); } }}>{L.cancel}</Button>}
             </div>
             {req.status === "DRAFT" && <Button disabled={!reasonOk} onClick={primary}>{ev.approval_required ? L.submitPm : L.createAndLink}</Button>}
           </div>
@@ -176,6 +177,6 @@ export function RenewalWizard({ contractId }: { contractId: string }) {
 const Msg = ({ text }: { text: string }) => (
   <div className="space-y-3 rounded-xl border bg-card p-8 text-center text-sm text-muted-foreground">
     <p>{text}</p>
-    <Button variant="outline" size="sm" asChild><Link to="/ps/ae-workspace/dashboard">กลับ AE Workspace</Link></Button>
+    <Button variant="outline" size="sm" asChild><a href={backHref()}>กลับ AE Workspace</a></Button>
   </div>
 );

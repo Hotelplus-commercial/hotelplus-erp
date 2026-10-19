@@ -100,7 +100,7 @@ describe('§0.3 wizard entry points', () => {
     expect(readFileSync('src/routes/ps.contract-dashboard.tsx', 'utf8')).not.toContain('สร้างสัญญา</');
     const card = readFileSync('src/components/ps/renewal-ui.tsx', 'utf8');
     expect(card).not.toContain('Generate contract');
-    expect(readFileSync('src/components/ps/renewal-request-ui.tsx', 'utf8')).toContain('"/ps/contract-wizard/renew/$contractId"');
+    expect(readFileSync('src/components/ps/renewal-request-ui.tsx', 'utf8')).toContain('/ps/contract-wizard/renew/${o.req.source_contract_id}');
     expect(readFileSync('src/routes/ps.contract-wizard.new.tsx', 'utf8')).toContain('if (!search.quote_id) throw redirect');
   });
 });
