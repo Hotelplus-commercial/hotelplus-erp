@@ -32,3 +32,17 @@ export const CONTRACT_STATUS_TH: Record<string, string> = { ACTIVE: "ใช้�
 export const RENEWAL_TH: Record<string, string> = { RENEWED: "ต่อแล้ว", IN_PROGRESS: "กำลังคุย", NOT_RENEWED: "ไม่ต่อ", LOST: "ไม่ต่อ" };
 /** Strings that must never render on the PS Dashboard (R1 §1.2, invariant 8). */
 export const NEVER_SHOW = ["SERVICING_STALL", "CONTRACT_FOLLOWUP", "UPSELL_PITCH", "RENEWAL_DUE", "GRADE_RISK", "SURVEY_LOW", "ASSIGNMENT_PENDING", "row-1", "distinct", "cohort", "carry", "attach-rate"];
+
+/** Servicing plain words (R1 §8.2) — display mapping over existing shared labels. */
+export function plainSv(text: string): string {
+  return text
+    .replace(/เกิน SLA แล้ว (\d+) วัน/g, "เลยกำหนด $1 วัน")
+    .replace(/เหลือเวลาอีก (\d+) วันของ SLA/g, "อีก $1 วันถึงกำหนด")
+    .replace("ครบ SLA วันนี้", "ถึงกำหนดวันนี้")
+    .replace(/เร็วกว่า SLA/g, "ทันกำหนด")
+    .replace(/ใกล้ครบ SLA/g, "ใกล้ถึงกำหนด")
+    .replace(/เกิน SLA/g, "เลยกำหนด")
+    .replace("Rate Structure ★", "Rate Structure (วันประชุม)")
+    .replace("First Sync ★ (MT)", "First Sync (วันประชุม · MT)")
+    .replace("Final Setup ⟨เพดาน⟩", "Final Setup (รอ handover ก่อน Training)");
+}
