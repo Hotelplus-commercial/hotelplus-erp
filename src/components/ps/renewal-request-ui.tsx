@@ -1,5 +1,5 @@
 /* Contract Renewal v1.0 — renewal-card panel, approval list (PM / HOC·MD) and ticket attachments. Labels from ps-glossary. */
-import { useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -103,7 +103,7 @@ export function RenewalRequestPanel({ card, currentUser, canOverride }: { card: 
         )}
         {open?.status === "LINK_SENT" && (
           <>
-            <Button size="sm" variant="outline" asChild><a href={`${renewalSignPath(open.id)}${isRenewalDemo() ? "?demo=1" : ""}`} target="_blank" rel="noreferrer">เปิดหน้าลงนามของลูกค้า</a></Button>
+            <Button size="sm" variant="outline" asChild><Link to="/l/renew/$requestId" params={{ requestId: open.id }} search={(isRenewalDemo() ? { demo: 1 } : {}) as never}>เปิดหน้าลงนามของลูกค้า</Link></Button>
             {owner && <Button size="sm" variant="ghost" onClick={() => { void navigator.clipboard?.writeText(`${window.location.origin}${renewalSignPath(open.id)}`); toast.success("คัดลอก link แล้ว"); }}>คัดลอก link</Button>}
             {isRenewalDemo() && <Button size="sm" variant="ghost" onClick={() => simulate(open)}>{L.simulateSign}</Button>}
           </>
