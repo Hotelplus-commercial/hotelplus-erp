@@ -60,3 +60,4 @@ export function aeNameTh(id: unknown): string {
   const m = /^AE\d+-(.+)$/.exec(s);
   return m ? m[1]! : s;
 }
+export const GRADE_D_LABEL = "ลูกค้าเกรด D";
