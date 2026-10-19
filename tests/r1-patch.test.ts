@@ -57,9 +57,7 @@ describe('MD Review R1.1', () => {
   test('(a) renewal card → Generate contract opens the wizard on the hotel\'s existing deal', () => {
     expect(renewalWizardDealId({ hotelId: 'HTL0042', hotel: 'X' }, deals)).toBe('D-1');
     expect(renewalWizardDealId({ hotelId: 'HTL0102', hotel: 'Riverside Krabi' }, deals)).toBe('D-2');
-    const ui = readFileSync('src/components/ps/renewal-ui.tsx', 'utf8');
-    expect(ui).toContain('to="/ps/contract-wizard/$dealId"');
-    expect(ui).toContain('Generate contract');
+    // Renewal v1.0 supersedes the card button: it now opens renewal mode with contract_id (tests/renewal-rules.test.ts).
   });
   test('(b) bare /ps/contract-wizard/ redirects to Contract Dashboard', () => {
     expect(wizardPathRedirects('/ps/contract-wizard/')).toBe(true);
