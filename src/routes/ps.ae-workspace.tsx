@@ -18,6 +18,8 @@ import {
 } from "@/lib/orm-meeting";
 
 import { cn } from "@/lib/utils";
+import { useState } from "react";
+import { WorkspaceViewSwitch } from "@/components/ps/workspace-view-switch";
 
 const description =
   "AE Workspace: ศูนย์รวมงานของ Account Executive — Dashboard, Property Info pipeline, Calendar, Meetings, Surveys และ Coaching";
@@ -80,6 +82,7 @@ function WorkspaceShell() {
   const { role, setRole } = useMeetingMgmt();
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const tabs = allTabs.filter((t) => t.roles.includes(role));
+  const [aePick, setAePick] = useState("all");
 
   const roleSwitcher = (
     <div className="flex items-center gap-2">
@@ -170,6 +173,7 @@ function WorkspaceShell() {
 
   return (
     <div className="flex flex-col gap-4">
+      <WorkspaceViewSwitch current="ae" ae={aePick} onAe={setAePick} />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex gap-1 overflow-x-auto rounded-xl border bg-card p-1">
           {tabs.map((t) => (

@@ -50,7 +50,9 @@ import { Route as PsContractsRouteImport } from './routes/ps.contracts'
 import { Route as PsOnboardingProcessRouteImport } from './routes/ps.onboarding-process'
 import { Route as PsProductionRouteImport } from './routes/ps.production'
 import { Route as PsServicingTimelineRouteImport } from './routes/ps.servicing-timeline'
+import { Route as PsSettingsRouteImport } from './routes/ps.settings'
 import { Route as PsSystemCostRouteImport } from './routes/ps.system-cost'
+import { Route as PsWorkspaceRouteImport } from './routes/ps.workspace'
 import { Route as TheOfficeAppIndexRouteImport } from './routes/the-office-app.index'
 import { Route as TheOfficeAppOrmBonusRouteImport } from './routes/the-office-app.orm-bonus'
 import { Route as WorkspaceDeptRouteImport } from './routes/workspace.$dept'
@@ -292,9 +294,19 @@ const PsServicingTimelineRoute = PsServicingTimelineRouteImport.update({
   path: '/servicing-timeline',
   getParentRoute: () => PsRoute,
 } as any)
+const PsSettingsRoute = PsSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => PsRoute,
+} as any)
 const PsSystemCostRoute = PsSystemCostRouteImport.update({
   id: '/system-cost',
   path: '/system-cost',
+  getParentRoute: () => PsRoute,
+} as any)
+const PsWorkspaceRoute = PsWorkspaceRouteImport.update({
+  id: '/workspace',
+  path: '/workspace',
   getParentRoute: () => PsRoute,
 } as any)
 const TheOfficeAppIndexRoute = TheOfficeAppIndexRouteImport.update({
@@ -515,7 +527,9 @@ export interface FileRoutesByFullPath {
   '/ps/onboarding-process': typeof PsOnboardingProcessRoute
   '/ps/production': typeof PsProductionRoute
   '/ps/servicing-timeline': typeof PsServicingTimelineRoute
+  '/ps/settings': typeof PsSettingsRoute
   '/ps/system-cost': typeof PsSystemCostRoute
+  '/ps/workspace': typeof PsWorkspaceRoute
   '/the-office-app/orm-bonus': typeof TheOfficeAppOrmBonusRoute
   '/workspace/$dept': typeof WorkspaceDeptRoute
   '/ac/': typeof AcIndexRoute
@@ -584,7 +598,9 @@ export interface FileRoutesByTo {
   '/ps/onboarding-process': typeof PsOnboardingProcessRoute
   '/ps/production': typeof PsProductionRoute
   '/ps/servicing-timeline': typeof PsServicingTimelineRoute
+  '/ps/settings': typeof PsSettingsRoute
   '/ps/system-cost': typeof PsSystemCostRoute
+  '/ps/workspace': typeof PsWorkspaceRoute
   '/the-office-app/orm-bonus': typeof TheOfficeAppOrmBonusRoute
   '/workspace/$dept': typeof WorkspaceDeptRoute
   '/ac': typeof AcIndexRoute
@@ -664,7 +680,9 @@ export interface FileRoutesById {
   '/ps/onboarding-process': typeof PsOnboardingProcessRoute
   '/ps/production': typeof PsProductionRoute
   '/ps/servicing-timeline': typeof PsServicingTimelineRoute
+  '/ps/settings': typeof PsSettingsRoute
   '/ps/system-cost': typeof PsSystemCostRoute
+  '/ps/workspace': typeof PsWorkspaceRoute
   '/the-office-app/orm-bonus': typeof TheOfficeAppOrmBonusRoute
   '/workspace/$dept': typeof WorkspaceDeptRoute
   '/ac/': typeof AcIndexRoute
@@ -745,7 +763,9 @@ export interface FileRouteTypes {
     | '/ps/onboarding-process'
     | '/ps/production'
     | '/ps/servicing-timeline'
+    | '/ps/settings'
     | '/ps/system-cost'
+    | '/ps/workspace'
     | '/the-office-app/orm-bonus'
     | '/workspace/$dept'
     | '/ac/'
@@ -814,7 +834,9 @@ export interface FileRouteTypes {
     | '/ps/onboarding-process'
     | '/ps/production'
     | '/ps/servicing-timeline'
+    | '/ps/settings'
     | '/ps/system-cost'
+    | '/ps/workspace'
     | '/the-office-app/orm-bonus'
     | '/workspace/$dept'
     | '/ac'
@@ -893,7 +915,9 @@ export interface FileRouteTypes {
     | '/ps/onboarding-process'
     | '/ps/production'
     | '/ps/servicing-timeline'
+    | '/ps/settings'
     | '/ps/system-cost'
+    | '/ps/workspace'
     | '/the-office-app/orm-bonus'
     | '/workspace/$dept'
     | '/ac/'
@@ -1243,11 +1267,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PsServicingTimelineRouteImport
       parentRoute: typeof PsRoute
     }
+    '/ps/settings': {
+      id: '/ps/settings'
+      path: '/settings'
+      fullPath: '/ps/settings'
+      preLoaderRoute: typeof PsSettingsRouteImport
+      parentRoute: typeof PsRoute
+    }
     '/ps/system-cost': {
       id: '/ps/system-cost'
       path: '/system-cost'
       fullPath: '/ps/system-cost'
       preLoaderRoute: typeof PsSystemCostRouteImport
+      parentRoute: typeof PsRoute
+    }
+    '/ps/workspace': {
+      id: '/ps/workspace'
+      path: '/workspace'
+      fullPath: '/ps/workspace'
+      preLoaderRoute: typeof PsWorkspaceRouteImport
       parentRoute: typeof PsRoute
     }
     '/the-office-app/': {
@@ -1692,7 +1730,9 @@ interface PsRouteChildren {
   PsOnboardingProcessRoute: typeof PsOnboardingProcessRoute
   PsProductionRoute: typeof PsProductionRoute
   PsServicingTimelineRoute: typeof PsServicingTimelineRoute
+  PsSettingsRoute: typeof PsSettingsRoute
   PsSystemCostRoute: typeof PsSystemCostRoute
+  PsWorkspaceRoute: typeof PsWorkspaceRoute
   PsIndexRoute: typeof PsIndexRoute
   PsPropertyContentHotelIdRoute: typeof PsPropertyContentHotelIdRoute
   PsTemplatesTemplateIdRoute: typeof PsTemplatesTemplateIdRoute
@@ -1711,7 +1751,9 @@ const PsRouteChildren: PsRouteChildren = {
   PsOnboardingProcessRoute: PsOnboardingProcessRoute,
   PsProductionRoute: PsProductionRoute,
   PsServicingTimelineRoute: PsServicingTimelineRoute,
+  PsSettingsRoute: PsSettingsRoute,
   PsSystemCostRoute: PsSystemCostRoute,
+  PsWorkspaceRoute: PsWorkspaceRoute,
   PsIndexRoute: PsIndexRoute,
   PsPropertyContentHotelIdRoute: PsPropertyContentHotelIdRoute,
   PsTemplatesTemplateIdRoute: PsTemplatesTemplateIdRoute,
