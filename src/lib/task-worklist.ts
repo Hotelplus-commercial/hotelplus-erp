@@ -9,7 +9,7 @@ import { matchesBook, type GlobalFilter, type Period } from './ps-dashboard-glob
 import { TASK_CONFIG } from './task-config';
 export { TASK_CONFIG } from './task-config';
 export type StatusGroup = 'OPEN'|'IN_PROGRESS'|'WAITING'|'CLOSED';
-export const GROUP_LABEL: Record<StatusGroup,string> = { OPEN:'เปิด', IN_PROGRESS:'กำลังทำ', WAITING:'รอ', CLOSED:'ปิดแล้ว' };
+export const GROUP_LABEL: Record<StatusGroup,string> = { OPEN:'รอเริ่ม', IN_PROGRESS:'กำลังทำ', WAITING:'รอลูกค้า', CLOSED:'เสร็จ' };
 export const ORIGIN_LABEL = { PS_CASE:'PS เปิดเอง', BOT:'ระบบสร้าง', FOLLOWUP:'ติดตามจากแท็บอื่น' };
 export type WorkRow = { work_id:string; source_kind:'CASE'|'L0'; origin:keyof typeof ORIGIN_LABEL; origin_sub:string; hotel_id:string|null; hotel_name:string; title:string; category_label:string; category_key:string; dept:Dept; dept_overridden:boolean; responsible_label:string; responsible_missing:boolean; status_raw:string; status_group:StatusGroup; created_at:string; closed_at:string|null; aging_days:number|null; is_overdue:boolean; workspace_label:string|null; workspace_route:string|null; payload_lines:string[]; search_text:string; case?:Ticket; l0?:L0Ticket };
 /** Asia/Bangkok calendar date (YYYY-MM-DD) of an ISO instant. */
