@@ -32,6 +32,8 @@ export const MEETING_CONFIG = {
   decline_note_pts: 2,
   small_n: 5,
   warning_window_months: 3,
+  flag_red_max: 5,
+  flag_warn_score: 6,
 } as const;
 
 export const QUESTIONS = [

@@ -32,6 +32,8 @@ import {
   type MeetingRow,
 } from "@/lib/meeting-dashboard-types";
 import { DashCard, ChartHint, ChartSkeleton, toneClass } from "./dash-card";
+const FLAG_RED_MAX = MEETING_CONFIG.flag_red_max;
+const FLAG_WARN_SCORE = MEETING_CONFIG.flag_warn_score;
 
 const fmt = (v: number | null, suffix = "") =>
   v == null ? "—" : v.toLocaleString("th-TH", { maximumFractionDigits: 1 }) + suffix;
@@ -617,7 +619,7 @@ function QCard({ q, label, rows, curRows, prevRows, flags, compare, prevLabel }:
               <p key={i} className="mt-0.5">– <HotelCell r={r} /> {String(r["prev_score"])} → {String(r["score"])} · {String(r["caretaker"])} · AE {String(r["ae_owner_id"])}</p>
             ))}
           </div>
-          <p className="text-muted-foreground">ป้ายธงแดง / ธงเหลือง อ่านจากธงที่ระบบสร้างไว้ (คะแนน ≤5 = ธงแดง · 6 = ธงเหลือง) · ตัวเลข = คะแนน {prevLabel} → เดือนนี้</p>
+          <p className="text-muted-foreground">ป้ายธงแดง / ธงเหลือง อ่านจากธงที่ระบบสร้างไว้ (คะแนน ≤{FLAG_RED_MAX} = ธงแดง · {FLAG_WARN_SCORE} = ธงเหลือง) · ตัวเลข = คะแนน {prevLabel} → เดือนนี้</p>
         </div>
       </details>
     </div>
