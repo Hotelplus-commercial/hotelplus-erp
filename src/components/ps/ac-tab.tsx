@@ -1175,7 +1175,7 @@ function FollowUpCard({
         list.length
           ? [
               `ส่งฟ้อง ${legalRows.length} ราย รวม ${bahtFull(legalRows.reduce((s, r) => s + r.outstanding, 0))}`,
-              `ticket GRADE_RISK เปิดอยู่ ${dWithTicket} จาก ${gradeD.length} รายเกรด D`,
+              `ticket เกรดการชำระเงินเสี่ยง เปิดอยู่ ${dWithTicket} จาก ${gradeD.length} รายเกรด D`,
             ]
           : summaryRules({ metric: "ลูกหนี้ติดตาม", empty: true }, ["R-EMPTY"])
       }
@@ -1210,7 +1210,7 @@ function FollowUpCard({
                   <th>ค้างมาแล้ว</th>
                   <th>เกรด</th>
                   <th>สถานะ</th>
-                  <th>Ticket GRADE_RISK</th>
+                  <th>ticket เกรดการชำระเงินเสี่ยง</th>
                 </tr>
               </thead>
               <tbody>

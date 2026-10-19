@@ -925,7 +925,7 @@ export function PsReportTab({
           question="มีโรงแรมเสี่ยงกี่ราย เสี่ยงด้านไหน?"
           answer={tiered.length ? `${tierCount("high")} / ${tiered.length}` : "—"}
           answerTone="action"
-          answerSub={`Attach-rate ${fmt(ratio(attach, "attached_hotels", "active_hotels"), "%")}`}
+          answerSub={`ใช้ทั้งสองบริการ ${fmt(ratio(attach, "attached_hotels", "active_hotels"), "%")}`}
           right={
             <Button asChild variant="ghost" size="sm">
               <Link to="/ps/templates">
