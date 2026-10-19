@@ -1,3 +1,4 @@
+import { RENEWAL_LABEL } from "@/lib/ps-glossary";
 import { useMemo, useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { ArrowUpRight } from "lucide-react";
@@ -269,8 +270,8 @@ export function PsReportTab({
     churnPrevious = churnChart.at(-2)?.gross ?? null;
   // R1: two decided segments — ไม่ต่อ = NOT_RENEWED + LOST (display only; %สำเร็จ unchanged).
   const outcomes = [
-    { outcome: "ต่อแล้ว", count: decided.filter((r) => r.outcome === "RENEWED").length },
-    { outcome: "ไม่ต่อ", count: decided.filter((r) => r.outcome === "NOT_RENEWED" || r.outcome === "LOST").length },
+    { outcome: RENEWAL_LABEL.renewed, count: decided.filter((r) => r.outcome === "RENEWED").length },
+    { outcome: RENEWAL_LABEL.notRenewed, count: decided.filter((r) => r.outcome === "NOT_RENEWED" || r.outcome === "LOST").length },
   ];
   const renewed = outcomes[0]?.count ?? 0;
   const lastCohort = cohort.at(-1),
@@ -618,8 +619,8 @@ export function PsReportTab({
         noteKey="renewal"
         noteLines={summaryRules(
           {
-            metric: "ต่อแล้ว",
-            share: [{ group: "ต่อแล้ว", n: renewed, total: decided.length }],
+            metric: RENEWAL_LABEL.renewed,
+            share: [{ group: RENEWAL_LABEL.renewed, n: renewed, total: decided.length }],
             split: groups.flatMap((group) => {
               const g = renewals.filter((r) => String(r[groupBy] ?? "ไม่ระบุ") === group),
                 gd = g.filter((r) => r.outcome !== "IN_PROGRESS");
@@ -705,7 +706,7 @@ export function PsReportTab({
                 <thead>
                   <tr className="text-left text-muted-foreground">
                     <th className="py-2">{groupBy === "service_line" ? "บริการ" : "AE"}</th>
-                    {["ต่อแล้ว", "ไม่ต่อ", "กำลังคุย"].map((label) => (
+                    {[RENEWAL_LABEL.renewed, RENEWAL_LABEL.notRenewed, RENEWAL_LABEL.inProgress].map((label) => (
                       <th className="px-2" key={label}>
                         {label}
                       </th>
@@ -1299,7 +1300,7 @@ function RenewalDonut({
             {current && total ? fmt((current.count / total) * 100, "%") : fmt(success, "%")}
           </b>
           <span className="text-xs text-muted-foreground">
-            {current ? `${current.count} / ${total}` : "ต่อแล้ว"}
+            {current ? `${current.count} / ${total}` : RENEWAL_LABEL.renewed}
           </span>
         </div>
       </div>

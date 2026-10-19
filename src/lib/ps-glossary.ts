@@ -46,3 +46,17 @@ export function plainSv(text: string): string {
     .replace("First Sync ★ (MT)", "First Sync (วันประชุม · MT)")
     .replace("Final Setup ⟨เพดาน⟩", "Final Setup (รอ handover ก่อน Training)");
 }
+
+/** R1.1 — labels shared by Tab PS, Headline, snapshot and Meeting & Survey (display only). */
+export const RENEWAL_LABEL = { renewed: "ต่อแล้ว", notRenewed: "ไม่ต่อ", inProgress: "กำลังคุย" } as const;
+export const CONTRACT_LABEL = { active: "ใช้งาน", inactive: "สิ้นสุด" } as const;
+export const FLAG_LABEL = { red: "ธงแดง", warn: "ธงเหลือง" } as const;
+export const MEETING_STATUS_LABEL = { aeNotSent: "AE ยังไม่ส่ง", surveyPending: "รอลูกค้าตอบ", surveyCommented: "ลูกค้าแย้ง", notDone: "ยังไม่สำเร็จ" } as const;
+export const TIME_LABEL = { overdue: "เลยกำหนด", nearDue: "ใกล้ถึงกำหนด", onTime: "ทันกำหนด", dueToday: "ถึงกำหนดวันนี้" } as const;
+/** AE display name from an owner id ("AE001-Nont" → "Nont"); missing → "ไม่พบชื่อ AE". */
+export function aeNameTh(id: unknown): string {
+  const s = id == null ? "" : String(id).trim();
+  if (!s || s === "null" || s === "undefined") return "ไม่พบชื่อ AE";
+  const m = /^AE\d+-(.+)$/.exec(s);
+  return m ? m[1]! : s;
+}

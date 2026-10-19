@@ -20,6 +20,7 @@ import {
 } from "@/lib/hotel-store";
 import { useDashboardGlobal, matchesBook, selectedPeriod } from '@/lib/ps-dashboard-global';
 import { demoHotels, buildDemoReport } from '@/lib/ps-demo-fixture';
+import { CONTRACT_LABEL } from "@/lib/ps-glossary";
 import { cn } from "@/lib/utils";
 import { PortfolioBreakdown } from './portfolio-breakdown';
 
@@ -180,8 +181,8 @@ export function PsDashboard({ assignment, part = "all" }: { assignment?: Assignm
         </div>
 
         <div className="mt-4 grid gap-2 sm:grid-cols-2">
-          <Stat label="ใช้งาน" value={`${activeCount} / ${base}`} sub={`${base ? pct(activeCount, base) : 0}%`} />
-          <Stat label="สิ้นสุด" value={`${inactive} / ${base}`} sub={`${base ? 100 - pct(activeCount, base) : 0}%`} />
+          <Stat label={CONTRACT_LABEL.active} value={`${activeCount} / ${base}`} sub={`${base ? pct(activeCount, base) : 0}%`} />
+          <Stat label={CONTRACT_LABEL.inactive} value={`${inactive} / ${base}`} sub={`${base ? 100 - pct(activeCount, base) : 0}%`} />
         </div>
 
         <div className="mt-4 border-t pt-4">
