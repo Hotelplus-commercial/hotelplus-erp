@@ -11,7 +11,7 @@ import { APPROVER_ROLE_TH, RENEWAL_LABEL_TH as L, RENEWAL_RECO_TH, renewalReqSta
 import { usePsRenewal, type RenewalCard } from "@/lib/ps-renewal";
 import { isOverdue, type ApproverRole, type RecoSnapshot, type RenewalRequest } from "@/lib/renewal-rules";
 import {
-  approveRequest, declineRequest, entityClosed, isRenewalDemo, latestRequestFor, openRequestFor, recheckGate, recordRollback,
+  approveRequest, declineRequest, entityClosed, isRenewalDemo, renewalSignPath, latestRequestFor, openRequestFor, recheckGate, recordRollback,
   renewalConfig, renewalNow, returnBack, sendRenewalLink, signRequest, startRenewal, useRenewalStore,
 } from "@/lib/renewal-store";
 import { addAttachment, attachmentError, ticketById, useTickets, STATUS_TH, type L0Ticket } from "@/lib/tickets-l0";
@@ -101,7 +101,13 @@ export function RenewalRequestPanel({ card, currentUser, canOverride }: { card: 
             <Button size="sm" variant="outline" onClick={() => recheckGate(open.id)}>ตรวจอีกครั้ง</Button>
           </>
         )}
-        {open?.status === "LINK_SENT" && isRenewalDemo() && <Button size="sm" variant="outline" onClick={() => simulate(open)}>{L.simulateSign}</Button>}
+        {open?.status === "LINK_SENT" && (
+          <>
+            <Button size="sm" variant="outline" asChild><a href={`${renewalSignPath(open.id)}${isRenewalDemo() ? "?demo=1" : ""}`} target="_blank" rel="noreferrer">เปิดหน้าลงนามของลูกค้า</a></Button>
+            {owner && <Button size="sm" variant="ghost" onClick={() => { void navigator.clipboard?.writeText(`${window.location.origin}${renewalSignPath(open.id)}`); toast.success("คัดลอก link แล้ว"); }}>คัดลอก link</Button>}
+            {isRenewalDemo() && <Button size="sm" variant="ghost" onClick={() => simulate(open)}>{L.simulateSign}</Button>}
+          </>
+        )}
         {owner && !done && <Button size="sm" variant="outline" onClick={() => setDeclineOpen((o) => !o)}>{L.recordDecline}</Button>}
       </div>
       {declineOpen && (

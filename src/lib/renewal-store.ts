@@ -157,3 +157,6 @@ export function recordRollback(cardId: string, by: string, reason: string): Out 
   commit({ ...s, rollbacks: [...s.rollbacks, { card_id: cardId, by, reason: reason.trim(), at: nowIso(), new_contract_id: req?.new_contract_id ?? null }] });
   return { ok: true };
 }
+export const requestById = (id: string) => cur().requests.find((r) => r.id === id) ?? null;
+/** Customer signing page path (renewal: no payment step). */
+export const renewalSignPath = (id: string) => `/l/renew/${id}`;
