@@ -2,6 +2,15 @@
 import { describe, expect, test } from 'bun:test';
 import { createElement as h } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { createMemoryHistory, createRootRoute, createRouter, RouterProvider } from '@tanstack/react-router';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { ReactElement } from 'react';
+async function render(el: ReactElement) {
+  const rootRoute = createRootRoute({ component: () => el });
+  const router = createRouter({ routeTree: rootRoute, history: createMemoryHistory({ initialEntries: ['/'] }) });
+  await router.load();
+  return renderToStaticMarkup(h(QueryClientProvider, { client: new QueryClient() }, h(RouterProvider, { router } as never)));
+}
 import { PsReportTab } from '../src/components/ps/ps-report-tab';
 import { MeetingAnalyzerTab } from '../src/components/ps/meeting-analyzer-tab';
 import { Account360Provider } from '../src/components/ps/account-360';
@@ -18,18 +27,18 @@ function hits(text: string) {
 }
 
 describe('R1.1 forbidden strings (demo mode)', () => {
-  test('Tab PS', () => {
+  test('Tab PS', async () => {
     const report = buildDemoReport(defaultGlobalFilter);
     const now = new Date(DEMO_NOW);
-    const html = renderToStaticMarkup(
+    const html = await render(
       h(DashboardGlobal.Provider, { value: { filter: defaultGlobalFilter, demo: true, now: DEMO_NOW } },
         h(Account360Provider, { report, children: h(PsReportTab, { report, filter: { ...defaultGlobalFilter, period: selectedPeriod(defaultGlobalFilter, now) }, loading: false, error: false }) })),
     );
     expect(html.length).toBeGreaterThan(1000);
     expect(hits(visibleText(html))).toEqual([]);
   });
-  test('Meeting & Survey', () => {
-    const html = renderToStaticMarkup(
+  test('Meeting & Survey', async () => {
+    const html = await render(
       h(DashboardGlobal.Provider, { value: { filter: defaultGlobalFilter, demo: true, now: String(MEETING_DEMO_NOW) } },
         h(MeetingAnalyzerTab, { report: demoMeetingReport(), loading: false, error: false })),
     );
