@@ -587,7 +587,7 @@ function QCard({ q, label, rows, curRows, prevRows, flags, compare, prevLabel }:
                 </Link>
                 <span>{String(r["caretaker"] ?? "—")}</span>
                 <span className="text-muted-foreground">AE {aeNameTh(r["ae_owner_id"])}</span>
-                {r["disputed"] ? <span className="mt-chip mt-chip-amber">ลูกค้าแย้ง</span> : null}
+                {r["disputed"] ? <span className="mt-chip mt-chip-amber">{MEETING_STATUS_LABEL.surveyCommented}</span> : null}
               </li>
             ))}
           </ul>
@@ -713,7 +713,7 @@ function BreakdownStrip({ title, hint, rowNames, rowKey, qs, rows, prevRows, fla
                     </span>
                     <span>{String(r["caretaker"] ?? "—")}</span>
                     <span className="text-muted-foreground">AE {aeNameTh(r["ae_owner_id"])}</span>
-                    {r["disputed"] ? <span className="mt-chip mt-chip-amber">ลูกค้าแย้ง</span> : null}
+                    {r["disputed"] ? <span className="mt-chip mt-chip-amber">{MEETING_STATUS_LABEL.surveyCommented}</span> : null}
                   </li>
                 ))}
               </ul>
@@ -747,8 +747,8 @@ function SurveySection({ surveys, curSurveys, prevSurveys, flags, service, compa
       howToRead="ชี้แท่ง = จำนวนโรงแรม · คลิกแท่ง = ดูรายชื่อ"
       legend={
         <>
-          <span><i className="mt-hist-bar mt-hist-s1" style={{ width: 10, height: 10, display: "inline-block" }} /> 1–5 (ธงแดง)</span>
-          <span><i className="mt-hist-bar mt-hist-s6" style={{ width: 10, height: 10, display: "inline-block" }} /> 6 (ธงเหลือง)</span>
+          <span><i className="mt-hist-bar mt-hist-s1" style={{ width: 10, height: 10, display: "inline-block" }} /> 1–5 ({FLAG_LABEL.red})</span>
+          <span><i className="mt-hist-bar mt-hist-s6" style={{ width: 10, height: 10, display: "inline-block" }} /> 6 ({FLAG_LABEL.warn})</span>
           <span><i className="mt-hist-bar mt-hist-s78" style={{ width: 10, height: 10, display: "inline-block" }} /> 7–8</span>
           <span><i className="mt-hist-bar mt-hist-s910" style={{ width: 10, height: 10, display: "inline-block" }} /> 9–10</span>
         </>
@@ -874,7 +874,7 @@ function FlagBoard({ flags, period, compare, periodB, service }: {
 
   return (
     <DashCard
-      title="⑥ ธงแดง / ธงเหลือง"
+      title={`⑥ ${FLAG_LABEL.red} / ${FLAG_LABEL.warn}`}
       info={{
         formula: `ธงเกิดเมื่อ: คะแนน ≤${FLAG_RED_MAX} → ธงแดงทันที · คะแนน ${FLAG_WARN_SCORE} → ธงเหลือง · ได้ ${FLAG_WARN_SCORE} อีกครั้งใน ${MEETING_CONFIG.warning_window_months} เดือน → ธงแดง · ลูกค้าปฏิเสธนัด → ธงแดง · ธงแดง → ระบบสร้างงาน Coaching ส่งถึงหัวหน้าที่รับผิดชอบ`,
         read: "แสดงต้นทาง (ธง) เท่านั้น · จำนวนงาน Coaching ค้างดูที่แท็บ ติดตามงานผู้ให้บริการ (ไม่นับซ้ำ) · ค้าง ใช้สีกลางจนกว่าจะตั้งเกณฑ์วัน",
@@ -1128,7 +1128,7 @@ export function MeetingAnalyzerTab({
             <KpiTile
               label="เก็บ Survey สำเร็จ"
               value={<>{fmt(tile3, "%")} <small>{successAll}/{doneAll}</small></>}
-              sub={<>ลูกค้าแย้ง {orm.drops.surveyCommented + mc.drops.surveyCommented} · รอลูกค้าตอบ {orm.drops.surveyPending + mc.drops.surveyPending}</>}
+              sub={<>{MEETING_STATUS_LABEL.surveyCommented} {orm.drops.surveyCommented + mc.drops.surveyCommented} · {MEETING_STATUS_LABEL.surveyPending} {orm.drops.surveyPending + mc.drops.surveyPending}</>}
               lines={[
                 "สำเร็จ = ลูกค้า CONFIRMED หรือ AUTO_CONFIRMED",
                 `KPI #3 เดิม (AE ส่งแล้ว ÷ ประชุมสำเร็จ) = ${fmt(oldKpi3, "%")}`,
