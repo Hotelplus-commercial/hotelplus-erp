@@ -48,3 +48,35 @@ describe('MD Review R1 rules', () => {
     expect(plainSv('เหลือเวลาอีก 3 วันของ SLA')).toBe('อีก 3 วันถึงกำหนด');
   });
 });
+
+import { renewalWizardDealId, wizardPathRedirects } from '../src/lib/renewal-wizard';
+import { aeNameTh } from '../src/lib/ps-glossary';
+import { readFileSync } from 'node:fs';
+describe('MD Review R1.1', () => {
+  const deals = [{ deal_id: 'D-1', hotel_id: 'HTL0042', hotel_name: 'Grand Palace Bangkok' }, { deal_id: 'D-2', hotel_id: null, hotel_name: 'Riverside Krabi' }];
+  test('(a) renewal card → Generate contract opens the wizard on the hotel\'s existing deal', () => {
+    expect(renewalWizardDealId({ hotelId: 'HTL0042', hotel: 'X' }, deals)).toBe('D-1');
+    expect(renewalWizardDealId({ hotelId: 'HTL0102', hotel: 'Riverside Krabi' }, deals)).toBe('D-2');
+    const ui = readFileSync('src/components/ps/renewal-ui.tsx', 'utf8');
+    expect(ui).toContain('to="/ps/contract-wizard/$dealId"');
+    expect(ui).toContain('Generate contract');
+  });
+  test('(b) bare /ps/contract-wizard/ redirects to Contract Dashboard', () => {
+    expect(wizardPathRedirects('/ps/contract-wizard/')).toBe(true);
+    expect(wizardPathRedirects('/ps/contract-wizard')).toBe(true);
+    expect(readFileSync('src/routes/ps.contract-wizard.index.tsx', 'utf8')).toContain('to: "/ps/contract-dashboard"');
+  });
+  test('(c) /ps/contract-wizard/{id} does not redirect', () => {
+    expect(wizardPathRedirects('/ps/contract-wizard/D-47312')).toBe(false);
+    expect(wizardPathRedirects('/ps/contract-wizard/new', '?quote_id=Q1')).toBe(false);
+    const r = readFileSync('src/routes/ps.contract-wizard.$dealId.tsx', 'utf8');
+    expect(r).not.toContain('redirect');
+    expect(r).toContain('<ContractWizard');
+  });
+  test('Meeting ⑤ AE names, missing → ไม่พบชื่อ AE; no "ไม่ใช่ NPS"', () => {
+    expect(aeNameTh('AE001-Nont')).toBe('Nont');
+    expect(aeNameTh('Fern')).toBe('Fern');
+    expect(aeNameTh(null)).toBe('ไม่พบชื่อ AE');
+    expect(readFileSync('src/components/ps/meeting-analyzer-tab.tsx', 'utf8')).not.toContain('ไม่ใช่ NPS');
+  });
+});
