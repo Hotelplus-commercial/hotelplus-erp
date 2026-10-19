@@ -74,11 +74,15 @@ export const RENEWAL_RECO_TH = {
 } as const;
 export const RENEWAL_LABEL_TH = {
   renew: "ต่อสัญญา", needApproval: "ต้องให้ PM อนุมัติ", overdue: (d: number) => `รออนุมัติเกิน ${d} วัน`,
-  sendLink: "ส่ง link ให้ลูกค้า", resendLink: "ส่ง link อีกครั้ง", recordDecline: "บันทึกไม่ต่อ", simulateSign: "จำลองลูกค้าเซ็น",
+  sendLink: "ส่ง link ให้ลูกค้า", resendLink: "ส่ง link อีกครั้ง", simulateSign: "จำลองลูกค้าเซ็น",
   createAndLink: "สร้างสัญญาและ live link", submitPm: "ส่งให้ PM อนุมัติ", approve: "อนุมัติ", returnBack: "ส่งกลับ", cancel: "ยกเลิก",
   approvalItem: (h: string) => `อนุมัติเงื่อนไขต่อสัญญา · ${h}`, entityItem: (h: string) => `เปลี่ยนนิติบุคคล / ผู้ลงนาม · ${h}`,
   entityCheckbox: "ลูกค้าเปลี่ยนนิติบุคคลหรือผู้มีอำนาจลงนาม", waitEntity: "รอ AC ปิด ticket เปลี่ยนนิติบุคคล",
-  rollback: "ย้อนผลต่อสัญญา", rollbackFlag: "สัญญาใหม่รอ PM ตรวจใน สัญญา & บริการ",
+  reviewSend: "ตรวจและส่ง", continueEdit: "แก้ไขต่อ", viewRequest: "ดูคำขอ", previewLive: "ดูตัวอย่าง live link",
+  createSendLive: "สร้าง live link และส่งให้ลูกค้า", resendLive: "ส่ง live link อีกครั้ง", openLive: "เปิด live link",
+  notSigned: "ยังไม่เซ็น", signedAt: (d: string) => `เซ็นแล้ว · ${d}`, signedHint: "ลูกค้าเซ็นแล้ว · กด Mark as Done เพื่อปิดการ์ด",
+  signedBadge: "ลูกค้าเซ็นแล้ว · รอ Mark as Done", scrollFirst: "เลื่อนอ่านให้ถึงหน้าสุดท้ายก่อน",
+  previewWatermark: "ตัวอย่าง · ยังไม่ส่งลูกค้า", previewBanner: "ตัวอย่างสำหรับ AE · ลูกค้ายังไม่ได้รับ", needSigned: "ต้องให้ลูกค้าเซ็นก่อน",
   fields: { fee_amount: "ค่าบริการ/เดือน", commission_pct: "ค่าคอมมิชชัน %", term_months: "ระยะสัญญา (เดือน)", package: "แพ็กเกจ", start_date: "เริ่ม", end_date: "สิ้นสุด" },
   ruleNote: "คำแนะนำนี้มาจากกฎตายตัวของกล่อง Repricing (ไม่ใช่ AI): ครบรอบขึ้นราคา · ราคาต่ำกว่ามูลค่าเทียบเคียง · แนวโน้มรายได้",
 } as const;
