@@ -1,5 +1,6 @@
 // Meeting & Survey tab (was Meeting & Analyzer) v2.0 — read-only rework per spec. Card-month grain, Bangkok dates,
 // medians only, no writes, Q8 is never NPS. Deprecated views are not read here.
+import { aeNameTh, FLAG_LABEL, MEETING_STATUS_LABEL } from "@/lib/ps-glossary";
 import { useMemo, useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { ArrowUpRight, ChevronRight } from "lucide-react";
@@ -177,7 +178,7 @@ function FunnelCard({ cards, cardsB, now, months, compare }: {
     },
     {
       label: "เก็บ survey สำเร็จ", counts: orm.surveySuccess,
-      drop: dropText([["AE ยังไม่ส่ง", orm.drops.aeNotSent], ["รอลูกค้าตอบ", orm.drops.surveyPending], ["ลูกค้าแย้ง", orm.drops.surveyCommented]], "ยังไม่สำเร็จ"),
+      drop: dropText([[MEETING_STATUS_LABEL.aeNotSent, orm.drops.aeNotSent], [MEETING_STATUS_LABEL.surveyPending, orm.drops.surveyPending], [MEETING_STATUS_LABEL.surveyCommented, orm.drops.surveyCommented]], MEETING_STATUS_LABEL.notDone),
     },
   ];
 
@@ -258,7 +259,7 @@ function FunnelCard({ cards, cardsB, now, months, compare }: {
             />
             <MarcomRow
               label="เก็บ survey สำเร็จ" count={mc.surveySuccess.total} base={mc.base}
-              drop={dropText([["AE ยังไม่ส่ง", mc.drops.aeNotSent], ["รอลูกค้าตอบ", mc.drops.surveyPending], ["ลูกค้าแย้ง", mc.drops.surveyCommented]], "ยังไม่สำเร็จ")}
+              drop={dropText([[MEETING_STATUS_LABEL.aeNotSent, mc.drops.aeNotSent], [MEETING_STATUS_LABEL.surveyPending, mc.drops.surveyPending], [MEETING_STATUS_LABEL.surveyCommented, mc.drops.surveyCommented]], MEETING_STATUS_LABEL.notDone)}
               tooltip={[`survey สำเร็จ ${mc.surveySuccess.total}/${mc.completed.total} ของที่ประชุมสำเร็จ`, compare && mcB ? `B ${mcB.surveySuccess.total}` : ""]}
             />
             <p className="mt-banner">Marcom Tier ยังไม่กำหนด — ฐาน = ทุกโรงแรมที่มีผู้ดูแล Marcom (100% coverage)</p>
@@ -533,8 +534,8 @@ function QCard({ q, label, rows, curRows, prevRows, flags, compare, prevLabel }:
   const dropped = rows.filter((r) => r["prev_score"] != null && Number(r["score"]) <= 6 && Number(r["score"]) < Number(r["prev_score"]));
   const noted = rows.filter((r) => r["prev_score"] != null && Number(r["score"]) >= 7 && Number(r["prev_score"]) - Number(r["score"]) >= MEETING_CONFIG.decline_note_pts);
   const flagOf = (hotel: string) =>
-    flags.find((f) => f["hotel_id"] === hotel && f["topic"] === q && f["severity"] === "FLAG") ? "ธงแดง"
-      : flags.find((f) => f["hotel_id"] === hotel && f["topic"] === q) ? "ธงเหลือง" : null;
+    flags.find((f) => f["hotel_id"] === hotel && f["topic"] === q && f["severity"] === "FLAG") ? FLAG_LABEL.red
+      : flags.find((f) => f["hotel_id"] === hotel && f["topic"] === q) ? FLAG_LABEL.warn : null;
   const delta = medM != null && prevMed != null ? medM - prevMed : null;
   const pinnedRows = pinned == null ? [] : rows.filter((r) => Number(r["score"]) === pinned);
 
@@ -585,7 +586,7 @@ function QCard({ q, label, rows, curRows, prevRows, flags, compare, prevLabel }:
                   {hotelNameOf(r)}
                 </Link>
                 <span>{String(r["caretaker"] ?? "—")}</span>
-                <span className="text-muted-foreground">AE {String(r["ae_owner_id"] ?? "—")}</span>
+                <span className="text-muted-foreground">AE {aeNameTh(r["ae_owner_id"])}</span>
                 {r["disputed"] ? <span className="mt-chip mt-chip-amber">ลูกค้าแย้ง</span> : null}
               </li>
             ))}
@@ -607,8 +608,8 @@ function QCard({ q, label, rows, curRows, prevRows, flags, compare, prevLabel }:
               const badge = flagOf(String(r.hotel_id));
               return (
                 <p key={i} className="mt-0.5">
-                  – <HotelCell r={r} /> {String(r["prev_score"])} → {String(r["score"])} · {String(r["caretaker"])} · AE {String(r["ae_owner_id"])}
-                  {badge && <span className={cn("mt-chip ml-1", badge === "ธงแดง" ? "mt-chip-red" : "mt-chip-amber")}>{badge}</span>}
+                  – <HotelCell r={r} /> {String(r["prev_score"])} → {String(r["score"])} · {String(r["caretaker"])} · AE {aeNameTh(r["ae_owner_id"])}
+                  {badge && <span className={cn("mt-chip ml-1", badge === FLAG_LABEL.red ? "mt-chip-red" : "mt-chip-amber")}>{badge}</span>}
                 </p>
               );
             })}
@@ -616,7 +617,7 @@ function QCard({ q, label, rows, curRows, prevRows, flags, compare, prevLabel }:
           <div>
             <p className="font-semibold">ลดลง ≥{MEETING_CONFIG.decline_note_pts} แต่ยังอยู่ ≥7 — {noted.length} โรงแรม (โน้ตเท่านั้น ไม่เข้า flag)</p>
             {noted.map((r, i) => (
-              <p key={i} className="mt-0.5">– <HotelCell r={r} /> {String(r["prev_score"])} → {String(r["score"])} · {String(r["caretaker"])} · AE {String(r["ae_owner_id"])}</p>
+              <p key={i} className="mt-0.5">– <HotelCell r={r} /> {String(r["prev_score"])} → {String(r["score"])} · {String(r["caretaker"])} · AE {aeNameTh(r["ae_owner_id"])}</p>
             ))}
           </div>
           <p className="text-muted-foreground">ป้ายธงแดง / ธงเหลือง อ่านจากธงที่ระบบสร้างไว้ (คะแนน ≤{FLAG_RED_MAX} = ธงแดง · {FLAG_WARN_SCORE} = ธงเหลือง) · ตัวเลข = คะแนน {prevLabel} → เดือนนี้</p>
@@ -711,7 +712,7 @@ function BreakdownStrip({ title, hint, rowNames, rowKey, qs, rows, prevRows, fla
                       {String(r["score"])}{r["prev_score"] != null ? ` (${thMonth(String(r["card_month"])) === "ก.ย. 69" ? "ส.ค." : "ก่อน"} ${String(r["prev_score"])})` : ""}
                     </span>
                     <span>{String(r["caretaker"] ?? "—")}</span>
-                    <span className="text-muted-foreground">AE {String(r["ae_owner_id"] ?? "—")}</span>
+                    <span className="text-muted-foreground">AE {aeNameTh(r["ae_owner_id"])}</span>
                     {r["disputed"] ? <span className="mt-chip mt-chip-amber">ลูกค้าแย้ง</span> : null}
                   </li>
                 ))}
@@ -828,7 +829,7 @@ function SurveySection({ surveys, curSurveys, prevSurveys, flags, service, compa
         })}
       </div>
       <p className="mt-6 text-xs text-muted-foreground">
-        Q8 = สัญญาณการแนะนำต่อระดับการประชุม (AE กรอก) · ไม่ใช่ NPS · ป้าย &quot;ลูกค้าแย้ง&quot; = ลูกค้าคอมเมนต์กลับหลังได้รับอีเมลคะแนน
+        Q8 = สัญญาณการแนะนำต่อระดับการประชุม (AE กรอก) · ป้าย &quot;ลูกค้าแย้ง&quot; = ลูกค้าคอมเมนต์กลับหลังได้รับอีเมลคะแนน
       </p>
       <Q9Expander rows={surveys} />
     </DashCard>
