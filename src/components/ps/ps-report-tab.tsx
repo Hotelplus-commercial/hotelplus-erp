@@ -615,7 +615,7 @@ export function PsReportTab({
         title="③ Renewal"
         question="ครบกำหนดงวดนี้ ต่อกี่ราย?"
         answer={fmt(renewalSuccess, "%")}
-        answerSub={`ต่อแล้ว ${renewed} / ${decided.length}`}
+        answerSub={`${RENEWAL_LABEL.renewed} ${renewed} / ${decided.length}`}
         noteKey="renewal"
         noteLines={summaryRules(
           {
@@ -648,7 +648,7 @@ export function PsReportTab({
               success={renewalSuccess}
             />
             <p className="mb-4 text-xs text-muted-foreground">
-              + กำลังคุย {renewals.filter((r) => r.outcome === "IN_PROGRESS").length} ราย
+              + {RENEWAL_LABEL.inProgress} {renewals.filter((r) => r.outcome === "IN_PROGRESS").length} ราย
               (ไม่นับในตัวหาร)
             </p>
             <div className="mb-3 flex gap-1" role="group" aria-label="แยกผลการต่อสัญญา">
@@ -672,7 +672,7 @@ export function PsReportTab({
                   <ChartHint
                     key={group}
                     header={`${group} · ${gd.length ? fmt((nr / gd.length) * 100, "%") : "—"}`}
-                    lines={[`ต่อแล้ว ${nr}/${gd.length} ราย`]}
+                    lines={[`${RENEWAL_LABEL.renewed} ${nr}/${gd.length} ราย`]}
                   >
                     <Button
                       variant="ghost"

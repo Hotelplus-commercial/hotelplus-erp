@@ -1,6 +1,5 @@
 /* PS App v2.3 · Fix 2 — Contract Dashboard as a full 11-column Kanban board. */
-import { Link, createFileRoute } from "@tanstack/react-router";
-import { Button } from "@/components/ui/button";
+import { createFileRoute } from "@tanstack/react-router";
 import { Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -66,7 +65,6 @@ function ContractDashboard() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-display text-2xl font-bold tracking-tight">Contract Dashboard</h1>
-        <Button asChild><Link to="/ps/contract-wizard/new" search={{ quote_id: "" }}>＋ สร้างสัญญา</Link></Button>
       </div>
       <div className="sticky top-0 z-30 space-y-3 bg-background/95 py-2 backdrop-blur">
         <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-5">

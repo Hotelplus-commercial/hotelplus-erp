@@ -161,7 +161,7 @@ export function PsDashboard({ assignment, part = "all" }: { assignment?: Assignm
           <div className="flex items-baseline gap-2">
             <span className="font-display text-4xl font-bold">{activeCount}</span>
             <span className="text-sm text-muted-foreground">
-              / {base} โรงแรม ใช้งาน
+              / {base} โรงแรม {CONTRACT_LABEL.active}
             </span>
             <span className="rounded-full bg-warning/20 px-2 py-0.5 text-xs font-bold text-warning-foreground">
               {pct(activeCount, base)}%
