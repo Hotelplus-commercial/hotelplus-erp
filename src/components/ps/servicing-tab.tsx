@@ -2,7 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { plainSv } from '@/lib/ps-glossary';
+import { phaseTh, plainSv } from '@/lib/ps-glossary';
 import { servicingInfo } from './servicing-phase-chart';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -103,7 +103,7 @@ export function ServicingTab() {
  </section>;
 }
 function LanePill({lane:l,gmb}:{lane:ServicingLane;gmb:boolean}) {
- const text=l.state==='reserved'?'Specialist · สงวนไว้ (ยังไม่มี handover)':l.state==='none'?'—':l.state==='wait'?l.row2?'รอ ORM ตรวจรับ row-2':`รอประชุม ${shortThaiDate(l.wait_until??l.start_at??'2026-10-17')}`:l.state==='done'?l.lane==='Specialist'?`✓ Specialist ส่ง handover ครบ (วันที่ ${l.d})`:l.phase==='P2'&&l.lane!=='AE'?`✓ สร้างนัดแล้ว (วันที่ ${l.d})`:`✓ ${l.phase} · ${l.lane} · วันที่ ${l.d}`:`${phaseTh(l.phase)} · ${gmb?'Marcom (GMB → Go Live)':l.lane} · วันที่ ${l.d} · ${plainSv(statusText(l.phase,l.d??0))}`;
+ const text=l.state==='reserved'?'Specialist · สงวนไว้ (ยังไม่มี handover)':l.state==='none'?'—':l.state==='wait'?l.row2?'รอ ORM ตรวจรับ row-2':`รอประชุม ${shortThaiDate(l.wait_until??l.start_at??'2026-10-17')}`:l.state==='done'?l.lane==='Specialist'?`✓ Specialist ส่ง handover ครบ (วันที่ ${l.d})`:l.phase==='P2'&&l.lane!=='AE'?`✓ สร้างนัดแล้ว (วันที่ ${l.d})`:`✓ ${phaseTh(l.phase)} · ${l.lane} · วันที่ ${l.d}`:`${phaseTh(l.phase)} · ${gmb?'Marcom (GMB → Go Live)':l.lane} · วันที่ ${l.d} · ${plainSv(statusText(l.phase,l.d??0))}`;
  return <span className={`sv-lane-pill sv-tone-${l.tone??'wait'} ${l.state==='reserved'?'sv-reserved-pill':''}`}>{text}</span>;
 }
 /** Opens the existing v1.1 AssignDialog per slot (same write + audit as Hotel Profile). Demo = in-session no-op. */
