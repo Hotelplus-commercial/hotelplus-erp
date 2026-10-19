@@ -114,7 +114,7 @@ export function returnRequest(r: RenewalRequest, by: string, role: ApproverRole,
 }
 /** Re-evaluate the gate (e.g. after AC closes the entity ticket). */
 export function refreshGate(r: RenewalRequest, entityTicketClosed: boolean, at: string): RenewalRequest {
-  if ((r.status === 'APPROVED' || (r.status === 'DRAFT' && !r.approval_required && r.submitted_at === null && r.updated_at !== r.created_at && r.link_sent_at === null && false)) && gatesPass(r, entityTicketClosed)) return { ...r, status: 'READY_TO_SEND', updated_at: at };
+  if (r.status === 'APPROVED' && gatesPass(r, entityTicketClosed)) return { ...r, status: 'READY_TO_SEND', updated_at: at };
   return r;
 }
 export function sendLink(r: RenewalRequest, at: string): Res {
