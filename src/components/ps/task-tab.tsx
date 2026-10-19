@@ -28,7 +28,7 @@ import { monthPeriod, selectedPeriod } from '@/lib/ps-dashboard-global';
 import { BacklogHistoryCard, CategoryIncomingCard, Sparkline, WorkloadCard, monYY, periodMonths } from './task-history-v21';
 import { SEED_CATEGORIES } from '@/lib/task-tickets';
 import { useTickets, type L0Ticket } from '@/lib/tickets-l0';
-import { getWorklist, workInScope, monitorScope, TASK_CONFIG, type WorkRow } from '@/lib/task-worklist';
+import { getWorklist, workInScope, sourceSplit, monitorScope, TASK_CONFIG, type WorkRow } from '@/lib/task-worklist';
 import { readTaskFlow } from '@/lib/task-flow.functions';
 import { ChartHint } from './dash-card';
 import { TaskMonitorV2, CurrentNote } from './task-monitor-v2';
