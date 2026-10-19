@@ -28,3 +28,4 @@
 - PI required validation gates final saveAnswers only; template publish freezes flags and audits changes. Why: customer/AE share one validator
 - Portfolio uses existing hotel terms, latest active start per service; missing SKU link stays placeholder. Contracts reuses the hotel list. Why: no guessed CRM joins
 - Subdirectories have their own AGENTS.md (src/components/ps); read it before changing files there.
+- Contract renewal: renewal_request + contract_price_history live in browser-local src/lib/renewal-store.ts (demo in-memory, seeded); rules are pure in src/lib/renewal-rules.ts; the renewal card opens /ps/contract-wizard/renew/$contractId (contract_id, never deal/hotel id). Why: one renewal flow, testable rules, new-contract Wizard untouched.
