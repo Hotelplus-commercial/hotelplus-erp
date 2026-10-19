@@ -176,10 +176,10 @@ function Detail({ t, role, dept, onClose }: { t: L0Ticket; role: Role; dept: Dep
             <dt className="text-muted-foreground">ค้าง</dt><dd>{t.payload.followup.days_since_sent_contract} วันนับจากส่งสัญญา</dd>
             <dt className="text-muted-foreground">BD</dt><dd>{t.payload.followup.bd_name ?? "— ยังไม่ระบุ"}</dd>
           </>
-        ) : (
+        ) : t.type === "CUSTOMER_ENTITY_CHANGE" ? null : (
           <><dt className="text-muted-foreground">บริการที่ขาด</dt><dd>{t.subject_ref.gap_service}</dd></>
         )}
-        {t.type !== "CONTRACT_FOLLOWUP" && t.type !== "SERVICING_STALL" && (isBot ? (
+        {t.type !== "CONTRACT_FOLLOWUP" && t.type !== "SERVICING_STALL" && t.type !== "CUSTOMER_ENTITY_CHANGE" && (isBot ? (
           <>
             <dt className="text-muted-foreground">สัญญาณ</dt><dd>{t.payload.note || "—"}</dd>
             <dt className="text-muted-foreground">AE ผู้ดูแล</dt><dd>{t.payload.assigned_ae?.nickname ?? "— ยังไม่ระบุ"}</dd>
