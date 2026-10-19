@@ -235,7 +235,7 @@ function ChecklistSection({ card, readOnly }: { card: OnboardingCard; readOnly: 
   const blocks = stages.map((stage) => ({ stage, items: s.checklistItems.filter((i) => i.card_id === card.id && i.stage_key === stage) })).filter((b) => b.items.length);
   return <section className="space-y-3 border-b pb-4" aria-label="Checklist">
     <p className="text-sm font-semibold">Checklist <span className="text-xs font-normal text-muted-foreground">· ไม่ล็อกการเลื่อนขั้น</span></p>
-    <p className="text-[11px] text-muted-foreground">checklist นี้มาจากแม่แบบ · จัดการที่เมนู Template</p>
+    <p className="text-[11px] text-muted-foreground">checklist นี้มาจากแม่แบบ · จัดการที่เมนู ตั้งค่า › Template</p>
     {blocks.map(({ stage, items }) => {
       const can = !readOnly && (s.test_mode || s.role === owner(stage));
       const groups = [...new Set(items.map((i) => i.group_label))];
@@ -288,7 +288,7 @@ function OrmHandover({ card }: { card: OnboardingCard }) {
       <div className="flex flex-wrap gap-2">{OTA_CHANNELS.map((o) => <label key={o} className="flex items-center gap-2 text-xs"><Checkbox aria-label={`เลือก OTA ${o}`} checked={otas.includes(o)} disabled={!isSpec || (!otas.includes(o) && otas.length >= 3)} onCheckedChange={() => s.setHandoverOtas(card.id, otas.includes(o) ? otas.filter((item) => item !== o) : [...otas, o])} />{o}</label>)}</div>
     </div>}
     <div className="space-y-2" aria-label="OTA checklist">
-      <p className="text-[11px] text-muted-foreground">checklist นี้มาจากแม่แบบ · จัดการที่เมนู Template</p>
+      <p className="text-[11px] text-muted-foreground">checklist นี้มาจากแม่แบบ · จัดการที่เมนู ตั้งค่า › Template</p>
       <p className="text-xs font-medium">1 · OTA checklist · {accepting ? "ORM ตรวจรับที่ Completed (Handover)" : "Specialist ติ๊กได้ตั้งแต่ Approved ถึง Final Setup"}</p>
       <div className="flex flex-wrap gap-1">{otas.map((o) => <Button key={o} type="button" size="sm" variant={o === ota ? "default" : "outline"} className="h-7 text-xs" onClick={() => setOta(o)}>{o} · {doneOf(o)}</Button>)}</div>
       <table className="w-full text-sm">
