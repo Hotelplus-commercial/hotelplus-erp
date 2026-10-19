@@ -41,8 +41,8 @@ import {
   type RenewalStatus,
 } from "@/lib/ps-renewal";
 import { cn } from "@/lib/utils";
-import { useBd } from "@/lib/bd-store";
-import { renewalWizardDealId } from "@/lib/renewal-wizard";
+import { DEMO_EXTRA_CARDS, setRenewalDemo, useRenewalStore } from "@/lib/renewal-store";
+import { RenewalRequestChips, RenewalRequestPanel } from "@/components/ps/renewal-request-ui";
 
 const statusTone: Record<RenewalStatus, "muted" | "info" | "success" | "danger"> = {
   NOT_STARTED: "muted",
@@ -66,7 +66,11 @@ export function RenewalActivityCards({
   currentUser: string;
   canOverride: boolean;
 }) {
-  const { cards } = usePsRenewal();
+  const { cards: baseCards } = usePsRenewal();
+  const [demo, setDemo] = useState(false);
+  useEffect(() => { const on = new URLSearchParams(window.location.search).get("demo") === "1"; setRenewalDemo(on); setDemo(on); }, []);
+  useRenewalStore();
+  const cards = demo ? [...baseCards, ...DEMO_EXTRA_CARDS] : baseCards;
   const [open, setOpen] = useState(false);
   useEffect(() => { if (window.location.hash === "#renewal-activities") { setOpen(true); document.getElementById("renewal-activities")?.scrollIntoView({ block: "start" }); } }, []);
   const [sortAsc, setSortAsc] = useState(true);
@@ -104,6 +108,7 @@ export function RenewalActivityCards({
                     <span className="truncate text-sm font-semibold">🏨 {c.hotel}</span>
                     <span className="text-xs text-muted-foreground">· {c.daysLeft}d left ·</span>
                     <RenewalStatusBadge status={c.status} />
+                    <RenewalRequestChips cardId={c.id} />
                     {!owned && (
                       <Chip tone="muted">
                         <Lock className="mr-1 size-3" /> view only
@@ -153,6 +158,7 @@ export function RenewalActivityCards({
       {active && (
         <RenewalCardModal
           cardId={active.card.id}
+          extraCards={demo ? DEMO_EXTRA_CARDS : []}
           startAdd={active.addMode}
           currentUser={currentUser}
           canOverride={canOverride}
@@ -171,16 +177,17 @@ export function RenewalCardModal({
   currentUser,
   canOverride,
   onClose,
+  extraCards = [],
 }: {
   cardId: string;
   startAdd?: boolean;
   currentUser: string;
   canOverride: boolean;
   onClose: () => void;
+  extraCards?: RenewalCard[];
 }) {
   const { cards, addActivity, markDone } = usePsRenewal();
-  const { deals } = useBd();
-  const card = cards.find((c) => c.id === cardId);
+  const card = [...cards, ...extraCards].find((c) => c.id === cardId);
   const [type, setType] = useState<ActivityType | null>(startAdd ? "Call" : null);
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
@@ -291,9 +298,7 @@ export function RenewalCardModal({
               </span>
             </div>
             <div className="mt-2 flex flex-wrap items-center gap-2">
-              <Button size="sm" asChild>
-                <Link to="/ps/contract-wizard/$dealId" params={{ dealId: renewalWizardDealId(card, deals) }} search={{ quote_id: "" }}>Generate contract →</Link>
-              </Button>
+
               <span className="text-xs text-muted-foreground">Signed Contract:</span>
               {card.signedFile ? (
                 <>
@@ -307,6 +312,8 @@ export function RenewalCardModal({
               )}
             </div>
           </section>
+
+          <RenewalRequestPanel card={card} currentUser={currentUser} canOverride={canOverride} />
 
           {/* Section 3 — Activity Log */}
           <section className="rounded-xl border p-3">
