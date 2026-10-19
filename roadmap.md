@@ -229,5 +229,6 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [ ] Open: live data waits on Cloud Sync seed (views return empty + pending_sync); field mapping card-month ↔ real schema to note at seed time
 
 ## MD Review R1 patch (2026-10-19)
-- [ ] §1 InfoButton + glossary · §2 filter custom/presets/Compare B · §3 Headline 6 tiles + grade D · §4 snapshot base
-- [ ] §5 Tab PS · §6 Meeting & Survey · §7 Task rename/ticket wording · §8 Servicing · §9 sidebar 8 entries · §10 demo history
+- [x] §1 InfoButton + glossary · §2 filter custom/presets/Compare B · §3 Headline 6 tiles + grade D · §4 snapshot base
+- [x] §5 Tab PS · §6 Meeting & Survey · §7 Task rename/ticket wording · §8 Servicing · §9 sidebar 8 entries · §10 demo history (②③⑤ only)
+- [ ] Open: ราย AE picker records the choice but AE Workspace content does not filter by AE yet (needs per-AE data); BD-AC keeps internal words (tab frozen this pass)
