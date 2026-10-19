@@ -71,7 +71,7 @@ function commit(s: State) {
 }
 export function setRenewalDemo(on: boolean) {
   if (on === demoOn) return;
-  demoOn = on; setTicketDemo(on); demo = on ? seedDemo() : null; version++; listeners.forEach((l) => l());
+  demoOn = on; setTicketDemo(on); demo = on ? seedDemo() : null; if (demo) seedDemoLinks(demo); version++; listeners.forEach((l) => l());
 }
 export const isRenewalDemo = () => demoOn;
 
@@ -136,8 +136,17 @@ export const updateReason = (id: string, code: RenewalRequest['reason_code'], te
 export const submitRequest = (id: string) => apply(id, (r) => submit(r, renewalConfig.renewal_reco_mode, entityClosed(r), nowIso()));
 export const approveRequest = (id: string, by: string, role: ApproverRole) => apply(id, (r) => approve(r, by, role, entityClosed(r), nowIso(), nowIso(), renewalConfig));
 export const returnBack = (id: string, by: string, role: ApproverRole, comment: string) => apply(id, (r) => returnRequest(r, by, role, comment, nowIso(), nowIso(), renewalConfig));
-export const sendRenewalLink = (id: string) => apply(id, (r) => { const g = refreshGate(r, entityClosed(r), nowIso()); return sendLink(g, nowIso()); });
-export const declineRequest = (id: string, reason: string) => apply(id, (r) => decline(r, reason, nowIso()));
+/** Send / re-send: the live_link record is written BEFORE the request moves to LINK_SENT. */
+export const sendRenewalLink = (id: string) => apply(id, (r) => {
+  const g = refreshGate(r, entityClosed(r), nowIso());
+  if (g.status !== 'READY_TO_SEND' && g.status !== 'LINK_SENT') return sendLink(g, nowIso());
+  const at = nowIso(); const src = sourceContractById(g.source_contract_id);
+  if (!src) return { ok: false, error: 'ไม่พบสัญญาต้นทาง' };
+  const saved = issueRenewalLink({ ...g, status: 'LINK_SENT', link_sent_at: at }, src, at);
+  if (!saved) return { ok: false, error: 'บันทึก live link ไม่สำเร็จ · ลองอีกครั้ง' };
+  return sendLink(g, at);
+});
+export const declineRequest = (id: string, reason: string) => apply(id, (r) => { const o = decline(r, reason, nowIso()); if (o.ok) setLinkStatus(r.id, 'REVOKED'); return o; });
 export const cancelRequest = (id: string) => apply(id, (r) => cancel(r, nowIso()));
 /** Re-check the gate (approval done + entity ticket closed). */
 export const recheckGate = (id: string) => apply(id, (r) => ({ ok: true, req: refreshGate(r, entityClosed(r), nowIso()) }));
@@ -156,17 +165,26 @@ export function raiseEntityChange(id: string, what: 'นิติบุคคล
 export function signRequest(id: string): Out {
   const r = cur().requests.find((x) => x.id === id); if (!r) return { ok: false, error: 'ไม่พบคำขอ' };
   const o = sign(r, nowIso()); if (!o.ok) return o;
+  setLinkStatus(r.id, 'SIGNED', o.req.signed_at, o.req);
   const s = cur(); const prev = Math.max(0, ...s.history.filter((h) => h.contract_id === r.source_contract_id || h.renewal_request_id != null && s.requests.find((q) => q.id === h.renewal_request_id)?.source_contract_id === r.source_contract_id).map((h) => h.cycle_no));
   return put(o.req, { history: [...s.history, renewalHistoryRow(o.req, prev)] });
 }
 export const requestById = (id: string) => cur().requests.find((r) => r.id === id) ?? null;
 /** Customer signing page path (renewal: no payment step). */
-export const renewalSignPath = (id: string) => `/l/renew/${id}`;
+export const renewalSignPath = (token: string) => `/l/renew/${token}`;
+/** Card "เปิด live link": current token (ACTIVE or SIGNED) for the request. */
+export const liveLinkPathFor = (requestId: string) => { const l = currentLinkFor(requestId); return l ? renewalSignPath(l.token) : null; };
 
 /** v1.1 signed badge: latest request SIGNED and the card not yet marked done. */
 export const signedAwaitingDone = (card: Pick<RenewalCard, 'id' | 'status'>) => card.status !== 'COMPLETED' && card.status !== 'CHURN' && latestRequestFor(card.id)?.status === 'SIGNED';
 /** Customer page in AE preview mode (signature disabled, banner). */
-export const renewalPreviewPath = (id: string) => `/l/renew/${id}?preview=1${demoOn ? '&demo=1' : ''}`;
+/** Wizard step 3 preview: no token — snapshot of new_terms rendered directly. */
+export function renewalPreviewPath(id: string) {
+  const r = cur().requests.find((x) => x.id === id); const src = r ? sourceContractById(r.source_contract_id) : null;
+  if (r && src) { try { localStorage.setItem(`${PREVIEW_KEY}${id}`, JSON.stringify({ request: r, contract: src })); } catch { /* quota */ } }
+  return `/l/renew/preview-${id}?preview=1`;
+}
+export const readPreview = (id: string): { request: RenewalRequest; contract: SourceContract } | null => { try { return JSON.parse(localStorage.getItem(`${PREVIEW_KEY}${id}`) ?? 'null'); } catch { return null; } };
 /** "สร้าง live link และส่งให้ลูกค้า": submit (gates) then send in one action. */
 export function createAndSendLink(id: string): Out {
   const r = cur().requests.find((x) => x.id === id); if (!r) return { ok: false, error: 'ไม่พบคำขอ' };
@@ -177,4 +195,55 @@ export function createAndSendLink(id: string): Out {
   if (o.req.status === 'PENDING_APPROVAL') return o;
   if (o.req.status !== 'READY_TO_SEND') return { ok: false, error: 'รอ AC ปิด ticket เปลี่ยนนิติบุคคล' };
   return sendRenewalLink(id);
+}
+
+/* ---------- v1.2 live_link records (browser-local, shared by every tab; snapshot makes a link self-contained) ---------- */
+export type LinkStatus = 'ACTIVE' | 'SIGNED' | 'REVOKED' | 'EXPIRED';
+export type RenewalLiveLink = { token: string; kind: 'RENEWAL'; renewal_request_id: string; contract_id: string; created_at: string; expires_at: string | null; status: LinkStatus; signed_at: string | null; signer: string | null; snapshot: { request: RenewalRequest; contract: SourceContract } };
+/** Validity in days; null = never expires (BD live links have no expiry either). */
+export const RENEWAL_LINK_VALID_DAYS: number | null = null;
+const LINK_KEY = 'meridia.renewal-links.v1'; const PREVIEW_KEY = 'meridia.renewal-preview.';
+export function readLinks(): RenewalLiveLink[] { try { return JSON.parse(localStorage.getItem(LINK_KEY) ?? '[]') as RenewalLiveLink[]; } catch { return []; } }
+function writeLinks(l: RenewalLiveLink[]): boolean { try { localStorage.setItem(LINK_KEY, JSON.stringify(l)); version++; listeners.forEach((f) => f()); return true; } catch { return false; } }
+export const isExpired = (l: RenewalLiveLink, now = new Date().toISOString()) => l.status === 'EXPIRED' || (l.status === 'ACTIVE' && !!l.expires_at && now > l.expires_at);
+export const linkByToken = (token: string) => readLinks().find((l) => l.token === token) ?? null;
+export const currentLinkFor = (requestId: string) => [...readLinks()].reverse().find((l) => l.renewal_request_id === requestId && (l.status === 'ACTIVE' || l.status === 'SIGNED')) ?? null;
+const newToken = () => `rl-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+/** Active, unexpired link → reuse token; expired → mark EXPIRED and issue a new token. */
+function issueRenewalLink(r: RenewalRequest, src: SourceContract, at: string): RenewalLiveLink | null {
+  const links = readLinks(); const curL = [...links].reverse().find((l) => l.renewal_request_id === r.id && l.status === 'ACTIVE');
+  if (curL && !isExpired(curL)) return writeLinks(links.map((l) => (l === curL ? { ...l, snapshot: { request: r, contract: src } } : l))) ? curL : null;
+  const exp = RENEWAL_LINK_VALID_DAYS == null ? null : new Date(Date.parse(at) + RENEWAL_LINK_VALID_DAYS * 864e5).toISOString();
+  const rec: RenewalLiveLink = { token: newToken(), kind: 'RENEWAL', renewal_request_id: r.id, contract_id: r.source_contract_id, created_at: at, expires_at: exp, status: 'ACTIVE', signed_at: null, signer: null, snapshot: { request: r, contract: src } };
+  return writeLinks([...links.map((l) => (l === curL ? { ...l, status: 'EXPIRED' as const } : l)), rec]) ? rec : null;
+}
+function setLinkStatus(requestId: string, status: LinkStatus, signedAt?: string | null, req?: RenewalRequest) {
+  const links = readLinks(); let hit = false;
+  const next = links.map((l) => { if (l.renewal_request_id !== requestId || l.status !== 'ACTIVE') return l; hit = true; return { ...l, status, signed_at: signedAt ?? l.signed_at, snapshot: req ? { ...l.snapshot, request: req } : l.snapshot }; });
+  if (hit) writeLinks(next);
+}
+/** Customer signs on the link page (any tab). The originating tab picks it up via the storage event. */
+export function signByToken(token: string, signer: string): { ok: true; link: RenewalLiveLink } | { ok: false; error: string } {
+  const l = linkByToken(token); if (!l) return { ok: false, error: 'ไม่พบ link' };
+  if (l.status !== 'ACTIVE' || isExpired(l)) return { ok: false, error: 'link นี้ใช้ลงนามไม่ได้' };
+  const local = cur().requests.find((x) => x.id === l.renewal_request_id && x.status === 'LINK_SENT');
+  if (local) { const o = signRequest(local.id); if (!o.ok) return o; }
+  else { const at = nowIso(); const req = { ...l.snapshot.request, status: 'SIGNED' as const, signed_at: at, new_contract_id: `${l.contract_id}-R${l.renewal_request_id.slice(-4)}` }; setLinkStatus(l.renewal_request_id, 'SIGNED', at, req); }
+  const links = readLinks(); writeLinks(links.map((x) => (x.token === token ? { ...x, signer } : x)));
+  return { ok: true, link: linkByToken(token)! };
+}
+if (typeof window !== 'undefined') window.addEventListener('storage', (e) => {
+  if (e.key !== LINK_KEY) return;
+  for (const l of readLinks()) if (l.status === 'SIGNED') { const r = cur().requests.find((x) => x.id === l.renewal_request_id && x.status === 'LINK_SENT'); if (r) signRequest(r.id); }
+  version++; listeners.forEach((f) => f());
+});
+/** Demo seeds: every LINK_SENT / SIGNED request gets a matching RENEWAL link (deterministic token). */
+function seedDemoLinks(s: State) {
+  if (typeof localStorage === 'undefined') return;
+  const links = readLinks().filter((l) => !l.token.startsWith('demo-'));
+  for (const r of s.requests) if (r.status === 'LINK_SENT' || r.status === 'SIGNED') {
+    const src = [...SAMPLE_CONTRACTS, ...DEMO_CONTRACTS].find((c) => c.contract_id === r.source_contract_id); if (!src) continue;
+    links.push({ token: `demo-${r.id.toLowerCase()}`, kind: 'RENEWAL', renewal_request_id: r.id, contract_id: r.source_contract_id, created_at: r.link_sent_at ?? DEMO_NOW, expires_at: null, status: r.status === 'SIGNED' ? 'SIGNED' : 'ACTIVE', signed_at: r.signed_at, signer: r.status === 'SIGNED' ? src.signatory : null, snapshot: { request: r, contract: src } });
+  }
+  try { localStorage.setItem(LINK_KEY, JSON.stringify(links)); } catch { /* quota */ }
 }

@@ -140,3 +140,48 @@ describe('v1.1 patch', () => {
     s.setRenewalDemo(false);
   });
 });
+
+describe('v1.2 live link', () => {
+  const mem: Record<string, string> = {};
+  (globalThis as any).localStorage ??= { getItem: (k: string) => mem[k] ?? null, setItem: (k: string, v: string) => { mem[k] = v; }, removeItem: (k: string) => { delete mem[k]; } };
+  test('send creates a token record; card path uses the token, not the request id', async () => {
+    const s = await import('../src/lib/renewal-store');
+    s.setRenewalDemo(true);
+    const o = s.startRenewal({ id: 'RN-1', hotelId: 'HTL0055', hotel: 'Ocean View Phuket', owner: 'AE001-Nont' });
+    if (!o.ok || o.req.approval_required) { s.setRenewalDemo(false); return; }
+    expect(s.createAndSendLink(o.req.id).ok).toBe(true);
+    const l = s.currentLinkFor(o.req.id)!;
+    expect(l.kind).toBe('RENEWAL'); expect(l.status).toBe('ACTIVE');
+    expect(s.liveLinkPathFor(o.req.id)).toBe(`/l/renew/${l.token}`);
+    expect(s.linkByToken(l.token)?.snapshot.request.id).toBe(o.req.id);
+    expect(s.sendRenewalLink(o.req.id).ok && s.currentLinkFor(o.req.id)!.token).toBe(l.token);
+    s.setRenewalDemo(false);
+  });
+  test('seeded LINK_SENT / SIGNED demo requests have link records; sign by token → SIGNED', async () => {
+    const s = await import('../src/lib/renewal-store');
+    s.setRenewalDemo(true);
+    const d6 = s.latestRequestFor('RN-D6')!; const d7 = s.latestRequestFor('RN-D7')!;
+    expect(s.currentLinkFor(d6.id)?.status).toBe('ACTIVE');
+    expect(s.currentLinkFor(d7.id)?.status).toBe('SIGNED');
+    const t = s.currentLinkFor(d6.id)!.token;
+    expect(s.signByToken(t, 'คุณนภา').ok).toBe(true);
+    expect(s.linkByToken(t)?.status).toBe('SIGNED');
+    expect(s.requestById(d6.id)?.status).toBe('SIGNED');
+    s.setRenewalDemo(false);
+  });
+  test('Mark as Done ไม่ต่อ revokes the link', async () => {
+    const s = await import('../src/lib/renewal-store');
+    s.setRenewalDemo(true);
+    const d6 = s.latestRequestFor('RN-D6')!; const t = s.currentLinkFor(d6.id)!.token;
+    expect(s.declineRequest(d6.id, 'ลูกค้าไม่ต่อ').ok).toBe(true);
+    expect(s.linkByToken(t)?.status).toBe('REVOKED');
+    s.setRenewalDemo(false);
+  });
+  test('validity: never expires (null) unless a validity is configured', async () => {
+    const s = await import('../src/lib/renewal-store');
+    expect(s.RENEWAL_LINK_VALID_DAYS).toBeNull();
+    const base = { status: 'ACTIVE', expires_at: '2026-01-01T00:00:00.000Z' } as any;
+    expect(s.isExpired(base, '2026-02-01T00:00:00.000Z')).toBe(true);
+    expect(s.isExpired({ ...base, expires_at: null }, '2099-01-01T00:00:00.000Z')).toBe(false);
+  });
+});
