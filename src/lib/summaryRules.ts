@@ -35,7 +35,7 @@ export function summaryRules(input: SummaryInput, order: SummaryRule[]): string[
     (latest == null && !input.share?.length && !input.split?.length && !input.fixed)
   )
     return ["ยังไม่มีข้อมูลพอสรุป"];
-  const unit = input.unit ?? "";
+  const unit = input.unit === "pp" ? " จุด" : (input.unit ?? "");
   const delta = () =>
     latest != null && input.previous != null && latest !== input.previous
       ? `${input.metric} ${latest > input.previous ? "เพิ่มขึ้น" : "ลดลง"} ${f(Math.abs(latest - input.previous))}${unit} จาก ${input.prevLabel ?? "เดือนก่อน"}`

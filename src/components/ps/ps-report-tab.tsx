@@ -43,7 +43,8 @@ import {
 } from "@/lib/account-health";
 import { useAccount360 } from "@/components/ps/account-360";
 import { CrossSellPanel, RepricingBox } from "@/components/ps/expansion-ui";
-import { DashCard, ChartHint, ChartTooltip, ChartSkeleton, Delta } from "./dash-card";
+import { DashCard, ChartHint, ChartTooltip, ChartSkeleton, Delta, InfoButton } from "./dash-card";
+import { UPLIFT_FLOOR_MIN, UPLIFT_FLOOR_MAX, UPLIFT_MID_MIN, UPLIFT_MID_MAX, UPLIFT_CEILING_MIN, UPLIFT_CEILING_MAX } from "@/lib/expansion";
 import { summaryRules } from "@/lib/summaryRules";
 
 const n = (row: PsReportRow, key: string) => Number(row[key] ?? 0);
@@ -194,6 +195,11 @@ export function PsReportTab({
     [health, roiRows, flowAll, demo, now.getTime()],
   );
   const tiered = hotels.filter((h) => h.tier !== "pending");
+  const scoreInfo = {
+    formula: "Score = จำนวนด้านที่มีสัญญาณเสี่ยง (ไม่ถ่วงน้ำหนัก) · 🔴 = เกรด D หรือมีสัญญาณ 2 ด้านขึ้นไป · 🟡 = 1 ด้าน · 🟢 = ไม่มี",
+    count: `ด้านที่นับ: ${(Object.keys(DIM_TH) as DimCode[]).filter((c) => !INERT_DIMS.includes(c)).map((c) => DIM_TH[c]).join(" · ") || "—"}`,
+    read: "ด้านที่ข้อมูลยังไม่เข้า หรือยังไม่ตั้งเกณฑ์ จะไม่นับ (ไม่ใช่ผ่าน)",
+  };
   const tierCount = (t: HealthTier) => tiered.filter((h) => h.tier === t).length;
   const dimCodes = (Object.keys(DIM_TH) as DimCode[]).filter((c) => !INERT_DIMS.includes(c));
   const dims = dimCodes
@@ -261,10 +267,11 @@ export function PsReportTab({
     });
   const gross = ratio(churn, "out_count", "active_at_start"),
     churnPrevious = churnChart.at(-2)?.gross ?? null;
-  const outcomes = ["RENEWED", "NOT_RENEWED", "LOST"].map((outcome) => ({
-    outcome,
-    count: decided.filter((r) => r.outcome === outcome).length,
-  }));
+  // R1: two decided segments — ไม่ต่อ = NOT_RENEWED + LOST (display only; %สำเร็จ unchanged).
+  const outcomes = [
+    { outcome: "ต่อแล้ว", count: decided.filter((r) => r.outcome === "RENEWED").length },
+    { outcome: "ไม่ต่อ", count: decided.filter((r) => r.outcome === "NOT_RENEWED" || r.outcome === "LOST").length },
+  ];
   const renewed = outcomes[0]?.count ?? 0;
   const lastCohort = cohort.at(-1),
     previousCohort = cohort.at(-2);
@@ -313,7 +320,7 @@ export function PsReportTab({
         />
       </span>
     ) : null;
-  const donutColors = ["var(--primary)", "var(--watch-line)", "var(--grade-action)"];
+  const donutColors = ["var(--primary)", "var(--watch-line)"];
   const pointShape = (props: {
     cx?: number;
     cy?: number;
@@ -607,12 +614,12 @@ export function PsReportTab({
         title="③ Renewal"
         question="ครบกำหนดงวดนี้ ต่อกี่ราย?"
         answer={fmt(renewalSuccess, "%")}
-        answerSub={`ต่อสำเร็จ ${renewed} / ${decided.length}`}
+        answerSub={`ต่อแล้ว ${renewed} / ${decided.length}`}
         noteKey="renewal"
         noteLines={summaryRules(
           {
-            metric: "ต่อสำเร็จ",
-            share: [{ group: "ต่อสำเร็จ", n: renewed, total: decided.length }],
+            metric: "ต่อแล้ว",
+            share: [{ group: "ต่อแล้ว", n: renewed, total: decided.length }],
             split: groups.flatMap((group) => {
               const g = renewals.filter((r) => String(r[groupBy] ?? "ไม่ระบุ") === group),
                 gd = g.filter((r) => r.outcome !== "IN_PROGRESS");
@@ -629,7 +636,7 @@ export function PsReportTab({
           },
           ["R-SHARE", "R-SPLIT"],
         )}
-        howToRead="ชี้วงหรือรายการเพื่อดูสัดส่วนแต่ละผล · IN_PROGRESS ไม่นับในตัวหาร"
+        howToRead="ชี้วงหรือรายการเพื่อดูสัดส่วนแต่ละผล · กำลังคุย ไม่นับในตัวหาร"
       >
         {renewals.length ? (
           <>
@@ -640,7 +647,7 @@ export function PsReportTab({
               success={renewalSuccess}
             />
             <p className="mb-4 text-xs text-muted-foreground">
-              + กำลังเจรจา {renewals.filter((r) => r.outcome === "IN_PROGRESS").length} ราย
+              + กำลังคุย {renewals.filter((r) => r.outcome === "IN_PROGRESS").length} ราย
               (ไม่นับในตัวหาร)
             </p>
             <div className="mb-3 flex gap-1" role="group" aria-label="แยกผลการต่อสัญญา">
@@ -664,7 +671,7 @@ export function PsReportTab({
                   <ChartHint
                     key={group}
                     header={`${group} · ${gd.length ? fmt((nr / gd.length) * 100, "%") : "—"}`}
-                    lines={[`ต่อสำเร็จ ${nr}/${gd.length} ราย`]}
+                    lines={[`ต่อแล้ว ${nr}/${gd.length} ราย`]}
                   >
                     <Button
                       variant="ghost"
@@ -698,7 +705,7 @@ export function PsReportTab({
                 <thead>
                   <tr className="text-left text-muted-foreground">
                     <th className="py-2">{groupBy === "service_line" ? "บริการ" : "AE"}</th>
-                    {["RENEWED", "NOT_RENEWED", "IN_PROGRESS", "LOST"].map((label) => (
+                    {["ต่อแล้ว", "ไม่ต่อ", "กำลังคุย"].map((label) => (
                       <th className="px-2" key={label}>
                         {label}
                       </th>
@@ -716,9 +723,9 @@ export function PsReportTab({
                     return (
                       <tr className="border-t" key={group}>
                         <td className="py-3">{group}</td>
-                        {["RENEWED", "NOT_RENEWED", "IN_PROGRESS", "LOST"].map((outcome) => (
-                          <td key={outcome} className="px-2">
-                            {g.filter((r) => r.outcome === outcome).length}
+                        {[["RENEWED"], ["NOT_RENEWED", "LOST"], ["IN_PROGRESS"]].map((set) => (
+                          <td key={set[0]} className="px-2">
+                            {g.filter((r) => set.includes(String(r.outcome))).length}
                           </td>
                         ))}
                         <td>{fmt(success, "%")}</td>
@@ -740,7 +747,7 @@ export function PsReportTab({
         answerSub={
           comparisonFilter
             ? compareSub(comparisonLife, " วัน")
-            : "ค่ากลาง (median) · สัญญาที่จบแล้ว"
+            : <>ค่ากลาง · จาก {ended.length} สัญญาที่จบแล้ว{ended.length < 10 && <span className="dash-source-pill ml-2 text-dash-watch">ข้อมูลน้อย</span>}</>
         }
         noteKey="lifetime"
         noteLines={summaryRules(
@@ -788,7 +795,7 @@ export function PsReportTab({
                       stroke="var(--primary)"
                       strokeWidth={2}
                       label={{
-                        value: `median ${fmt(median)} วัน`,
+                        value: `median ${fmt(median)} · n=${ended.length}`,
                         position: "insideTopRight",
                         fill: "var(--accent-strong)",
                         fontSize: 11,
@@ -1000,28 +1007,11 @@ export function PsReportTab({
           />
         </DashCard>
       </div>
-      <div className={compareSide ? "" : "lg:col-span-2"}>
-        <DashCard
-          title="ถึงรอบขึ้นค่าบริการ (Repricing)"
-          question="บัญชีใดมีข้อมูลอ้างอิงค่าบริการ?"
-          noteKey="repricing"
-          noteLines={summaryRules(
-            {
-              metric: "Repricing",
-              share: [{ group: "ข้อมูลอ้างอิง", n: repriceRows.length, total: repriceRows.length }],
-              empty: repricePending || !repriceRows.length,
-            },
-            ["R-SHARE"],
-          )}
-          howToRead="อ้างอิง · AE เคาะราคาจริง"
-        >
-          <RepricingBox rows={repriceRows} pending={repricePending || !report} />
-        </DashCard>
-      </div>
       {compareSide !== "B" && (
         <div className={compareSide ? "" : "lg:col-span-2"}>
           <DashCard
             title="⑦b Account Health"
+            info={scoreInfo}
             question="ใครเสี่ยง และเสี่ยงเพราะอะไร?"
             answer={
               tiered.length ? (
@@ -1143,6 +1133,7 @@ export function PsReportTab({
                         ].map((label) => (
                           <th key={label} className="px-2 py-2">
                             {label}
+                            {label === "Score" && <InfoButton info={scoreInfo} label="คำอธิบาย Score" />}
                           </th>
                         ))}
                       </tr>
@@ -1226,6 +1217,29 @@ export function PsReportTab({
           </DashCard>
         </div>
       )}
+      <div className={compareSide ? "" : "lg:col-span-2"}>
+        <DashCard
+          title="ถึงรอบขึ้นค่าบริการ (Repricing)"
+          info={{
+            source: "คำนวณจากกติกาตายตัว ไม่ได้ใช้ AI",
+            formula: `เข้ารายการเมื่อ (1) ครบรอบขึ้นราคา หรือ (2) ราคาต่ำกว่ามูลค่าเมื่อเทียบกับโรงแรมอื่น และผ่านเกณฑ์คัดกรอง · ช่วงที่แนะนำมาจากแนวโน้มรายได้: +${UPLIFT_FLOOR_MIN}–${UPLIFT_FLOOR_MAX}% · +${UPLIFT_MID_MIN}–${UPLIFT_MID_MAX}% · +${UPLIFT_CEILING_MIN}–${UPLIFT_CEILING_MAX}% · รายได้ขาลง = ยังไม่แนะนำให้ขึ้น · ปรับเฉพาะค่าบริการรายเดือนแบบคงที่ ไม่แตะ % ค่าคอม · ราคาสุดท้าย AE เป็นผู้ตัดสิน`,
+            extra: [{ label: "แก้สูตรได้ที่", body: "ตอนนี้ค่าในสูตรตั้งไว้ในระบบ แก้โดยทีมพัฒนา · หน้าตั้งค่าอยู่ในแผนถัดไป" }],
+          }}
+          question="บัญชีใดมีข้อมูลอ้างอิงค่าบริการ?"
+          noteKey="repricing"
+          noteLines={summaryRules(
+            {
+              metric: "Repricing",
+              share: [{ group: "ข้อมูลอ้างอิง", n: repriceRows.length, total: repriceRows.length }],
+              empty: repricePending || !repriceRows.length,
+            },
+            ["R-SHARE"],
+          )}
+          howToRead="อ้างอิง · AE เคาะราคาจริง"
+        >
+          <RepricingBox rows={repriceRows} pending={repricePending || !report} />
+        </DashCard>
+      </div>
     </div>
   );
 }
@@ -1285,7 +1299,7 @@ function RenewalDonut({
             {current && total ? fmt((current.count / total) * 100, "%") : fmt(success, "%")}
           </b>
           <span className="text-xs text-muted-foreground">
-            {current ? `${current.count} / ${total}` : "ต่อสำเร็จ"}
+            {current ? `${current.count} / ${total}` : "ต่อแล้ว"}
           </span>
         </div>
       </div>

@@ -66,7 +66,7 @@ export function ServicingTab() {
  const selected=drill==='gap'?gaps:drill==='flag'?inProgress.filter(r=>['red','amber'].includes(status(r).tone??'')):rows.filter(r=>`${r.service_line}:${stageKey(r)}`===drill);
  const order:Record<string,number>={red:0,amber:1,ok:2,wait:3};
  const sorted=[...selected].sort((a,b)=>(order[status(a).tone??'wait']??4)-(order[status(b).tone??'wait']??4)||calendarDays(b.created_at,b.go_live_at??clock)-calendarDays(a.created_at,a.go_live_at??clock));
- const periodLabel=filter.range==='mtd'?'เดือนนี้':filter.range==='all'?'ช่วงเวลาทั้งหมด':`${filter.range.replace('m','')} เดือนล่าสุด`;
+ const periodLabel=filter.range==='mtd'?'เดือนนี้':filter.range==='all'?'ช่วงเวลาทั้งหมด':filter.range==='custom'?`${filter.customPeriod?.from ?? ''} – ${filter.customPeriod?.to ?? ''}`:`${filter.range.replace('m','')} เดือนล่าสุด`;
  const open=(r:ServicingRow)=>{if(demo){toast.info('DEMO · ไม่มีการ์ดจริงให้เปิด');return;}if(!s.cards.some(c=>c.id===r.card_id)){toast.info('ยังไม่พบการ์ดนี้ในเครื่องนี้ · เปิดที่ On-boarding Process');return;}setDrawer(r.card_id);};
  const create=(r:ServicingRow)=>{
   const cause=status(r).cause;if(!cause||openTicket(r))return;

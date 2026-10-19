@@ -5,10 +5,11 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { MultiSelect } from './ps-dashboard-filters';
 import { useHrMembers, teamLabel } from '@/lib/hr-members';
-import { monthPeriod, type GlobalFilter, type Period } from '@/lib/ps-dashboard-global';
+import { monthPeriod, validCustomRange, type GlobalFilter, type Period } from '@/lib/ps-dashboard-global';
+import { shiftPeriodMonths } from '@/lib/ps-dashboard-types';
 
-const ranges = { mtd: 'เดือนนี้', '3m': '3 เดือน', '6m': '6 เดือน', '12m': '12 เดือน', all: 'ทั้งหมด' };
-const presets = { month: 'This month vs last month', previous: 'Last month vs 2 months ago', quarter: 'This quarter vs last quarter', year: 'This year vs last year', custom: 'Custom (pick A, pick B)' };
+const ranges = { mtd: 'เดือนนี้', '3m': '3 เดือน', '6m': '6 เดือน', '12m': '12 เดือน', all: 'ทั้งหมด', custom: 'กำหนดเอง' };
+const presets = { month: 'This month vs last month', previous: 'Last month vs 2 months ago', quarter: 'This quarter vs last quarter', year: 'This year vs last year', yoyMonth: 'เดือนนี้ vs เดือนเดียวกันปีก่อน', yoyRange: 'ช่วงที่เลือก vs ช่วงเดียวกันปีก่อน', custom: 'Custom (pick A, pick B)' };
 export function DashboardGlobalFilters({ value: f, onChange, demo, onDemo, now }: { value: GlobalFilter; onChange: (f: GlobalFilter) => void; demo: boolean; onDemo: () => void; now: Date }) {
   const { members } = useHrMembers();
   const active = members.filter(m => m.active);
@@ -20,6 +21,8 @@ export function DashboardGlobalFilters({ value: f, onChange, demo, onDemo, now }
     let a = monthPeriod(now), b = monthPeriod(now, -1);
     if (preset === 'previous') { a = monthPeriod(now,-1); b = monthPeriod(now,-2); }
     if (preset === 'quarter') { const end = 2 - now.getUTCMonth() % 3; a = monthPeriod(now,end,3); b = monthPeriod(now,end-3,3); }
+    if (preset === 'yoyMonth') { a = monthPeriod(now); b = shiftPeriodMonths(a, -12); }
+    if (preset === 'yoyRange') { a = f.periodA; b = shiftPeriodMonths(f.periodA, -12); }
     if (preset === 'year') { a = { from: `${now.getUTCFullYear()}-01-01`, to: `${now.getUTCFullYear()}-12-31` }; b = { from: `${now.getUTCFullYear()-1}-01-01`, to: `${now.getUTCFullYear()-1}-12-31` }; }
     onChange({ ...f, periodA: a, periodB: b });
   };
@@ -35,10 +38,14 @@ export function DashboardGlobalFilters({ value: f, onChange, demo, onDemo, now }
       <Button variant="ghost" size="sm" onClick={() => onChange({ ...f, service:'ALL',role:'none',teams:[],people:[],search:'',hotelStatus:'all',range:'6m',compare:false })}>Clear All</Button>
     </div>
     <div className="flex flex-wrap items-center gap-3 border-t pt-2">
-      {!f.compare ? <Select value={f.range} onValueChange={range => onChange({ ...f, range:range as GlobalFilter['range'] })}><SelectTrigger aria-label="Time range" className="h-9 w-36"><SelectValue /></SelectTrigger><SelectContent>{Object.entries(ranges).map(([k,l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}</SelectContent></Select> : <><Select defaultValue="month" onValueChange={setPreset}><SelectTrigger aria-label="Compare preset" className="h-9 w-64"><SelectValue /></SelectTrigger><SelectContent>{Object.entries(presets).map(([k,l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}</SelectContent></Select>{periodPicker('A', f.periodA)}<span className="text-xs text-muted-foreground">vs</span>{periodPicker('B', f.periodB)}</>}
+      {!f.compare ? <><Select value={f.range} onValueChange={range => onChange({ ...f, range:range as GlobalFilter['range'], ...(range === 'custom' && !f.customPeriod ? { customPeriod: monthPeriod(now) } : {}) })}><SelectTrigger aria-label="ช่วงเวลา" className="h-9 w-36"><SelectValue /></SelectTrigger><SelectContent>{Object.entries(ranges).map(([k,l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}</SelectContent></Select>{f.range === 'custom' && <CustomRange value={f.customPeriod ?? monthPeriod(now)} onChange={customPeriod => onChange({ ...f, customPeriod })} />}</> : <><Select defaultValue="month" onValueChange={setPreset}><SelectTrigger aria-label="Compare preset" className="h-9 w-64"><SelectValue /></SelectTrigger><SelectContent>{Object.entries(presets).map(([k,l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}</SelectContent></Select>{periodPicker('A', f.periodA)}<span className="text-xs text-muted-foreground">vs</span>{periodPicker('B', f.periodB)}</>}
       <label className="flex items-center gap-2 text-sm"><ArrowLeftRight className="size-4 text-muted-foreground" />Compare<Switch aria-label="Compare" checked={f.compare} onCheckedChange={compare => onChange({ ...f, compare, ...(!f.compare ? { periodA:monthPeriod(now), periodB:monthPeriod(now,-1) } : {}) })} /></label>
       <Button variant={demo ? 'default' : 'outline'} size="sm" className="ml-auto" aria-pressed={demo} onClick={onDemo}>ดูข้อมูลตัวอย่าง (DEMO){demo ? ' · เปิด' : ''}</Button>
     </div>
     {(f.role !== 'none' || f.teams.length > 0 || f.people.length > 0) && <p className="text-xs text-muted-foreground">{[f.role !== 'none' ? f.role : '',...f.teams,...f.people].filter(Boolean).join(' · ')} · AND</p>}
   </section>;
+}
+function CustomRange({ value, onChange }: { value: Period; onChange: (p: Period) => void }) {
+  const set = (p: Period) => { if (validCustomRange(p)) onChange(p); };
+  return <fieldset className="flex flex-wrap items-center gap-1.5"><legend className="sr-only">ช่วงเวลากำหนดเอง</legend><Input type="date" aria-label="วันเริ่ม" value={value.from} max={value.to} className="h-9 w-[142px] text-xs" onChange={e => set({ ...value, from: e.target.value })} /><span className="text-muted-foreground">–</span><Input type="date" aria-label="วันสิ้นสุด" value={value.to} min={value.from} className="h-9 w-[142px] text-xs" onChange={e => set({ ...value, to: e.target.value })} /><span className="text-xs text-muted-foreground">สูงสุด 24 เดือน</span></fieldset>;
 }

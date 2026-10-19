@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react';
 import type { AssignmentFilter } from './ps-renewal';
-import type { PsFilter, PsReportRow } from './ps-dashboard-types';
+import { shiftPeriodMonths, type PsFilter, type PsReportRow } from './ps-dashboard-types';
 
 export type Period = { from: string; to: string };
 export type GlobalFilter = PsFilter & AssignmentFilter & { search: string; hotelStatus: string; compare: boolean; periodA: Period; periodB: Period; ownerAliases?: Record<string,string[]> };
@@ -12,7 +12,13 @@ export function monthPeriod(now: Date, offset = 0, span = 1): Period {
 }
 export function selectedPeriod(f: GlobalFilter, now: Date, side: 'A' | 'B' = 'A'): Period {
   if (f.compare) return side === 'A' ? f.periodA : f.periodB;
-  return f.range === 'all' ? { from: '0001-01-01', to: monthPeriod(now).to } : monthPeriod(now, side === 'B' ? -1 : 0, { mtd: 1, '3m': 3, '6m': 6, '12m': 12 }[f.range]);
+  if (f.range === 'custom' && f.customPeriod) {
+    if (side === 'A') return f.customPeriod;
+    const span = Math.round((Date.parse(f.customPeriod.to) - Date.parse(f.customPeriod.from)) / 864e5) + 1;
+    const to = new Date(Date.parse(f.customPeriod.from) - 864e5).toISOString().slice(0, 10);
+    return { from: new Date(Date.parse(to) - (span - 1) * 864e5).toISOString().slice(0, 10), to };
+  }
+  return f.range === 'all' || f.range === 'custom' ? { from: '0001-01-01', to: monthPeriod(now).to } : monthPeriod(now, side === 'B' ? -1 : 0, ({ mtd: 1, '3m': 3, '6m': 6, '12m': 12 } as Record<string, number>)[f.range] ?? 1);
 }
 export function periodRange(period: Period) { return { from: new Date(period.from).getTime(), to: new Date(period.to).getTime() + 864e5 }; }
 export function matchesBook(row: PsReportRow, f: GlobalFilter, hotelLevel = false) {
@@ -37,5 +43,10 @@ export function deltaText(a: number | null, b: number | null, unit: 'pp' | '%' |
   if (a == null || b == null) return 'Δ —';
   const diff = a - b;
   const value = unit === '%' ? (b === 0 ? null : diff / Math.abs(b) * 100) : diff;
-  return value == null ? 'Δ —' : `Δ ${diff > 0 ? '▲ +' : diff < 0 ? '▼ ' : ''}${value.toLocaleString('th-TH', { maximumFractionDigits: 1 })}${unit}`;
+  return value == null ? 'Δ —' : `Δ ${diff > 0 ? '▲ +' : diff < 0 ? '▼ ' : ''}${value.toLocaleString('th-TH', { maximumFractionDigits: 1 })}${unit === 'pp' ? ' จุด' : unit}`;
+}
+/** Max custom range = 24 months; end ≥ start. */
+export function validCustomRange(p: Period) {
+  if (!p.from || !p.to || p.to < p.from) return false;
+  return p.to <= shiftPeriodMonths({ from: p.from, to: p.from }, 24).to;
 }

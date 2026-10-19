@@ -934,8 +934,8 @@ function GradeCard({
       answerSub={
         total
           ? compare && abPrev != null
-            ? `A ${ab}% · B ${abPrev}% · Δ ${ab - abPrev >= 0 ? "▲ +" : "▼ "}${ab - abPrev}pp`
-            : `${abPrev != null ? `▲ +${ab - abPrev}pp จาก ${prevChip} · ` : ""}เกรด A+B · ${cur[0]!.n + cur[1]!.n} / ${total} ราย`
+            ? `A ${ab}% · B ${abPrev}% · Δ ${ab - abPrev >= 0 ? "▲ +" : "▼ "}${ab - abPrev} จุด`
+            : `${abPrev != null ? `▲ +${ab - abPrev} จุด จาก ${prevChip} · ` : ""}เกรด A+B · ${cur[0]!.n + cur[1]!.n} / ${total} ราย`
           : undefined
       }
       noteKey="grades"
@@ -944,7 +944,7 @@ function GradeCard({
         total
           ? [
               ...(abPrev != null && ab !== abPrev
-                ? [`เกรด A+B ${ab > abPrev ? "เพิ่มขึ้น" : "ลดลง"} ${Math.abs(ab - abPrev)}pp จาก ${prevChip}`]
+                ? [`เกรด A+B ${ab > abPrev ? "เพิ่มขึ้น" : "ลดลง"} ${Math.abs(ab - abPrev)} จุด จาก ${prevChip}`]
                 : []),
               `เกรด D ${dCount} จาก ${total} ราย (${pct(dCount, total)}%)`,
             ]

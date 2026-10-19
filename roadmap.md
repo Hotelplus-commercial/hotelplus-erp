@@ -227,3 +227,7 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [x] Tab rebuilt: 5 KPI tiles, ① funnel A/B/C segments + drop lines, ② pending Tier A (cutoff red rule), ④ lens toggle + ④a/④b, ⑤ Q cards (median/histogram/pinned lists/breakdown strips), ⑥ Flag Board + watch list, ⑦ slim rubric row
 - [x] Bangkok card-month scoping, isTierALate helper, median-only; demo fixture deterministic with §6 anchors; 15 tests pin anchors + invariants §5
 - [ ] Open: live data waits on Cloud Sync seed (views return empty + pending_sync); field mapping card-month ↔ real schema to note at seed time
+
+## MD Review R1 patch (2026-10-19)
+- [ ] §1 InfoButton + glossary · §2 filter custom/presets/Compare B · §3 Headline 6 tiles + grade D · §4 snapshot base
+- [ ] §5 Tab PS · §6 Meeting & Survey · §7 Task rename/ticket wording · §8 Servicing · §9 sidebar 8 entries · §10 demo history
