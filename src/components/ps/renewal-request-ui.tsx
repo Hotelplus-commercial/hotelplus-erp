@@ -1,5 +1,5 @@
 /* Contract Renewal v1.0 — renewal-card panel, approval list (PM / HOC·MD) and ticket attachments. Labels from ps-glossary. */
-import { Link, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -11,8 +11,8 @@ import { APPROVER_ROLE_TH, RENEWAL_LABEL_TH as L, RENEWAL_RECO_TH, renewalReqSta
 import { usePsRenewal, type RenewalCard } from "@/lib/ps-renewal";
 import { isOverdue, type ApproverRole, type RecoSnapshot, type RenewalRequest } from "@/lib/renewal-rules";
 import {
-  approveRequest, declineRequest, entityClosed, isRenewalDemo, renewalSignPath, latestRequestFor, openRequestFor, recheckGate, recordRollback,
-  renewalConfig, renewalNow, returnBack, sendRenewalLink, signRequest, startRenewal, useRenewalStore,
+  approveRequest, entityClosed, isRenewalDemo, renewalSignPath, latestRequestFor,
+  renewalConfig, renewalNow, returnBack, sendRenewalLink, signRequest, signedAwaitingDone, startRenewal, useRenewalStore,
 } from "@/lib/renewal-store";
 import { addAttachment, attachmentError, ticketById, useTickets, STATUS_TH, type L0Ticket } from "@/lib/tickets-l0";
 
@@ -42,87 +42,77 @@ export function RenewalRequestChips({ cardId }: { cardId: string }) {
   );
 }
 
-/** Section inside the renewal card: ต่อสัญญา · status · send link · sign (demo) · ไม่ต่อ · PM rollback. */
-export function RenewalRequestPanel({ card, currentUser, canOverride }: { card: RenewalCard; currentUser: string; canOverride: boolean }) {
+/** v1.1 red "1" badge: customer signed, card waiting for Mark as Done. */
+export function SignedBadge({ card }: { card: Pick<RenewalCard, "id" | "status"> }) {
+  useRenewalStore();
+  if (!signedAwaitingDone(card)) return null;
+  return <span role="img" aria-label={L.signedBadge} title={L.signedBadge} className="inline-flex size-5 items-center justify-center rounded-full bg-destructive text-[11px] font-bold text-destructive-foreground tabular-nums">1</span>;
+}
+
+const fmtDT = (iso: string | null) => iso ? new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Bangkok" }).replace(",", "") : "—";
+
+/** v1.1 "ต่อสัญญา" block inside the renewal card. Outcome is set only via Mark as Done; no rollback. */
+export function RenewalRequestPanel({ card, currentUser }: { card: RenewalCard; currentUser: string }) {
   useRenewalStore(); useTickets();
   const navigate = useNavigate();
-  const { markDone, addActivity, rollbackRenewed } = usePsRenewal();
-  const [declineOpen, setDeclineOpen] = useState(false);
-  const [reason, setReason] = useState("");
-  const [rbReason, setRbReason] = useState("");
+  const { addActivity } = usePsRenewal();
   const owner = card.owner === currentUser;
   const req = latestRequestFor(card.id);
-  const open = openRequestFor(card.id);
   const done = card.status === "COMPLETED" || card.status === "CHURN";
-  const go = () => {
+  const search = (step?: number) => ({ ...(isRenewalDemo() ? { demo: 1 } : {}), ...(step ? { step } : {}) }) as never;
+  const openWizard = (step?: number) => {
     const o = startRenewal(card);
     if (!o.ok) { toast.error(o.error); return; }
-    void navigate({ to: "/ps/contract-wizard/renew/$contractId", params: { contractId: o.req.source_contract_id }, search: (isRenewalDemo() ? { demo: 1 } : {}) as never });
+    void navigate({ to: "/ps/contract-wizard/renew/$contractId", params: { contractId: o.req.source_contract_id }, search: search(step) });
   };
-  const send = (r: RenewalRequest) => { const o = sendRenewalLink(r.id); o.ok ? toast.success(r.status === "LINK_SENT" ? L.resendLink : L.sendLink) : toast.error(o.error); };
+  const resend = (r: RenewalRequest) => { const o = sendRenewalLink(r.id); o.ok ? toast.success(L.resendLive) : toast.error(o.error); };
   const simulate = (r: RenewalRequest) => {
     const o = signRequest(r.id); if (!o.ok) { toast.error(o.error); return; }
     addActivity(card.id, { type: "Contract", at: "วันนี้", note: `ลูกค้าเซ็นสัญญาต่ออายุ · เริ่ม ${o.req.new_terms.start_date}`, file: `${o.req.new_contract_id}.pdf`, by: "ลูกค้า" });
-    markDone(card.id, "COMPLETED", currentUser);
-    toast.success(renewalReqStatusTh("SIGNED"));
-  };
-  const doDecline = () => {
-    if (!reason.trim()) { toast.error("กรอกเหตุผล"); return; }
-    if (open) { const o = declineRequest(open.id, reason); if (!o.ok) { toast.error(o.error); return; } }
-    markDone(card.id, "CHURN", currentUser, "ไม่ต่อ (Non-renewal)", reason.trim(), card.contractEnd);
-    setDeclineOpen(false); toast.success(renewalReqStatusTh("DECLINED"));
-  };
-  const rollback = () => {
-    const o = recordRollback(card.id, currentUser, rbReason); if (!o.ok) { toast.error("error" in o ? o.error : ""); return; }
-    rollbackRenewed(card.id, currentUser, rbReason.trim()); setRbReason(""); toast.success(L.rollbackFlag);
+    toast.success(L.signedBadge);
   };
   const entityTicket = req?.entity_ticket_id ? ticketById(req.entity_ticket_id) : undefined;
+  const st = req?.status;
+  const liveHref = req ? `${renewalSignPath(req.id)}${isRenewalDemo() ? "?demo=1" : ""}` : "";
 
   return (
     <section className="space-y-2 rounded-xl border p-3">
       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">2 · {L.renew}</p>
-      {req && (
+      {req && st !== "CANCELLED" && st !== "LINK_SENT" && st !== "SIGNED" && (
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <Chip tone={toneOf(req.status)}>{renewalReqStatusTh(req.status)}</Chip>
           {isOverdue(req, renewalNow(), renewalConfig) && <Chip tone="danger">{L.overdue(renewalConfig.renewal_approval_overdue_days)}</Chip>}
           <span className="text-xs text-muted-foreground">{thb(req.old_terms.fee_amount)} → {thb(req.new_terms.fee_amount)} · เริ่ม {req.new_terms.start_date}</span>
-          {req.status === "RETURNED" && req.return_comment && <span className="text-xs text-warning-foreground">ความเห็น: {req.return_comment}</span>}
+          {st === "RETURNED" && req.return_comment && <span className="text-xs text-warning-foreground">ความเห็น: {req.return_comment}</span>}
           {entityTicket && <span className="text-xs text-muted-foreground">#{entityTicket.ticket_id} · {STATUS_TH[entityTicket.status]}</span>}
-          {req.status === "SIGNED" && <span className="text-xs text-muted-foreground">สัญญาใหม่ {req.new_contract_id}</span>}
+        </div>
+      )}
+      {(st === "LINK_SENT" || st === "SIGNED") && req && (
+        <div className="space-y-2 rounded-lg border bg-muted/30 p-2.5 text-sm">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-medium">Live link</span>
+            <Chip tone={st === "SIGNED" ? "success" : "warn"}>{st === "SIGNED" ? L.signedAt(fmtDT(req.signed_at)) : L.notSigned}</Chip>
+            <span className="text-xs text-muted-foreground">ส่งเมื่อ {fmtDT(req.link_sent_at)}</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" asChild><a href={liveHref} target="_blank" rel="noreferrer">{L.openLive}</a></Button>
+            {st === "LINK_SENT" && owner && !done && <Button size="sm" variant="outline" onClick={() => resend(req)}>{L.resendLive}</Button>}
+            {st === "LINK_SENT" && isRenewalDemo() && !done && <Button size="sm" variant="ghost" onClick={() => simulate(req)}>{L.simulateSign}</Button>}
+          </div>
+          {st === "SIGNED" && !done && <p className="text-xs text-muted-foreground">{L.signedHint}</p>}
         </div>
       )}
       <div className="flex flex-wrap gap-2">
-        {owner && !done && (!open || ["DRAFT", "RETURNED"].includes(open.status)) && <Button size="sm" onClick={go}>{L.renew}</Button>}
-        {owner && open?.status === "READY_TO_SEND" && <Button size="sm" onClick={() => send(open)}>{L.sendLink}</Button>}
-        {owner && open?.status === "LINK_SENT" && <Button size="sm" variant="outline" onClick={() => send(open)}>{L.resendLink}</Button>}
-        {owner && open?.status === "APPROVED" && (
+        {owner && !done && (!req || st === "CANCELLED") && <Button size="sm" onClick={() => openWizard()}>{L.renew}</Button>}
+        {owner && !done && (st === "DRAFT" || st === "RETURNED") && <Button size="sm" onClick={() => openWizard()}>{L.continueEdit}</Button>}
+        {st === "PENDING_APPROVAL" && <Button size="sm" variant="outline" onClick={() => openWizard(3)}>{L.viewRequest}</Button>}
+        {owner && !done && (st === "APPROVED" || st === "READY_TO_SEND") && req && (
           <>
-            <span className="self-center text-xs text-warning-foreground">{entityClosed(open) ? "" : L.waitEntity}</span>
-            <Button size="sm" variant="outline" onClick={() => recheckGate(open.id)}>ตรวจอีกครั้ง</Button>
+            {!entityClosed(req) && <span className="self-center text-xs text-warning-foreground">{L.waitEntity}</span>}
+            <Button size="sm" disabled={!entityClosed(req)} onClick={() => openWizard(3)}>{L.reviewSend}</Button>
           </>
         )}
-        {open?.status === "LINK_SENT" && (
-          <>
-            <Button size="sm" variant="outline" asChild><Link to="/l/renew/$requestId" params={{ requestId: open.id }} search={(isRenewalDemo() ? { demo: 1 } : {}) as never}>เปิดหน้าลงนามของลูกค้า</Link></Button>
-            {owner && <Button size="sm" variant="ghost" onClick={() => { void navigator.clipboard?.writeText(`${window.location.origin}${renewalSignPath(open.id)}`); toast.success("คัดลอก link แล้ว"); }}>คัดลอก link</Button>}
-            {isRenewalDemo() && <Button size="sm" variant="ghost" onClick={() => simulate(open)}>{L.simulateSign}</Button>}
-          </>
-        )}
-        {owner && !done && <Button size="sm" variant="outline" onClick={() => setDeclineOpen((o) => !o)}>{L.recordDecline}</Button>}
       </div>
-      {declineOpen && (
-        <div className="space-y-2 rounded-lg border p-2">
-          <Textarea aria-label="เหตุผลที่ไม่ต่อ" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="เหตุผลที่ลูกค้าไม่ต่อ" />
-          <Button size="sm" onClick={doDecline}>บันทึก</Button>
-        </div>
-      )}
-      {canOverride && !owner && card.status === "COMPLETED" && (
-        <div className="space-y-2 rounded-lg border border-dashed p-2">
-          <p className="text-xs font-medium">{L.rollback} (PM เท่านั้น)</p>
-          <Textarea aria-label="เหตุผลการย้อนผล" value={rbReason} onChange={(e) => setRbReason(e.target.value)} placeholder="เหตุผล (บังคับ)" />
-          <Button size="sm" variant="outline" onClick={rollback}>{L.rollback}</Button>
-        </div>
-      )}
     </section>
   );
 }

@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ChevronDown, Download, Eye, FileText, Lock, Plus } from "lucide-react";
+import { ChevronDown, Lock, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -41,8 +41,9 @@ import {
   type RenewalStatus,
 } from "@/lib/ps-renewal";
 import { cn } from "@/lib/utils";
-import { DEMO_EXTRA_CARDS, setRenewalDemo, useRenewalStore } from "@/lib/renewal-store";
-import { RenewalRequestChips, RenewalRequestPanel } from "@/components/ps/renewal-request-ui";
+import { DEMO_EXTRA_CARDS, declineRequest, latestRequestFor, openRequestFor, setRenewalDemo, signedAwaitingDone, useRenewalStore } from "@/lib/renewal-store";
+import { RenewalRequestChips, RenewalRequestPanel, SignedBadge } from "@/components/ps/renewal-request-ui";
+import { RENEWAL_LABEL_TH as RL } from "@/lib/ps-glossary";
 
 const statusTone: Record<RenewalStatus, "muted" | "info" | "success" | "danger"> = {
   NOT_STARTED: "muted",
@@ -90,6 +91,7 @@ export function RenewalActivityCards({
         >
           <ChevronDown className={cn("size-4 transition-transform", !open && "-rotate-90")} />
           Renewal Activities ({visible.length})
+          {visible.some(signedAwaitingDone) && <span aria-label={RL.signedBadge} title={RL.signedBadge} className="inline-flex min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-[11px] font-bold text-destructive-foreground tabular-nums">{visible.filter(signedAwaitingDone).length}</span>}
         </button>
         <Button size="sm" variant="outline" onClick={() => setSortAsc((s) => !s)}>
           Sort: {sortAsc ? "Soonest expiry" : "Latest expiry"} ▼
@@ -109,6 +111,7 @@ export function RenewalActivityCards({
                     <span className="text-xs text-muted-foreground">· {c.daysLeft}d left ·</span>
                     <RenewalStatusBadge status={c.status} />
                     <RenewalRequestChips cardId={c.id} />
+                    <SignedBadge card={c} />
                     {!owned && (
                       <Chip tone="muted">
                         <Lock className="mr-1 size-3" /> view only
@@ -202,6 +205,7 @@ export function RenewalCardModal({
   const [effectiveEnd, setEffectiveEnd] = useState('');
 
   if (!card) return null;
+  const signedReq = latestRequestFor(card.id)?.status === "SIGNED";
   const owned = card.owner === currentUser || canOverride;
   const done = card.status === "COMPLETED" || card.status === "CHURN";
 
@@ -229,10 +233,11 @@ export function RenewalCardModal({
   };
 
   const confirmDone = () => {
-    if (outcome === "COMPLETED" && !card.signedFile)
-      return setConfirmErr("ต้องมี Contract activity พร้อมไฟล์ที่เซ็นแล้วก่อน");
+    if (outcome === "COMPLETED" && !signedReq) return setConfirmErr(RL.needSigned);
     if (outcome === "CHURN" && !reason.trim()) return setConfirmErr("กรอกเหตุผล");
     if (outcome === 'CHURN' && !effectiveEnd) return setConfirmErr('ระบุวันสิ้นสุดสัญญา');
+    const openReq = openRequestFor(card.id);
+    if (outcome === "CHURN" && openReq) { const o = declineRequest(openReq.id, reason.trim()); if (!o.ok) return setConfirmErr(o.error); }
     markDone(card.id, outcome, currentUser, churnType, reason.trim(), effectiveEnd);
     setConfirmOpen(false);
     onClose();
@@ -251,6 +256,7 @@ export function RenewalCardModal({
             <DialogTitle className="flex flex-wrap items-center gap-2">
               🏨 {card.hotel} · Contract End: {card.contractEnd}
               <RenewalStatusBadge status={card.status} />
+              <SignedBadge card={card} />
             </DialogTitle>
             <DialogDescription>Renewal Card · Owner {card.owner}</DialogDescription>
           </DialogHeader>
@@ -278,42 +284,7 @@ export function RenewalCardModal({
             </dl>
           </section>
 
-          {/* Section 2 — Contract */}
-          <section className="rounded-xl border p-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              2 · สัญญา
-            </p>
-            <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
-              <Chip tone="info">
-                <FileText className="mr-1 size-3" /> {card.contractFile}
-              </Chip>
-              <Button size="sm" variant="outline" onClick={() => toast.info("ดาวน์โหลดสัญญา")}>
-                <Download className="size-3.5" /> Download
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => toast.info("เปิด preview สัญญา")}>
-                <Eye className="size-3.5" /> Preview
-              </Button>
-              <span className="text-xs text-muted-foreground">
-                (last generated: {card.contractGeneratedAt})
-              </span>
-            </div>
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-
-              <span className="text-xs text-muted-foreground">Signed Contract:</span>
-              {card.signedFile ? (
-                <>
-                  <Chip tone="success">{card.signedFile}</Chip>
-                  <Button size="sm" variant="outline" onClick={() => toast.info("ดาวน์โหลดไฟล์เซ็น")}>
-                    <Download className="size-3.5" /> Download
-                  </Button>
-                </>
-              ) : (
-                <Chip tone="muted">Not yet uploaded</Chip>
-              )}
-            </div>
-          </section>
-
-          <RenewalRequestPanel card={card} currentUser={currentUser} canOverride={canOverride} />
+          <RenewalRequestPanel card={card} currentUser={currentUser} />
 
           {/* Section 3 — Activity Log */}
           <section className="rounded-xl border p-3">
@@ -444,7 +415,7 @@ export function RenewalCardModal({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span>
-                    <Button disabled={!owned || done} onClick={() => setConfirmOpen(true)}>
+                    <Button disabled={!owned || done} onClick={() => { setOutcome(signedReq ? "COMPLETED" : "CHURN"); setConfirmOpen(true); }}>
                       Mark as Done
                     </Button>
                   </span>
@@ -477,7 +448,7 @@ export function RenewalCardModal({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="COMPLETED">Completed (ต่อสัญญาสำเร็จ)</SelectItem>
+                  <SelectItem value="COMPLETED" disabled={!signedReq}>Completed (ต่อสัญญาสำเร็จ){signedReq ? "" : ` · ${RL.needSigned}`}</SelectItem>
                   <SelectItem value="CHURN">Churn (ต่อสัญญาไม่สำเร็จ)</SelectItem>
                 </SelectContent>
               </Select>
