@@ -190,6 +190,7 @@ export function RenewalCardModal({
   extraCards?: RenewalCard[];
 }) {
   const { cards, addActivity, markDone } = usePsRenewal();
+  useRenewalStore();
   const card = [...cards, ...extraCards].find((c) => c.id === cardId);
   const [type, setType] = useState<ActivityType | null>(startAdd ? "Call" : null);
   const [date, setDate] = useState("");

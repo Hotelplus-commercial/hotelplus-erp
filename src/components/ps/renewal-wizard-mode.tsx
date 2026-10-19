@@ -16,8 +16,9 @@ import { usePsRenewal } from "@/lib/ps-renewal";
 import { REASON_CODES, evaluate, reasonValid, rollDates, type ReasonCode, type Terms } from "@/lib/renewal-rules";
 import {
   DEMO_EXTRA_CARDS, cancelRequest, entityClosed, openRequestFor, raiseEntityChange, renewalConfig, setRenewalDemo, sourceContractById,
-  startRenewal, submitRequest, updateReason, updateTerms, useRenewalStore,
+  createAndSendLink, renewalPreviewPath, startRenewal, submitRequest, updateReason, updateTerms, useRenewalStore,
 } from "@/lib/renewal-store";
+import { RenewalContractPreview } from "@/components/ps/renewal-contract-doc";
 import { attachmentError, ticketById, STATUS_TH } from "@/lib/tickets-l0";
 import { cn } from "@/lib/utils";
 
@@ -36,6 +37,9 @@ export function RenewalWizard({ contractId }: { contractId: string }) {
   const src = ready ? sourceContractById(contractId) : null;
   const card = src ? [...cards, ...DEMO_EXTRA_CARDS].find((c) => c.hotelId === src.hotel_id) : undefined;
   const [step, setStep] = useState(0);
+  const [readEnd, setReadEnd] = useState(false);
+  useEffect(() => { if (new URLSearchParams(window.location.search).get("step") === "3") setStep(2); }, []);
+  useEffect(() => { if (step !== 2) setReadEnd(false); }, [step]);
   const [entityOpen, setEntityOpen] = useState(false);
   const [what, setWhat] = useState<"นิติบุคคล" | "ผู้มีอำนาจลงนาม" | "ทั้งคู่">("ผู้มีอำนาจลงนาม");
   const [detail, setDetail] = useState("");
@@ -65,8 +69,11 @@ export function RenewalWizard({ contractId }: { contractId: string }) {
     const rd = new FileReader(); rd.onload = () => setFiles((p) => [...p, { name: f.name, size: f.size, mime: f.type, data_url: String(rd.result) }]); rd.readAsDataURL(f);
   };
   const sendEntity = () => { const o = raiseEntityChange(req.id, what, detail, files, currentUser); if (!o.ok) { toast.error(o.error); return; } setEntityOpen(false); toast.success(L.entityItem(card.hotel)); };
+  const needsPm = ev.approval_required && (req.status === "DRAFT" || req.status === "RETURNED");
+  const canSend = !needsPm && ["DRAFT", "RETURNED", "APPROVED", "READY_TO_SEND"].includes(req.status);
   const primary = () => {
-    const o = submitRequest(req.id); if (!o.ok) { toast.error(o.error); return; }
+    const o = needsPm ? submitRequest(req.id) : createAndSendLink(req.id);
+    if (!o.ok) { toast.error(o.error); return; }
     if (o.req.status === "DRAFT") { toast.info(L.waitEntity); return; }
     toast.success(renewalReqStatusTh(o.req.status));
     void navigate({ href: backHref() });
@@ -161,12 +168,21 @@ export function RenewalWizard({ contractId }: { contractId: string }) {
             <dt className="text-muted-foreground">เหตุผล</dt><dd>{req.reason_code ? `${req.reason_code}${req.reason_text ? ` · ${req.reason_text}` : ""}` : "—"}</dd>
             <dt className="text-muted-foreground">เปลี่ยนนิติบุคคล</dt><dd>{req.entity_change ? `${entityTicket ? STATUS_TH[entityTicket.status] : "—"}${entityClosed(req) ? "" : ` · ${L.waitEntity}`}` : "ไม่มี"}</dd>
           </dl>
-          <div className="mt-4 flex flex-wrap justify-between gap-2">
+          <div className="mt-4 flex justify-end">
+            <Button variant="outline" size="sm" asChild><a href={renewalPreviewPath(req.id)} target="_blank" rel="noreferrer">{L.previewLive}</a></Button>
+          </div>
+          <div className="mt-2"><RenewalContractPreview r={req} src={src} onReachedEnd={() => setReadEnd(true)} /></div>
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setStep(1)}>ย้อนกลับ</Button>
               {editable && <Button variant="ghost" onClick={() => { const o = cancelRequest(req.id); if (o.ok) { toast.success(renewalReqStatusTh("CANCELLED")); void navigate({ href: backHref() }); } }}>{L.cancel}</Button>}
             </div>
-            {req.status === "DRAFT" && <Button disabled={!reasonOk} onClick={primary}>{ev.approval_required ? L.submitPm : L.createAndLink}</Button>}
+            {(needsPm || canSend) && (
+              <div className="flex flex-wrap items-center gap-2">
+                {!readEnd && <span className="text-xs text-muted-foreground">{L.scrollFirst}</span>}
+                <Button disabled={!readEnd || !reasonOk || (canSend && !entityClosed(req))} onClick={primary}>{needsPm ? L.submitPm : L.createSendLive}</Button>
+              </div>
+            )}
           </div>
         </Panel>
       )}
