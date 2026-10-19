@@ -14,9 +14,9 @@ const description = "Property Content: คลังข้อมูลโรง�
 export const Route = createFileRoute("/ps/property-content/")({
   head: () => ({
     meta: [
-      { title: "Property Content — PS App | Meridia Hotel ERP" },
+      { title: "ข้อมูลโรงแรม — PS App | Meridia Hotel ERP" },
       { name: "description", content: description },
-      { property: "og:title", content: "Property Content — PS App" },
+      { property: "og:title", content: "ข้อมูลโรงแรม — PS App" },
       { property: "og:description", content: description },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -48,7 +48,7 @@ function PropertyContentPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <PageHeader eyebrow="PS App · Property Content" title="Property Content" description="หนึ่งโฟลเดอร์ต่อหนึ่งโรงแรม · ใช้ข้อมูลชุดเดียวกับการ์ด On-boarding"
+      <PageHeader eyebrow="PS App · ข้อมูลโรงแรม" title="ข้อมูลโรงแรม" description="หนึ่งโฟลเดอร์ต่อหนึ่งโรงแรม · ใช้ข้อมูลชุดเดียวกับการ์ด On-boarding"
         actions={<Button onClick={() => setGen((v) => !v)}>+ Generate for new property</Button>} />
       {gen && <Ws2GenerateNewProperty />}
       <Panel title="คลังโรงแรม" subtitle="สถานะรวมเป็นข้อมูลแนะนำเท่านั้น">

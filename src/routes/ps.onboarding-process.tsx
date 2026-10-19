@@ -24,8 +24,8 @@ function OnboardingProcessPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        eyebrow="PS App · On-boarding Process"
-        title="On-boarding Process"
+        eyebrow="PS App · On-board"
+        title="On-board"
         description="สร้างการ์ด ดำเนินงาน และบันทึกทุกขั้นตอนบริการในระบบ"
       />
       <ServicingDashboard />
