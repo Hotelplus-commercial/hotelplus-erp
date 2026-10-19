@@ -1,6 +1,5 @@
 /* PS App v2.3 · Fix 2 — Contract Dashboard as a full 11-column Kanban board. */
-import { Link, createFileRoute } from "@tanstack/react-router";
-import { Button } from "@/components/ui/button";
+import { createFileRoute } from "@tanstack/react-router";
 import { Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
