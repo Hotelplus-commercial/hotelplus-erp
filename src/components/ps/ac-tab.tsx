@@ -1,35 +1,36 @@
-/* AC Dashboard tab v2.0 — read-only Visual Standard cards ①–⑧ over the existing v_ac_* views.
- * Revenue cards read the re-grained v_ac_invoice_ranking (hotel × period × lens); collection
- * cards read v_ac_debtors / v_ac_overdue / v_ac_suspended / v_ac_legal / v_ac_invoices_breakdown.
+/* R1.2 · Tab "ลูกหนี้ & ค่าใช้จ่ายรายสัญญา" (stored key: ac) — read-only Visual Standard cards over the
+ * existing v_ac_* views + v_ac_contract_cost_monthly. Revenue cards ①②③ were removed (views kept).
  * No writes, no ticket buttons, no grade/collection logic — results only. */
 import { useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { Lock } from "lucide-react";
+import { Lock, Search } from "lucide-react";
 import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
 
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ChartHint, ChartSkeleton, DashCard, Delta } from "@/components/ps/dash-card";
+import { ChartHint, ChartSkeleton, DashCard } from "@/components/ps/dash-card";
 import { summaryRules } from "@/lib/summaryRules";
 import {
-  AC_BAND_CONFIG,
   COLLECTION_META,
   GRADE_META,
   bahtFull,
   bahtShort,
-  bandCounts,
-  bandIndexOf,
   debtorRows,
-  lensOf,
   monYY,
-  rankRows,
   sortDebtors,
-  splitStats,
-  unbilledCount,
-  type AcRankRow,
   type CollectionStatus,
 } from "@/lib/ac-revenue";
-import { OPEN_STATUSES, STATUS_TH, useTickets } from "@/lib/tickets-l0";
+import {
+  costLines,
+  costSummary,
+  gradeCustomers,
+  latestCostMonth,
+  shiftMonth,
+  toCostRows,
+  type CostLine,
+  type GradeCustomer,
+} from "@/lib/ac-contract-cost";
+import { aeNameTh } from "@/lib/ps-glossary";
+import { OPEN_STATUSES, STATUS_TH, SYSTEM_CREATOR, useTickets } from "@/lib/tickets-l0";
 import type { PsReportRow } from "@/lib/ps-dashboard-types";
 import { cn } from "@/lib/utils";
 
@@ -45,39 +46,34 @@ export type AcTabProps = {
   compare: boolean;
   periodALabel?: string;
   demo?: boolean;
+  /** Global Compare periods (A / B); §2.4 selected month = latest billed month in A, compare = latest in B. */
+  periodA?: { from: string; to: string };
+  periodB?: { from: string; to: string } | null;
 };
 
-export function AcTab({ views, loading, error, service, compare, demo }: AcTabProps) {
+/** AE display for every list in this tab (§2.5). */
+export const aeLabel = (id: string | null | undefined) => (id ? aeNameTh(id) : "ยังไม่ระบุ AE");
+
+export function AcTab({ views, loading, error, service, compare, demo, periodA, periodB }: AcTabProps) {
   const navigate = useNavigate();
   const openHotel = () => navigate({ to: "/ac/hotel-profile" });
-  const [hoverHotel, setHoverHotel] = useState<string | null>(null);
-
-  const lens = lensOf(service);
-  const rankAll = useMemo(() => views?.["v_ac_invoice_ranking"] ?? [], [views]);
-  const periods = useMemo(
-    () =>
-      [
-        ...new Set(
-          rankAll.filter((r) => r['has_bill'] === true).map((r) => String(r.billing_period).slice(0, 7)),
-        ),
-      ].sort(),
-    [rankAll],
-  );
-  const latest = periods.at(-1) ?? null;
-  const prev = periods.at(-2) ?? null;
-  const rows = useMemo(() => rankRows(rankAll, latest, lens), [rankAll, latest, lens]);
-  const brows = useMemo(() => rankRows(rankAll, prev, lens), [rankAll, prev, lens]);
-  const stats = useMemo(() => splitStats(rows), [rows]);
-  const bstats = useMemo(() => splitStats(brows), [brows]);
-  const unbilled = latest ? unbilledCount(rankAll, latest, lens) : 0;
-  const chip = latest ? monYY(latest) : "—";
-  const prevChip = prev ? monYY(prev) : "—";
-  const lensLabel = service === "ALL" ? "ORM + Marcom" : service;
 
   const debtors = useMemo(() => views?.["v_ac_debtors"] ?? [], [views]);
   const breakdown = useMemo(() => views?.["v_ac_invoices_breakdown"] ?? [], [views]);
   const gradeDist = useMemo(() => views?.["v_ac_grade_distribution"] ?? [], [views]);
+  const costRows = useMemo(() => toCostRows(views?.["v_ac_contract_cost_monthly"]), [views]);
   const svc = (r: PsReportRow) => service === "ALL" || String(r.service_line ?? "") === service || r.service_line == null;
+  const gradePeriods = useMemo(
+    () => [...new Set(gradeDist.filter(svc).map((r) => String(r.billing_period).slice(0, 7)))].sort(),
+    [gradeDist, service], // eslint-disable-line react-hooks/exhaustive-deps
+  );
+  const chip = gradePeriods.at(-1) ? monYY(gradePeriods.at(-1)) : "—";
+  const prevChip = gradePeriods.at(-2) ? monYY(gradePeriods.at(-2)) : "—";
+  const gradeMonth = latestCostMonth(costRows, periodA);
+  const customers = useMemo(
+    () => gradeCustomers(costRows.filter((r) => service === "ALL" || r.service === service), gradeMonth),
+    [costRows, gradeMonth, service],
+  );
 
   if (loading) return <p className="text-sm text-muted-foreground">กำลังโหลดรายงาน…</p>;
   if (error) return <p className="text-sm text-muted-foreground">อ่านรายงาน AC ไม่ได้ — ลองโหลดหน้าใหม่</p>;
@@ -85,43 +81,14 @@ export function AcTab({ views, loading, error, service, compare, demo }: AcTabPr
   return (
     <div className="flex min-w-0 flex-col gap-5" data-testid="ac-tab" data-demo={demo || undefined}>
       <DefinitionStrip />
-      <SectionHead
-        title="รายได้รายโรงแรม"
-        desc="บิลรายเดือน (RECURRING) · ยอดหลัง VAT/WHT · โรงแรมที่สัญญา Active และมีบิลในงวด"
-      />
-      <RevenueSplitCard
-        rows={rows}
-        brows={brows}
-        stats={stats}
-        bstats={bstats}
-        chip={chip}
-        prevChip={prevChip}
-        lensLabel={lensLabel}
-        lens={lens}
-        unbilled={unbilled}
-        compare={compare}
-        hoverHotel={hoverHotel}
-        setHoverHotel={setHoverHotel}
-      />
-      <RevenueBandCard rows={rows} brows={brows} stats={stats} chip={chip} prevChip={prevChip} compare={compare} />
-      <RankingTableCard
-        rows={rows}
-        chip={chip}
-        lens={lens}
-        hoverHotel={hoverHotel}
-        setHoverHotel={setHoverHotel}
-        openHotel={openHotel}
-      />
       <SectionHead title="ลูกหนี้ & การเก็บเงิน" desc="ค้างเท่าไร · อยู่ขั้นไหน · ใครจ่ายช้า · ต้องตามใคร" />
+      <DebtorCard views={views} svc={svc} debtors={debtors.filter(svc)} breakdown={breakdown.filter(svc)} compare={compare} openHotel={openHotel} />
       <div className="ac-row2">
-        <OutstandingCard debtors={debtors.filter(svc)} breakdown={breakdown.filter(svc)} compare={compare} />
-        <CollectionCard views={views} svc={svc} debtors={debtors.filter(svc)} compare={compare} />
-      </div>
-      <div className="ac-row2">
-        <GradeCard gradeDist={gradeDist.filter(svc)} chip={chip} prevChip={prevChip} compare={compare} />
+        <GradeCard gradeDist={gradeDist.filter(svc)} chip={chip} prevChip={prevChip} compare={compare} customers={customers} />
         <SystemFeeMock />
       </div>
-      <FollowUpCard debtors={debtors.filter(svc)} breakdown={breakdown.filter(svc)} compare={compare} openHotel={openHotel} />
+      <SectionHead title="ค่าใช้จ่ายรายสัญญา" desc="แต่ละสัญญาบริการจ่ายเราเดือนละเท่าไร · ใช้เตรียมคุยราคาตอนต่อสัญญา · ไม่ใช่การจัดอันดับ" />
+      <ContractCostCard rows={costRows} service={service} compare={compare} periodA={periodA} periodB={periodB ?? null} />
     </div>
   );
 }
@@ -155,8 +122,8 @@ function DefinitionStrip() {
         <span className="ac-def-note">· พักบริการ (PAUSED) ไม่ใช่ลูกหนี้ · แยกกล่อง</span>
       </div>
       <p className="ac-def-caption">
-        หน่วยนับ: เกรดและ collection นับราย customer (1 customer อาจมีหลายโรงแรม) · รายได้และ Ranking
-        นับรายโรงแรม · ทั้ง tab อ่านอย่างเดียว คลิกชื่อเปิด AC App
+        หน่วยนับ: เกรดและ collection นับราย customer (1 customer อาจมีหลายโรงแรม) · ค่าใช้จ่ายรายสัญญา
+        นับรายสัญญาบริการ · ทั้ง tab อ่านอย่างเดียว คลิกชื่อเปิด AC App
       </p>
     </section>
   );
@@ -172,716 +139,446 @@ function SectionHead({ title, desc }: { title: string; desc: string }) {
 }
 
 const TimeChip = ({ label }: { label: string }) => <span className="ac-time-chip">{label}</span>;
+const dMMM = (iso: string | null | undefined) =>
+  iso ? new Date(iso.length <= 10 ? `${iso}T00:00:00Z` : iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "Asia/Bangkok" }) : "—";
 
-/* ---------- ① revenue split ---------- */
+/* ---------- ลูกหนี้ที่ต้องติดตาม (merged ④ + ⑤ + ⑧) ---------- */
 
-function RevenueSplitCard({
-  rows,
-  brows,
-  stats,
-  bstats,
-  chip,
-  prevChip,
-  lensLabel,
-  lens,
-  unbilled,
-  compare,
-  hoverHotel,
-  setHoverHotel,
-}: {
-  rows: AcRankRow[];
-  brows: AcRankRow[];
-  stats: ReturnType<typeof splitStats>;
-  bstats: ReturnType<typeof splitStats>;
-  chip: string;
-  prevChip: string;
-  lensLabel: string;
-  lens: string;
-  unbilled: number;
-  compare: boolean;
-  hoverHotel: string | null;
-  setHoverHotel: (id: string | null) => void;
-}) {
-  const top = rows.slice(0, stats.half);
-  const bottom = rows.slice(stats.half);
-  const first = rows[0];
-  const mid = rows[stats.half - 1];
-  const afterMid = rows[stats.half];
-  const last = rows.at(-1);
-  const prevTotal = brows.length ? bstats.total : null;
-  const boxes = [
-    { label: "อันดับ 1", row: first, brow: brows[0] },
-    { label: `จุดแบ่งครึ่ง · อันดับ ${stats.half}`, row: mid, brow: brows[bstats.half - 1] },
-    { label: `เริ่มครึ่งล่าง · อันดับ ${stats.half + 1}`, row: afterMid, brow: brows[bstats.half] },
-    { label: `โรงแรมสุดท้าย · อันดับ ${stats.N}`, row: last, brow: brows.at(-1) },
-  ];
-  const notes = rows.length
-    ? [
-        `ครึ่งบน ${stats.half} โรงแรม ทำรายได้ ${stats.topShare.toFixed(0)}% ของทั้งหมด · ${stats.k} อันดับแรกทำได้ครึ่งหนึ่ง`,
-        `อันดับ 1 ${bahtFull(first?.amount_thb ?? 0)} สูงกว่าจุดแบ่ง ${((first?.amount_thb ?? 0) / (stats.splitValue || 1)).toLocaleString("th-TH", { maximumFractionDigits: 1 })} เท่า · ครึ่งล่างอยู่ระหว่าง ${bahtFull(last?.amount_thb ?? 0)} ถึง ${bahtFull(afterMid?.amount_thb ?? 0)}`,
-      ]
-    : summaryRules({ metric: "รายได้", empty: true }, ["R-EMPTY"]);
-  return (
-    <DashCard
-      title={
-        <>
-          ① รายได้รายโรงแรม · ครึ่งบน / ครึ่งล่าง <TimeChip label={chip} />
-        </>
-      }
-      question="ครึ่งบนกับครึ่งล่างของโรงแรมที่วางบิล ต่างกันแค่ไหน?"
-      answer={rows.length ? bahtShort(stats.total) : "—"}
-      answerSub={
-        rows.length ? (
-          <>
-            {prevTotal != null && prevTotal > 0 ? (
-              <span className={stats.total >= prevTotal ? "text-dash-good" : "text-dash-watch"}>
-                {stats.total >= prevTotal ? "▲ +" : "▼ "}
-                {(((stats.total - prevTotal) / prevTotal) * 100).toLocaleString("th-TH", { maximumFractionDigits: 1 })}%
-              </span>
-            ) : (
-              <span className="text-muted-foreground">—</span>
-            )}{" "}
-            จาก {prevChip} · {stats.N} โรงแรมที่วางบิล · {lensLabel}
-          </>
-        ) : undefined
-      }
-      noteKey="revenue-split"
-      noteNamespace="ac"
-      noteLines={notes}
-      howToRead="1 แท่ง = 1 โรงแรม เรียงรายได้มาก → น้อย · แบ่งครึ่งตามจำนวนโรงแรม (ครึ่งบน = อันดับ 1 ถึง ceil(N/2)) · 2 กราฟใช้สเกลแกน Y ของตัวเอง · เส้นประส้ม = อันดับที่รายได้สะสมครบครึ่งหนึ่งของรอบบิล"
-      legend={
-        <>
-          <span className="ac-leg ac-leg-top">● ครึ่งบน</span>
-          <span className="ac-leg ac-leg-bottom">● ครึ่งล่าง</span>
-          <span className="ac-leg ac-leg-target">╌ จุดที่รายได้สะสมครบ 50%</span>
-          {compare && <span className="ac-leg ac-leg-b">● B · {prevChip} (อันดับเดียวกัน)</span>}
-        </>
-      }
-    >
-      {!rows.length ? (
-        <ChartSkeleton />
-      ) : (
-        <>
-          <div className="ac-answer-strip">
-            {boxes.map((b, i) => (
-              <div key={i} className="ac-stat-box">
-                <p className="ac-stat-label">{b.label}</p>
-                <p className="ac-stat-value">{b.row ? bahtFull(b.row.amount_thb) : "—"}</p>
-                <p className="ac-stat-name">{b.row?.hotel_name ?? ""}</p>
-                {compare && (
-                  <p className="ac-stat-b">
-                    B {b.brow ? `อันดับ ${b.brow.rank} ${bahtFull(b.brow.amount_thb)}` : "—"}
-                    {b.row && b.brow && (
-                      <>
-                        {" "}
-                        · <Delta a={b.row.amount_thb} b={b.brow.amount_thb} />
-                      </>
-                    )}
-                  </p>
-                )}
-              </div>
-            ))}
-          </div>
-          <div className="ac-split-charts">
-            <HalfChart
-              label={`ครึ่งบน · อันดับ 1–${stats.half}`}
-              rows={top}
-              brows={compare ? brows.slice(0, bstats.half) : []}
-              share={stats.topShare}
-              crosshairK={stats.k <= stats.half ? stats.k : null}
-              chip={chip}
-              hoverHotel={hoverHotel}
-              setHoverHotel={setHoverHotel}
-              lens={lens}
-              tone="top"
-            />
-            <HalfChart
-              label={`ครึ่งล่าง · อันดับ ${stats.half + 1}–${stats.N}`}
-              rows={bottom}
-              brows={compare ? brows.slice(bstats.half) : []}
-              share={stats.bottomShare}
-              crosshairK={stats.k > stats.half ? stats.k - stats.half : null}
-              chip={chip}
-              hoverHotel={hoverHotel}
-              setHoverHotel={setHoverHotel}
-              lens={lens}
-              tone="bottom"
-            />
-          </div>
-          <p className="ac-footnote">
-            Active แต่ไม่มีบิลงวดนี้ {unbilled} โรงแรม (ไม่นับในกราฟ) · ยอดหลัง VAT/WHT · บิลรายเดือน
-            RECURRING
-            {compare && ` · B = งวด ${prevChip} เทียบตามอันดับเดียวกัน`}
-          </p>
-        </>
-      )}
-    </DashCard>
-  );
-}
-
-function HalfChart({
-  label,
-  rows,
-  brows,
-  share,
-  crosshairK,
-  chip,
-  hoverHotel,
-  setHoverHotel,
-  lens,
-  tone,
-}: {
-  label: string;
-  rows: AcRankRow[];
-  brows: AcRankRow[];
-  share: number;
-  crosshairK: number | null;
-  chip: string;
-  hoverHotel: string | null;
-  setHoverHotel: (id: string | null) => void;
-  lens: string;
-  tone: "top" | "bottom";
-}) {
-  const max = Math.max(...rows.map((r) => r.amount_thb), 1);
-  const kRow = crosshairK != null ? rows[crosshairK - 1] : null;
-  const first = rows[0];
-  const last = rows.at(-1);
-  return (
-    <div className="ac-half">
-      <div className="ac-half-head">
-        <span>
-          {label} · {rows.length} โรงแรม · {bahtFull(first?.amount_thb ?? 0)} → {bahtFull(last?.amount_thb ?? 0)}
-        </span>
-        <b className="ac-half-share">{share.toFixed(0)}% ของรายได้รวม</b>
-      </div>
-      <div className="ac-half-plot">
-        <div className="ac-yaxis">
-          <span>{bahtShort(max)}</span>
-          <span>{bahtShort(max / 2)}</span>
-          <span>฿0</span>
-        </div>
-        <div className="ac-bars" role="img" aria-label={label}>
-          {rows.map((r, i) => {
-            const b = brows[i];
-            return (
-              <div key={r.hotel_id} className="ac-bar-slot">
-                {b && (
-                  <div
-                    className="ac-bar ac-bar-b"
-                    style={{ height: `${Math.min(100, (b.amount_thb / max) * 100)}%` }}
-                  />
-                )}
-                <ChartHint
-                  header={`#${r.rank} ${r.hotel_name} · ${bahtFull(r.amount_thb)}`}
-                  lines={[
-                    lens === "ALL"
-                      ? r.orm_thb > 0 && r.marcom_thb > 0
-                        ? `ORM ${bahtFull(r.orm_thb)} · Marcom ${bahtFull(r.marcom_thb)}`
-                        : r.orm_thb > 0
-                          ? "ORM อย่างเดียว"
-                          : "Marcom อย่างเดียว"
-                      : `เฉพาะ ${lens === "ORM" ? "ORM" : "Marcom"}`,
-                    r.prev_rank != null
-                      ? `${r.invoice_count} ใบ · งวดก่อนอันดับ ${r.prev_rank}`
-                      : `ลูกค้าใหม่ · ไม่มีอันดับงวดก่อน`,
-                    ...(b ? [`B อันดับ ${b.rank} = ${bahtFull(b.amount_thb)}`] : []),
-                  ]}
-                >
-                  <div
-                    className={cn(
-                      "ac-bar",
-                      tone === "top" ? "ac-bar-top" : "ac-bar-bottom",
-                      hoverHotel === r.hotel_id && "ac-bar-hover",
-                    )}
-                    style={{ height: `${(r.amount_thb / max) * 100}%` }}
-                    tabIndex={0}
-                    role="button"
-                    aria-label={`#${r.rank} ${r.hotel_name} ${bahtFull(r.amount_thb)}`}
-                    onMouseEnter={() => setHoverHotel(r.hotel_id)}
-                    onMouseLeave={() => setHoverHotel(null)}
-                    onFocus={() => setHoverHotel(r.hotel_id)}
-                    onBlur={() => setHoverHotel(null)}
-                  />
-                </ChartHint>
-              </div>
-            );
-          })}
-          {crosshairK != null && kRow && (
-            <>
-              <div className="ac-cross-v" style={{ left: `${((crosshairK - 0.5) / rows.length) * 100}%` }} />
-              <div className="ac-cross-h" style={{ bottom: `${(kRow.amount_thb / max) * 100}%` }} />
-              <div
-                className="ac-target"
-                style={{
-                  left: `${((crosshairK - 0.5) / rows.length) * 100}%`,
-                  bottom: `${(kRow.amount_thb / max) * 100}%`,
-                }}
-              />
-              <span className="ac-tag-x" style={{ left: `${((crosshairK - 0.5) / rows.length) * 100}%` }}>
-                #{crosshairK}
-              </span>
-              <span className="ac-tag-y" style={{ bottom: `${(kRow.amount_thb / max) * 100}%` }}>
-                {bahtShort(kRow.amount_thb)}
-              </span>
-              <span
-                className="ac-target-label"
-                style={{
-                  left: `${Math.min(62, ((crosshairK - 0.5) / rows.length) * 100 + 3)}%`,
-                  bottom: `${Math.min(88, (kRow.amount_thb / max) * 100 + 6)}%`,
-                }}
-              >
-                อันดับที่ {crosshairK} = 50% ของรายได้ในรอบบิล {chip}
-              </span>
-            </>
-          )}
-        </div>
-      </div>
-      <div className="ac-half-foot">
-        <span>
-          #{first?.rank} · {bahtFull(first?.amount_thb ?? 0)} {first?.hotel_name}
-        </span>
-        <span>
-          #{last?.rank} {tone === "top" ? "จุดแบ่ง" : "สุดท้าย"} · {bahtFull(last?.amount_thb ?? 0)}{" "}
-          {last?.hotel_name}
-        </span>
-      </div>
-    </div>
-  );
-}
-
-/* ---------- ② revenue band ---------- */
-
-function RevenueBandCard({
-  rows,
-  brows,
-  stats,
-  chip,
-  prevChip,
-  compare,
-}: {
-  rows: AcRankRow[];
-  brows: AcRankRow[];
-  stats: ReturnType<typeof splitStats>;
-  chip: string;
-  prevChip: string;
-  compare: boolean;
-}) {
-  const bands = useMemo(() => bandCounts(rows), [rows]);
-  const bbands = useMemo(() => (compare ? bandCounts(brows) : []), [brows, compare]);
-  const maxCount = Math.max(...bands.map((b) => b.count), 1);
-  const topBand = bands.reduce((a, b) => (b.count > a.count ? b : a), bands[0]!);
-  const richBand = bands.reduce((a, b) => (b.sum > a.sum ? b : a), bands[0]!);
-  const medianBand = bandIndexOf(stats.splitValue);
-  const medianFrac =
-    (stats.splitValue - medianBand * AC_BAND_CONFIG.step_thb) / AC_BAND_CONFIG.step_thb;
-  const medianX = ((medianBand + Math.min(1, Math.max(0, medianFrac))) / bands.length) * 100;
-  const notes = rows.length
-    ? [
-        `ช่วง ${topBand.label} มีโรงแรมมากสุด ${topBand.count} จาก ${stats.N} (${pct(topBand.count, stats.N)}%)`,
-        `ช่วงที่ทำรายได้มากสุดคือ ${richBand.label} · ${bahtFull(richBand.sum)} (${pct(richBand.sum, stats.total)}%)`,
-      ]
-    : summaryRules({ metric: "ช่วงรายได้", empty: true }, ["R-EMPTY"]);
-  return (
-    <DashCard
-      title={
-        <>
-          ② ช่วงรายได้ (revenue band) <TimeChip label={chip} />
-        </>
-      }
-      question="โรงแรมส่วนใหญ่อยู่ช่วงรายได้เท่าไร? (ช่วงละ ฿10,000 · รายโรงแรม)"
-      answer={rows.length ? `${topBand.label} · ${topBand.count} โรงแรม` : "—"}
-      answerSub={rows.length ? `ช่วงที่โรงแรมกระจุกมากสุด (${pct(topBand.count, stats.N)}% ของ ${stats.N})` : undefined}
-      noteKey="revenue-band"
-      noteNamespace="ac"
-      noteLines={notes}
-      howToRead="1 แท่ง = 1 ช่วงรายได้ · ตัวเลขบนแท่ง = จำนวนโรงแรม · เส้นประ = จุดแบ่งครึ่ง (median) เดียวกับ ① · ช่วงบนสุดเปิด ≥ เพดาน (config)"
-      legend={
-        compare ? (
-          <>
-            <span className="ac-leg ac-leg-top">● A · {chip}</span>
-            <span className="ac-leg ac-leg-bb">● B · {prevChip}</span>
-          </>
-        ) : undefined
-      }
-    >
-      {!rows.length ? (
-        <ChartSkeleton />
-      ) : (
-        <div className="ac-band-plot">
-          <div className="ac-bands">
-            {bands.map((b, i) => (
-              <div key={b.label} className="ac-band-col">
-                <span className="ac-band-count">{b.count || ""}</span>
-                <div className="ac-band-bars">
-                  {compare && (
-                    <div
-                      className="ac-band-bar ac-band-bar-b"
-                      style={{ height: `${((bbands[i]?.count ?? 0) / maxCount) * 100}%` }}
-                    />
-                  )}
-                  <ChartHint
-                    header={`${b.hi ? `${bahtFull(b.lo)}–${bahtFull(b.hi)}` : `≥ ${bahtFull(b.lo)}`} · ${b.count} โรงแรม (${pct(b.count, stats.N)}%)`}
-                    lines={[
-                      `รายได้รวมช่วงนี้ ${bahtFull(b.sum)} (${pct(b.sum, stats.total)}% ของทั้งหมด)`,
-                      ...(compare && bbands[i]
-                        ? [`B ${prevChip} ${bbands[i]!.count} โรงแรม · Δ ${b.count - bbands[i]!.count >= 0 ? "+" : ""}${b.count - bbands[i]!.count}`]
-                        : []),
-                    ]}
-                  >
-                    <div
-                      className="ac-band-bar ac-band-bar-a"
-                      style={{ height: `${(b.count / maxCount) * 100}%` }}
-                      tabIndex={0}
-                      role="button"
-                      aria-label={`${b.label} ${b.count} โรงแรม`}
-                    />
-                  </ChartHint>
-                </div>
-                <span className="ac-band-label">{b.label}</span>
-              </div>
-            ))}
-            <div className="ac-median-line" style={{ left: `${medianX}%` }}>
-              <span className="ac-median-tag">จุดแบ่งครึ่ง {bahtFull(stats.splitValue)}</span>
-            </div>
-          </div>
-        </div>
-      )}
-    </DashCard>
-  );
-}
-
-/* ---------- ③ ranking table ---------- */
-
-function RankingTableCard({
-  rows,
-  chip,
-  lens,
-  hoverHotel,
-  setHoverHotel,
-  openHotel,
-}: {
-  rows: AcRankRow[];
-  chip: string;
-  lens: string;
-  hoverHotel: string | null;
-  setHoverHotel: (id: string | null) => void;
-  openHotel: () => void;
-}) {
-  const [query, setQuery] = useState("");
-  const [all, setAll] = useState(false);
-  const filtered = query.trim()
-    ? rows.filter((r) => r.hotel_name.toLowerCase().includes(query.trim().toLowerCase()))
-    : rows;
-  const shown = all || query.trim() ? filtered : filtered.slice(0, 10);
-  const total = rows.reduce((s, r) => s + r.amount_thb, 0);
-  return (
-    <DashCard
-      title={
-        <>
-          ③ ตารางอันดับรายได้ <TimeChip label={chip} />
-        </>
-      }
-      question={`แสดง ${shown.length} จาก ${rows.length} · ฿ รวมหลัง VAT/WHT${query.trim() ? ` · พบ ${filtered.length} โรงแรม` : ""}`}
-      answer={rows.length ? bahtShort(total) : "—"}
-      answerSub={rows.length ? `${rows.length} โรงแรมที่วางบิล` : undefined}
-      noteKey="ranking-table"
-      noteNamespace="ac"
-      noteLines={
-        rows.length
-          ? [`อันดับ 1 ${rows[0]!.hotel_name} ${bahtFull(rows[0]!.amount_thb)}`, `โรงแรมใหม่ในงวด ${rows.filter((r) => r.prev_rank == null).length} โรงแรม`]
-          : summaryRules({ metric: "อันดับรายได้", empty: true }, ["R-EMPTY"])
-      }
-      howToRead="ชี้แท่งในกราฟ = ไฮไลต์แถวในตาราง (เมื่อแถวนั้นแสดงอยู่) · Δ เทียบอันดับงวดก่อน · อันดับเฉลี่ย 12 เดือนใช้เฉพาะงวดที่มีบิล"
-      right={
-        <Input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="พิมพ์ชื่อโรงแรม"
-          aria-label="ค้นหาโรงแรม"
-          className="h-8 w-44"
-        />
-      }
-    >
-      {!rows.length ? (
-        <ChartSkeleton />
-      ) : (
-        <>
-          <div className="ac-table-wrap" style={all || query.trim() ? { maxHeight: 520 } : undefined}>
-            <table className="ac-table">
-              <thead>
-                <tr>
-                  <th>อันดับ</th>
-                  <th>โรงแรม</th>
-                  <th>บริการ</th>
-                  <th className="text-right">฿ รวม</th>
-                  <th className="text-right">ใบ</th>
-                  <th>Δ อันดับ</th>
-                  <th className="text-right">อันดับเฉลี่ย 12 เดือน</th>
-                </tr>
-              </thead>
-              <tbody>
-                {shown.map((r) => {
-                  const d = r.prev_rank != null && r.rank != null ? r.prev_rank - r.rank : null;
-                  return (
-                    <tr
-                      key={r.hotel_id}
-                      className={cn(hoverHotel === r.hotel_id && "ac-row-hover")}
-                      onMouseEnter={() => setHoverHotel(r.hotel_id)}
-                      onMouseLeave={() => setHoverHotel(null)}
-                    >
-                      <td className="tabular-nums">{r.rank}</td>
-                      <td>
-                        <button type="button" className="ac-link" onClick={openHotel}>
-                          {r.hotel_name}
-                        </button>
-                      </td>
-                      <td>
-                        {lens === "ALL" ? (
-                          <>
-                            {r.orm_thb > 0 && <span className="ac-pill ac-pill-svc-orm">ORM</span>}{" "}
-                            {r.marcom_thb > 0 && <span className="ac-pill ac-pill-svc-marcom">Marcom</span>}
-                          </>
-                        ) : (
-                          <span className={cn("ac-pill", lens === "ORM" ? "ac-pill-svc-orm" : "ac-pill-svc-marcom")}>
-                            {lens === "ORM" ? "ORM" : "Marcom"}
-                          </span>
-                        )}
-                      </td>
-                      <td className="text-right tabular-nums">{bahtFull(r.amount_thb)}</td>
-                      <td className="text-right tabular-nums">{r.invoice_count}</td>
-                      <td>
-                        {r.prev_rank == null ? (
-                          <span className="ac-pill ac-pill-new">ใหม่</span>
-                        ) : d === 0 ? (
-                          <span className="text-muted-foreground">—</span>
-                        ) : (
-                          <span className={cn("ac-pill", d! > 0 ? "ac-pill-good" : "ac-pill-watch")}>
-                            {d! > 0 ? `▲ ${d}` : `▼ ${Math.abs(d!)}`}
-                          </span>
-                        )}
-                      </td>
-                      <td className="text-right tabular-nums">
-                        {r.avg_rank == null ? (
-                          <span className="text-xs text-muted-foreground">รอสะสม</span>
-                        ) : (
-                          r.avg_rank.toFixed(1)
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          {!query.trim() && rows.length > 10 && (
-            <Button variant="outline" size="sm" className="mt-3" onClick={() => setAll(!all)}>
-              {all ? "แสดงแค่ 10 อันดับแรก" : `ดูทั้งหมด (${rows.length} โรงแรม)`}
-            </Button>
-          )}
-        </>
-      )}
-    </DashCard>
-  );
-}
-
-/* ---------- ④ outstanding ---------- */
-
-function OutstandingCard({
-  debtors,
-  breakdown,
-  compare,
-}: {
-  debtors: PsReportRow[];
-  breakdown: PsReportRow[];
-  compare: boolean;
-}) {
-  const outstanding = breakdown.reduce((s, r) => s + num(r['outstanding']), 0);
-  const invCount = breakdown.reduce((s, r) => s + num(r['outstanding_count']), 0);
-  const customers = new Set(debtors.map((r) => String(r['customer_id'] ?? ""))).size;
-  const collected = breakdown.reduce((s, r) => s + num(r['collected_count']), 0);
-  const totalInv = collected + invCount;
-  const overdueN = breakdown.reduce((s, r) => s + num(r['overdue_count']), 0);
-  const overdueAmt = breakdown.reduce((s, r) => s + num(r['overdue_amount']), 0);
-  const notdueN = breakdown.reduce((s, r) => s + num(r['notdue_count']), 0);
-  const notdueAmt = breakdown.reduce((s, r) => s + num(r['notdue_amount']), 0);
-  const groups = (["ORM", "Marcom"] as const).flatMap((line) =>
-    (["EXISTING", "NEW"] as const).map((seg) => {
-      const rows = breakdown.filter((r) => r['service_line'] === line && r['customer_segment'] === seg);
-      return {
-        label: `${line} · ${seg === "EXISTING" ? "ลูกค้าเดิม" : "ลูกค้าใหม่"}`,
-        line,
-        sum: rows.reduce((s, r) => s + num(r['outstanding']), 0),
-        n: rows.reduce((s, r) => s + num(r['outstanding_count']), 0),
-      };
-    }),
-  );
-  const maxG = Math.max(...groups.map((g) => g.sum), 1);
-  const biggest = groups.reduce((a, b) => (b.sum > a.sum ? b : a), groups[0]!);
-  const empty = !breakdown.length;
-  return (
-    <DashCard
-      title={
-        <>
-          ④ ลูกหนี้คงค้าง <TimeChip label="สถานะปัจจุบัน" />
-        </>
-      }
-      question="ตอนนี้มีเงินค้างรับเท่าไร อยู่ที่บริการไหน?"
-      answer={empty ? "—" : bahtShort(outstanding)}
-      answerTone="neutral"
-      answerSub={empty ? undefined : `${invCount} ใบ · ${customers} ราย · สถานะปัจจุบัน`}
-      noteKey="outstanding"
-      noteNamespace="ac"
-      noteLines={
-        empty
-          ? summaryRules({ metric: "ลูกหนี้", empty: true }, ["R-EMPTY"])
-          : [
-              `กลุ่มใหญ่สุด ${biggest.label} ${bahtFull(biggest.sum)} (${pct(biggest.sum, outstanding)}%)`,
-              `เกินกำหนดแล้ว ${overdueN} จาก ${invCount} ใบ (${bahtFull(overdueAmt)})`,
-            ]
-      }
-      howToRead="การ์ดนี้แสดงสถานะปัจจุบัน ไม่เปลี่ยนตามช่วงเวลา · แท่งบน = ใบแจ้งหนี้ที่เก็บแล้วเทียบค้าง · 4 แท่งล่างแยกตามบริการและกลุ่มลูกค้า"
-    >
-      {empty ? (
-        <ChartSkeleton />
-      ) : (
-        <>
-          <ChartHint
-            header={`ค้าง ${invCount} ใบ · ${bahtFull(outstanding)}`}
-            lines={[
-              `เกินกำหนด ${overdueN} ใบ · ${bahtFull(overdueAmt)}`,
-              `ยังไม่ถึงกำหนด ${notdueN} ใบ · ${bahtFull(notdueAmt)}`,
-            ]}
-          >
-            <div className="ac-topbar" tabIndex={0} role="button" aria-label={`เก็บแล้ว ${collected} จาก ${totalInv} ใบ`}>
-              <div className="ac-topbar-collected" style={{ width: `${pct(collected, totalInv)}%` }} />
-              <div className="ac-topbar-outstanding" style={{ width: `${pct(invCount, totalInv)}%` }} />
-            </div>
-          </ChartHint>
-          <p className="ac-topbar-label">
-            ใบแจ้งหนี้ที่เก็บแล้ว {collected} / {totalInv} ({pct(collected, totalInv)}%) · สถานะปัจจุบัน
-          </p>
-          <div className="ac-hbars">
-            {groups.map((g) => (
-              <ChartHint
-                key={g.label}
-                header={`${g.label} · ${bahtFull(g.sum)}`}
-                lines={[`${g.n} ใบ · ${pct(g.sum, outstanding)}% ของยอดค้างทั้งหมด`]}
-              >
-                <div className="ac-hbar-row" tabIndex={0} role="button" aria-label={g.label}>
-                  <span className="ac-hbar-label">{g.label}</span>
-                  <div className="ac-hbar-track">
-                    <div
-                      className={cn("ac-hbar", g.line === "ORM" ? "ac-bar-top" : "ac-bar-marcom")}
-                      style={{ width: `${(g.sum / maxG) * 100}%` }}
-                    />
-                  </div>
-                  <span className="ac-hbar-value">
-                    {bahtFull(g.sum)} · {g.n} ใบ
-                  </span>
-                </div>
-              </ChartHint>
-            ))}
-          </div>
-          {compare && <p className="ac-footnote">การ์ดนี้แสดงสถานะปัจจุบัน จึงไม่มี Compare A/B</p>}
-        </>
-      )}
-    </DashCard>
-  );
-}
-
-/* ---------- ⑤ collection status ---------- */
-
-function CollectionCard({
+function DebtorCard({
   views,
   svc,
   debtors,
+  breakdown,
   compare,
+  openHotel,
 }: {
   views: AcViews | undefined;
   svc: (r: PsReportRow) => boolean;
   debtors: PsReportRow[];
+  breakdown: PsReportRow[];
   compare: boolean;
+  openHotel: () => void;
 }) {
+  const [open, setOpen] = useState(false);
+  const [status, setStatus] = useState<CollectionStatus | "ALL">("ALL");
+  const tickets = useTickets();
+  const list = useMemo(() => sortDebtors(debtorRows(debtors)), [debtors]);
+  const aeOf = useMemo(
+    () => new Map(debtors.map((r) => [`${r.hotel_id}|${r.service_line}`, r["ae_owner_id"] == null ? null : String(r["ae_owner_id"])])),
+    [debtors],
+  );
+  const openTickets = tickets.filter((t) => t.type === "GRADE_RISK" && OPEN_STATUSES.includes(t.status));
+  const ticketOf = (hotel_id: string) => openTickets.find((t) => t.subject_ref.hotel_id === hotel_id);
+  const lastBotRun = tickets
+    .filter((t) => t.created_by === SYSTEM_CREATOR)
+    .map((t) => t.payload.generated_round ?? t.created_at.slice(0, 10))
+    .sort()
+    .at(-1);
+  const active = list.filter((r) => r.status !== "WRITTEN_OFF" && r.status !== "PAUSED");
+  const wo = list.filter((r) => r.status === "WRITTEN_OFF");
+  const paused = list.filter((r) => r.status === "PAUSED");
+  const notPaused = list.filter((r) => r.status !== "PAUSED");
+  const shown = status === "ALL" ? notPaused : list.filter((r) => r.status === status);
+  const counts = (s: CollectionStatus) => list.filter((r) => r.status === s).length;
+  const total = active.reduce((s, r) => s + r.outstanding, 0);
+  const legalRows = list.filter((r) => r.status === "LEGAL");
+  const gradeD = list.filter((r) => r.grade === "D" && r.status !== "WRITTEN_OFF");
+  const dWithTicket = gradeD.filter((r) => ticketOf(r.hotel_id)).length;
+  // Old ④ (outstanding incl. not-yet-due) and ⑤ (stage aggregates) values — moved into ⓘ, unchanged.
+  const outstanding = breakdown.reduce((s, r) => s + num(r["outstanding"]), 0);
+  const invCount = breakdown.reduce((s, r) => s + num(r["outstanding_count"]), 0);
+  const collected = breakdown.reduce((s, r) => s + num(r["collected_count"]), 0);
+  const notdueN = breakdown.reduce((s, r) => s + num(r["notdue_count"]), 0);
+  const notdueAmt = breakdown.reduce((s, r) => s + num(r["notdue_amount"]), 0);
+  const customers = new Set(debtors.map((r) => String(r["customer_id"] ?? ""))).size;
+  const groups = (["ORM", "Marcom"] as const).flatMap((line) =>
+    ([["EXISTING", "ลูกค้าเดิม"], ["NEW", "ลูกค้าใหม่"]] as const).map(([seg, label]) => {
+      const rows = breakdown.filter((r) => r["service_line"] === line && r["customer_segment"] === seg);
+      return `${line} · ${label} ${bahtFull(rows.reduce((s, r) => s + num(r["outstanding"]), 0))} (${rows.reduce((s, r) => s + num(r["outstanding_count"]), 0)} ใบ)`;
+    }),
+  );
   const agg = (key: string) => (views?.[key] ?? []).filter(svc);
-  const od = agg("v_ac_overdue");
-  const sus = agg("v_ac_suspended");
-  const legal = agg("v_ac_legal");
-  const woRows = debtorRows(debtors).filter((r) => r.status === "WRITTEN_OFF");
-  const paused = debtorRows(debtors).filter((r) => r.status === "PAUSED").length;
-  const cnt = (rows: PsReportRow[]) => rows.reduce((s, r) => s + num(r['customer_count']), 0);
-  const sumOut = (rows: PsReportRow[]) => rows.reduce((s, r) => s + num(r['outstanding']), 0);
-  const sumInv = (rows: PsReportRow[]) => rows.reduce((s, r) => s + num(r['invoice_count']), 0);
-  const stages: { status: CollectionStatus; n: number; amt: number; inv: number }[] = [
-    { status: "OVERDUE", n: cnt(od), amt: sumOut(od), inv: sumInv(od) },
-    { status: "SUSPENDED", n: cnt(sus), amt: sumOut(sus), inv: sumInv(sus) },
-    { status: "LEGAL", n: cnt(legal), amt: sumOut(legal), inv: sumInv(legal) },
-    { status: "WRITTEN_OFF", n: woRows.length, amt: woRows.reduce((s, r) => s + r.outstanding, 0), inv: woRows.reduce((s, r) => s + r.invoice_count, 0) },
-  ];
-  const act = stages[1]!.n + stages[2]!.n;
-  const empty = stages.every((s) => !s.n);
-  const maxAmt = Math.max(...stages.map((s) => s.amt), 1);
-  const overdueTotal = stages[0]!.amt + stages[1]!.amt + stages[2]!.amt;
+  const stageLine = (["v_ac_overdue", "v_ac_suspended", "v_ac_legal"] as const)
+    .map((k, i) => {
+      const rows = agg(k);
+      const label = COLLECTION_META[(["OVERDUE", "SUSPENDED", "LEGAL"] as const)[i]!].label;
+      return `${label} ${rows.reduce((s, r) => s + num(r["customer_count"]), 0)} ราย ${bahtFull(rows.reduce((s, r) => s + num(r["outstanding"]), 0))}`;
+    })
+    .join(" · ");
+  const empty = !list.length;
   return (
     <DashCard
       title={
         <>
-          ⑤ สถานะ Collection <TimeChip label="สถานะปัจจุบัน" />
+          ลูกหนี้ที่ต้องติดตาม <TimeChip label="สถานะปัจจุบัน" />
         </>
       }
-      question="ลูกหนี้ที่เกินกำหนดอยู่ขั้นไหน ต้องลงมือกี่ราย?"
-      answer={empty ? "—" : `${act} ราย`}
-      answerTone="action"
-      answerSub={empty ? undefined : `ต้องลงมือ · ปิดระบบ ${stages[1]!.n} · ส่งฟ้อง ${stages[2]!.n}`}
-      noteKey="collection"
+      info={{
+        source: "AC App · ใบแจ้งหนี้ (v_ac_debtors · v_ac_overdue · v_ac_suspended · v_ac_legal)",
+        count: "นับราย customer · เฉพาะใบที่เลยวันครบกำหนด · สถานะปัจจุบัน (ไม่ขึ้นกับช่วงวันที่ที่เลือก) · ตัดสูญและพักบริการไม่รวมในยอด",
+        read: `ลำดับขั้น: ส่งฟ้อง → ปิดระบบ → ค้างชำระ → ตัดสูญ · ${(["OVERDUE", "SUSPENDED", "LEGAL", "WRITTEN_OFF"] as const).map((s) => `${COLLECTION_META[s].label}: ${COLLECTION_META[s].rule}`).join(" · ")}`,
+        extra: [
+          { label: "ยอดค้างทั้งหมด (รวมยังไม่ถึงกำหนด)", body: `${bahtFull(outstanding)} · ${invCount} ใบ · ${customers} ราย · เก็บแล้ว ${collected} / ${collected + invCount} ใบ (${pct(collected, collected + invCount)}%)` },
+          { label: "แยกบริการ × กลุ่มลูกค้า", body: groups.join(" · ") },
+          { label: "ตามขั้น collection", body: stageLine },
+          { label: "ยังไม่ถึงกำหนด (ไม่นับ)", body: `${notdueN} ใบ · ${bahtFull(notdueAmt)}` },
+        ],
+      }}
+      question="ตอนนี้มีเงินค้างเท่าไร และอยู่ขั้นไหน?"
+      answer={empty ? "—" : bahtShort(total)}
+      answerTone="neutral"
+      answerSub={empty ? undefined : `${active.length} ราย · ไม่รวมตัดสูญ`}
+      noteKey="followup"
       noteNamespace="ac"
       noteLines={
         empty
-          ? summaryRules({ metric: "Collection", empty: true }, ["R-EMPTY"])
+          ? summaryRules({ metric: "ลูกหนี้ติดตาม", empty: true }, ["R-EMPTY"])
           : [
-              `ปิดระบบ + ส่งฟ้อง ${act} ราย ${bahtFull(stages[1]!.amt + stages[2]!.amt)} (${pct(stages[1]!.amt + stages[2]!.amt, overdueTotal)}% ของยอดเกินกำหนด)`,
-              `ค้างชำระ ${stages[0]!.n} ราย ${bahtFull(stages[0]!.amt)}`,
+              `ส่งฟ้อง ${legalRows.length} ราย รวม ${bahtFull(legalRows.reduce((s, r) => s + r.outstanding, 0))}`,
+              `ticket เกรดการชำระเงินเสี่ยง เปิดอยู่ ${dWithTicket} จาก ${gradeD.length} รายเกรด D`,
             ]
       }
-      howToRead="ขั้น collection เรียงตามความรุนแรง · PAUSED ไม่ใช่ลูกหนี้ปัญหาและไม่นับในกราฟ · สถานะปัจจุบัน ไม่เปลี่ยนตามช่วงเวลา"
+      howToRead="ชิปแสดงจำนวนรายตามขั้น · กดชิปเพื่อกรองรายชื่อ · สถานะปัจจุบัน ไม่เปลี่ยนตามช่วงเวลา"
     >
       {empty ? (
         <ChartSkeleton />
       ) : (
         <>
-          <div className="ac-hbars">
-            {stages.map((s) => (
-              <ChartHint
-                key={s.status}
-                header={`${COLLECTION_META[s.status].label} · ${s.n} ราย · ${bahtFull(s.amt)}`}
-                lines={[`${s.inv} ใบ`, COLLECTION_META[s.status].rule]}
+          <div className="ac-chip-row" role="group" aria-label="สถานะ collection">
+            {(["OVERDUE", "SUSPENDED", "LEGAL"] as const).map((s) => (
+              <button
+                key={s}
+                type="button"
+                aria-pressed={status === s}
+                className={cn("ac-filter-chip", status === s && "ac-filter-chip-on")}
+                onClick={() => {
+                  setStatus(status === s ? "ALL" : s);
+                  setOpen(true);
+                }}
               >
-                <div className="ac-hbar-row" tabIndex={0} role="button" aria-label={COLLECTION_META[s.status].label}>
-                  <span className="ac-hbar-label">{COLLECTION_META[s.status].label}</span>
-                  <div className="ac-hbar-track">
-                    <div
-                      className="ac-hbar"
-                      style={{
-                        width: `${Math.max(s.n ? 6 : 0, (s.amt / maxAmt) * 100)}%`,
-                        background: COLLECTION_META[s.status].bar,
-                      }}
-                    >
-                      {s.n > 0 && <span className="ac-hbar-in">{s.n}</span>}
-                    </div>
-                  </div>
-                  <span className="ac-hbar-value">
-                    {bahtFull(s.amt)} · {s.inv} ใบ
-                  </span>
-                </div>
-              </ChartHint>
+                {COLLECTION_META[s].label} {counts(s)}
+              </button>
             ))}
+            <button
+              type="button"
+              aria-pressed={status === "WRITTEN_OFF"}
+              className={cn("ac-filter-chip text-muted-foreground", status === "WRITTEN_OFF" && "ac-filter-chip-on")}
+              onClick={() => {
+                setStatus(status === "WRITTEN_OFF" ? "ALL" : "WRITTEN_OFF");
+                setOpen(true);
+              }}
+            >
+              ตัดสูญ {wo.length} · ไม่รวมในยอด
+            </button>
+            <button
+              type="button"
+              aria-pressed={status === "PAUSED"}
+              className={cn("ac-filter-chip text-muted-foreground", status === "PAUSED" && "ac-filter-chip-on")}
+              onClick={() => {
+                setStatus(status === "PAUSED" ? "ALL" : "PAUSED");
+                setOpen(true);
+              }}
+            >
+              พักบริการ {paused.length} · ไม่ใช่ลูกหนี้ปัญหา
+            </button>
           </div>
-          <p className="ac-paused-chip">
-            พักบริการ (PAUSED) {paused} ราย · ไม่ใช่ลูกหนี้ปัญหา · ไม่นับในกราฟ
-          </p>
+          <button type="button" className="ac-link text-sm" aria-expanded={open} onClick={() => setOpen(!open)}>
+            ดูรายชื่อ {notPaused.length} ราย {open ? "▴" : "▾"}
+          </button>
+          {open && (
+            <>
+              <div className="ac-table-wrap mt-3" style={{ maxHeight: 520 }}>
+                <table className="ac-table">
+                  <thead>
+                    <tr>
+                      <th>โรงแรม</th>
+                      <th>ลูกค้า</th>
+                      <th>บริการ</th>
+                      <th>AE ผู้ดูแล</th>
+                      <th className="text-right">฿ ค้าง</th>
+                      <th className="text-right">ใบ</th>
+                      <th>ค้างมาแล้ว (เดือน)</th>
+                      <th>เกรด</th>
+                      <th>สถานะ</th>
+                      <th>ticket</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {shown.map((r) => {
+                      const t = ticketOf(r.hotel_id);
+                      const ae = aeOf.get(`${r.hotel_id}|${r.service_line}`) ?? null;
+                      return (
+                        <tr key={`${r.hotel_id}-${r.service_line}`}>
+                          <td>
+                            <button type="button" className="ac-link" onClick={openHotel}>
+                              {r.hotel_name}
+                            </button>
+                          </td>
+                          <td className="text-xs">{r.customer_name}</td>
+                          <td>
+                            <span className={cn("ac-pill", r.service_line === "ORM" ? "ac-pill-svc-orm" : "ac-pill-svc-marcom")}>{r.service_line}</span>
+                          </td>
+                          <td>
+                            <span className={cn(!ae && "text-dash-watch")}>{aeLabel(ae)}</span>
+                            {r.caretaker && <div className="text-xs text-muted-foreground">{r.caretaker}</div>}
+                          </td>
+                          <td className="text-right tabular-nums">{bahtFull(r.outstanding)}</td>
+                          <td className="text-right tabular-nums">{r.invoice_count}</td>
+                          <td className="tabular-nums">{r.overdue_months}</td>
+                          <td>
+                            <span className={cn("ac-pill", GRADE_META[r.grade]?.pill ?? "ac-pill-neutral")}>{r.grade}</span>
+                          </td>
+                          <td>
+                            <span className={cn("ac-pill", COLLECTION_META[r.status].pill)}>{COLLECTION_META[r.status].label}</span>
+                          </td>
+                          <td>
+                            {t ? (
+                              <span className="ac-pill ac-pill-svc-orm">
+                                #TKT-{t.ticket_id.slice(-4)} · {STATUS_TH[t.status]}
+                              </span>
+                            ) : r.grade === "D" && r.status !== "WRITTEN_OFF" ? (
+                              <span className="ac-pill ac-pill-watch">
+                                ยังไม่มี ticket · {aeLabel(ae)} · ตรวจล่าสุด {dMMM(lastBotRun)}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <p className="ac-footnote">
+                ไม่รวมใบที่ยังไม่ถึงกำหนด ({notdueN} ใบ · {bahtFull(notdueAmt)}) · เรียง ส่งฟ้อง → ปิดระบบ → ค้างชำระ →
+                ตัดสูญ แล้วตามยอด ฿ · ticket อ่านจากระบบ Ticket อย่างเดียว
+              </p>
+            </>
+          )}
           {compare && <p className="ac-footnote">การ์ดนี้แสดงสถานะปัจจุบัน จึงไม่มี Compare A/B</p>}
         </>
       )}
     </DashCard>
+  );
+}
+
+/* ---------- ค่าใช้จ่ายรายสัญญา (§2.4) ---------- */
+
+const arrow = (d: number | null) =>
+  d == null ? <span className="text-muted-foreground">—</span> : d === 0 ? <span className="text-muted-foreground">เท่าเดิม</span> : (
+    <span className={d > 0 ? "text-dash-good" : "text-dash-watch"}>
+      {d > 0 ? "▲" : "▼"} {bahtFull(Math.abs(d))}
+    </span>
+  );
+
+function ContractCostCard({
+  rows,
+  service,
+  compare,
+  periodA,
+  periodB,
+}: {
+  rows: ReturnType<typeof toCostRows>;
+  service: "ALL" | "ORM" | "Marcom";
+  compare: boolean;
+  periodA?: { from: string; to: string } | undefined;
+  periodB: { from: string; to: string } | null;
+}) {
+  const [open, setOpen] = useState(false);
+  const [svcFilter, setSvcFilter] = useState<"ALL" | "ORM" | "Marcom">("ALL");
+  const [ae, setAe] = useState("ALL");
+  const [q, setQ] = useState("");
+  const month = latestCostMonth(rows, periodA);
+  const cmp = month ? (compare && periodB ? latestCostMonth(rows, periodB) : shiftMonth(month, -1)) : null;
+  const lines = useMemo(() => (month ? costLines(rows, month, cmp) : []), [rows, month, cmp]);
+  const scoped = lines.filter((l) => service === "ALL" || l.service === service);
+  const sum = costSummary(scoped);
+  const aes = [...new Set(scoped.map((l) => l.ae_owner_id ?? ""))].sort();
+  const shown = scoped.filter(
+    (l) =>
+      (svcFilter === "ALL" || l.service === svcFilter) &&
+      (ae === "ALL" || (l.ae_owner_id ?? "") === ae) &&
+      (!q.trim() || l.hotel_name.toLowerCase().includes(q.trim().toLowerCase())),
+  );
+  const empty = !scoped.length;
+  return (
+    <DashCard
+      title={
+        <>
+          ค่าใช้จ่ายรายสัญญา <TimeChip label={month ? monYY(month) : "—"} />
+        </>
+      }
+      info={{
+        source: "AC App · บิลรายเดือน (v_ac_contract_cost_monthly)",
+        count: "นับรายสัญญาบริการ (1 สัญญาที่มี ORM + Marcom = 2 แถว) · ไม่นับค่า setup และงาน one-time · ยอดหลัง VAT/WHT",
+        formula: "อายุสัญญา (เดือน) = จำนวนเดือนเต็มตั้งแต่วันเริ่มสัญญาถึงสิ้นเดือนที่เลือก · เฉลี่ยต่อเดือนตลอดอายุ = ยอดบิลรวมของสัญญาบริการนี้ตั้งแต่เริ่ม ÷ จำนวนเดือนที่มีบิล",
+        read: "ป้าย Guarantee = เดือนนั้นเรียกเก็บค่าการันตีแทนค่าคอม · ป้าย บิลรวม = บิลแยกบริการไม่ได้ จึงแสดงใต้ทั้งสองบริการ · เรียงตามชื่อโรงแรมเท่านั้น ไม่ใช่การจัดอันดับ",
+      }}
+      question="แต่ละสัญญาจ่ายเราเดือนละเท่าไร เทียบกับก่อนหน้า?"
+      answer={empty ? "—" : `${sum.billed} สัญญา`}
+      answerTone="accent"
+      answerSub={
+        empty ? undefined : `ค่าใช้จ่ายขึ้น ${sum.up} · เท่าเดิม ${sum.same} · ลด ${sum.down}${cmp ? ` · เทียบ ${monYY(cmp)}` : ""}`
+      }
+      noteKey="contract-cost"
+      noteNamespace="ac"
+      noteLines={
+        empty
+          ? summaryRules({ metric: "ค่าใช้จ่ายรายสัญญา", empty: true }, ["R-EMPTY"])
+          : [
+              `สัญญาบริการที่มีบิล ${monYY(month)} ${sum.billed} สัญญา`,
+              ...(sum.noPrev ? [`ไม่มีบิลเดือนเทียบ ${sum.noPrev} สัญญา (ไม่นับในขึ้น / เท่าเดิม / ลด)`] : []),
+            ]
+      }
+      howToRead="เปิดรายสัญญาเพื่อดูยอดเดือนที่เลือกเทียบเดือนก่อนและปีก่อน · ไม่มีคอลัมน์ค่าระบบในรอบนี้"
+    >
+      {empty ? (
+        <ChartSkeleton />
+      ) : (
+        <>
+          <button type="button" className="ac-link text-sm" aria-expanded={open} onClick={() => setOpen(!open)}>
+            ดูรายสัญญา {open ? "▴" : "▾"}
+          </button>
+          {open && (
+            <>
+              <div className="ac-chip-row mt-3">
+                {(["ALL", "ORM", "Marcom"] as const).map((s) => (
+                  <button key={s} type="button" aria-pressed={svcFilter === s} className={cn("ac-filter-chip", svcFilter === s && "ac-filter-chip-on")} onClick={() => setSvcFilter(s)}>
+                    {s === "ALL" ? "ทุกบริการ" : s}
+                  </button>
+                ))}
+                <select aria-label="AE ผู้ดูแล" className="ac-filter-chip" value={ae} onChange={(e) => setAe(e.target.value)}>
+                  <option value="ALL">AE: ทั้งหมด</option>
+                  {aes.map((a) => (
+                    <option key={a} value={a}>
+                      {aeLabel(a || null)}
+                    </option>
+                  ))}
+                </select>
+                <span className="relative">
+                  <Search className="absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+                  <Input aria-label="ค้นหาโรงแรม" className="h-8 w-48 pl-7 text-xs" placeholder="ค้นหาโรงแรม" value={q} onChange={(e) => setQ(e.target.value)} />
+                </span>
+              </div>
+              <div className="ac-table-wrap" style={{ maxHeight: 560 }}>
+                <table className="ac-table">
+                  <thead>
+                    <tr>
+                      <th>สัญญา</th>
+                      <th>AE ผู้ดูแล</th>
+                      <th className="text-right">อายุสัญญา (เดือน)</th>
+                      <th className="text-right">เฉลี่ยต่อเดือนตลอดอายุ</th>
+                      <th className="text-right">ค่าบริการ · {month ? monYY(month) : "—"}</th>
+                      <th className="text-right">ค่าคอม · {month ? monYY(month) : "—"}</th>
+                      <th>เทียบ{compare && periodB ? ` ${cmp ? monYY(cmp) : "B"}` : "เดือนก่อน"}</th>
+                      <th>เทียบเดือนเดียวกันปีก่อน</th>
+                      <th>เกรดการชำระ</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {shown.map((l: CostLine) => (
+                      <tr key={l.key}>
+                        <td>
+                          <div className="font-medium">{l.hotel_name}</div>
+                          <div className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
+                            {l.contract_id}
+                            <span className={cn("ac-pill", l.service === "ORM" ? "ac-pill-svc-orm" : "ac-pill-svc-marcom")}>{l.service}</span>
+                            {l.combined_bill && <span className="ac-pill ac-pill-neutral">บิลรวม</span>}
+                          </div>
+                        </td>
+                        <td>
+                          <span className={cn(!l.ae_owner_id && "text-dash-watch")}>{aeLabel(l.ae_owner_id)}</span>
+                          {l.caretaker && <div className="text-xs text-muted-foreground">{l.caretaker}</div>}
+                        </td>
+                        <td className="text-right tabular-nums">{l.age_months ?? "—"}</td>
+                        <td className="text-right tabular-nums">{l.lifetime_monthly == null ? "—" : bahtFull(l.lifetime_monthly)}</td>
+                        <td className="text-right tabular-nums">{l.fee == null ? "—" : bahtFull(l.fee)}</td>
+                        <td className="text-right tabular-nums">
+                          {l.commission == null ? "—" : bahtFull(l.commission)}
+                          {l.guarantee && <span className="ac-pill ac-pill-watch ml-1">Guarantee</span>}
+                        </td>
+                        <td className="tabular-nums">{arrow(l.delta_prev)}</td>
+                        <td className="tabular-nums">{arrow(l.delta_yoy)}</td>
+                        <td>
+                          {l.grade ? <span className={cn("ac-pill", GRADE_META[l.grade]?.pill ?? "ac-pill-neutral")}>{l.grade}</span> : <span className="text-muted-foreground">—</span>}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="ac-footnote">
+                {shown.length} สัญญาบริการ · เรียงตามชื่อโรงแรม · บิลรวม {sum.combined} แถว · ยอดหลัง VAT/WHT · ไม่รวมค่า setup / งาน one-time
+              </p>
+            </>
+          )}
+        </>
+      )}
+    </DashCard>
+  );
+}
+
+/* ---------- ⑥ expandable customer list (§2.3) ---------- */
+
+function GradeList({ customers }: { customers: GradeCustomer[] }) {
+  const [open, setOpen] = useState(false);
+  const [grade, setGrade] = useState<"A" | "B" | "C" | "D">("D");
+  const by = (g: string) => customers.filter((c) => c.grade_latest === g);
+  return (
+    <div className="mt-3 border-t pt-3">
+      <button type="button" className="ac-link text-sm" aria-expanded={open} onClick={() => setOpen(!open)}>
+        ดูรายชื่อตามเกรด {open ? "▴" : "▾"}
+      </button>
+      {open && (
+        <>
+          <div className="ac-chip-row mt-2" role="tablist" aria-label="เกรด">
+            {(["A", "B", "C", "D"] as const).map((g) => (
+              <button key={g} type="button" role="tab" aria-selected={grade === g} className={cn("ac-filter-chip", grade === g && "ac-filter-chip-on")} onClick={() => setGrade(g)}>
+                {g} · {by(g).length}
+              </button>
+            ))}
+          </div>
+          {by(grade).length ? (
+            <div className="ac-table-wrap" style={{ maxHeight: 360 }}>
+              <table className="ac-table">
+                <thead>
+                  <tr>
+                    <th>ลูกค้า</th>
+                    <th>เกรดล่าสุด</th>
+                    <th>เกรดแย่สุดใน 6 งวด</th>
+                    <th>สัญญาที่ถืออยู่</th>
+                    <th>AE ผู้ดูแล</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {by(grade).map((c) => (
+                    <tr key={c.customer_id}>
+                      <td className="font-medium">{c.customer_name}</td>
+                      <td>
+                        <span className={cn("ac-pill", GRADE_META[c.grade_latest]?.pill ?? "ac-pill-neutral")}>{c.grade_latest}</span>
+                      </td>
+                      <td>{c.grade_worst6 ? <span className={cn("ac-pill", GRADE_META[c.grade_worst6]?.pill ?? "ac-pill-neutral")}>{c.grade_worst6}</span> : "—"}</td>
+                      <td className="text-xs">
+                        {c.contracts.map((x) => (
+                          <div key={`${x.contract_id}-${x.service}`}>
+                            {x.hotel_name} · {x.service}
+                          </div>
+                        ))}
+                      </td>
+                      <td className="text-xs">{c.ae.length ? c.ae.map((a) => aeLabel(a)).join(", ") : <span className="text-dash-watch">{aeLabel(null)}</span>}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="ac-footnote">ไม่มีลูกค้าเกรด {grade} ในงวดนี้</p>
+          )}
+          <p className="ac-footnote">เกรดคำนวณราย customer ที่ AC App (ไม่คำนวณใหม่) · เรียงตามชื่อลูกค้า · แสดงลูกค้าที่มีสัญญาบริการใช้งาน</p>
+        </>
+      )}
+    </div>
   );
 }
 
@@ -892,11 +589,13 @@ function GradeCard({
   chip,
   prevChip,
   compare,
+  customers,
 }: {
   gradeDist: PsReportRow[];
   chip: string;
   prevChip: string;
   compare: boolean;
+  customers: GradeCustomer[];
 }) {
   const [hoverGrade, setHoverGrade] = useState<string | null>(null);
   const periods = useMemo(
@@ -1038,6 +737,7 @@ function GradeCard({
               </p>
             </>
           )}
+          <GradeList customers={customers} />
         </>
       )}
     </DashCard>
@@ -1126,145 +826,4 @@ function dAfter(chip: string): string {
   if (!m || MON.indexOf(m[1]!) < 0) return "15 ของเดือน M+2";
   const idx = MON.indexOf(m[1]!) + 2;
   return `15 ${MON[idx % 12]} ${String((Number(m[2]) + Math.floor(idx / 12)) % 100).padStart(2, "0")}`;
-}
-
-/* ---------- ⑧ debtor follow-up worklist ---------- */
-
-function FollowUpCard({
-  debtors,
-  breakdown,
-  compare,
-  openHotel,
-}: {
-  debtors: PsReportRow[];
-  breakdown: PsReportRow[];
-  compare: boolean;
-  openHotel: () => void;
-}) {
-  const [status, setStatus] = useState<CollectionStatus | "ALL">("ALL");
-  const tickets = useTickets();
-  const list = useMemo(() => sortDebtors(debtorRows(debtors)), [debtors]);
-  const openTickets = tickets.filter((t) => t.type === "GRADE_RISK" && OPEN_STATUSES.includes(t.status));
-  const ticketOf = (hotel_id: string) => openTickets.find((t) => t.subject_ref.hotel_id === hotel_id);
-  const active = list.filter((r) => r.status !== "WRITTEN_OFF" && r.status !== "PAUSED");
-  const wo = list.filter((r) => r.status === "WRITTEN_OFF");
-  const shown = status === "ALL" ? list.filter((r) => r.status !== "PAUSED") : list.filter((r) => r.status === status);
-  const counts = (s: CollectionStatus) => list.filter((r) => r.status === s).length;
-  const notdueN = breakdown.reduce((s, r) => s + num(r['notdue_count']), 0);
-  const notdueAmt = breakdown.reduce((s, r) => s + num(r['notdue_amount']), 0);
-  const gradeD = list.filter((r) => r.grade === "D" && r.status !== "WRITTEN_OFF");
-  const dWithTicket = gradeD.filter((r) => ticketOf(r.hotel_id)).length;
-  const legalRows = list.filter((r) => r.status === "LEGAL");
-  return (
-    <DashCard
-      title={
-        <>
-          ⑧ ลูกหนี้ที่ต้องติดตาม <TimeChip label="สถานะปัจจุบัน" />
-        </>
-      }
-      question="ใครค้างเกินกำหนด ค้างเท่าไร และมีคนดูแลอยู่หรือยัง?"
-      answer={list.length ? `${active.length} ราย` : "—"}
-      answerSub={
-        list.length
-          ? `ค้างเกินกำหนด ${bahtFull(active.reduce((s, r) => s + r.outstanding, 0))} · + ตัดสูญ ${wo.length}`
-          : undefined
-      }
-      noteKey="followup"
-      noteNamespace="ac"
-      noteLines={
-        list.length
-          ? [
-              `ส่งฟ้อง ${legalRows.length} ราย รวม ${bahtFull(legalRows.reduce((s, r) => s + r.outstanding, 0))}`,
-              `ticket เกรดการชำระเงินเสี่ยง เปิดอยู่ ${dWithTicket} จาก ${gradeD.length} รายเกรด D`,
-            ]
-          : summaryRules({ metric: "ลูกหนี้ติดตาม", empty: true }, ["R-EMPTY"])
-      }
-      howToRead="เรียง ส่งฟ้อง → ปิดระบบ → ค้างชำระ → ตัดสูญ แล้วตามยอด ฿ · ticket อ่านจากระบบ Ticket อย่างเดียว (BOT เปิดให้เกรด D)"
-    >
-      {!list.length ? (
-        <ChartSkeleton />
-      ) : (
-        <>
-          <div className="ac-chip-row">
-            {(["ALL", "OVERDUE", "SUSPENDED", "LEGAL", "WRITTEN_OFF"] as const).map((s) => (
-              <button
-                key={s}
-                type="button"
-                className={cn("ac-filter-chip", status === s && "ac-filter-chip-on")}
-                onClick={() => setStatus(s)}
-              >
-                {s === "ALL" ? "ทั้งหมด" : COLLECTION_META[s].label} ·{" "}
-                {s === "ALL" ? list.filter((r) => r.status !== "PAUSED").length : counts(s)}
-              </button>
-            ))}
-          </div>
-          <div className="ac-table-wrap" style={{ maxHeight: 520 }}>
-            <table className="ac-table">
-              <thead>
-                <tr>
-                  <th>โรงแรม · customer</th>
-                  <th>บริการ</th>
-                  <th>ผู้ดูแล</th>
-                  <th className="text-right">฿ ค้าง</th>
-                  <th className="text-right">ใบ</th>
-                  <th>ค้างมาแล้ว</th>
-                  <th>เกรด</th>
-                  <th>สถานะ</th>
-                  <th>ticket เกรดการชำระเงินเสี่ยง</th>
-                </tr>
-              </thead>
-              <tbody>
-                {shown.map((r) => {
-                  const t = ticketOf(r.hotel_id);
-                  return (
-                    <tr key={`${r.hotel_id}-${r.service_line}`}>
-                      <td>
-                        <button type="button" className="ac-link" onClick={openHotel}>
-                          {r.hotel_name}
-                        </button>
-                        <div className="text-xs text-muted-foreground">{r.customer_name}</div>
-                      </td>
-                      <td>
-                        <span className={cn("ac-pill", r.service_line === "ORM" ? "ac-pill-svc-orm" : "ac-pill-svc-marcom")}>
-                          {r.service_line}
-                        </span>
-                      </td>
-                      <td>{r.caretaker ?? <span className="text-muted-foreground">—</span>}</td>
-                      <td className="text-right tabular-nums">{bahtFull(r.outstanding)}</td>
-                      <td className="text-right tabular-nums">{r.invoice_count}</td>
-                      <td className="tabular-nums">{r.overdue_months} เดือน</td>
-                      <td>
-                        <span className={cn("ac-pill", GRADE_META[r.grade]?.pill ?? "ac-pill-neutral")}>{r.grade}</span>
-                      </td>
-                      <td>
-                        <span className={cn("ac-pill", COLLECTION_META[r.status].pill)}>
-                          {COLLECTION_META[r.status].label}
-                        </span>
-                      </td>
-                      <td>
-                        {t ? (
-                          <span className="ac-pill ac-pill-svc-orm">
-                            #TKT-{t.ticket_id.slice(-4)} · {STATUS_TH[t.status]}
-                          </span>
-                        ) : r.grade === "D" && r.status !== "WRITTEN_OFF" ? (
-                          <span className="ac-pill ac-pill-watch">ยังไม่มี · รอ BOT รอบถัดไป</span>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          <p className="ac-footnote">
-            ไม่รวมใบที่ยังไม่ถึงกำหนด ({notdueN} ใบ · {bahtFull(notdueAmt)}) · เรียง ส่งฟ้อง → ปิดระบบ →
-            ค้างชำระ → ตัดสูญ แล้วตามยอด ฿ · ticket อ่านจากระบบ Ticket อย่างเดียว (BOT เปิดให้เกรด D)
-          </p>
-          {compare && <p className="ac-footnote">การ์ดนี้แสดงสถานะปัจจุบัน จึงไม่มี Compare A/B</p>}
-        </>
-      )}
-    </DashCard>
-  );
 }
