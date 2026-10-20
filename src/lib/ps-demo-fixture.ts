@@ -46,16 +46,16 @@ const RENEWAL_HISTORY: [string, string, string, string][] = [['RH1', 'C05', '202
 const RENEWALS: [string, string, string, string][] = [['R1', 'C01', '2026-09-10', 'RENEWED'], ['R2', 'C02', '2026-09-15', 'RENEWED'], ['R3', 'C04', '2026-09-20', 'RENEWED'], ['R4', 'C05', '2026-09-25', 'NOT_RENEWED'], ['R5', 'C06', '2026-09-28', 'IN_PROGRESS']];
 /** R1.2 §8: free-text reason on the ไม่ต่อ card (existing reason_text). */
 const RENEWAL_REASON: Record<string, string> = { R4: 'ลูกค้าตัดงบการตลาดปีหน้า ขอหยุดบริการ Marcom ไว้ก่อน' };
-/** R1.2 §3.4 / §8 demo contract_price_history (previous cycle → RENEWAL): C01 raise · C02 same terms · C04 lower commission %. */
+/** R1.2 §3.4 / §8 demo contract_price_history (previous cycle → RENEWAL): C01 raise · C02 lower commission % · C04 same terms. */
 export type DemoPriceCycle = { contract_id: string; cycle_no: number; fee_amount: number | null; commission_pct: number | null; guarantee_amount: number | null; source: 'INITIAL' | 'RENEWAL' };
 export function demoPriceHistory(): DemoPriceCycle[] {
   return [
     { contract_id: 'C01', cycle_no: 1, fee_amount: 50000, commission_pct: null, guarantee_amount: null, source: 'INITIAL' },
     { contract_id: 'C01', cycle_no: 2, fee_amount: 52500, commission_pct: null, guarantee_amount: null, source: 'RENEWAL' },
-    { contract_id: 'C02', cycle_no: 1, fee_amount: 30000, commission_pct: null, guarantee_amount: null, source: 'INITIAL' },
-    { contract_id: 'C02', cycle_no: 2, fee_amount: 30000, commission_pct: null, guarantee_amount: null, source: 'RENEWAL' },
-    { contract_id: 'C04', cycle_no: 1, fee_amount: null, commission_pct: 8, guarantee_amount: 40000, source: 'INITIAL' },
-    { contract_id: 'C04', cycle_no: 2, fee_amount: null, commission_pct: 6.5, guarantee_amount: 40000, source: 'RENEWAL' },
+    { contract_id: 'C02', cycle_no: 1, fee_amount: null, commission_pct: 8, guarantee_amount: 25000, source: 'INITIAL' },
+    { contract_id: 'C02', cycle_no: 2, fee_amount: null, commission_pct: 6.5, guarantee_amount: 25000, source: 'RENEWAL' },
+    { contract_id: 'C04', cycle_no: 1, fee_amount: 40000, commission_pct: null, guarantee_amount: null, source: 'INITIAL' },
+    { contract_id: 'C04', cycle_no: 2, fee_amount: 40000, commission_pct: null, guarantee_amount: null, source: 'RENEWAL' },
     { contract_id: 'C05', cycle_no: 1, fee_amount: 35000, commission_pct: null, guarantee_amount: null, source: 'INITIAL' },
     { contract_id: 'C06', cycle_no: 1, fee_amount: 35000, commission_pct: null, guarantee_amount: null, source: 'INITIAL' },
   ];
