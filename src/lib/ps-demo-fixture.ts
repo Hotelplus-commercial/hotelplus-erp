@@ -153,7 +153,7 @@ function acDemoHotels(): AcDemoHotel[] {
   return out;
 }
 export function demoAcViews() {
-  const views: Record<string, PsReportRow[]> = Object.fromEntries(['v_ac_debtors','v_ac_invoices_breakdown','v_ac_invoice_ranking','v_ac_grade_distribution','v_ac_overdue','v_ac_suspended','v_ac_legal','v_ac_system_fee'].map(k => [k, []]));
+  const views: Record<string, PsReportRow[]> = Object.fromEntries(['v_ac_contract_cost_monthly','v_ac_debtors','v_ac_invoices_breakdown','v_ac_invoice_ranking','v_ac_grade_distribution','v_ac_overdue','v_ac_suspended','v_ac_legal','v_ac_system_fee'].map(k => [k, []]));
   const hotels = acDemoHotels();
   const NEW_IN_SEP = new Set(hotels.slice(-5).map(h => h.id)); // no previous period → "ใหม่"
   const UNBILLED: AcDemoHotel[] = [0, 1, 2, 3, 4, 5].map(i => ({ id: hid('Unbilled ' + i), name: `Sala Unbilled ${i + 1}`, orm: 0, marcom: 0, both: false }));
@@ -253,7 +253,54 @@ export function demoAcViews() {
   for (const [seg, line, inv, col, oc, os, odc, oda, nd] of BREAKDOWN) {
     views['v_ac_invoices_breakdown']?.push({ billing_period: '2026-09-01', customer_segment: seg, service_line: line, invoice_count: inv, collected_count: col, outstanding_count: oc, outstanding: os, overdue_count: odc, overdue_amount: oda, notdue_count: nd, notdue_amount: nd * 9000 });
   }
+  views['v_ac_contract_cost_monthly'] = demoContractCost(hotels, NEW_IN_SEP);
   return views;
+}
+
+/* ---------- R1.2 §8 — v_ac_contract_cost_monthly demo (13 months: Sep 25 → Sep 26) ----------
+ * One row per service contract × month. 155 hotels → 142 customers (hotels 142–154 belong to customers 0–12),
+ * latest grade mix = ⑥ Sep 26 totals (A 92 · B 35 · C 15 · D 0). Fixed-fee contracts bill the same fee
+ * (raise in Apr 26 for every 7th, discount in Sep 26 for every 11th); every 4th (i % 4 = 1) is commission;
+ * hotel 5 = commission with the guarantee fee billed when commission falls below ฿60,000;
+ * hotel 3 (ORM + Marcom) Sep 26 bill could not be split by service → บิลรวม on both rows. */
+export const COST_MONTHS = ['2025-09','2025-10','2025-11','2025-12','2026-01','2026-02','2026-03','2026-04','2026-05','2026-06','2026-07','2026-08','2026-09'];
+const COST_AE = ['AE001-Nont', 'AE002-Fern', 'AE003-Boss'];
+const SEASON = [1, 0.96, 1.04, 1.1, 1.06, 0.92, 0.9, 0.95, 1.02, 0.97, 1.05, 1.08, 1];
+function demoContractCost(hotels: AcDemoHotel[], newInSep: Set<string>): PsReportRow[] {
+  const out: PsReportRow[] = [];
+  hotels.forEach((h, i) => {
+    const cust = i < 142 ? i : i - 142;
+    const grade = cust < 92 ? 'A' : cust < 127 ? 'B' : 'C';
+    const worst = grade === 'A' ? (cust % 10 === 0 ? 'B' : 'A') : grade === 'B' ? (cust % 5 === 0 ? 'C' : 'B') : cust % 3 === 0 ? 'D' : 'C';
+    const customerName = hotels[cust]!.name.replace(/ (Hotel|Resort|Lodge|Inn|Villa|Retreat|Suites|House)( \d+)?$/, '') + ' Co.';
+    const start = newInSep.has(h.id) ? '2026-09-01' : i % 9 === 0 && i > 0 ? '2026-02-10' : `2024-${String((i % 12) + 1).padStart(2, '0')}-${String((i % 27) + 1).padStart(2, '0')}`;
+    const commission = i % 4 === 1;
+    const ae = i % 13 === 12 ? null : COST_AE[i % 3]!;
+    const services: ['ORM' | 'Marcom', number][] = [['ORM', h.orm], ...(h.both ? [['Marcom', h.marcom] as ['Marcom', number]] : [])];
+    for (const [service, base] of services) {
+      COST_MONTHS.forEach((m, mi) => {
+        if (m < start.slice(0, 7)) return;
+        let fee = 0, comm = 0, guarantee = false;
+        if (service === 'ORM' && commission) {
+          comm = Math.round(base * 0.9 * SEASON[mi]!);
+          if (i === 5 && comm < 60000) { comm = 60000; guarantee = true; }
+        } else {
+          fee = Math.round(base / 100) * 100;
+          if (i % 7 === 0 && m >= '2026-04') fee = Math.round((fee * 1.05) / 100) * 100;
+          if (i % 11 === 0 && m === '2026-09') fee = Math.round((fee * 0.9) / 100) * 100;
+        }
+        out.push({
+          contract_id: `CT-D${String(i + 1).padStart(3, '0')}`, service, month: `${m}-01`,
+          hotel_id: h.id, hotel_name: h.name, customer_id: `CUS-D${String(cust + 1).padStart(3, '0')}`, customer_name: customerName,
+          fee_thb: fee, commission_thb: comm, guarantee_applied: guarantee, has_bill: true,
+          combined_bill: i === 3 && m === '2026-09', contract_start: start, contract_active: true,
+          ae_owner_id: ae, caretaker: service === 'ORM' ? `ORM ทีม ${'ABCDE'[i % 5]}` : ['แนน', 'บิว', 'โบว์'][i % 3]!,
+          grade_latest: grade, grade_worst6: worst, service_line: service,
+        });
+      });
+    }
+  });
+  return out;
 }
 export function demoOnboarding(): OnboardingCard[] {
   const base = (id: string, hotel: string, line: L, created: string, live: string | null, ref: string, ae: string): OnboardingCard => ({ id, property_id: hid(hotel), property_name: hotel, service_line: line === 'ORM' ? 'ORM' : 'MARCOM', service_variant: line === 'ORM' ? 'ORM' : 'MARCOM_META_TIKTOK', contract_ref: ref, created_at: created, current_stage: live ? 'go_live' : 'new_property', assigned_ae_id: ae, assigned_specialist_id: 'Dao', assigned_service_owner_id: '', billing_start_at: null, billing_anchor_stage: 'go_live', go_live_at: live, meeting_record_url: null, pre_service_form_ref: null, form_completion_status: 'not_started', external_app: null, external_ref_url: null });
