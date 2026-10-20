@@ -237,3 +237,12 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [x] §5 default fee: nearest ฿100 + minimum raise (config renewal_min_raise_thb); system default never requires a reason; "ขึ้นขั้นต่ำ" line in reco box.
 - [x] §7 BD LIVE Link regression test (contract, invoice, payment blocks, signing) — test only.
 - [ ] §2–§4 one contract store / new contract on signing / backfill from main store — stopped per §1: renewal contracts (CT-HTL…) are not in AC Billing's store, สัญญา & บริการ reads a different store, AC Billing has no demo mode, Billing needs status contract_completed + production reports per contract id. Awaiting user decision.
+
+# MD Review R1.2 · Detail tabs v1.1
+- [ ] §1 tab labels/order (keys unchanged; BD-AC last)
+- [ ] §2 AC → ลูกหนี้ & ค่าใช้จ่ายรายสัญญา: remove ①②③, merged debtor card, grade list, cost-per-contract card, AE names, no "รอ BOT"
+- [ ] §3 PS → ต่อสัญญา & ราคา: recurring-only In/Out, risk-rules dialog, pending work card, renewal list old→new
+- [ ] §4 Meeting: Q8 self-rating row, Flag Board collapsed
+- [ ] §5 Task: contract/meeting link, 3 source chips, responsible/watchers, dept→person drill, pre-meeting backlog
+- [ ] §6 Servicing → On-board label
+- [ ] §7 forbidden-string test across tabs · §8 demo fixture
