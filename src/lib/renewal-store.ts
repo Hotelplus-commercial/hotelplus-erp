@@ -84,8 +84,8 @@ export function recoFor(hotelId: string, terms: Terms) {
 
 function newRequest(card: Pick<RenewalCard, 'id' | 'hotelId' | 'hotel' | 'owner'>, src: SourceContract, seq: number, at: string): RenewalRequest {
   const reco = recoFor(src.hotel_id, src.terms);
-  const next = defaultNewTerms(src.terms, reco);
-  const e = evaluate(reco, src.terms, next, renewalConfig.renewal_reco_mode);
+  const next = defaultNewTerms(src.terms, reco, renewalConfig.renewal_min_raise_thb);
+  const e = evaluate(reco, src.terms, next, renewalConfig.renewal_reco_mode, renewalConfig.renewal_min_raise_thb);
   return { id: `RR-${String(seq).padStart(5, '0')}`, renewal_card_id: card.id, source_contract_id: src.contract_id, hotel_id: src.hotel_id, hotel_name: card.hotel, customer_id: src.customer_id, ae_owner_id: card.owner, reco_snapshot: reco, old_terms: src.terms, new_terms: next, changed_fields: e.changed_fields, deviates_from_reco: e.deviates_from_reco, approval_required: e.approval_required, reason_code: null, reason_text: '', entity_change: false, entity_ticket_id: null, entity_detail: null, status: 'DRAFT', submitted_at: null, approved_by: null, approver_role: null, approved_at: null, return_comment: null, link_sent_at: null, signed_at: null, new_contract_id: null, created_at: at, updated_at: at };
 }
 
@@ -103,7 +103,7 @@ function seedDemo(): State {
   s.requests.push({ ...r6, status: 'LINK_SENT', link_sent_at: '2026-09-29T04:00:00.000Z' });
   const r7 = mk(c7); const lo = r7.reco_snapshot.band_min_pct ?? 0;
   const t7 = { ...r7.new_terms, fee_amount: Math.round(r7.old_terms.fee_amount * (1 + lo / 100)) };
-  const e7 = evaluate(r7.reco_snapshot, r7.old_terms, t7, renewalConfig.renewal_reco_mode);
+  const e7 = evaluate(r7.reco_snapshot, r7.old_terms, t7, renewalConfig.renewal_reco_mode, renewalConfig.renewal_min_raise_thb);
   const signed7 = { ...r7, ...e7, new_terms: t7, status: 'SIGNED' as const, submitted_at: '2026-09-22T03:00:00.000Z', approved_by: 'PM001-Alex', approver_role: 'PM' as const, approved_at: '2026-09-23T03:00:00.000Z', link_sent_at: '2026-09-24T03:00:00.000Z', signed_at: '2026-09-28T07:15:00.000Z', new_contract_id: `${r7.source_contract_id}-R${r7.id.slice(-4)}` };
   s.requests.push(signed7); s.history.push(renewalHistoryRow(signed7, 1));
   return s;
@@ -131,9 +131,9 @@ export function startRenewal(card: Pick<RenewalCard, 'id' | 'hotelId' | 'hotel' 
   const s = cur(); const r = newRequest(card, src, s.seq + 1, nowIso());
   commit({ ...s, seq: s.seq + 1, requests: [...s.requests, r] }); return { ok: true, req: r };
 }
-export const updateTerms = (id: string, t: Terms) => apply(id, (r) => editTerms(r, t, renewalConfig.renewal_reco_mode, nowIso()));
+export const updateTerms = (id: string, t: Terms) => apply(id, (r) => editTerms(r, t, renewalConfig.renewal_reco_mode, nowIso(), renewalConfig.renewal_min_raise_thb));
 export const updateReason = (id: string, code: RenewalRequest['reason_code'], text: string) => apply(id, (r) => ({ ok: true, req: { ...r, reason_code: code, reason_text: text, updated_at: nowIso() } }));
-export const submitRequest = (id: string) => apply(id, (r) => submit(r, renewalConfig.renewal_reco_mode, entityClosed(r), nowIso()));
+export const submitRequest = (id: string) => apply(id, (r) => submit(r, renewalConfig.renewal_reco_mode, entityClosed(r), nowIso(), renewalConfig.renewal_min_raise_thb));
 export const approveRequest = (id: string, by: string, role: ApproverRole) => apply(id, (r) => approve(r, by, role, entityClosed(r), nowIso(), nowIso(), renewalConfig));
 export const returnBack = (id: string, by: string, role: ApproverRole, comment: string) => apply(id, (r) => returnRequest(r, by, role, comment, nowIso(), nowIso(), renewalConfig));
 /** Send / re-send: the live_link record is written BEFORE the request moves to LINK_SENT. */

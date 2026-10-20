@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { APPROVER_ROLE_TH, RENEWAL_LABEL_TH as L, RENEWAL_RECO_TH, renewalReqStatusTh } from "@/lib/ps-glossary";
 import { usePsRenewal, type RenewalCard } from "@/lib/ps-renewal";
-import { isOverdue, type ApproverRole, type RecoSnapshot, type RenewalRequest } from "@/lib/renewal-rules";
+import { isOverdue, minRaiseApplied, type ApproverRole, type RecoSnapshot, type RenewalRequest } from "@/lib/renewal-rules";
 import {
   approveRequest, entityClosed, isRenewalDemo, liveLinkPathFor, latestRequestFor,
   renewalConfig, renewalNow, returnBack, sendRenewalLink, signRequest, signedAwaitingDone, startRenewal, useRenewalStore,
@@ -20,12 +20,14 @@ const thb = (n: number) => `฿${n.toLocaleString("th-TH")}`;
 export const recoLabel = (r: RecoSnapshot) => r.type === "RAISE" ? RENEWAL_RECO_TH.RAISE(r.band_min_pct ?? 0, r.band_max_pct ?? 0) : RENEWAL_RECO_TH[r.type];
 const toneOf = (s: RenewalRequest["status"]) => s === "SIGNED" || s === "READY_TO_SEND" || s === "APPROVED" ? "success" : s === "RETURNED" || s === "PENDING_APPROVAL" ? "warn" : s === "DECLINED" ? "danger" : "muted";
 
-export function RecoBox({ reco }: { reco: RecoSnapshot }) {
+export function RecoBox({ reco, oldFee }: { reco: RecoSnapshot; oldFee?: number }) {
+  const minRaise = renewalConfig.renewal_min_raise_thb;
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/30 p-3 text-sm">
       <span className="font-semibold">คำแนะนำระบบ: {recoLabel(reco)}</span>
       <InfoButton info={{ source: "กล่อง Repricing (อ่านอย่างเดียว)", count: reco.reasons.join(" · ") || "—", read: L.ruleNote }} />
       {reco.reasons.length > 0 && <span className="text-xs text-muted-foreground">{reco.reasons.join(" · ")}</span>}
+      {oldFee != null && minRaiseApplied(oldFee, reco, minRaise) && <span className="w-full text-xs text-muted-foreground">{L.minRaise(minRaise)}</span>}
     </div>
   );
 }

@@ -21,8 +21,8 @@ export type RenewalRequest = {
   created_at: string; updated_at: string;
 };
 export type PriceHistoryRow = { contract_id: string; cycle_no: number; fee_amount: number; commission_pct: number; term_months: number; package: string; effective_from: string; effective_to: string; source: 'INITIAL' | 'RENEWAL'; renewal_request_id: string | null };
-export type RenewalConfig = { renewal_reco_mode: RecoMode; renewal_approval_overdue_days: number };
-export const DEFAULT_RENEWAL_CONFIG: RenewalConfig = { renewal_reco_mode: 'SOFT_FORCE', renewal_approval_overdue_days: 2 };
+export type RenewalConfig = { renewal_reco_mode: RecoMode; renewal_approval_overdue_days: number; renewal_min_raise_thb: number };
+export const DEFAULT_RENEWAL_CONFIG: RenewalConfig = { renewal_reco_mode: 'SOFT_FORCE', renewal_approval_overdue_days: 2, renewal_min_raise_thb: 500 };
 
 export const OPEN_REQUEST: RequestStatus[] = ['DRAFT', 'PENDING_APPROVAL', 'APPROVED', 'RETURNED', 'READY_TO_SEND', 'LINK_SENT'];
 
@@ -50,22 +50,37 @@ export function recommend(row: PsReportRow | null | undefined, old: Terms, hasDa
   if (row['band_min_pct'] == null) return { ...base, inputs, type: 'NONE', reasons: ['ไม่มีข้อมูลรายได้พอประเมินช่วงราคา'] };
   return { band_min_pct: Number(row['band_min_pct']), band_max_pct: Number(row['band_max_pct']), inputs, computed_at: computedAt, type: 'RAISE', reasons: why };
 }
-/** Default new terms: RAISE → fee × (1 + band midpoint), Math.round like the Repricing box; else old terms. Dates roll forward. */
-export function defaultNewTerms(old: Terms, reco: RecoSnapshot): Terms {
-  const fee = reco.type === 'RAISE' && reco.band_min_pct != null && reco.band_max_pct != null ? Math.round(old.fee_amount * (1 + (reco.band_min_pct + reco.band_max_pct) / 2 / 100)) : old.fee_amount;
-  return { ...old, fee_amount: fee, ...rollDates(old.end_date, old.term_months) };
+/** v1.3 system default fee for RAISE: midpoint, rounded half-up to the nearest ฿100; raise below the minimum → ceil(old + min) to ฿100.
+ * Other reco types keep the old fee (no rounding, no minimum). */
+export function systemDefaultFee(oldFee: number, reco: RecoSnapshot, minRaise: number): number {
+  if (reco.type !== 'RAISE' || reco.band_min_pct == null || reco.band_max_pct == null) return oldFee;
+  const raw = oldFee * (1 + (reco.band_min_pct + reco.band_max_pct) / 2 / 100);
+  const fee = Math.floor(raw / 100 + 0.5 + 1e-9) * 100;
+  return fee - oldFee < minRaise ? Math.ceil((oldFee + minRaise) / 100 - 1e-9) * 100 : fee;
+}
+/** True when the minimum raise (not the rounded midpoint) set the system default. */
+export function minRaiseApplied(oldFee: number, reco: RecoSnapshot, minRaise: number): boolean {
+  if (reco.type !== 'RAISE' || reco.band_min_pct == null || reco.band_max_pct == null) return false;
+  const raw = oldFee * (1 + (reco.band_min_pct + reco.band_max_pct) / 2 / 100);
+  return Math.floor(raw / 100 + 0.5 + 1e-9) * 100 - oldFee < minRaise;
+}
+/** Default new terms: fee from systemDefaultFee(); dates roll forward. */
+export function defaultNewTerms(old: Terms, reco: RecoSnapshot, minRaise: number = DEFAULT_RENEWAL_CONFIG.renewal_min_raise_thb): Terms {
+  return { ...old, fee_amount: systemDefaultFee(old.fee_amount, reco, minRaise), ...rollDates(old.end_date, old.term_months) };
 }
 
 /* ---------- §3 approval matrix ---------- */
 const TERM_KEYS: (keyof Terms)[] = ['fee_amount', 'commission_pct', 'term_months', 'package'];
 export const changedFields = (o: Terms, n: Terms) => TERM_KEYS.filter((k) => o[k] !== n[k]);
 export type Evaluation = { changed_fields: (keyof Terms)[]; approval_required: boolean; reason_required: boolean; deviates_from_reco: boolean };
-export function evaluate(reco: RecoSnapshot, old: Terms, next: Terms, mode: RecoMode): Evaluation {
+/** The system default fee always counts as following the recommendation (raise within band). */
+export function evaluate(reco: RecoSnapshot, old: Terms, next: Terms, mode: RecoMode, minRaise: number = DEFAULT_RENEWAL_CONFIG.renewal_min_raise_thb): Evaluation {
   const changed = changedFields(old, next);
   const pct = old.fee_amount > 0 ? ((next.fee_amount - old.fee_amount) / old.fee_amount) * 100 : 0;
   const otherChange = changed.some((k) => k !== 'fee_amount');
   const decrease = next.fee_amount < old.fee_amount;
-  const inBand = reco.type === 'RAISE' && reco.band_min_pct != null && reco.band_max_pct != null && next.fee_amount > old.fee_amount && pct >= reco.band_min_pct - 1e-9 && pct <= reco.band_max_pct + 1e-9;
+  const isDefault = reco.type === 'RAISE' && next.fee_amount === systemDefaultFee(old.fee_amount, reco, minRaise);
+  const inBand = isDefault || (reco.type === 'RAISE' && reco.band_min_pct != null && reco.band_max_pct != null && next.fee_amount > old.fee_amount && pct >= reco.band_min_pct - 1e-9 && pct <= reco.band_max_pct + 1e-9);
   if (otherChange || decrease) return { changed_fields: changed, approval_required: true, reason_required: true, deviates_from_reco: true };
   if (reco.type === 'RAISE') {
     if (inBand) return { changed_fields: changed, approval_required: true, reason_required: false, deviates_from_reco: false };
@@ -86,16 +101,16 @@ type Res = { ok: true; req: RenewalRequest } | { ok: false; error: string };
 const set = (r: RenewalRequest, p: Partial<RenewalRequest>, at: string): Res => ({ ok: true, req: { ...r, ...p, updated_at: at } });
 
 /** Edit terms: re-runs §3; any edit after approval returns to DRAFT. */
-export function editTerms(r: RenewalRequest, next: Terms, mode: RecoMode, at: string): Res {
+export function editTerms(r: RenewalRequest, next: Terms, mode: RecoMode, at: string, minRaise?: number): Res {
   if (!['DRAFT', 'RETURNED', 'APPROVED', 'READY_TO_SEND'].includes(r.status)) return { ok: false, error: 'แก้ไขไม่ได้ในสถานะนี้' };
-  const e = evaluate(r.reco_snapshot, r.old_terms, next, mode);
+  const e = evaluate(r.reco_snapshot, r.old_terms, next, mode, minRaise);
   const terms = changedFields(r.new_terms, next).length > 0;
   return set(r, { new_terms: next, changed_fields: e.changed_fields, approval_required: e.approval_required, deviates_from_reco: e.deviates_from_reco, ...(terms || r.status === 'RETURNED' ? { status: 'DRAFT', approved_by: null, approver_role: null, approved_at: null } : {}) }, at);
 }
 /** Step 3 primary action. */
-export function submit(r: RenewalRequest, mode: RecoMode, entityTicketClosed: boolean, at: string): Res {
+export function submit(r: RenewalRequest, mode: RecoMode, entityTicketClosed: boolean, at: string, minRaise?: number): Res {
   if (r.status !== 'DRAFT') return { ok: false, error: 'ส่งได้เฉพาะร่าง' };
-  const e = evaluate(r.reco_snapshot, r.old_terms, r.new_terms, mode);
+  const e = evaluate(r.reco_snapshot, r.old_terms, r.new_terms, mode, minRaise);
   if (e.reason_required && !reasonValid(r.reason_code, r.reason_text)) return { ok: false, error: 'ต้องระบุเหตุผล' };
   if (e.approval_required) return set(r, { ...e, status: 'PENDING_APPROVAL', submitted_at: at }, at);
   return set(r, { ...e, status: gatesPass({ ...r, ...e }, entityTicketClosed) ? 'READY_TO_SEND' : 'DRAFT' }, at);
