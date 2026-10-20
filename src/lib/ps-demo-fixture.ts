@@ -282,11 +282,13 @@ export function demoAcViews() {
  * One row per service contract × month. 155 hotels → 142 customers (hotels 142–154 belong to customers 0–12),
  * latest grade mix = ⑥ Sep 26 totals (A 92 · B 35 · C 15 · D 0). Fixed-fee contracts bill the same fee
  * (raise in Apr 26 for every 7th, discount in Sep 26 for every 11th); every 4th (i % 4 = 1) is commission;
- * hotel 5 = commission with the guarantee fee billed when commission falls below ฿60,000;
+ * hotel 5 = commission with the guarantee fee (฿80,000) billed when commission falls below it (Sep 26);
  * hotel 3 (ORM + Marcom) Sep 26 bill could not be split by service → บิลรวม on both rows. */
 export const COST_MONTHS = ['2025-09','2025-10','2025-11','2025-12','2026-01','2026-02','2026-03','2026-04','2026-05','2026-06','2026-07','2026-08','2026-09'];
 const COST_AE = ['AE001-Nont', 'AE002-Fern', 'AE003-Boss'];
 const SEASON = [1, 0.96, 1.04, 1.1, 1.06, 0.92, 0.9, 0.95, 1.02, 0.97, 1.05, 1.08, 1];
+const SEASON_H5 = [1, 1.02, 0.98, 1.05, 1.1, 0.95, 0.9, 0.97, 1.03, 1, 1.04, 1.06, 0.88];
+const GUARANTEE_H5 = 80000;
 function demoContractCost(hotels: AcDemoHotel[], newInSep: Set<string>): PsReportRow[] {
   const out: PsReportRow[] = [];
   hotels.forEach((h, i) => {
@@ -303,8 +305,8 @@ function demoContractCost(hotels: AcDemoHotel[], newInSep: Set<string>): PsRepor
         if (m < start.slice(0, 7)) return;
         let fee = 0, comm = 0, guarantee = false;
         if (service === 'ORM' && commission) {
-          comm = Math.round(base * 0.9 * SEASON[mi]!);
-          if (i === 5 && comm < 60000) { comm = 60000; guarantee = true; }
+          comm = Math.round(base * 0.9 * (i === 5 ? SEASON_H5[mi]! : SEASON[(mi + i) % SEASON.length]!));
+          if (i === 5 && comm < GUARANTEE_H5) { comm = GUARANTEE_H5; guarantee = true; }
         } else {
           fee = Math.round(base / 100) * 100;
           if (i % 7 === 0 && m >= '2026-04') fee = Math.round((fee * 1.05) / 100) * 100;
