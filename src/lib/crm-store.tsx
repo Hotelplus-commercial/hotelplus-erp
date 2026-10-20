@@ -552,6 +552,11 @@ export function CrmStoreProvider({ children }: { children: React.ReactNode }) {
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 
+/** Read-only access that tolerates a missing provider (e.g. isolated dashboard renders). */
+export function useCrmOptional() {
+  return useContext(Ctx);
+}
+
 export function useCrm() {
   const ctx = useContext(Ctx);
   if (!ctx) throw new Error("useCrm must be used inside CrmStoreProvider");
