@@ -44,6 +44,22 @@ const COHORT_HISTORY: [string, number, number, number, number][] = [['2025-08-01
 /** Prior renewal cycle (Sep 2025) — not owned by Nont so the owner-AND oracle is unchanged. */
 const RENEWAL_HISTORY: [string, string, string, string][] = [['RH1', 'C05', '2025-09-08', 'RENEWED'], ['RH2', 'C09', '2025-09-18', 'RENEWED'], ['RH3', 'C14', '2025-09-22', 'NOT_RENEWED'], ['RH4', 'C06', '2025-09-26', 'LOST']];
 const RENEWALS: [string, string, string, string][] = [['R1', 'C01', '2026-09-10', 'RENEWED'], ['R2', 'C02', '2026-09-15', 'RENEWED'], ['R3', 'C04', '2026-09-20', 'RENEWED'], ['R4', 'C05', '2026-09-25', 'NOT_RENEWED'], ['R5', 'C06', '2026-09-28', 'IN_PROGRESS']];
+/** R1.2 §8: free-text reason on the ไม่ต่อ card (existing reason_text). */
+const RENEWAL_REASON: Record<string, string> = { R4: 'ลูกค้าตัดงบการตลาดปีหน้า ขอหยุดบริการ Marcom ไว้ก่อน' };
+/** R1.2 §3.4 / §8 demo contract_price_history (previous cycle → RENEWAL): C01 raise · C02 same terms · C04 lower commission %. */
+export type DemoPriceCycle = { contract_id: string; cycle_no: number; fee_amount: number | null; commission_pct: number | null; guarantee_amount: number | null; source: 'INITIAL' | 'RENEWAL' };
+export function demoPriceHistory(): DemoPriceCycle[] {
+  return [
+    { contract_id: 'C01', cycle_no: 1, fee_amount: 50000, commission_pct: null, guarantee_amount: null, source: 'INITIAL' },
+    { contract_id: 'C01', cycle_no: 2, fee_amount: 52500, commission_pct: null, guarantee_amount: null, source: 'RENEWAL' },
+    { contract_id: 'C02', cycle_no: 1, fee_amount: 30000, commission_pct: null, guarantee_amount: null, source: 'INITIAL' },
+    { contract_id: 'C02', cycle_no: 2, fee_amount: 30000, commission_pct: null, guarantee_amount: null, source: 'RENEWAL' },
+    { contract_id: 'C04', cycle_no: 1, fee_amount: null, commission_pct: 8, guarantee_amount: 40000, source: 'INITIAL' },
+    { contract_id: 'C04', cycle_no: 2, fee_amount: null, commission_pct: 6.5, guarantee_amount: 40000, source: 'RENEWAL' },
+    { contract_id: 'C05', cycle_no: 1, fee_amount: 35000, commission_pct: null, guarantee_amount: null, source: 'INITIAL' },
+    { contract_id: 'C06', cycle_no: 1, fee_amount: 35000, commission_pct: null, guarantee_amount: null, source: 'INITIAL' },
+  ];
+}
 const SURVEY2: Record<string, [number, number]> = { 'Chaam Peumsuk': [5, 10], Seefah: [5, 9], 'Chaba Grand': [4, 9], 'Baan Suan': [4, 8], 'Dusit Pool Villa': [3, 5] };
 const GRADES: Record<string, [string | null, string | null]> = { 'Chaam Peumsuk': ['A', 'A'], Seefah: ['A', 'A'], 'Erawan Boutique': [null, null], Anjali: ['C', 'C'], 'Baan Suan': ['B', 'B'], 'Baan Talay': ['B', 'B'], 'Dusit Pool Villa': ['C', 'C'], 'Chaba Grand': ['B', 'D'] };
 /** Account Health 360 demo: ORM-commission revenue × fee × tier (closed months). Chaba Grand = compound; Chaam Peumsuk = healthy. */
@@ -72,6 +88,11 @@ export function buildDemoReport(filter?: GlobalFilter): PsReport {
   const now = DEMO_NOW.slice(0, 10);
   const views = Object.fromEntries(PS_VIEWS.map(v => [v, [] as PsReportRow[]])) as Record<PsView, PsReportRow[]>;
   views.v_ps_lifecycle_flow = contracts.map(c => ({ contract_id: c.id, hotel_id: hid(c.hotel), hotel_name: c.hotel, service_line: c.line, ae_owner_id: c.ae, status: c.status, start_date: c.start, inactivated_at: c.inact, created_at: NEW_PROPERTY[c.id] ?? null }));
+  // R1.2 §3.1: one-time jobs live in the same projection but are never counted in In / Out (billing_kind ONE_TIME).
+  views.v_ps_lifecycle_flow.push(
+    { contract_id: 'P01', hotel_id: hid('Chaba Grand'), hotel_name: 'Chaba Grand', service_line: 'Production', billing_kind: 'ONE_TIME', ae_owner_id: 'Nont', status: 'INACTIVE', start_date: '2026-09-12', inactivated_at: '2026-09-25', created_at: '2026-09-12' },
+    { contract_id: 'S01', hotel_id: hid('Erawan Boutique'), hotel_name: 'Erawan Boutique', service_line: 'ORM', billing_kind: 'ONE_TIME', ae_owner_id: 'Nont', status: 'ACTIVE', start_date: '2026-09-05', inactivated_at: null, created_at: '2026-09-05' },
+  );
   // R1 §10: 12 extra months back (2025-07 … 2026-06) derived from the same contracts; existing months unchanged.
   for (const m of [...HISTORY_MONTHS, '2026-07-01', '2026-08-01', '2026-09-01']) {
     const next = new Date(Date.UTC(+m.slice(0, 4), +m.slice(5, 7), 1)).toISOString().slice(0, 10);
@@ -80,7 +101,7 @@ export function buildDemoReport(filter?: GlobalFilter): PsReport {
       for (const c of cs) views.v_ps_churn_monthly.push({ billing_period: m, service_line: line, hotel_id: hid(c.hotel), hotel_name: c.hotel, ae_owner_id: c.ae, active_at_start: c.start <= m && (!c.inact || c.inact >= m) ? 1 : 0, out_count: c.inact && c.inact >= m && c.inact < next ? 1 : 0 });
     }
   }
-  views.v_ps_renewal = RENEWALS.flatMap(([rid, cid, due, outcome]) => { const c = contracts.find(x => x.id === cid); return c ? [{ renewal_id: rid, contract_id: cid, hotel_id: hid(c.hotel), hotel_name: c.hotel, service_line: c.line, ae_owner_id: c.ae, renewal_due_date: due, outcome }] : []; });
+  views.v_ps_renewal = RENEWALS.flatMap(([rid, cid, due, outcome]) => { const c = contracts.find(x => x.id === cid); return c ? [{ renewal_id: rid, contract_id: cid, hotel_id: hid(c.hotel), hotel_name: c.hotel, service_line: c.line, ae_owner_id: c.ae, renewal_due_date: due, outcome, reason_text: RENEWAL_REASON[rid] ?? null }] : []; });
   views.v_ps_contract_lifetime = contracts.map(c => ({ contract_id: c.id, hotel_id: hid(c.hotel), hotel_name: c.hotel, ae_owner_id: c.ae, service_line: c.line, status: c.status, end_date: c.end, age_days: c.status === 'INACTIVE' ? day(c.start, c.end) : day(c.start, now) }));
   for (const m of ['2026-08', '2026-09']) {
     const cs = FINISHED.filter(f => f[1].startsWith(m));
