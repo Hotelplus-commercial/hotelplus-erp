@@ -730,7 +730,8 @@ function SurveySection({ surveys, curSurveys, prevSurveys, flags, service, compa
   surveys: MeetingRow[]; curSurveys: MeetingRow[]; prevSurveys: MeetingRow[]; flags: MeetingRow[]; service: string; compare: boolean; prevLabel: string;
 }) {
   const groups = [
-    { key: "ภาพรวม", qs: QUESTIONS.filter(([q]) => q === "Q7" || q === "Q8"), rows: surveys, cur: curSurveys, prev: prevSurveys },
+    // R1.2 §4.1: Q8 is the AE's self-rating — never a customer-score row (shown separately at the bottom).
+    { key: "ภาพรวม", qs: QUESTIONS.filter(([q]) => q === "Q7"), rows: surveys, cur: curSurveys, prev: prevSurveys },
     { key: "ORM", qs: QUESTIONS.filter(([, , g]) => g === "ORM"), rows: surveys.filter((r) => r.service_line === "ORM"), cur: curSurveys.filter((r) => r.service_line === "ORM"), prev: prevSurveys.filter((r) => r.service_line === "ORM") },
     { key: "Marcom", qs: QUESTIONS.filter(([, , g]) => g === "Marcom"), rows: surveys.filter((r) => r.service_line === "Marcom"), cur: curSurveys.filter((r) => r.service_line === "Marcom"), prev: prevSurveys.filter((r) => r.service_line === "Marcom") },
   ].filter((g) => g.key === "ภาพรวม" || service === "ALL" || service === g.key);
@@ -786,7 +787,7 @@ function SurveySection({ surveys, curSurveys, prevSurveys, flags, service, compa
                   unit="บริการ"
                   rowNames={service === "ALL" ? ["ORM · Snapshot", "Marcom · Sync up"] : service === "ORM" ? ["ORM · Snapshot"] : ["Marcom · Sync up"]}
                   rowKey={(r) => (r.service_line === "ORM" ? "ORM · Snapshot" : "Marcom · Sync up")}
-                  qs={[["Q7", "พึงพอใจ"], ["Q8", "แนะนำต่อ"]]}
+                  qs={[["Q7", "พึงพอใจ"]]}
                   rows={g.rows}
                   prevRows={g.prev}
                   flags={flags}
@@ -828,8 +829,26 @@ function SurveySection({ surveys, curSurveys, prevSurveys, flags, service, compa
           );
         })}
       </div>
+      <div className="mt-8 border-t pt-4" data-testid="q8-self-rating">
+        <h3 className="mb-3 flex flex-wrap items-center gap-2 text-sm font-semibold">
+          Q8 · AE ประเมินตนเอง
+          <span className="mt-chip mt-chip-grey">ไม่ใช่คะแนนจากลูกค้า</span>
+        </h3>
+        <div className="mt-qgrid">
+          <QCard
+            q="Q8"
+            label="· AE ประเมินตนเอง"
+            rows={surveys.filter((r) => r["question"] === "Q8")}
+            curRows={curSurveys.filter((r) => r["question"] === "Q8")}
+            prevRows={prevSurveys.filter((r) => r["question"] === "Q8")}
+            flags={[]}
+            compare={compare}
+            prevLabel={prevLabel}
+          />
+        </div>
+      </div>
       <p className="mt-6 text-xs text-muted-foreground">
-        Q8 = สัญญาณการแนะนำต่อระดับการประชุม (AE กรอก) · ป้าย &quot;ลูกค้าแย้ง&quot; = ลูกค้าคอมเมนต์กลับหลังได้รับอีเมลคะแนน
+        Q8 = AE ประเมินตนเอง ไม่นับรวมในคะแนนจากลูกค้า · ป้าย &quot;ลูกค้าแย้ง&quot; = ลูกค้าคอมเมนต์กลับหลังได้รับอีเมลคะแนน
       </p>
       <Q9Expander rows={surveys} />
     </DashCard>
@@ -861,6 +880,8 @@ function FlagBoard({ flags, period, compare, periodB, service }: {
   flags: MeetingRow[]; period: Period; compare: boolean; periodB: Period; service: string;
 }) {
   const [watchOpen, setWatchOpen] = useState(false);
+  // R1.2 §4.2: collapsed on every visit (state is never persisted).
+  const [boardOpen, setBoardOpen] = useState(false);
   const open = flags.filter((r) => !r["resolved_at"] && r["severity"] === "FLAG");
   const watch = flags.filter((r) => !r["resolved_at"] && r["severity"] === "WARNING");
   const inPeriod = (d: unknown, p: Period) => d != null && String(d).slice(0, 10) >= p.from && String(d).slice(0, 10) <= p.to;
@@ -887,6 +908,13 @@ function FlagBoard({ flags, period, compare, periodB, service }: {
       noteLines={[`ธงแดงเปิดค้าง ${open.length} ธง · ธงเหลือง ${watch.length} รายการ`]}
       howToRead="ชี้ ⓘ ที่หัวการ์ดเพื่อดูกติกาการเกิดธง"
     >
+      <button type="button" aria-expanded={boardOpen} onClick={() => setBoardOpen(!boardOpen)} className="flex w-full flex-wrap items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left text-sm" data-testid="flag-board-toggle">
+        <span>
+          <span className={cn(open.length > 0 && "font-semibold text-dash-action")}>{FLAG_LABEL.red}เปิดอยู่ {open.length}</span> · {FLAG_LABEL.warn} {watch.length}
+        </span>
+        <span className="text-xs font-semibold text-primary">ดูรายการ {boardOpen ? "▴" : "▾"}</span>
+      </button>
+      {boardOpen && <>
       <div className="mt-tiles mt-4">
         {visibleGroups.map((g) => {
           const gOpen = open.filter((r) => r["group_name"] === g.key).length;
@@ -975,6 +1003,7 @@ function FlagBoard({ flags, period, compare, periodB, service }: {
           </ul>
         )}
       </div>
+      </>}
     </DashCard>
   );
 }
