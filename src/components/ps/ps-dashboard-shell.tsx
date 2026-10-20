@@ -1,7 +1,7 @@
 /* PS Dashboard Shell v1.0 — Headline KPI strip + shared filter + AC tab (read-only).
  * AC data comes only from the existing v_ac_* views (cloud mirror, C5); nothing here mutates
  * AC data. Signed/Won are re-homed from BD-AC using the unchanged v_bdac_flow projection. */
-import { GRADE_D_LABEL } from "@/lib/ps-glossary";
+import { DASHBOARD_TABS, GRADE_D_LABEL } from "@/lib/ps-glossary";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Clock, Minus, Triangle } from "lucide-react";
@@ -193,7 +193,11 @@ export function DashboardShell({
   const [demo, setDemo] = useState(false);
   const [ready, setReady] = useState(false);
   useEffect(() => {
-    setDemo(new URLSearchParams(window.location.search).get("demo") === "1");
+    const sp = new URLSearchParams(window.location.search);
+    setDemo(sp.get("demo") === "1");
+    // R1.2 §1: tab keys are unchanged (labels/order only), so ?tab=<key> links keep opening the same tab.
+    const t = sp.get("tab");
+    if (t && DASHBOARD_TABS.some(([k]) => k === t)) setTab(t);
     setReady(true);
   }, []);
   useEffect(() => {
@@ -291,14 +295,7 @@ export function DashboardShell({
                 role="tablist"
                 aria-label="Dashboard tabs"
               >
-                {[
-                  ["bdac", "BD-AC"],
-                  ["ac", "AC"],
-                  ["ps", "PS"],
-                  ["meeting", "Meeting & Survey"],
-                  ["task", "ติดตามงานผู้ให้บริการ"],
-                  ["servicing", "Servicing"],
-                ].map(([k, l]) => (
+                {DASHBOARD_TABS.map(([k, l]) => (
                   <Button
                     key={k}
                     role="tab"
@@ -306,6 +303,7 @@ export function DashboardShell({
                     onClick={() => {
                       if (k) setTab(k);
                     }}
+                    data-tab-key={k}
                     variant={tab === k ? "default" : "ghost"}
                     className="shrink-0 rounded-md px-3 py-1.5 text-sm font-medium"
                   >
@@ -563,7 +561,7 @@ function HeadlineStrip() {
               <span className="text-dash-watch">{GRADE_D_LABEL} {dCount ?? "—"}</span>,
               "รอข้อมูล % collected",
               ["รอข้อมูล collected / total", `${GRADE_D_LABEL} ${dCount ?? "—"}${gradeD ? ` · งวด ${monYY(gradeD.period + "-01")}` : ""}`],
-              { source: "AC Billing · เกรดคำนวณโดยงานประจำวันของ AC", count: "% เก็บแล้ว = เหมือนการ์ดลูกหนี้ในแท็บ AC เมื่อเลือกเดือนปัจจุบัน (ยังไม่มีข้อมูล จึงแสดง —) · ลูกค้าเกรด D = จำนวนลูกค้าที่ได้เกรด D ในงวดบิลล่าสุดของช่วง = ตัวเลขเดียวกับการ์ดเกรดในแท็บ AC" },
+              { source: "AC Billing · เกรดคำนวณโดยงานประจำวันของ AC", count: "% เก็บแล้ว = เหมือนการ์ดลูกหนี้ในแท็บ ลูกหนี้ & ค่าใช้จ่ายรายสัญญา เมื่อเลือกเดือนปัจจุบัน (ยังไม่มีข้อมูล จึงแสดง —) · ลูกค้าเกรด D = จำนวนลูกค้าที่ได้เกรด D ในงวดบิลล่าสุดของช่วง = ตัวเลขเดียวกับการ์ดเกรดในแท็บ AC" },
             )}
           </div>
         </div>
@@ -620,6 +618,8 @@ function AcTab() {
       service={f.service}
       compare={f.compare}
       demo={global.demo}
+      periodA={selectedPeriod(f, now, "A")}
+      periodB={f.compare ? selectedPeriod(f, now, "B") : null}
     />
   );
 }

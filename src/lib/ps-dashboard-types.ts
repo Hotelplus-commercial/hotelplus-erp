@@ -8,6 +8,11 @@ export type PsReport = { views: Record<PsView, PsReportRow[]>; pending: PsView[]
 export type PsFilter = { service: 'ALL' | 'ORM' | 'Marcom'; range: 'mtd' | '3m' | '6m' | '12m' | 'all' | 'custom'; period?: { from: string; to: string }; customPeriod?: { from: string; to: string } };
 export type RiskRules = { grades: string[]; monthlySurveyBelow: number; monthlyBillingBelow: number; monthlyBillingAbove: number };
 export const DEFAULT_RISK_RULES: RiskRules = { grades: ['C', 'D'], monthlySurveyBelow: 7, monthlyBillingBelow: 10000, monthlyBillingAbove: 100000 };
+/** R1.2 §3.1 — In / Out counts recurring (monthly) services only: ORM, Marcom and a monthly system-fee service line
+ *  when it exists as its own row. Setup fees and one-time jobs (billing_kind ONE_TIME or any other line) are excluded. */
+export const RECURRING_SERVICE_LINES = ['ORM', 'Marcom', 'SYSTEM_FEE'] as const;
+export const isRecurringService = (row: PsReportRow) =>
+  row['billing_kind'] !== 'ONE_TIME' && (RECURRING_SERVICE_LINES as readonly string[]).includes(String(row.service_line ?? ''));
 export function riskReasons(row: PsReportRow, rules: RiskRules) {
   const reasons: string[] = [];
   if (rules.grades.includes(String(row.worst_grade ?? row.latest_grade ?? ''))) reasons.push('Payment Grade');

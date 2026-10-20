@@ -3,7 +3,8 @@
  * end of Apr K1 18 · K2 2 · K4 8 · K5 0; Nov–Apr K1 12,14,15,15,16,18; ⑥ PS 31 / L0 41; ⑦ ORM-A most incoming. */
 import type { Activity, Category, HotelCare, MonitorRow, SnapshotRow, Team, Ticket } from './task-tickets';
 import { stampOf } from './task-tickets';
-import { demoTaskHotels } from './ps-demo-fixture';
+import { demoSpineContracts, demoTaskHotels } from './ps-demo-fixture';
+import { backfillContracts, type MeetingRef, type ServiceContractRef } from './ticket-links';
 import type { Dept, L0Ticket, L0Status, TicketType } from './tickets-l0';
 import type { FlowRow } from './task-worklist';
 export const TASK_DEMO_NOW = '2026-10-17T12:00:00.000Z';
@@ -176,5 +177,34 @@ export function taskDemo(categories: Category[], hotels: HotelCare[]) {
   // K3 (not reconstructable): fixed in-memory snapshots from 1 Sep; Sep 30 = 7, peak 8.
   const snapshots: SnapshotRow[] = [];
   for (let d = Date.parse('2026-09-01T00:00:00Z'); d < nowMs - 12 * 36e5; d += DAY) { const day = new Date(d).toISOString().slice(0, 10), dom = new Date(d).getUTCDate(); const n = day === '2026-09-30' ? 7 : day > '2026-09-30' ? 6 + (dom % 3 === 0 ? 1 : 0) : 6 + (dom % 4 === 0 ? 2 : dom % 2); snapshots.push({ snapshot_date: day, metric: 'K3_UNASSIGNED', dim_key: 'ALL', value: n, threshold_used: null, source: 'JOB' }); }
+  // R1.2 §8: link two Chaam Peumsuk cases + one Anjali case to the previous monthly meeting, then one-time contract backfill.
+  for (const c of cases) { const m = DEMO_CASE_MEETING[c.case_no]; if (m) c.meeting_id = m; }
+  const linked = backfillContracts(cases, demoServiceContracts(hotels)).rows;
+  cases.splice(0, cases.length, ...linked);
   return { cases, tickets, flow, activity, snapshots, history: { coachingClosed, renewalsDecided }, monitor: { v_task_coaching_backlog: coaching, v_task_unassigned: unassigned, v_task_deadline_streams: streams } };
 }
+
+/* ---------- R1.2 §5 / §8 — service contracts + monthly meetings for the Task tab demo ---------- */
+/** Spine hotels reuse the spine contract ids; synthetic hotels get one contract per bought service. */
+export function demoServiceContracts(hotels: HotelCare[]): ServiceContractRef[] {
+  const spine = demoSpineContracts();
+  return hotels.flatMap(h => {
+    const mine = spine.filter(c => c.hotel_id === h.hotel_id);
+    if (mine.length) return mine.map(c => ({ ...c, service: c.service as 'ORM' | 'Marcom' }));
+    return [...(h.orm ? [{ contract_id: `CT-${h.hotel_id}-ORM`, hotel_id: h.hotel_id, hotel_name: h.hotel_name, service: 'ORM' as const, active: true }] : []), ...(h.marcom ? [{ contract_id: `CT-${h.hotel_id}-MKT`, hotel_id: h.hotel_id, hotel_name: h.hotel_name, service: 'Marcom' as const, active: true }] : [])];
+  });
+}
+/** Previous (Sep) and next (Oct–Nov) monthly meetings relative to the 17 Oct 2026 demo clock. */
+export function demoTaskMeetings(): MeetingRef[] {
+  const m = (meeting_id: string, hotel: string, name: string, service: 'ORM' | 'Marcom', date: string, status: string, ae: string): MeetingRef => ({ meeting_id, hotel_id: hotel, hotel_name: name, service, date, status, ae_owner_id: ae });
+  return [
+    m('MT-CHAAM-09', 'DEMO-CHAAM-PEUMSUK', 'Chaam Peumsuk', 'ORM', '2026-09-18', 'COMPLETED', 'Nont'),
+    m('MT-CHAAM-10', 'DEMO-CHAAM-PEUMSUK', 'Chaam Peumsuk', 'ORM', '2026-10-22', 'CONFIRMED', 'Nont'),
+    m('MT-ANJALI-09', 'DEMO-ANJALI', 'Anjali', 'Marcom', '2026-09-25', 'COMPLETED', 'Fern'),
+    m('MT-ANJALI-10', 'DEMO-ANJALI', 'Anjali', 'Marcom', '2026-10-28', 'DRAFT', 'Fern'),
+    m('MT-DUSIT-09', 'DEMO-DUSIT-POOL-VILLA', 'Dusit Pool Villa', 'ORM', '2026-09-29', 'COMPLETED', 'Fern'),
+    m('MT-DUSIT-10', 'DEMO-DUSIT-POOL-VILLA', 'Dusit Pool Villa', 'ORM', '2026-10-30', 'CONFIRMED', 'Fern'),
+    m('MT-TALAY-11', 'DEMO-BAAN-TALAY', 'Baan Talay', 'ORM', '2026-11-12', 'CONFIRMED', 'Fern'),
+  ];
+}
+const DEMO_CASE_MEETING: Record<string, string> = { 'Case-000008': 'MT-CHAAM-09', 'Case-000014': 'MT-CHAAM-09', 'Case-000011': 'MT-ANJALI-09' };

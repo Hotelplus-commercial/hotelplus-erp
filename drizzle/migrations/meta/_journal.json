@@ -162,6 +162,13 @@
       "when": 1792264827203,
       "tag": "0022_meeting_v2_views",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1792476226673,
+      "tag": "0023_r12_contract_cost_and_ticket_links",
+      "breakpoints": true
     }
   ]
 }

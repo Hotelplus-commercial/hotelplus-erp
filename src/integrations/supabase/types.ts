@@ -503,12 +503,14 @@ export type Database = {
         Row: {
           case_no: string
           category_id: string
+          contract_id: string | null
           created_at: string
           created_by: string
           description: string | null
           hotel_id: string
           hotel_name: string
           id: string
+          meeting_id: string | null
           resolved_at: string | null
           resp_id_at_close: string | null
           resp_id_at_create: string | null
@@ -525,12 +527,14 @@ export type Database = {
         Insert: {
           case_no?: string
           category_id: string
+          contract_id?: string | null
           created_at?: string
           created_by: string
           description?: string | null
           hotel_id: string
           hotel_name?: string
           id?: string
+          meeting_id?: string | null
           resolved_at?: string | null
           resp_id_at_close?: string | null
           resp_id_at_create?: string | null
@@ -547,12 +551,14 @@ export type Database = {
         Update: {
           case_no?: string
           category_id?: string
+          contract_id?: string | null
           created_at?: string
           created_by?: string
           description?: string | null
           hotel_id?: string
           hotel_name?: string
           id?: string
+          meeting_id?: string | null
           resolved_at?: string | null
           resp_id_at_close?: string | null
           resp_id_at_create?: string | null
@@ -732,6 +738,28 @@ export type Database = {
           status: Database["public"]["Enums"]["invoice_status"] | null
           subscription_id: string | null
           tax_receipt_no: string | null
+        }
+        Relationships: []
+      }
+      v_ac_contract_cost_monthly: {
+        Row: {
+          ae_owner_id: string | null
+          combined_bill: boolean | null
+          commission_thb: number | null
+          contract_active: boolean | null
+          contract_id: string | null
+          contract_start: string | null
+          customer_id: string | null
+          customer_name: string | null
+          fee_thb: number | null
+          grade_latest: string | null
+          grade_worst6: string | null
+          guarantee_applied: boolean | null
+          has_bill: boolean | null
+          hotel_id: string | null
+          hotel_name: string | null
+          month: string | null
+          service: string | null
         }
         Relationships: []
       }
@@ -1401,12 +1429,14 @@ export type Database = {
           aging_days: number | null
           case_no: string | null
           category_id: string | null
+          contract_id: string | null
           created_at: string | null
           created_by: string | null
           description: string | null
           hotel_id: string | null
           hotel_name: string | null
           id: string | null
+          meeting_id: string | null
           resolved_at: string | null
           resp_id_at_close: string | null
           resp_id_at_create: string | null
@@ -1506,6 +1536,22 @@ export type Database = {
           p_description: string
           p_hotel_id: string
           p_hotel_name: string
+          p_resp_id: string
+          p_resp_team: string
+          p_routed_team: string
+          p_title: string
+        }
+        Returns: Json
+      }
+      ticket_create_v4: {
+        Args: {
+          p_actor: string
+          p_category: string
+          p_contract_id: string
+          p_description: string
+          p_hotel_id: string
+          p_hotel_name: string
+          p_meeting_id: string
           p_resp_id: string
           p_resp_team: string
           p_routed_team: string

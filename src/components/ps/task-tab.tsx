@@ -34,6 +34,33 @@ import { ChartHint } from './dash-card';
 import { TaskMonitorV2, CurrentNote } from './task-monitor-v2';
 import { TaskFlowV2 } from './task-flow-v2';
 import { TaskWorklistV2 } from './task-worklist-v2';
+import { useCrmOptional } from '@/lib/crm-store';
+import { serviceOf } from '@/lib/ac-v2-engine';
+import { readMeetingDashboard } from '@/lib/meeting-dashboard.functions';
+import { demoServiceContracts, demoTaskMeetings } from '@/lib/task-demo';
+import { activeContracts, meetingsFromFunnel, prefillContract, recentMeetings, type MeetingRef, type ServiceContractRef } from '@/lib/ticket-links';
+
+/** R1.2 §5.1 — service contracts (contract × service) for ticket links: demo spine, else the browser contract store (read-only). */
+function useServiceContracts(demo: boolean, care: HotelCare[]): ServiceContractRef[] {
+  const crm = useCrmOptional();
+  return useMemo(() => {
+    if (demo) return demoServiceContracts(care);
+    const names = new Map(care.map(c => [c.hotel_id, c.hotel_name]));
+    return (crm?.contracts ?? []).filter(c => c.hotel_id).flatMap(c => {
+      const services = [...new Set(c.lines.map(l => serviceOf(l.sku_snapshot, crm?.products ?? [])).filter((x): x is 'ORM' | 'Marcom' => !!x))];
+      const active = (c.billing_status ?? 'ACTIVE') === 'ACTIVE' && !c.inactivated_at;
+      return services.map(service => ({ contract_id: c.contract_id, hotel_id: c.hotel_id!, hotel_name: names.get(c.hotel_id!) ?? c.customer_snapshot?.hotel_name ?? c.hotel_id!, service, active }));
+    });
+  }, [demo, care, crm?.contracts, crm?.products]);
+}
+/** R1.2 §5.5 — monthly meetings: demo fixture, else the read-only v_meeting_funnel projection (same cache as Meeting & Survey). */
+function useTaskMeetings(demo: boolean): MeetingRef[] {
+  const read = useServerFn(readMeetingDashboard);
+  const [ready, setReady] = useState(false);
+  useEffect(() => setReady(true), []);
+  const q = useQuery({ queryKey: ['meeting-dashboard-views'], queryFn: () => read(), staleTime: 60_000, enabled: ready && !demo });
+  return useMemo(() => (demo ? demoTaskMeetings() : meetingsFromFunnel((q.data?.views?.v_meeting_funnel ?? []) as Record<string, unknown>[])), [demo, q.data]);
+}
 
 /** §3 read-only resolution from the assignment master (WS-2 property + service profiles + HR nicknames). */
 function useHotelCare(demo: boolean): HotelCare[] {
@@ -97,6 +124,9 @@ export function TaskTab() {
   const qc = useQueryClient();
   const care = useHotelCare(d.demo);
   const byHotel = useMemo(() => new Map(care.map(c => [c.hotel_id, c])), [care]);
+  const contracts = useServiceContracts(d.demo, care);
+  const meetings = useTaskMeetings(d.demo);
+  const [person, setPerson] = useState<string | null>(null);
   const actors = useMemo(() => ['PM (Alex)', ...members.filter(m => m.active).map(m => m.nickname)], [members]);
   const [actor, setActor] = useState('PM (Alex)');
   const [creating, setCreating] = useState(false), [openId, setOpenId] = useState<string|null>(null);
@@ -152,24 +182,30 @@ export function TaskTab() {
     {(d.ticketsError||flow.isError||d.monitorError)&&!d.demo&&<p className="task-readonly">อ่านข้อมูล ticket บางส่วนไม่สำเร็จ โปรดลองอีกครั้ง</p>}
     <BacklogHistoryCard inp={inp} a={pA} b={pB} compare={filter.compare} earliest={earliest}/>
     <TaskFlowV2 rows={rows} flow={caseFlow} filter={filter} now={d.now}/>
-    <div className="task-grid-v21"><CategoryIncomingCard rows={rows} categories={d.categories} a={pA} b={pB} compare={filter.compare}/><WorkloadCard rows={rows} acts={acts} care={care} a={pA} b={pB} compare={filter.compare} people={filter.people} smallBase={configAt('workload_small_base',bkkDate(Date.parse(nowIso)))}/></div>
+    <div className="task-grid-v21"><CategoryIncomingCard rows={rows} categories={d.categories} a={pA} b={pB} compare={filter.compare}/><WorkloadCard rows={rows} acts={acts} care={care} a={pA} b={pB} compare={filter.compare} people={filter.people} smallBase={configAt('workload_small_base',bkkDate(Date.parse(nowIso)))} onPerson={setPerson}/></div>
     <div className="flex flex-wrap items-center justify-end gap-2"><label>ผู้ทำรายการ</label><Select value={actor} onValueChange={setActor}><SelectTrigger aria-label="ผู้ทำรายการ" className="w-44"><SelectValue/></SelectTrigger><SelectContent>{actors.map(a=><SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent></Select></div>
-    <TaskWorklistV2 rows={rows} categories={d.categories} now={d.now} demo={d.demo} compare={filter.compare} onCreate={()=>setCreating(true)} onCase={t=>setOpenId(t.id)}/>
-    <CreateCase open={creating} onClose={()=>setCreating(false)} hotels={care} categories={d.categories} actor={actor} demo={d.demo} onDone={t=>{refresh();toast.success(`สร้าง ${t.case_no} แล้ว`);}}/>
+    <TaskWorklistV2 rows={rows} categories={d.categories} now={d.now} demo={d.demo} compare={filter.compare} onCreate={()=>setCreating(true)} onCase={t=>setOpenId(t.id)} person={person} onPerson={setPerson} meetings={meetings} contracts={contracts}/>
+    <CreateCase open={creating} onClose={()=>setCreating(false)} hotels={care} categories={d.categories} actor={actor} demo={d.demo} contracts={contracts} meetings={meetings} now={d.now} onDone={t=>{refresh();toast.success(`สร้าง ${t.case_no} แล้ว`);}}/>
     <CaseDrawer ticket={selected} onClose={()=>setOpenId(null)} care={selected?byHotel.get(selected.hotel_id):undefined} categories={d.categories} actor={actor} actors={actors} onActor={setActor} demo={d.demo} onSaved={refresh}/>
   </div>;
 }
 
-function CreateCase({ open, onClose, hotels, categories, actor, demo, onDone }: { open: boolean; onClose: () => void; hotels: HotelCare[]; categories: Category[]; actor: string; demo: boolean; onDone: (t: Ticket) => void }) {
+const NONE = '__none__';
+function CreateCase({ open, onClose, hotels, categories, actor, demo, contracts, meetings, now, onDone }: { open: boolean; onClose: () => void; hotels: HotelCare[]; categories: Category[]; actor: string; demo: boolean; contracts: ServiceContractRef[]; meetings: MeetingRef[]; now: Date; onDone: (t: Ticket) => void }) {
   const [hq, setHq] = useState(''); const [hotel, setHotel] = useState<HotelCare | null>(null); const [cat, setCat] = useState(''); const [title, setTitle] = useState(''); const [desc, setDesc] = useState(''); const [dept, setDept] = useState<Team | null>(null); const [busy, setBusy] = useState(false);
-  useEffect(() => { if (open) { setHq(''); setHotel(null); setCat(''); setTitle(''); setDesc(''); setDept(null); } }, [open]);
+  const [contractId, setContractId] = useState<string>(NONE); const [meetingId, setMeetingId] = useState<string>(NONE); const [contractTouched, setContractTouched] = useState(false);
+  useEffect(() => { if (open) { setHq(''); setHotel(null); setCat(''); setTitle(''); setDesc(''); setDept(null); setContractId(NONE); setMeetingId(NONE); setContractTouched(false); } }, [open]);
   const team = dept ?? categories.find(c => c.code === cat)?.domain ?? null;
+  const hotelContracts = hotel ? activeContracts(contracts, hotel.hotel_id, team) : [];
+  const hotelMeetings = hotel ? recentMeetings(meetings, hotel.hotel_id, now) : [];
+  // §5.1: pre-fill when exactly one active contract matches the ticket's service; otherwise the creator picks (optional).
+  useEffect(() => { if (!contractTouched) setContractId(hotel ? prefillContract(contracts, hotel.hotel_id, team) ?? NONE : NONE); }, [hotel?.hotel_id, team, contracts, contractTouched]); // eslint-disable-line react-hooks/exhaustive-deps
   const pickCat = (v: string) => { setCat(v); setDept(categories.find(c => c.code === v)?.domain ?? null); };
   const matches = hotels.filter(h => `${h.hotel_name} ${h.hotel_id}`.toLowerCase().includes(hq.trim().toLowerCase())).slice(0, 8);
   const save = async () => {
     if (!hotel || !cat || !title.trim()) { toast.error('กรุณาเลือกโรงแรม หมวดย่อย และใส่หัวข้อ'); return; }
     setBusy(true);
-    try { const t = await ticketApi.create(demo, { hotel_id: hotel.hotel_id, hotel_name: hotel.hotel_name, category: cat, ...(team ? { routed_team: team } : {}), title, description: desc, actor, ...(team ? stampOf(team, hotel) : {}) }); onDone(t); onClose(); }
+    try { const t = await ticketApi.create(demo, { hotel_id: hotel.hotel_id, hotel_name: hotel.hotel_name, category: cat, ...(team ? { routed_team: team } : {}), title, description: desc, actor, ...(team ? stampOf(team, hotel) : {}), contract_id: contractId === NONE ? null : contractId, meeting_id: meetingId === NONE ? null : meetingId }); onDone(t); onClose(); }
     catch (e) { toast.error(e instanceof Error ? e.message : 'สร้าง ticket ไม่สำเร็จ'); } finally { setBusy(false); }
   };
   return <Dialog open={open} onOpenChange={o => !o && onClose()}><DialogContent className="max-w-lg"><DialogHeader><DialogTitle>สร้าง ticket</DialogTitle></DialogHeader>
@@ -177,6 +213,10 @@ function CreateCase({ open, onClose, hotels, categories, actor, demo, onDone }: 
       <div><label className="text-xs font-medium">โรงแรม *</label>{hotel ? <div className="mt-1 flex items-center justify-between rounded-md border px-3 py-2"><span>{hotel.hotel_name}</span><Button variant="ghost" size="sm" onClick={() => setHotel(null)}>เปลี่ยน</Button></div> : <><Input aria-label="ค้นหาโรงแรม" className="mt-1" placeholder="พิมพ์ชื่อหรือรหัสโรงแรม" value={hq} onChange={e => setHq(e.target.value)} /><div className="mt-1 max-h-40 overflow-y-auto rounded-md border">{matches.length ? matches.map(h => <button key={h.hotel_id} type="button" className="block w-full px-3 py-1.5 text-left hover:bg-muted" onClick={() => setHotel(h)}>{h.hotel_name} <span className="text-xs text-muted-foreground">{h.hotel_id}</span></button>) : <p className="px-3 py-2 text-muted-foreground">ไม่พบโรงแรม</p>}</div></>}</div>
       <div><label className="text-xs font-medium">หมวดย่อย *</label><CategoryPicker categories={categories} value={cat} onChange={pickCat} /></div>
       <div><label className="text-xs font-medium">แผนกรับผิดชอบ *</label><DeptPicker value={team} onChange={setDept} disabled={!cat} /><p className="mt-1 text-xs text-muted-foreground">ค่าเริ่มต้นตามหมวดย่อย · เปลี่ยนได้ · 1 ticket = 1 แผนก</p></div>
+      {hotel && <div className="grid gap-2 sm:grid-cols-2">
+        <div><label className="text-xs font-medium">สัญญาบริการ (ไม่บังคับ)</label><Select value={contractId} onValueChange={v => { setContractTouched(true); setContractId(v); }}><SelectTrigger aria-label="สัญญาบริการ"><SelectValue /></SelectTrigger><SelectContent><SelectItem value={NONE}>— ไม่ระบุสัญญา</SelectItem>{hotelContracts.map(c => <SelectItem key={`${c.contract_id}-${c.service}`} value={c.contract_id}>{c.contract_id} · {c.service}</SelectItem>)}</SelectContent></Select>{!hotelContracts.length && <p className="mt-1 text-xs text-muted-foreground">ไม่พบสัญญาที่ใช้งานของโรงแรมนี้</p>}</div>
+        <div><label className="text-xs font-medium">มาจากการประชุม (ไม่บังคับ)</label><Select value={meetingId} onValueChange={setMeetingId}><SelectTrigger aria-label="การประชุม"><SelectValue /></SelectTrigger><SelectContent><SelectItem value={NONE}>— ไม่ได้มาจากการประชุม</SelectItem>{hotelMeetings.map(m => <SelectItem key={m.meeting_id} value={m.meeting_id}>{new Date(`${m.date}T00:00:00Z`).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', timeZone: 'UTC' })} · {m.service === 'ORM' ? 'ORM-Snapshot Meeting' : 'Marcom-Sync up Meeting'}</SelectItem>)}</SelectContent></Select><p className="mt-1 text-xs text-muted-foreground">การประชุมของโรงแรมนี้ใน 60 วันล่าสุด</p></div>
+      </div>}
       <div><label className="text-xs font-medium">หัวข้อ *</label><Input aria-label="หัวข้อ" value={title} onChange={e => setTitle(e.target.value)} /></div>
       <div><label className="text-xs font-medium">รายละเอียด</label><Textarea aria-label="รายละเอียด" value={desc} onChange={e => setDesc(e.target.value)} rows={3} /></div>
       <div className="rounded-lg bg-muted/50 p-2"><People care={hotel ?? undefined} team={team} /></div>
