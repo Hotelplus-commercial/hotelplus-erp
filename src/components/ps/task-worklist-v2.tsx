@@ -40,9 +40,9 @@ function PreMeetingView({rows,meetings,contracts,now,onOpen}:{rows:WorkRow[];mee
  const groups=preMeetingBacklog({meetings,contracts,rows,now,days});
  return <div className="mt-3" data-testid="pre-meeting-view">
   <div className="task-toolbar"><span>ประชุมใน</span>{PRE_MEETING_WINDOWS.map(d=><Button key={d} size="sm" variant={days===d?'default':'outline'} aria-pressed={days===d} onClick={()=>setDays(d)}>{d} วัน</Button>)}<span className="text-xs text-muted-foreground">ORM-Snapshot Meeting · Marcom-Sync up Meeting · สถานะ ยืนยันแล้ว / รอยืนยัน</span></div>
-  {groups.length?groups.map(g=><section key={g.key} className="task-pre-group" aria-label={`${g.hotel_name} · ${g.service}`}>
+  {groups.length?groups.map(g=><div role="group" key={g.key} className="task-pre-group" aria-label={`${g.hotel_name} · ${g.service}`}>
    <header><b>{thDate(g.meeting.date)}</b><span className="font-semibold">{g.hotel_name}</span><span className="task-chip">{g.service}</span><span className="text-xs text-muted-foreground">{MEETING_NAME[g.service]} · {g.status_th}</span><span className="text-xs">AE {aeNameTh(g.ae_owner_id)}</span>{g.contract_id&&<span className="text-xs text-muted-foreground">{g.contract_id}</span>}</header>
    {g.items.length?g.items.map(({row:r,fromPrev})=><button type="button" key={r.work_id} className="task-pre-item w-full text-left hover:bg-muted" onClick={()=>onOpen(r)}><span>{r.title}{fromPrev&&<span className="task-chip ml-1">จากประชุมครั้งก่อน</span>}<small className="block text-muted-foreground">{r.work_id}</small></span><WorkChip row={r}/><span className={r.responsible_missing?'text-dash-watch font-semibold':''}>{r.responsible_label}</span><span className="tabular-nums">{thDate(r.created_at)}</span><span className={`task-chip task-status-${r.status_group}`}>{GROUP_LABEL[r.status_group]}</span></button>):<p className="text-sm text-dash-good">ไม่มีงานค้าง</p>}
-  </section>):<p className="task-list-empty">{meetings.length?`ไม่มีประชุมประจำเดือนใน ${days} วันข้างหน้า`:'ยังไม่มีข้อมูลนัดประชุม (รอข้อมูลจากต้นทาง)'}</p>}
+  </div>):<p className="task-list-empty">{meetings.length?`ไม่มีประชุมประจำเดือนใน ${days} วันข้างหน้า`:'ยังไม่มีข้อมูลนัดประชุม (รอข้อมูลจากต้นทาง)'}</p>}
  </div>;
 }

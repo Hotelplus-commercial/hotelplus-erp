@@ -1511,12 +1511,12 @@ function RenewalTable({ renewals, history, reasons }: { renewals: PsReportRow[];
         ))}
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[640px] text-xs">
+        <table className="w-full min-w-[620px] text-xs [&_td]:px-2 [&_th]:px-2">
           <thead>
             <tr className="text-left text-muted-foreground">
               <th className="py-2">สัญญา</th>
               <th>AE</th>
-              <th>ผล</th>
+              <th className="whitespace-nowrap">ผล</th>
               <th>ราคาเดิม → ราคาใหม่</th>
               <th>เหตุผลที่ไม่ต่อ</th>
             </tr>
@@ -1535,7 +1535,7 @@ function RenewalTable({ renewals, history, reasons }: { renewals: PsReportRow[];
                     </p>
                   </td>
                   <td>{aeNameTh(r.ae_owner_id)}</td>
-                  <td>{RENEWAL_TH[String(r.outcome)] ?? "—"}</td>
+                  <td className="whitespace-nowrap">{RENEWAL_TH[String(r.outcome)] ?? "—"}</td>
                   <td>
                     {d.status === "NO_RENEWAL" ? (
                       <span className="text-muted-foreground">ยังไม่มีราคารอบใหม่</span>
@@ -1554,7 +1554,7 @@ function RenewalTable({ renewals, history, reasons }: { renewals: PsReportRow[];
                       </ul>
                     )}
                   </td>
-                  <td className="max-w-[16rem] whitespace-normal">{notRenewed ? (r["reason_text"] ? String(r["reason_text"]) : reasons[cid] ?? "—") : "—"}</td>
+                  <td className="min-w-[9rem] max-w-[16rem] whitespace-normal">{notRenewed ? (r["reason_text"] ? String(r["reason_text"]) : reasons[cid] ?? "—") : "—"}</td>
                 </tr>
               );
             })}
