@@ -239,10 +239,10 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [ ] §2–§4 one contract store / new contract on signing / backfill from main store — stopped per §1: renewal contracts (CT-HTL…) are not in AC Billing's store, สัญญา & บริการ reads a different store, AC Billing has no demo mode, Billing needs status contract_completed + production reports per contract id. Awaiting user decision.
 
 # MD Review R1.2 · Detail tabs v1.1
-- [ ] §1 tab labels/order (keys unchanged; BD-AC last)
-- [ ] §2 AC → ลูกหนี้ & ค่าใช้จ่ายรายสัญญา: remove ①②③, merged debtor card, grade list, cost-per-contract card, AE names, no "รอ BOT"
-- [ ] §3 PS → ต่อสัญญา & ราคา: recurring-only In/Out, risk-rules dialog, pending work card, renewal list old→new
-- [ ] §4 Meeting: Q8 self-rating row, Flag Board collapsed
-- [ ] §5 Task: contract/meeting link, 3 source chips, responsible/watchers, dept→person drill, pre-meeting backlog
-- [ ] §6 Servicing → On-board label
-- [ ] §7 forbidden-string test across tabs · §8 demo fixture
+- [x] §1 tab labels/order (keys unchanged; BD-AC last; ?tab=<key> supported)
+- [x] §2 ลูกหนี้ & ค่าใช้จ่ายรายสัญญา: ①②③ removed, merged debtor card, grade list, cost-per-contract card (view v_ac_contract_cost_monthly), AE names, no "รอ BOT"
+- [x] §3 ต่อสัญญา & ราคา: recurring-only In/Out, risk-rules dialog, งานค้างของสัญญา card, renewal list old→new
+- [x] §4 Meeting: Q8 self-rating row, Flag Board collapsed
+- [x] §5 Task: contract/meeting link (ticket_create_v4), จากการประชุม chip, responsible/watchers, dept→person drill, pre-meeting backlog view
+- [x] §6 Servicing → On-board label · §7 forbidden-string test across tabs · §8 demo fixture
+- [ ] Live data: cost card, grade list and pre-meeting view stay empty until invoices/meetings sync (Cloud views return 0 rows today); L0 tickets are not back-filled with a contract (browser store, no write)
