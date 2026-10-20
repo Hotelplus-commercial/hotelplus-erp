@@ -146,6 +146,10 @@ export function buildDemoReport(filter?: GlobalFilter): PsReport {
   return { views, pending: [], demo: true, now: DEMO_NOW, wonMtd: 2 };
 }
 
+/** R1.2 §5: spine service contracts (one contract = one service line) for ticket ↔ contract links. */
+export function demoSpineContracts() {
+  return contracts.map(c => ({ contract_id: c.id, hotel_id: hid(c.hotel), hotel_name: c.hotel, service: c.line, active: c.status === 'ACTIVE' }));
+}
 /** Data-access adapters: same contracts, no second seed and no provider writes. */
 export function demoLifecycles(): ContractLifecycle[] {
   return contracts.map(c => ({ id: c.id, quote_id: c.id, contract_id: c.id, contract_service_line: c.line === 'ORM' ? 'ORM' : 'MARCOM', customer_id: hid(c.hotel), invoice_number: null, property_name: c.hotel, hotel_id: hid(c.hotel), hotel_name: c.hotel, customer_legal_name: c.hotel, service_line: c.line === 'ORM' ? 'ORM' : 'MARCOM', bd_owner_id: c.ae, current_stage: 11, live_link_token: null, live_link_sent_at: null, sent_to_ac_at: null, approved_at: NEW_PROPERTY[c.id] ?? c.start, send_contract_at: NEW_PROPERTY[c.id] ?? c.start, signed_at: NEW_PROPERTY[c.id] ?? c.start, payment_at: NEW_PROPERTY[c.id] ?? c.start, won_at: NEW_PROPERTY[c.id] ?? c.start, created_at: c.start, updated_at: c.start }));
