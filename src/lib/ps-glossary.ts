@@ -27,7 +27,16 @@ export function ticketStatusTh(status: string, waitingReason?: string | null, re
   if (status === "waiting" && waitingReason && waitingReason.toUpperCase() !== "CUSTOMER") return `รอ · ${reasonLabel ?? waitingReason}`;
   return STATUS_TH[status] ?? status;
 }
-export const SOURCE_LABEL = { PS_CASE: "PS เปิดเอง", FOLLOWUP: "ติดตามจากแท็บอื่น", BOT: "ระบบสร้าง" } as const;
+export const SOURCE_LABEL = { PS_CASE: "PS เปิดเอง", MEETING: "จากการประชุม", FOLLOWUP: "ติดตามจากแท็บอื่น", BOT: "ระบบสร้าง" } as const;
+/** R1.2 §1 — PS Dashboard detail tabs, left → right. Keys are the stored tab keys (never renamed). */
+export const DASHBOARD_TABS: readonly (readonly [string, string])[] = [
+  ["ps", "ต่อสัญญา & ราคา"],
+  ["ac", "ลูกหนี้ & ค่าใช้จ่ายรายสัญญา"],
+  ["meeting", "Meeting & Survey"],
+  ["task", "ติดตามงานผู้ให้บริการ"],
+  ["servicing", "On-board"],
+  ["bdac", "BD-AC"],
+];
 export const CONTRACT_STATUS_TH: Record<string, string> = { ACTIVE: "ใช้งาน", INACTIVE: "สิ้นสุด", UPCOMING: "รอเริ่ม", DRAFT: "ร่าง" };
 export const RENEWAL_TH: Record<string, string> = { RENEWED: "ต่อแล้ว", IN_PROGRESS: "กำลังคุย", NOT_RENEWED: "ไม่ต่อ", LOST: "ไม่ต่อ" };
 /** Strings that must never render on the PS Dashboard (R1 §1.2, invariant 8). */

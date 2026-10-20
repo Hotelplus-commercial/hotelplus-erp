@@ -12,9 +12,14 @@ export const readAcDashboard = createServerFn({ method: 'GET' }).handler(async (
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
   const out = {} as Record<(typeof VIEWS)[number], Row[]>;
   for (const v of VIEWS) {
-    const r = await supabaseAdmin.from(v).select('*').limit(2000);
-    if (r.error) throw new Error('อ่านรายงาน AC ไม่สำเร็จ');
-    out[v] = (r.data ?? []) as Row[];
+    const rows: Row[] = [];
+    for (let from = 0; ; from += 1000) {
+      const r = await supabaseAdmin.from(v).select('*').range(from, from + 999);
+      if (r.error) throw new Error('อ่านรายงาน AC ไม่สำเร็จ');
+      rows.push(...((r.data ?? []) as Row[]));
+      if ((r.data ?? []).length < 1000 || rows.length >= 20000) break;
+    }
+    out[v] = rows;
   }
   return out;
 });
