@@ -25,6 +25,8 @@ export type BotPayload = {
   renewal_request_id?: string; entity_change?: { what: string; detail: string };
   /** Ticket attachments (any type): ≤5 files, ≤5 MB each, PDF/JPG/PNG — stored with the ticket in browser canonical storage. */
   attachments?: TicketAttachment[];
+  /** R1.2 §5.1: optional link to the service contract / monthly meeting the ticket is about. */
+  contract_id?: string | null; meeting_id?: string | null;
   phase?: 'P1'|'P2'|'P3'; lane?: 'AE'|'Specialist'|'ORM'|'Marcom'; days_in_phase?: number; sla_days?: number; target_days?: number; tone?: 'ok'|'amber'|'red'; current_stage?: string; owner_id?: string|null; recipient?: string; recipient_member_id?: string|null;
 };
 export type TicketAttachment = { id: string; name: string; size: number; mime: string; by: string; at: string; data_url: string };

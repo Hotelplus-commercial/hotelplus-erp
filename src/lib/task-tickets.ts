@@ -9,7 +9,7 @@ export type Team = 'ORM' | 'MARCOM' | 'AC' | 'PS';
 export type TicketStatus = 'open' | 'in-progress' | 'waiting' | 'resolved' | 'closed';
 export type WaitingReason = 'CUSTOMER' | 'INTERNAL';
 export type Category = { code: string; domain: Team; subcategory_label_th: string; active: boolean; sort: number };
-export type Ticket = { id: string; case_no: string; hotel_id: string; hotel_name: string; title: string; description: string | null; category_id: string; routed_team: Team; status: TicketStatus; waiting_reason: WaitingReason | null; created_by: string; created_at: string; updated_at: string; resolved_at: string | null; revision: number; resp_id_at_create?: string | null; resp_team_at_create?: string | null; resp_id_at_close?: string | null; resp_team_at_close?: string | null; stamp_source?: 'LIVE' | 'BACKFILL' | null };
+export type Ticket = { id: string; case_no: string; hotel_id: string; hotel_name: string; title: string; description: string | null; category_id: string; routed_team: Team; status: TicketStatus; waiting_reason: WaitingReason | null; created_by: string; created_at: string; updated_at: string; resolved_at: string | null; revision: number; resp_id_at_create?: string | null; resp_team_at_create?: string | null; resp_id_at_close?: string | null; resp_team_at_close?: string | null; stamp_source?: 'LIVE' | 'BACKFILL' | null; contract_id?: string | null; meeting_id?: string | null };
 export type Activity = { id: string; ticket_id: string; actor_id: string; type: 'CREATE' | 'COMMENT' | 'STATUS_CHANGE' | 'CATEGORY_CHANGE' | 'DEPT_CHANGE'; body: string; at: string };
 /** Hotel caretakers resolved from the assignment master (nicknames; null member = not assigned; null service = not bought). */
 export type HotelCare = { hotel_id: string; hotel_name: string; ae: string | null; orm: { member: string | null } | null; marcom: { member: string | null } | null; status?: string; orm_team?: string | null };
@@ -58,7 +58,7 @@ export const isOverdue = (t: Ticket, now: Date) => (agingDays(t, now) ?? -1) > A
 
 /* ---------------- data access (live cloud | demo memory) ---------------- */
 export type UpdateInput = { id: string; revision: number; actor: string; status?: TicketStatus; waiting_reason?: WaitingReason | null; category?: string; routed_team?: Team; comment?: string; resp_id?: string | null; resp_team?: string | null };
-export type CreateInput = { hotel_id: string; hotel_name: string; category: string; routed_team?: Team; title: string; description: string; actor: string; resp_id?: string | null; resp_team?: string | null };
+export type CreateInput = { hotel_id: string; hotel_name: string; category: string; routed_team?: Team; title: string; description: string; actor: string; resp_id?: string | null; resp_team?: string | null; contract_id?: string | null; meeting_id?: string | null };
 export type UpdateResult = { ok: true; ticket: Ticket } | { ok: false; conflict: true };
 
 /** Demo store: bundled, in-memory only (no localStorage / cloud). Reset each time demo turns on. */
@@ -131,11 +131,11 @@ export const ticketApi = {
     if (!i.hotel_id || !i.title.trim() || !i.category || !i.actor) throw new Error('กรอกโรงแรม หมวด และหัวข้อ');
     if (demo) {
       const c = SEED_CATEGORIES.find(x => x.code === i.category); if (!c) throw new Error('ไม่พบหมวด'); const n = demoState.tickets.length + 1; const at = nowIso(true);
-      const t: Ticket = { id: `demo-t${n}-${Date.now()}`, case_no: `Case-${String(n).padStart(6, '0')}`, hotel_id: i.hotel_id, hotel_name: i.hotel_name, title: i.title.trim(), description: i.description.trim() || null, category_id: c.code, routed_team: i.routed_team ?? c.domain, status: 'open', waiting_reason: null, created_by: i.actor, created_at: at, updated_at: at, resolved_at: null, revision: 0, resp_id_at_create: i.resp_id ?? null, resp_team_at_create: i.resp_team ?? null, resp_id_at_close: null, resp_team_at_close: null, stamp_source: 'LIVE' };
+      const t: Ticket = { id: `demo-t${n}-${Date.now()}`, case_no: `Case-${String(n).padStart(6, '0')}`, hotel_id: i.hotel_id, hotel_name: i.hotel_name, title: i.title.trim(), description: i.description.trim() || null, category_id: c.code, routed_team: i.routed_team ?? c.domain, status: 'open', waiting_reason: null, created_by: i.actor, created_at: at, updated_at: at, resolved_at: null, revision: 0, resp_id_at_create: i.resp_id ?? null, resp_team_at_create: i.resp_team ?? null, resp_id_at_close: null, resp_team_at_close: null, stamp_source: 'LIVE', contract_id: i.contract_id ?? null, meeting_id: i.meeting_id ?? null };
       demoState = { tickets: [...demoState.tickets, t], activity: [...demoState.activity, { id: `${t.id}-c`, ticket_id: t.id, actor_id: i.actor, type: 'CREATE', body: t.case_no, at }] }; emit();
       return t;
     }
-    const r = await supabase.rpc('ticket_create_v3', { p_hotel_id: i.hotel_id, p_hotel_name: i.hotel_name, p_category: i.category, p_routed_team: i.routed_team ?? '', p_title: i.title, p_description: i.description, p_actor: i.actor, p_resp_id: i.resp_id ?? '', p_resp_team: i.resp_team ?? '' });
+    const r = await supabase.rpc('ticket_create_v4', { p_hotel_id: i.hotel_id, p_hotel_name: i.hotel_name, p_category: i.category, p_routed_team: i.routed_team ?? '', p_title: i.title, p_description: i.description, p_actor: i.actor, p_resp_id: i.resp_id ?? '', p_resp_team: i.resp_team ?? '', p_contract_id: i.contract_id ?? '', p_meeting_id: i.meeting_id ?? '' });
     if (r.error) throw new Error('สร้างเคสไม่สำเร็จ');
     return r.data as unknown as Ticket;
   },
