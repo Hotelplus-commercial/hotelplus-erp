@@ -1,13 +1,13 @@
 import { describe, expect, test as it } from 'bun:test';
 import { buildDemoReport, demoLifecycles, demoAcViews, demoOnboarding, DEMO_NOW } from '../src/lib/ps-demo-fixture';
-import { DEFAULT_RISK_RULES, healthOf, latestPeriod, psScope, ratio } from '../src/lib/ps-dashboard-types';
+import { DEFAULT_RISK_RULES, healthOf, isRecurringService, latestPeriod, psScope, ratio } from '../src/lib/ps-dashboard-types';
 
 const r = buildDemoReport(); const v = r.views; const now = new Date(DEMO_NOW);
 const f = (service: 'ALL' | 'ORM' | 'Marcom') => ({ service, range: '3m' as const });
 describe('PS demo fixture oracle (Demo Fixture Spec v1.0 §2)', () => {
-  it('① In 2 / Out 2', () => {
-    expect(psScope(v.v_ps_lifecycle_flow, f('ALL'), 'created_at', 0, now)).toHaveLength(2);
-    expect(psScope(v.v_ps_lifecycle_flow, f('ALL'), 'inactivated_at', 0, now)).toHaveLength(2);
+  it('① In 2 / Out 2 (recurring services only; R1.2 §3.1)', () => {
+    expect(psScope(v.v_ps_lifecycle_flow, f('ALL'), 'created_at', 0, now).filter(isRecurringService)).toHaveLength(2);
+    expect(psScope(v.v_ps_lifecycle_flow, f('ALL'), 'inactivated_at', 0, now).filter(isRecurringService)).toHaveLength(2);
   });
   it('② churn 20 / 16.7 / 25 and Aug 0', () => {
     const c = (s: 'ALL' | 'ORM' | 'Marcom', shift = 0) => ratio(latestPeriod(psScope(v.v_ps_churn_monthly, f(s), 'billing_period', shift, now)), 'out_count', 'active_at_start');
