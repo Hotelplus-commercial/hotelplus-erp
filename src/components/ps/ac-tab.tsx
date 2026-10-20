@@ -49,12 +49,14 @@ export type AcTabProps = {
   /** Global Compare periods (A / B); §2.4 selected month = latest billed month in A, compare = latest in B. */
   periodA?: { from: string; to: string };
   periodB?: { from: string; to: string } | null;
+  /** Render every list expanded (used by the forbidden-string render test). */
+  openLists?: boolean;
 };
 
 /** AE display for every list in this tab (§2.5). */
 export const aeLabel = (id: string | null | undefined) => (id ? aeNameTh(id) : "ยังไม่ระบุ AE");
 
-export function AcTab({ views, loading, error, service, compare, demo, periodA, periodB }: AcTabProps) {
+export function AcTab({ views, loading, error, service, compare, demo, periodA, periodB, openLists = false }: AcTabProps) {
   const navigate = useNavigate();
   const openHotel = () => navigate({ to: "/ac/hotel-profile" });
 
@@ -82,13 +84,13 @@ export function AcTab({ views, loading, error, service, compare, demo, periodA, 
     <div className="flex min-w-0 flex-col gap-5" data-testid="ac-tab" data-demo={demo || undefined}>
       <DefinitionStrip />
       <SectionHead title="ลูกหนี้ & การเก็บเงิน" desc="ค้างเท่าไร · อยู่ขั้นไหน · ใครจ่ายช้า · ต้องตามใคร" />
-      <DebtorCard views={views} svc={svc} debtors={debtors.filter(svc)} breakdown={breakdown.filter(svc)} compare={compare} openHotel={openHotel} />
+      <DebtorCard initialOpen={openLists} views={views} svc={svc} debtors={debtors.filter(svc)} breakdown={breakdown.filter(svc)} compare={compare} openHotel={openHotel} />
       <div className="ac-row2">
-        <GradeCard gradeDist={gradeDist.filter(svc)} chip={chip} prevChip={prevChip} compare={compare} customers={customers} />
+        <GradeCard gradeDist={gradeDist.filter(svc)} chip={chip} prevChip={prevChip} compare={compare} customers={customers} initialOpen={openLists} />
         <SystemFeeMock />
       </div>
       <SectionHead title="ค่าใช้จ่ายรายสัญญา" desc="แต่ละสัญญาบริการจ่ายเราเดือนละเท่าไร · ใช้เตรียมคุยราคาตอนต่อสัญญา · ไม่ใช่การจัดอันดับ" />
-      <ContractCostCard rows={costRows} service={service} compare={compare} periodA={periodA} periodB={periodB ?? null} />
+      <ContractCostCard initialOpen={openLists} rows={costRows} service={service} compare={compare} periodA={periodA} periodB={periodB ?? null} />
     </div>
   );
 }
@@ -145,6 +147,7 @@ const dMMM = (iso: string | null | undefined) =>
 /* ---------- ลูกหนี้ที่ต้องติดตาม (merged ④ + ⑤ + ⑧) ---------- */
 
 function DebtorCard({
+  initialOpen = false,
   views,
   svc,
   debtors,
@@ -152,6 +155,7 @@ function DebtorCard({
   compare,
   openHotel,
 }: {
+  initialOpen?: boolean;
   views: AcViews | undefined;
   svc: (r: PsReportRow) => boolean;
   debtors: PsReportRow[];
@@ -159,7 +163,7 @@ function DebtorCard({
   compare: boolean;
   openHotel: () => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(initialOpen);
   const [status, setStatus] = useState<CollectionStatus | "ALL">("ALL");
   const tickets = useTickets();
   const list = useMemo(() => sortDebtors(debtorRows(debtors)), [debtors]);
@@ -373,19 +377,21 @@ const arrow = (d: number | null) =>
   );
 
 function ContractCostCard({
+  initialOpen = false,
   rows,
   service,
   compare,
   periodA,
   periodB,
 }: {
+  initialOpen?: boolean;
   rows: ReturnType<typeof toCostRows>;
   service: "ALL" | "ORM" | "Marcom";
   compare: boolean;
   periodA?: { from: string; to: string } | undefined;
   periodB: { from: string; to: string } | null;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(initialOpen);
   const [svcFilter, setSvcFilter] = useState<"ALL" | "ORM" | "Marcom">("ALL");
   const [ae, setAe] = useState("ALL");
   const [q, setQ] = useState("");
@@ -521,8 +527,8 @@ function ContractCostCard({
 
 /* ---------- ⑥ expandable customer list (§2.3) ---------- */
 
-function GradeList({ customers }: { customers: GradeCustomer[] }) {
-  const [open, setOpen] = useState(false);
+function GradeList({ customers, initialOpen = false }: { customers: GradeCustomer[]; initialOpen?: boolean }) {
+  const [open, setOpen] = useState(initialOpen);
   const [grade, setGrade] = useState<"A" | "B" | "C" | "D">("D");
   const by = (g: string) => customers.filter((c) => c.grade_latest === g);
   return (
@@ -590,12 +596,14 @@ function GradeCard({
   prevChip,
   compare,
   customers,
+  initialOpen = false,
 }: {
   gradeDist: PsReportRow[];
   chip: string;
   prevChip: string;
   compare: boolean;
   customers: GradeCustomer[];
+  initialOpen?: boolean;
 }) {
   const [hoverGrade, setHoverGrade] = useState<string | null>(null);
   const periods = useMemo(
@@ -737,7 +745,7 @@ function GradeCard({
               </p>
             </>
           )}
-          <GradeList customers={customers} />
+          <GradeList customers={customers} initialOpen={initialOpen} />
         </>
       )}
     </DashCard>
