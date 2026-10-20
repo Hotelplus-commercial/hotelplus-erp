@@ -1,4 +1,4 @@
-import { RENEWAL_LABEL } from "@/lib/ps-glossary";
+import { RENEWAL_LABEL, RENEWAL_TH, aeNameTh } from "@/lib/ps-glossary";
 import { useMemo, useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { ArrowUpRight } from "lucide-react";
@@ -24,6 +24,7 @@ import {
 import { Chip } from "@/components/crm/crm-ui";
 import { Button } from "@/components/ui/button";
 import {
+  isRecurringService,
   latestPeriod,
   psScope,
   ratio,
@@ -40,8 +41,15 @@ import {
   INERT_DIMS,
   DEMO_VALUE_RATIO_MIN,
   ROI_VALUE_RATIO_MIN,
+  pendingWorkOf,
+  riskRuleText,
   type DimCode,
+  type PendingItem,
 } from "@/lib/account-health";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { demoPriceHistory } from "@/lib/ps-demo-fixture";
+import { useRenewalStore } from "@/lib/renewal-store";
+import { formatTerm, priceDiff, type PriceCycle } from "@/lib/renewal-price-diff";
 import { useAccount360 } from "@/components/ps/account-360";
 import { CrossSellPanel, RepricingBox } from "@/components/ps/expansion-ui";
 import { DashCard, ChartHint, ChartTooltip, ChartSkeleton, Delta, InfoButton } from "./dash-card";
@@ -124,9 +132,10 @@ export function PsReportTab({
   const views = report?.views;
   const demo = !!report?.demo;
   const now = report?.now ? new Date(report.now) : new Date();
-  const flow = psScope(views?.v_ps_lifecycle_flow ?? [], filter, "created_at", 0, now);
+  // R1.2 §3.1: In / Out = recurring (monthly) services only; setup fees and one-time jobs never count.
+  const flow = psScope(views?.v_ps_lifecycle_flow ?? [], filter, "created_at", 0, now).filter(isRecurringService);
   const out = psScope(views?.v_ps_lifecycle_flow ?? [], filter, "inactivated_at", 0, now).filter(
-    (row) => String(row.inactivated_at) <= now.toISOString(),
+    (row) => isRecurringService(row) && String(row.inactivated_at) <= now.toISOString(),
   );
   const hasFlow = (views?.v_ps_lifecycle_flow ?? []).length > 0;
   const churn = latestPeriod(
@@ -196,11 +205,24 @@ export function PsReportTab({
     [health, roiRows, flowAll, demo, now.getTime()],
   );
   const tiered = hotels.filter((h) => h.tier !== "pending");
+  const rules = riskRuleText(demo ? DEMO_VALUE_RATIO_MIN : ROI_VALUE_RATIO_MIN);
+  const [rulesOpen, setRulesOpen] = useState(false);
   const scoreInfo = {
-    formula: "Score = จำนวนด้านที่มีสัญญาณเสี่ยง (ไม่ถ่วงน้ำหนัก) · 🔴 = เกรด D หรือมีสัญญาณ 2 ด้านขึ้นไป · 🟡 = 1 ด้าน · 🟢 = ไม่มี",
-    count: `ด้านที่นับ: ${(Object.keys(DIM_TH) as DimCode[]).filter((c) => !INERT_DIMS.includes(c)).map((c) => DIM_TH[c]).join(" · ") || "—"}`,
-    read: "ด้านที่ข้อมูลยังไม่เข้า หรือยังไม่ตั้งเกณฑ์ จะไม่นับ (ไม่ใช่ผ่าน)",
+    formula: `${rules.score} · ${rules.tiers.map((t) => t.text).join(" · ")}`,
+    count: `ด้านที่นับ: ${rules.dims.map((d) => d.label).join(" · ") || "—"}`,
+    read: rules.notes.join(" · "),
   };
+  const pendingWork = useMemo(
+    () =>
+      pendingWorkOf({
+        health,
+        lifetime: psScope(views?.v_ps_contract_lifetime ?? [], filter, "none"),
+        renewals: psScope(views?.v_ps_renewal ?? [], filter, "none"),
+        flow: flowAll,
+        now,
+      }),
+    [health, views, filter, flowAll, now.getTime()], // eslint-disable-line react-hooks/exhaustive-deps
+  );
   const tierCount = (t: HealthTier) => tiered.filter((h) => h.tier === t).length;
   const dimCodes = (Object.keys(DIM_TH) as DimCode[]).filter((c) => !INERT_DIMS.includes(c));
   const dims = dimCodes
@@ -431,6 +453,7 @@ export function PsReportTab({
     >
       <DashCard
         title="① Lifecycle & Flow"
+        info={{ count: "นับเฉพาะบริการที่เก็บรายเดือน (รวมค่าระบบ) · ไม่นับค่า setup และงาน one-time" }}
         question="ฐานลูกค้าโตหรือหด? (นับราย service)"
         answer={
           hasFlow
@@ -736,6 +759,7 @@ export function PsReportTab({
                 </tbody>
               </table>
             </div>
+            <RenewalList renewals={renewals} demo={demo} />
           </>
         ) : (
           <ChartSkeleton text={emptyText} />
@@ -928,11 +952,8 @@ export function PsReportTab({
           answerTone="action"
           answerSub={`ใช้ทั้งสองบริการ ${fmt(ratio(attach, "attached_hotels", "active_hotels"), "%")}`}
           right={
-            <Button asChild variant="ghost" size="sm">
-              <Link to="/ps/templates">
-                กฎความเสี่ยง
-                <ArrowUpRight className="size-3.5" />
-              </Link>
+            <Button variant="ghost" size="sm" onClick={() => setRulesOpen(true)} aria-haspopup="dialog">
+              กฎความเสี่ยง
             </Button>
           }
           noteKey="risk"
@@ -1218,6 +1239,12 @@ export function PsReportTab({
           </DashCard>
         </div>
       )}
+      {compareSide !== "B" && (
+        <div className={compareSide ? "" : "lg:col-span-2"}>
+          <PendingWorkCard work={pendingWork} loading={!report} emptyText={emptyText} />
+        </div>
+      )}
+      <RiskRulesDialog open={rulesOpen} onOpenChange={setRulesOpen} rules={rules} />
       <div className={compareSide ? "" : "lg:col-span-2"}>
         <DashCard
           title="ถึงรอบขึ้นค่าบริการ (Repricing)"
@@ -1335,6 +1362,206 @@ function RenewalDonut({
           </li>
         ))}
       </ul>
+    </div>
+  );
+}
+
+/* ---------- R1.2 §3.2 risk rules dialog (text from riskRuleText — same constants as the scorecard) ---------- */
+function RiskRulesDialog({ open, onOpenChange, rules }: { open: boolean; onOpenChange: (v: boolean) => void; rules: ReturnType<typeof riskRuleText> }) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>กฎความเสี่ยง</DialogTitle>
+          <DialogDescription>{rules.score}</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 text-sm">
+          <div>
+            <p className="mb-2 font-semibold">ด้านที่นับ และเกิดเมื่อ</p>
+            <ul className="space-y-2">
+              {rules.dims.map((d) => (
+                <li key={d.code} className="rounded-md border px-3 py-2">
+                  <p className="font-medium">{d.label}</p>
+                  <p className="text-xs text-muted-foreground">{d.trigger}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <p className="mb-2 font-semibold">ระดับ</p>
+            <ul className="space-y-1">
+              {rules.tiers.map((t) => (
+                <li key={t.tier} className={cn("text-sm", t.tier === "high" ? "text-dash-action" : t.tier === "watch" ? "text-dash-watch" : "text-dash-good")}>
+                  ● {t.text}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <ul className="space-y-1 text-xs text-muted-foreground">
+            {rules.notes.map((n) => (
+              <li key={n}>· {n}</li>
+            ))}
+          </ul>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* ---------- R1.2 §3.3 งานค้างของสัญญา (pending work, not risk) ---------- */
+function PendingWorkCard({ work, loading, emptyText }: { work: { pi: PendingItem[]; renew: PendingItem[] }; loading: boolean; emptyText: string }) {
+  const [open, setOpen] = useState<"pi" | "renew" | null>(null);
+  const rows: { key: "pi" | "renew"; label: string; items: PendingItem[]; dateLabel: string }[] = [
+    { key: "pi", label: "Property Information Form ยังไม่ครบ", items: work.pi, dateLabel: "เริ่มสัญญา" },
+    { key: "renew", label: "ใกล้ถึงวันต่อสัญญา (≤ 60 วัน) ยังไม่เริ่มต่อ", items: work.renew, dateLabel: "วันสิ้นสุดสัญญา" },
+  ];
+  return (
+    <DashCard
+      title="งานค้างของสัญญา"
+      info={{ count: "นับรายสัญญาบริการ · เป็นงานที่ต้องทำ ไม่ใช่สัญญาณเสี่ยง จึงไม่นับใน Risk Scorecard / Account Health" }}
+      question="สัญญาไหนยังมีงานค้างที่ต้องตาม?"
+      answer={loading ? "—" : `${work.pi.length + work.renew.length}`}
+      answerTone="neutral"
+      answerSub="สัญญา"
+      noteKey="pending-work"
+      noteLines={rows.map((r) => `${r.label} ${r.items.length} สัญญา`)}
+      howToRead="กดแต่ละแถวเพื่อดูรายชื่อ"
+    >
+      {loading ? (
+        <ChartSkeleton text={emptyText} />
+      ) : (
+        <div className="divide-y rounded-lg border">
+          {rows.map((r) => (
+            <div key={r.key}>
+              <button type="button" aria-expanded={open === r.key} className="flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left text-sm hover:bg-muted" onClick={() => setOpen(open === r.key ? null : r.key)}>
+                <span>{r.label}</span>
+                <span className="font-semibold tabular-nums">
+                  {r.items.length} สัญญา {open === r.key ? "▴" : "▾"}
+                </span>
+              </button>
+              {open === r.key && (
+                <div className="overflow-x-auto px-3 pb-3">
+                  {r.items.length ? (
+                    <table className="w-full min-w-[420px] text-xs">
+                      <thead>
+                        <tr className="text-left text-muted-foreground">
+                          <th className="py-1.5">โรงแรม</th>
+                          <th>บริการ</th>
+                          <th>AE</th>
+                          <th>{r.dateLabel}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {r.items.map((i) => (
+                          <tr key={i.key} className="border-t">
+                            <td className="py-1.5 font-medium">{i.hotel_name}</td>
+                            <td>{i.service_line}</td>
+                            <td>{aeNameTh(i.ae_owner_id)}</td>
+                            <td className="tabular-nums">{i.date ?? "—"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  ) : (
+                    <p className="py-2 text-xs text-muted-foreground">ไม่มีงานค้าง</p>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </DashCard>
+  );
+}
+
+/* ---------- R1.2 §3.4 renewal list with old → new price (read-only) ---------- */
+const OUTCOME_GROUP: Record<string, "renewed" | "inProgress" | "notRenewed"> = { RENEWED: "renewed", IN_PROGRESS: "inProgress", NOT_RENEWED: "notRenewed", LOST: "notRenewed" };
+function RenewalList({ renewals, demo }: { renewals: PsReportRow[]; demo: boolean }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="mt-4 border-t pt-3">
+      <Button variant="link" size="sm" className="px-0" aria-expanded={open} onClick={() => setOpen(!open)}>
+        ดูรายชื่อ {open ? "▴" : "▾"}
+      </Button>
+      {open && (demo ? <RenewalTable renewals={renewals} history={demoPriceHistory()} reasons={{}} /> : <LiveRenewalTable renewals={renewals} />)}
+    </div>
+  );
+}
+function LiveRenewalTable({ renewals }: { renewals: PsReportRow[] }) {
+  const store = useRenewalStore();
+  // Live chain: a RENEWAL cycle may be stored under the new contract id — map it back to the source contract.
+  const bySource = new Map(store.requests.map((r) => [r.id, r.source_contract_id]));
+  const history: PriceCycle[] = store.history.map((h) => ({ ...h, contract_id: h.renewal_request_id ? bySource.get(h.renewal_request_id) ?? h.contract_id : h.contract_id }));
+  const reasons = Object.fromEntries(store.requests.filter((r) => r.reason_text).map((r) => [r.source_contract_id, String(r.reason_text)]));
+  return <RenewalTable renewals={renewals} history={history} reasons={reasons} />;
+}
+function RenewalTable({ renewals, history, reasons }: { renewals: PsReportRow[]; history: PriceCycle[]; reasons: Record<string, string> }) {
+  const [group, setGroup] = useState<"all" | "renewed" | "inProgress" | "notRenewed">("all");
+  const rows = [...renewals].sort((a, b) => String(a.renewal_due_date ?? "").localeCompare(String(b.renewal_due_date ?? "")));
+  const count = (g: string) => rows.filter((r) => OUTCOME_GROUP[String(r.outcome)] === g).length;
+  const shown = rows.filter((r) => group === "all" || OUTCOME_GROUP[String(r.outcome)] === group);
+  return (
+    <div className="mt-2">
+      <div className="mb-2 flex flex-wrap gap-1" role="group" aria-label="กรองผลการต่อสัญญา">
+        {(["renewed", "inProgress", "notRenewed"] as const).map((g) => (
+          <Button key={g} size="sm" variant={group === g ? "default" : "outline"} aria-pressed={group === g} onClick={() => setGroup(group === g ? "all" : g)}>
+            {RENEWAL_LABEL[g]} {count(g)}
+          </Button>
+        ))}
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[640px] text-xs">
+          <thead>
+            <tr className="text-left text-muted-foreground">
+              <th className="py-2">สัญญา</th>
+              <th>AE</th>
+              <th>ผล</th>
+              <th>ราคาเดิม → ราคาใหม่</th>
+              <th>เหตุผลที่ไม่ต่อ</th>
+            </tr>
+          </thead>
+          <tbody>
+            {shown.map((r) => {
+              const cid = String(r.contract_id ?? "");
+              const d = priceDiff(history, cid);
+              const notRenewed = OUTCOME_GROUP[String(r.outcome)] === "notRenewed";
+              return (
+                <tr key={String(r.renewal_id ?? cid)} className="border-t align-top">
+                  <td className="py-2">
+                    <p className="font-medium">{String(r.hotel_name ?? "—")}</p>
+                    <p className="text-muted-foreground">
+                      {cid} · {String(r.service_line ?? "—")}
+                    </p>
+                  </td>
+                  <td>{aeNameTh(r.ae_owner_id)}</td>
+                  <td>{RENEWAL_TH[String(r.outcome)] ?? "—"}</td>
+                  <td>
+                    {d.status === "NO_RENEWAL" ? (
+                      <span className="text-muted-foreground">ยังไม่มีราคารอบใหม่</span>
+                    ) : (
+                      <ul className="space-y-0.5">
+                        {d.terms.map((t) => (
+                          <li key={t.key} className="tabular-nums">
+                            {t.label} {formatTerm(t.key, t.old)} → {formatTerm(t.key, t.next)}{" "}
+                            {t.dir === "same" ? (
+                              <span className="text-muted-foreground">เท่าเดิม</span>
+                            ) : (
+                              <span className={t.dir === "up" ? "text-dash-good" : "text-dash-watch"}>{t.dir === "up" ? "▲" : "▼"}</span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </td>
+                  <td className="max-w-[16rem] whitespace-normal">{notRenewed ? (r["reason_text"] ? String(r["reason_text"]) : reasons[cid] ?? "—") : "—"}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <p className="mt-2 text-[11px] text-muted-foreground">เรียงตามวันครบกำหนดต่อสัญญา · ราคาจากประวัติราคาสัญญา (รอบก่อน → รอบต่ออายุ) · อ่านอย่างเดียว</p>
     </div>
   );
 }
