@@ -44,7 +44,7 @@ function Account360Body({ report, hotelId }: { report?: PsReport | undefined; ho
   const now = report?.now ? new Date(report.now) : new Date();
   const of = (rows?: PsReportRow[]) => (rows ?? []).filter(r => r.hotel_id === hotelId);
   const healthRows = of(v?.v_ps_account_health);
-  const contracts = of(v?.v_ps_lifecycle_flow);
+  const contracts = of(v?.v_ps_lifecycle_flow).filter(isRecurringService);
   const renewals = of(v?.v_ps_renewal);
   const base: PsReportRow = { ...(healthRows[0] ?? { hotel_id: hotelId }), completeness: healthRows.some(r => r.completeness != null && r.completeness !== 'complete') ? 'incomplete' : healthRows[0]?.completeness ?? null };
   const h = accountHealthOf(base, { now, roi: v?.v_ps_roi ?? [], flow: v?.v_ps_lifecycle_flow ?? [], ratioMin: report?.demo ? DEMO_VALUE_RATIO_MIN : ROI_VALUE_RATIO_MIN });

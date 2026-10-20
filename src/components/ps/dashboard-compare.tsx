@@ -18,8 +18,8 @@ export function DashboardCompare({ report, ac, deals, tab }: { report: PsReport 
     const cohort = rows('v_ps_onboard_cohort');
     const invoices = scopePeriod(ac?.['v_ac_overdue'] ?? [],f,p);
     return {
-      in: rows('v_ps_lifecycle_flow','created_at').length || (rows('v_ps_churn_monthly').length ? 0 : null),
-      out: rows('v_ps_lifecycle_flow','inactivated_at').length || (rows('v_ps_churn_monthly').length ? 0 : null),
+      in: rows('v_ps_lifecycle_flow','created_at').filter(isRecurringService).length || (rows('v_ps_churn_monthly').length ? 0 : null),
+      out: rows('v_ps_lifecycle_flow','inactivated_at').filter(isRecurringService).length || (rows('v_ps_churn_monthly').length ? 0 : null),
       churn: ratio(latestPeriod(rows('v_ps_churn_monthly')),'out_count','active_at_start'),
       renewal:renewal.length || null,
       success:decided.length ? decided.filter(r => r.outcome === 'RENEWED').length/decided.length*100 : null,
