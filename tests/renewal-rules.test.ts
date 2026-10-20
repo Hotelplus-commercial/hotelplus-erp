@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import {
-  DEFAULT_RENEWAL_CONFIG, approve, cancel, defaultNewTerms, editTerms, evaluate, gatesPass, initialHistory, isOverdue, priceOn, recommend,
+  DEFAULT_RENEWAL_CONFIG, minRaiseApplied, systemDefaultFee, approve, cancel, defaultNewTerms, editTerms, evaluate, gatesPass, initialHistory, isOverdue, priceOn, recommend,
   renewalHistoryRow, returnRequest, rollDates, sendLink, sign, submit, type RecoMode, type RecoSnapshot, type RenewalRequest, type Terms,
 } from '../src/lib/renewal-rules';
 import { wizardPathRedirects } from '../src/lib/renewal-wizard';
@@ -35,7 +35,7 @@ describe('§3 approval matrix', () => {
 
 describe('§2 recommendation', () => {
   const row = (p: Record<string, unknown>) => ({ hotel_id: 'H1', gate_pass: true, trigger: 'signal', revenue_profile: 'moderate', band_min_pct: 5, band_max_pct: 12, why_chips: 'ราคาต่ำกว่ามูลค่า', ...p });
-  test('RAISE default fee = midpoint, rounded', () => { const r = recommend(row({}), OLD, true, NOW); expect(r.type).toBe('RAISE'); expect(defaultNewTerms(OLD, r).fee_amount).toBe(10850); });
+  test('RAISE default fee = midpoint, rounded to nearest ฿100 (v1.3)', () => { const r = recommend(row({}), OLD, true, NOW); expect(r.type).toBe('RAISE'); expect(defaultNewTerms(OLD, r).fee_amount).toBe(10900); });
   test('declining → HOLD; not listed → KEEP; no data → NONE; commission-only → KEEP', () => {
     expect(recommend(row({ revenue_profile: 'declining', gate_pass: false }), OLD, true, NOW).type).toBe('HOLD');
     expect(recommend(undefined, OLD, true, NOW).type).toBe('KEEP');
@@ -183,5 +183,31 @@ describe('v1.2 live link', () => {
     const base = { status: 'ACTIVE', expires_at: '2026-01-01T00:00:00.000Z' } as any;
     expect(s.isExpired(base, '2026-02-01T00:00:00.000Z')).toBe(true);
     expect(s.isExpired({ ...base, expires_at: null }, '2099-01-01T00:00:00.000Z')).toBe(false);
+  });
+});
+
+describe('v1.3 default fee: nearest ฿100 + minimum raise', () => {
+  const band = (lo: number, hi: number): RecoSnapshot => ({ type: 'RAISE', band_min_pct: lo, band_max_pct: hi, reasons: [], inputs: {}, computed_at: NOW });
+  const MIN = DEFAULT_RENEWAL_CONFIG.renewal_min_raise_thb;
+  const t = (fee: number): Terms => ({ ...OLD, fee_amount: fee });
+  test('config default is 500', () => expect(MIN).toBe(500));
+  test('12,000 × 1.085 = 13,020 → 13,000 (no minimum)', () => { expect(systemDefaultFee(12000, band(5, 12), MIN)).toBe(13000); expect(minRaiseApplied(12000, band(5, 12), MIN)).toBe(false); });
+  test('4,850 × 1.04 = 5,044 → 5,000 → minimum → 5,400', () => { expect(systemDefaultFee(4850, band(2, 6), MIN)).toBe(5400); expect(minRaiseApplied(4850, band(2, 6), MIN)).toBe(true); });
+  test('7,350 × 1.04 = 7,644 → 7,600 → minimum → 7,900', () => expect(systemDefaultFee(7350, band(2, 6), MIN)).toBe(7900));
+  test('1,000 × 1.04 → 1,500', () => expect(systemDefaultFee(1000, band(2, 6), MIN)).toBe(1500));
+  test('keep-same / hold / no-reco → old fee unchanged (no rounding, no minimum)', () => {
+    for (const type of ['KEEP', 'HOLD', 'NONE'] as const) expect(defaultNewTerms(t(4850), reco(type), MIN).fee_amount).toBe(4850);
+  });
+  test('the system default never needs a reason (even outside the band)', () => {
+    for (const mode of ['SOFT_FORCE', 'ADVISORY'] as RecoMode[]) for (const [fee, b] of [[1000, band(2, 6)], [4850, band(2, 6)], [7350, band(2, 6)], [12000, band(5, 12)]] as const) {
+      const next = defaultNewTerms(t(fee), b, MIN);
+      expect(evaluate(b, t(fee), next, mode, MIN)).toMatchObject({ approval_required: true, reason_required: false, deviates_from_reco: false });
+    }
+  });
+  test('an AE amount outside the band (not the default) still needs a reason', () => expect(evaluate(band(2, 6), t(1000), { ...t(1000), fee_amount: 1400 }, 'SOFT_FORCE', MIN).reason_required).toBe(true));
+  test('changing renewal_min_raise_thb changes the result', () => {
+    expect(systemDefaultFee(4850, band(2, 6), 1000)).toBe(5900);
+    expect(systemDefaultFee(4850, band(2, 6), 100)).toBe(5000);
+    expect(minRaiseApplied(4850, band(2, 6), 100)).toBe(false);
   });
 });
