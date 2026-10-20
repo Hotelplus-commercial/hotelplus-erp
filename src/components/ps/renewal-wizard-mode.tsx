@@ -54,7 +54,7 @@ export function RenewalWizard({ contractId }: { contractId: string }) {
   if (!req) return <Msg text={`ไม่มีคำขอต่อสัญญาที่เปิดอยู่ · ${card.hotel}`} />;
 
   const editable = req.status === "DRAFT" || req.status === "RETURNED";
-  const ev = evaluate(req.reco_snapshot, req.old_terms, req.new_terms, renewalConfig.renewal_reco_mode);
+  const ev = evaluate(req.reco_snapshot, req.old_terms, req.new_terms, renewalConfig.renewal_reco_mode, renewalConfig.renewal_min_raise_thb);
   const delta = req.new_terms.fee_amount - req.old_terms.fee_amount;
   const pct = req.old_terms.fee_amount ? (delta / req.old_terms.fee_amount) * 100 : 0;
   const reasonOk = !ev.reason_required || reasonValid(req.reason_code, req.reason_text);
@@ -123,7 +123,7 @@ export function RenewalWizard({ contractId }: { contractId: string }) {
 
       {step === 1 && (
         <Panel title="เงื่อนไขใหม่">
-          <RecoBox reco={req.reco_snapshot} />
+          <RecoBox reco={req.reco_snapshot} oldFee={req.old_terms.fee_amount} />
           <div className="mt-3 grid gap-4 md:grid-cols-2">
             <div className="space-y-1 rounded-lg border p-3 text-sm">
               <p className="font-medium">เงื่อนไขเดิม</p>
