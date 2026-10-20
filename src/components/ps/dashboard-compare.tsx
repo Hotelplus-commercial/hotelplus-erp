@@ -1,7 +1,7 @@
 import type { ContractLifecycle } from '@/lib/contract-lifecycle';
 import { v_bdac_flow } from '@/lib/bdac-views';
 import { useDashboardGlobal, selectedPeriod, scopePeriod, periodRange, deltaText } from '@/lib/ps-dashboard-global';
-import { latestPeriod, ratio, type PsReport, type PsReportRow } from '@/lib/ps-dashboard-types';
+import { isRecurringService, latestPeriod, ratio, type PsReport, type PsReportRow } from '@/lib/ps-dashboard-types';
 
 const median = (rows: number[]) => { if (!rows.length) return null; const s = [...rows].sort((a,b) => a-b); const lo = s[Math.floor((s.length-1)/2)], hi = s[Math.ceil((s.length-1)/2)]; return lo == null || hi == null ? null : (lo+hi)/2; };
 export function DashboardCompare({ report, ac, deals, tab }: { report: PsReport | undefined; ac: Record<string, PsReportRow[]> | undefined; deals: ContractLifecycle[]; tab: string }) {

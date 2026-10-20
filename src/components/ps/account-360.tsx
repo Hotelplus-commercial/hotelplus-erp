@@ -6,7 +6,7 @@ import { ArrowUpRight } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Chip } from '@/components/crm/crm-ui';
 import { accountHealthOf, DEMO_VALUE_RATIO_MIN, ROI_VALUE_RATIO_MIN, tierAStreak, trailingValueRatio } from '@/lib/account-health';
-import type { PsReport, PsReportRow } from '@/lib/ps-dashboard-types';
+import { isRecurringService, type PsReport, type PsReportRow } from '@/lib/ps-dashboard-types';
 import { BdTicketButton, RenewalLink, priceLine, readyTag, sigChips, triggerBadge } from '@/components/ps/expansion-ui';
 import { bandLabel } from '@/lib/expansion';
 
