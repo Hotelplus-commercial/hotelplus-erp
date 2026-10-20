@@ -175,6 +175,21 @@ export function workload(dept: WorkDept, rows: WorkRow[], acts: ActMap, care: Ho
   return out.filter(r => (r.key !== 'UNSET' || r.inN + r.closedN + r.openNow > 0) && (!who.size || r.inN + r.closedN + r.openNow > 0));
 }
 
+/** R1.2 §5.4 — people inside one Workload team row (live responsible person, same rows as "ค้างตอนนี้"). */
+export type PersonLoad = { name: string; missing: boolean; openNow: number; todo: number; doing: number };
+export function workloadPeople(dept: WorkDept, key: string, rows: WorkRow[], care: HotelCare[]): PersonLoad[] {
+  const byHotel = new Map(care.map(c => [c.hotel_id, c]));
+  const mine = rows.filter(r => r.status_group !== 'CLOSED' && r.dept === dept && liveTeam(r.dept, byHotel.get(r.hotel_id ?? '')) === key);
+  const m = new Map<string, PersonLoad>();
+  for (const r of mine) {
+    const name = r.responsible_name ?? 'ยังไม่ระบุผู้ดูแล';
+    const v = m.get(name) ?? { name, missing: !r.responsible_name, openNow: 0, todo: 0, doing: 0 };
+    v.openNow++; if (r.status_group === 'OPEN') v.todo++; if (r.status_group === 'IN_PROGRESS') v.doing++;
+    m.set(name, v);
+  }
+  return [...m.values()].sort((a, b) => b.openNow - a.openNow || Number(a.missing) - Number(b.missing) || a.name.localeCompare(b.name));
+}
+
 /* ---------------- snapshot job rows (post-step after Alert BOT) ---------------- */
 export function snapshotRowsFor(date: string, T: number, inp: BacklogInput, source: 'JOB' | 'CATCHUP', k3?: { all: number; roles: Record<string, number> }): SnapshotRow[] {
   const b = backlogAsOf(T, inp), row = (metric: SnapshotRow['metric'], dim_key: string, value: number, threshold_used: number | null = null): SnapshotRow => ({ snapshot_date: date, metric, dim_key, value, threshold_used, source });

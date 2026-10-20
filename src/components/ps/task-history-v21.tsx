@@ -94,8 +94,9 @@ export function CategoryIncomingCard({ rows, categories, a, b, compare }: { rows
 
 /* ---------------- ⑦ ---------------- */
 const WDEPTS: [WorkDept, string][] = [['ORM', 'ORM'], ['MARCOM', 'Marcom'], ['PS', 'PS'], ['AC', 'AC'], ['BD', 'BD']];
-export function WorkloadCard({ rows, acts, care, a, b, compare, people, smallBase }: { rows: WorkRow[]; acts: ActMap; care: HotelCare[]; a: Period; b: Period; compare: boolean; people: string[]; smallBase: number }) {
+export function WorkloadCard({ rows, acts, care, a, b, compare, people, smallBase, onPerson }: { rows: WorkRow[]; acts: ActMap; care: HotelCare[]; a: Period; b: Period; compare: boolean; people: string[]; smallBase: number; onPerson?: (name: string) => void }) {
   const [dept, setDept] = useState<WorkDept>('ORM');
+  const [expanded, setExpanded] = useState<string | null>(null);
   const A = workload(dept, rows, acts, care, a, people), B = compare ? workload(dept, rows, acts, care, b, people) : [];
   const deptLabel = WDEPTS.find(d => d[0] === dept)![1], multi = A.length > 1, totalIn = A.reduce((n, r) => n + r.inN, 0);
   const top = [...A].sort((x, y) => y.inN - x.inN)[0], max = Math.max(1, ...A.flatMap(r => [r.inN, r.closedN]));
