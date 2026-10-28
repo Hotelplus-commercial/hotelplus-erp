@@ -193,6 +193,7 @@ export function marcomBox(contracts: PortfolioContract[], kind: 'content' | 'ads
   const quota = kind === 'ads' ? null : mean(quotas);
   if (!feed) return { n: set.length, value: null as number | null, quota, completion: null as number | null };
   const months = Math.max(1, monthsOf(p).length);
+  if (!feed.some((r) => ids.has(r.contract_id) && inPeriod(r.date, p))) return { n: set.length, value: null as number | null, quota, completion: null as number | null };
   const per = (id: string) => feed.filter((r) => r.contract_id === id && inPeriod(r.date, p)).reduce((s, r) => s + r.qty, 0) / months;
   const value = set.length ? mean(set.map((c) => per(c.contract_id))) : null;
   const comps = kind === 'ads' ? [] : set.filter((c) => (c.quota?.[quotaKey] ?? 0) > 0).map((c) => (per(c.contract_id) / c.quota![quotaKey]!) * 100);
