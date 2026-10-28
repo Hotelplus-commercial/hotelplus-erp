@@ -127,6 +127,7 @@ describe('§6 English dates + K2', () => {
     const text = visible(html);
     expect(text).toContain('⑥ รายได้รายสัญญา');
     expect(text).toContain('⑪ ลูกหนี้ที่ต้องติดตาม');
+    expect(text).toContain('May 26'); // ③ cohort labels rendered in English
     expect(THAI_MONTH_ABBR.filter((m) => text.includes(m))).toEqual([]);
     expect(/(^|\D)25[5-7]\d(\D|$)/.test(text)).toBe(false);
     expect(/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) (6[6-9]|7\d)(\D|$)/.test(text)).toBe(false);
