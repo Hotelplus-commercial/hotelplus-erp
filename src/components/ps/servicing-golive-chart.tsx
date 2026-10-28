@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ChartSkeleton, ChartTooltip, DashCard, Delta } from './dash-card';
 import { usePlotSize } from './use-plot-size';
 import { Button } from '@/components/ui/button';
