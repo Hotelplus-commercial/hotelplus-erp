@@ -1,4 +1,5 @@
 /* Task v2.1 — sparklines, ⑧ backlog history, ⑥ incoming by category, ⑦ team workload. Read-only presentation. */
+import type React from 'react';
 import { useMemo, useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
