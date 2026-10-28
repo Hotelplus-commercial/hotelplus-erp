@@ -1115,3 +1115,19 @@
 .dash-info-pop { max-width:360px; max-height:min(60vh,420px); overflow-y:auto; background:var(--tooltip-bg,#1C2B33) !important; color:#fff !important; border:none !important; font-size:13px; line-height:1.5; padding:12px 14px; }
 .dash-info-block + .dash-info-block { margin-top:8px; }
 .dash-info-block strong { display:block; font-size:12px; opacity:.75; font-weight:600; }
+/* Header R2 §2 — per-card CompareControl and "ณ วันนี้" chip */
+.dash-card-period{margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+.cmp-pill{height:28px;gap:6px;padding:0 10px;border-radius:9999px;font-size:12px;font-weight:500;color:var(--accent-strong);border-color:var(--border-subtle);background:var(--accent-soft);font-variant-numeric:tabular-nums;}
+.cmp-pill:hover{background:var(--accent-soft);color:var(--primary);}
+.cmp-now-chip{display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:9999px;font-size:12px;font-weight:500;color:var(--text-secondary);background:var(--muted);border:1px solid var(--border-subtle);}
+.cmp-pop{width:auto;min-width:170px;padding:6px;}
+.cmp-menu{display:flex;flex-direction:column;gap:2px;}
+.cmp-item{width:100%;text-align:left;padding:8px 10px;border-radius:8px;font-size:13px;color:var(--text-primary);}
+.cmp-item:hover,.cmp-item:focus-visible{background:var(--accent-soft);outline:none;}
+.cmp-item-on{font-weight:600;color:var(--accent-strong);}
+.cmp-custom{display:flex;flex-direction:column;gap:6px;padding:6px;min-width:280px;}
+.cmp-custom-title{font-size:12px;font-weight:600;color:var(--text-secondary);}
+.cmp-custom-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.cmp-field{display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--text-caption);}
+.cmp-field select{height:32px;border:1px solid var(--border-subtle);border-radius:8px;padding:0 8px;font-size:13px;background:var(--card);color:var(--text-primary);}
+.cmp-custom-actions{display:flex;justify-content:flex-end;gap:6px;margin-top:6px;}

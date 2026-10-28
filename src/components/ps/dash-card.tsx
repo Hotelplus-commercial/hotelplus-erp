@@ -97,7 +97,10 @@ export function DashCard({
   right,
   noteNamespace = 'ps',
   info,
+  period,
 }: {
+  /** Header R2 §2.3: the card's own CompareControl or the "ณ วันนี้" chip (header only). */
+  period?: ReactNode;
   title: ReactNode;
   question: string;
   answer?: ReactNode;
@@ -117,6 +120,7 @@ export function DashCard({
       <header className="dash-card-header">
         <div className="min-w-0">
           <h2>{title}{info && <InfoButton info={info} />}</h2>
+          {period && <div className="dash-card-period">{period}</div>}
           <p className="dash-question">{question}</p>
         </div>
         <div className="dash-answer-block">
