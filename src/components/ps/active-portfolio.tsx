@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { NowChip, useCardCompare, type CardCompare } from "./compare-control";
 import { DeltaPill, R2Info } from "./customer-journey-scorecard";
-import { delta, marcomBox, ormAsOf, activeOn, rowMatches, type HeaderSel, type PortfolioContract, type PriceRow, type Svc } from "@/lib/ps-header-r2";
+import { delta, marcomBox, ormAsOf, activeOn, rowMatches, inScope, type HeaderSel, type PortfolioContract, type PriceRow, type Svc } from "@/lib/ps-header-r2";
 import { MARCOM_NOT_CONNECTED, type MarcomRecord } from "@/lib/marcom-app-source";
 import { cn } from "@/lib/utils";
 
@@ -29,11 +29,12 @@ function Box(p: BoxProps) {
   );
 }
 
-function Panel({ svc, n, hotels, children }: { svc: Svc; n: number; hotels: number; children: ReactNode }) {
+function Panel({ svc, n, hotels, out, children }: { svc: Svc; n: number; hotels: number; out: boolean; children: ReactNode }) {
   return (
     <section className={cn("ap-panel", svc === "ORM" ? "r2-orm ap-orm" : "r2-marcom ap-marcom")} data-testid={`ap-panel-${svc}`}>
-      <header className="ap-panel-head"><h3>{svc}</h3><span>{fmt(n)} สัญญา · {fmt(hotels)} โรงแรม</span></header>
-      <div className="ap-boxes">{children}</div>
+      <header className="ap-panel-head"><h3>{svc}</h3><span>{out ? "นอกขอบเขต" : `${fmt(n)} สัญญา · ${fmt(hotels)} โรงแรม`}</span></header>
+      {/* Out of the ทีม / คน scope: dimmed, never shown as 0 (same rule as the scorecard). */}
+      {out ? <p className="ap-note r2-dim">—</p> : <div className="ap-boxes">{children}</div>}
       <p className="ap-note">{MULTI_NOTE}</p>
     </section>
   );
@@ -72,13 +73,13 @@ export function ActivePortfolio({ today, total, active, contracts: all, prices, 
           <strong className="ap-total" data-testid="ap-total">{total == null ? "" : `รวม ${fmt(total)} สัญญา`}</strong>
         </header>
         <div className="ap-panels">
-          <Panel svc="ORM" {...head("ORM")}>
+          <Panel svc="ORM" out={!inScope("ORM", sel)} {...head("ORM")}>
             <Box name="Flat Rate" info="สัญญา ORM ที่มี SKU ค่าบริการรายเดือนแบบคงที่ · ค่าบริการเฉลี่ย = ค่าเฉลี่ยของค่าบริการต่อสัญญาตามราคาที่มีผล ณ วันนั้น · เทียบ ณ วันเดียวกันของช่วงก่อน" source={ormSrc}
               n={fA.n} nB={fB.n} cmp={flat} label="ค่าบริการเฉลี่ยต่อสัญญา" value={fA.value == null ? "—" : `฿${fmt(fA.value)}/เดือน`} secondary={sec(fA.from)} d={delta(fA.value, fB.value, "up")} dUnit="" dPrefix="฿" />
             <Box name="Commission" info="สัญญา ORM ที่มี SKU ค่าคอมมิชชัน · ค่าคอมเฉลี่ย = ค่าเฉลี่ยแบบธรรมดาของ % ค่าคอมต่อสัญญา (ไม่ถ่วงน้ำหนัก) · เทียบ ณ วันเดียวกันของช่วงก่อน" source={ormSrc}
               n={cA.n} nB={cB.n} cmp={comm} label="ค่าคอมเฉลี่ยต่อสัญญา" value={cA.value == null ? "—" : `${fmt(cA.value, 1)}%`} secondary={sec(cA.from)} d={delta(cA.value, cB.value, "down")} dUnit=" จุด" dDigits={1} />
           </Panel>
-          <Panel svc="Marcom" {...head("Marcom")}>
+          <Panel svc="Marcom" out={!inScope("Marcom", sel)} {...head("Marcom")}>
             <Box name="Content" info="สัญญา Marcom ที่มี SKU Content · ส่งจริงเฉลี่ย = ชิ้นงานที่ส่งในช่วง ÷ จำนวนเดือน ÷ จำนวนสัญญา · เทียบยอดภายในแต่ละช่วง" source={marcomSrc}
               n={ct.a.n} nB={ct.b.n} cmp={content} label="ส่งจริงเฉลี่ยต่อสัญญา" value={nc(ct.a) ? "—" : `${fmt(ct.a.value!)} ชิ้น/เดือน`} secondary={nc(ct.a) ? (marcom.posts ? "ยังไม่มีชิ้นงานในช่วงนี้" : MARCOM_NOT_CONNECTED) : `ตามสัญญา ${ct.a.quota == null ? "—" : fmt(ct.a.quota)} ชิ้น · ส่งครบ ${pct(ct.a.completion)}`} d={nc(ct.a) ? null : delta(ct.a.value, ct.b.value, "up")} dUnit="" />
             <Box name="Ads" info="สัญญา Marcom ที่มี SKU Ads · เติมงบเฉลี่ย = ยอดเติมงบในช่วง ÷ จำนวนเดือน ÷ จำนวนสัญญา · เทียบยอดภายในแต่ละช่วง" source={marcomSrc}
