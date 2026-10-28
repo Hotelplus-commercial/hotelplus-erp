@@ -23,7 +23,7 @@ function Box(p: BoxProps) {
         <span className="ap-label">{p.label}</span>
         <span className="ap-value">{p.value}</span>
         <span className="ap-sec">{p.secondary}</span>
-        <span className="ap-delta">{p.d && <DeltaPill d={p.d} unit={p.dUnit} digits={p.dDigits} tip={(b) => `ช่วงที่เทียบ ${p.dPrefix ?? ""}${fmt(b, p.dDigits ?? 0)}${p.dUnit ?? ""}`} />}</span>
+        <span className="ap-delta">{p.d && <DeltaPill d={p.d} unit={p.dUnit} digits={p.dDigits} prefix={p.dPrefix} tip={(b) => `ช่วงที่เทียบ ${p.dPrefix ?? ""}${fmt(b, p.dDigits ?? 0)}${p.dUnit ?? ""}`} />}</span>
       </div>
     </div>
   );

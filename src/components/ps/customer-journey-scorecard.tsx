@@ -13,9 +13,9 @@ const fmt = (n: number, d = 0) => n.toLocaleString("th-TH", { maximumFractionDig
 export const monthTh = (m: string | null) => (m ? `${TH_MONTH[+m.slice(5, 7) - 1]} ${String(beYear(+m.slice(0, 4))).slice(-2)}` : "—");
 
 /** Δ pill: arrow + value only; the comparison value lives in its tooltip. */
-export function DeltaPill({ d, unit = "", digits = 0, tip }: { d: Delta; unit?: string; digits?: number; tip?: (b: number) => string }) {
+export function DeltaPill({ d, unit = "", digits = 0, prefix = "", tip }: { d: Delta; unit?: string; digits?: number; prefix?: string; tip?: (b: number) => string }) {
   if (!d) return null;
-  const txt = d.d === 0 ? "เท่าเดิม" : `${d.d > 0 ? "▲" : "▼"} ${fmt(Math.abs(d.d), digits)}${unit}`;
+  const txt = d.d === 0 ? "เท่าเดิม" : `${d.d > 0 ? "▲" : "▼"} ${prefix}${fmt(Math.abs(d.d), digits)}${unit}`;
   return <span data-testid="delta-pill" className={cn("r2-delta", `r2-delta-${d.tone}`)} title={tip ? tip(d.b) : `ช่วงที่เทียบ ${fmt(d.b, digits)}${unit}`}>{txt}</span>;
 }
 
