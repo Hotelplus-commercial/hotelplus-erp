@@ -1091,7 +1091,7 @@ export function MeetingAnalyzerTab({
   const ownerIn = (p: Period) => (views?.v_meeting_by_owner ?? []).filter((r) => monthsInPeriod(p).includes(String(r["card_month"])) && r["lens"] === effectiveLens);
   const funnelA = meetingScope(views?.v_meeting_funnel ?? [], filter, kFunnel.a), funnelB = meetingScope(views?.v_meeting_funnel ?? [], filter, kFunnel.b);
   const surveyA = meetingScope(views?.v_meeting_survey_scores ?? [], filter, kSurvey.a), surveyB = meetingScope(views?.v_meeting_survey_scores ?? [], filter, kSurvey.b);
-  const surveyBLabel = (() => { const m = monthsInPeriod(kSurvey.b); const f = m[0], l = m.at(-1); const th = (x: string) => TH_MONTH[+x.slice(5, 7) - 1]; return f && l ? (f === l ? th(f) : `${th(f)}–${th(l)}`) : "ช่วงก่อน"; })();
+  const surveyBLabel = (() => { const m = monthsInPeriod(kSurvey.b); const f = m[0], l = m.at(-1); const th = (x: string) => TH_MONTH[+x.slice(5, 7) - 1] ?? ""; return f && l ? (f === l ? th(f) : `${th(f)}–${th(l)}`) : "ช่วงก่อน"; })();
   const pendingRows = useMemo(() => (views?.v_meeting_tierA_pending ?? []).map(normPending), [views]);
   const flags = views?.v_meeting_flags ?? [];
 
