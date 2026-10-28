@@ -329,6 +329,7 @@ export function DashboardShell({
                         loading={report.isLoading}
                         error={report.isError}
                         wonMtd={wonMtd}
+                        wonFor={(p) => v_bdac_flow(lines, periodRange(p)).won}
                       />
                     )}
                     {overview}
