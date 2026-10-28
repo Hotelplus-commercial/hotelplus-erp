@@ -17,6 +17,7 @@ import { ContractLifecycleProvider } from '../src/lib/contract-lifecycle';
 import { BdStoreProvider } from '../src/lib/bd-store';
 import { CrmStoreProvider } from '../src/lib/crm-store';
 import { HotelStoreProvider } from '../src/lib/hotel-store';
+import { ServicingProvider } from '../src/lib/ps-servicing';
 
 async function render(el: ReactElement) {
   const rootRoute = createRootRoute({ component: () => el });
@@ -119,9 +120,9 @@ describe('§6 English dates + K2', () => {
     const value = { filter: defaultGlobalFilter, demo: true, now: DEMO_NOW };
     const html = await render(
       h(DashboardGlobal.Provider, { value },
-        h(HotelStoreProvider, null, h(CrmStoreProvider, null, h(BdStoreProvider, null, h(ContractLifecycleProvider, null,
+        h(HotelStoreProvider, null, h(CrmStoreProvider, null, h(BdStoreProvider, null, h(ServicingProvider, null, h(ContractLifecycleProvider, null,
           h(BdacTab, { source: demoBdacLifecycles(), globalFilter: defaultGlobalFilter, clock: new Date(BDAC_DEMO_NOW).getTime() }),
-          h(BdacFinanceSection)))))),
+          h(BdacFinanceSection))))))),
     );
     const text = visible(html);
     expect(text).toContain('⑥ รายได้รายสัญญา');
