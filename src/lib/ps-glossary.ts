@@ -35,8 +35,8 @@ export const DASHBOARD_TABS: readonly (readonly [string, string])[] = [
   ["meeting", "Meeting & Survey"],
   ["task", "ติดตามงานผู้ให้บริการ"],
   ["servicing", "On-board"],
-  ["bdac", "BD-AC"],
 ];
+/** BD-AC อยู่ที่ The Office APP › BD-AC (ย้ายตาม RV23) — old ?tab=bdac links redirect via src/lib/office-bdac.ts. */
 export const CONTRACT_STATUS_TH: Record<string, string> = { ACTIVE: "ใช้งาน", INACTIVE: "สิ้นสุด", UPCOMING: "รอเริ่ม", DRAFT: "ร่าง" };
 export const RENEWAL_TH: Record<string, string> = { RENEWED: "ต่อแล้ว", IN_PROGRESS: "กำลังคุย", NOT_RENEWED: "ไม่ต่อ", LOST: "ไม่ต่อ" };
 /** Strings that must never render on the PS Dashboard (R1 §1.2, invariant 8). */

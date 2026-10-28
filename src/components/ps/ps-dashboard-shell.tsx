@@ -8,7 +8,6 @@ import { Clock, Minus, Triangle } from "lucide-react";
 import { createContext, useContext, useMemo, useState, useEffect, type ReactNode } from "react";
 
 import { Chip } from "@/components/crm/crm-ui";
-import { BdacTab } from "@/components/ps/bdac-tab";
 import { AcTab as AcTabV2 } from "@/components/ps/ac-tab";
 import { PsReportTab } from "@/components/ps/ps-report-tab";
 import { Account360Provider } from "@/components/ps/account-360";
@@ -20,8 +19,7 @@ import { latestPeriod, psScope, ratio, type PsReport } from "@/lib/ps-dashboard-
 import { buildDemoReport, demoAcViews, demoBdacLifecycles, demoLifecycles, BDAC_DEMO_NOW, DEMO_NOW } from "@/lib/ps-demo-fixture";
 import { Button } from "@/components/ui/button";
 import { useAcTabInput, useAcViews } from "./use-ac-views";
-import { BdacFinanceSection } from "./bdac-finance-section";
-import { formatFullDateEn } from "@/lib/date-en";
+import { dealBookLines } from "@/lib/bdac-scope";
 import { v_bdac_flow, v_bdac_deal_aging } from "@/lib/bdac-views";
 import { useContractLifecycle } from "@/lib/contract-lifecycle";
 import {
@@ -232,33 +230,9 @@ export function DashboardShell({
   const now = new Date(nowString);
   const { lifecycles } = useContractLifecycle();
   const deals = demo ? demoLifecycles() : lifecycles;
-  const lines = deals.filter((d) =>
-    matchesBook(
-      {
-        service_line: d.service_line === "MARCOM" ? "Marcom" : d.service_line,
-        hotel_id: d.hotel_id,
-        hotel_name: d.hotel_name,
-        ae_owner_id:
-          data?.views.v_ps_account_health.find((r) => r.hotel_id === d.hotel_id)?.["ae_owner_id"] ??
-          (demo ? d.bd_owner_id : null),
-      },
-      filter,
-    ),
-  );
+  const lines = dealBookLines(deals, filter, data?.views.v_ps_account_health, demo);
   const wonMtd = v_bdac_flow(lines, periodRange(selectedPeriod(filter, now))).won;
-  /* BD-AC v2.0 demo uses its own fixture + clock (2026-10-17); the PS spine stays unchanged. */
-  const bdacNow = demo ? new Date(BDAC_DEMO_NOW) : now;
-  const bdacLines = (demo ? demoBdacLifecycles() : lifecycles).filter((d) =>
-    matchesBook(
-      {
-        service_line: d.service_line === "MARCOM" ? "Marcom" : d.service_line,
-        hotel_id: d.hotel_id,
-        hotel_name: d.hotel_name,
-        ae_owner_id: demo ? d.bd_owner_id : null,
-      },
-      filter,
-    ),
-  );
+  /* BD-AC tab moved to The Office APP › BD-AC (RV23); its own page owns the BD-AC demo clock. */
   const periodFilter = {
     ...filter,
     ...(filter.compare || filter.range === "custom" ? { period: selectedPeriod(filter, now) } : {}),
@@ -302,8 +276,7 @@ export function DashboardShell({
               <div data-testid="active-dashboard-tab" className="min-w-0 space-y-4">
                 {demo && (
                   <p className="text-xs font-semibold text-warning-foreground">
-                    {/* BD-AC v2.2 K2: Tab BD-AC runs on its own demo clock (2026-10-17); other tabs keep theirs. */}
-                    DEMO · {tab === "bdac" ? formatFullDateEn(BDAC_DEMO_NOW) : "30 Sep 2026"}
+                    DEMO · 30 Sep 2026
                   </p>
                 )}
                 {filter.compare && (
@@ -314,24 +287,6 @@ export function DashboardShell({
                     tab={tab === "ac" ? "" : tab}
                   />
                 )}
-                {tab === "bdac" &&
-                  (filter.compare ? (
-                    <div className="grid min-w-0 gap-5 xl:grid-cols-2">
-                      {(["A", "B"] as const).map((side) => (
-                        <div key={side} className="min-w-0">
-                          <h2 className="mb-3 text-sm font-semibold">Period {side}</h2>
-                          <BdacTab
-                            source={bdacLines}
-                            globalFilter={{ ...filter, periodA: selectedPeriod(filter, bdacNow, side) }}
-                            clock={bdacNow.getTime()}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <BdacTab source={bdacLines} globalFilter={filter} clock={bdacNow.getTime()} />
-                  ))}
-                {tab === "bdac" && <BdacFinanceSection />}
                 {tab === "ac" && <AcTab />}
                 {tab === "ps" && (
                   <>
