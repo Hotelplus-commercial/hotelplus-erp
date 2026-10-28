@@ -36,7 +36,12 @@ import {
   useDashboardGlobal,
   type GlobalFilter,
 } from "@/lib/ps-dashboard-global";
-import { DashboardGlobalFilters } from "./dashboard-global-filters";
+import { PsHeaderFilters, usePickerOptions } from "./ps-header-filters";
+import { CustomerJourneyScorecard } from "./customer-journey-scorecard";
+import { ActivePortfolio } from "./active-portfolio";
+import { useHeaderR2 } from "./use-header-r2";
+import { PSDASH_FLAGS, inScope, rowMatches, selFromFilter } from "@/lib/ps-header-r2";
+import { aeNameTh } from "@/lib/ps-glossary";
 import { DashboardCompare } from "./dashboard-compare";
 import { TaskTab } from "./task-tab";
 import { useHrMembers, teamLabel } from "@/lib/hr-members";
@@ -252,14 +257,9 @@ export function DashboardShell({
         <PsReportCtx.Provider value={report}>
           <Account360Provider report={report.data}>
             <div className="ps-dashboard-visual flex min-w-0 flex-col gap-4">
-              <DashboardGlobalFilters
-                value={filter}
-                onChange={setFilter}
-                demo={demo}
-                onDemo={toggleDemo}
-                now={now}
-              />
-              <HeadlineStrip />
+              {/* Header R2: old DashboardGlobalFilters / HeadlineStrip / Portfolio snapshot are unmounted here (code kept). */}
+              <HeaderR2 raw={ps.data} filter={filter} demo={demo} onChange={setFilter} onDemo={toggleDemo} />
+              {PSDASH_FLAGS["psdash.monthSummary"] && <HeadlineStrip summaryOnly />}
               {header}
               <div
                 className="flex gap-1 overflow-x-auto rounded-lg border bg-card p-1"
@@ -346,7 +346,25 @@ export function DashboardShell({
   );
 }
 
-function HeadlineStrip() {
+/** Header R2 — filter bar + Customer Journey scorecard + Active Portfolio (read-only). */
+function HeaderR2({ raw, filter, demo, onChange, onDemo }: { raw: PsReport | undefined; filter: Filter; demo: boolean; onChange: (f: Filter) => void; onDemo: () => void }) {
+  const h = useHeaderR2(demo, raw);
+  const sel = selFromFilter(filter);
+  const aliases = filter.ownerAliases;
+  const extraAe = [...new Set([...h.journey.active, ...h.journey.onboard].map((r) => r.ae).filter((v): v is string => !!v).map(aeNameTh))];
+  const options = usePickerOptions(demo ? { ae: extraAe } : undefined);
+  const active = h.journey.active.filter((r) => inScope(r.service, sel) && rowMatches(r, sel, aliases));
+  return (
+    <>
+      <PsHeaderFilters value={filter} onChange={onChange} demo={demo} onDemo={onDemo} options={options} />
+      {demo && <p className="text-xs font-semibold text-warning-foreground">DEMO · 28 Oct 2026 (ส่วนหัว)</p>}
+      <CustomerJourneyScorecard input={h.journey} sel={sel} aliases={aliases} />
+      <ActivePortfolio today={h.today} total={active.length} active={active} contracts={h.portfolio.contracts} prices={h.portfolio.prices} marcom={h.marcom} sel={sel} aliases={aliases} />
+    </>
+  );
+}
+
+function HeadlineStrip({ summaryOnly = false }: { summaryOnly?: boolean }) {
   const f = useContext(FilterCtx),
     global = useDashboardGlobal(),
     ps = useContext(PsReportCtx);
@@ -434,7 +452,7 @@ function HeadlineStrip() {
   );
   return (
     <div data-testid="headline-strip">
-      <div className="dash-headline-groups">
+      {!summaryOnly && <div className="dash-headline-groups">
         <div className="dash-headline-group dash-growth">
           <p className="dash-headline-label">โต</p>
           <div className="dash-headline-tiles">
@@ -519,7 +537,7 @@ function HeadlineStrip() {
             )}
           </div>
         </div>
-      </div>
+      </div>}
       <SummaryNote noteKey="headline.overview" title="สรุปภาพรวมเดือนนี้" noteLines={empty}>
         <div className="grid gap-3 sm:grid-cols-3">
           {[

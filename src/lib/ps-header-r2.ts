@@ -19,6 +19,9 @@ import { daysIn, inPeriod, modeOf, monthsOf } from './card-compare';
 import type { Period } from './ps-dashboard-global';
 import type { GlobalFilter } from './ps-dashboard-global';
 
+/** HR26: the old "สรุปภาพรวมเดือนนี้" strip is hidden (not deleted) behind this flag. */
+export const PSDASH_FLAGS = { 'psdash.monthSummary': false } as const;
+
 export type Svc = 'ORM' | 'Marcom';
 export const SVCS: Svc[] = ['ORM', 'Marcom'];
 /** Owner keys carried by every header row (raw ids; display names resolved by aliases). */
