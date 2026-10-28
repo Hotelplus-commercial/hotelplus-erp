@@ -61,7 +61,7 @@ export const aeLabel = (id: string | null | undefined) => (id ? aeNameTh(id) : "
 export type AcCardContext = "ac" | "bdac";
 
 /** Inputs of the shared debtor / grade cards, derived once from the AC tab props (same numbers wherever mounted). */
-export function useAcCardModel({ views, service, periodA }: Pick<AcTabProps, "views" | "service" | "periodA">) {
+export function useAcCardModel({ views, service, periodA }: { views: AcTabProps["views"]; service: AcTabProps["service"]; periodA?: { from: string; to: string } | undefined }) {
   const navigate = useNavigate();
   const openHotel = () => navigate({ to: "/ac/hotel-profile" });
 
