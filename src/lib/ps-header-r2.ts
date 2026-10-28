@@ -25,7 +25,7 @@ export const PSDASH_FLAGS = { 'psdash.monthSummary': false } as const;
 export type Svc = 'ORM' | 'Marcom';
 export const SVCS: Svc[] = ['ORM', 'Marcom'];
 /** Owner keys carried by every header row (raw ids; display names resolved by aliases). */
-export type HRow = { service: Svc; hotel_id?: string; hotel_name?: string; ae: string | null; orm: string | null; marcom: string | null };
+export type HRow = { service: Svc; hotel_id?: string | undefined; hotel_name?: string | undefined; ae: string | null; orm: string | null; marcom: string | null };
 
 /* ---------------- ทีม / คน picker ---------------- */
 export type HeaderSel = { kind: 'ALL' } | { kind: 'ORM'; team: string | null } | { kind: 'MARCOM'; owner: string | null } | { kind: 'AE'; ae: string };
@@ -169,7 +169,7 @@ export type PortfolioContract = HRow & {
   contract_id: string; hotel_id: string; start: string; end: string | null;
   sku: { flat?: boolean; commission?: boolean; content?: boolean; ads?: boolean; kol?: boolean };
   /** Contract quotas per month (Content pieces / KOL people). */
-  quota?: { content?: number | null; kol?: number | null };
+  quota?: { content?: number | null; kol?: number | null } | undefined;
 };
 export const activeOn = (c: Pick<PortfolioContract, 'start' | 'end'>, day: string) => c.start.slice(0, 10) <= day && (!c.end || c.end.slice(0, 10) > day);
 /** The price row in force on `day`: effective_from ≤ day < effective_to (open end = still in force). */

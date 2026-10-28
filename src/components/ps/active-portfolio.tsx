@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 const fmt = (n: number, d = 0) => n.toLocaleString("th-TH", { maximumFractionDigits: d, minimumFractionDigits: d });
 const MULTI_NOTE = "1 สัญญามีได้หลายรูปแบบ ยอดรวมของกลุ่มจึงเกินจำนวนสัญญาได้";
 
-type BoxProps = { name: string; info: string; source: string; n: number; nB: number; cmp: CardCompare; label: string; value: string; secondary: string; d: ReturnType<typeof delta>; dUnit?: string; dDigits?: number; dPrefix?: string };
+type BoxProps = { name: string; info: string; source: string; n: number; nB: number; cmp: CardCompare; label: string; value: string; secondary: string; d: ReturnType<typeof delta>; dUnit?: string | undefined; dDigits?: number | undefined; dPrefix?: string | undefined };
 function Box(p: BoxProps) {
   return (
     <div className="ap-box" data-testid={`ap-box-${p.name}`}>
@@ -45,7 +45,7 @@ export function ActivePortfolio({ today, total, active, contracts: all, prices, 
   active: { service: Svc; hotel_id: string }[];
   contracts: PortfolioContract[]; prices: PriceRow[];
   marcom: { posts: MarcomRecord[] | null; ads: MarcomRecord[] | null; kol: MarcomRecord[] | null };
-  sel: HeaderSel; aliases?: Record<string, string[]>;
+  sel: HeaderSel; aliases?: Record<string, string[]> | undefined;
 }) {
   const contracts = all.filter((c) => rowMatches(c, sel, aliases));
   const flat = useCardCompare("header", "ap-flat", today), comm = useCardCompare("header", "ap-commission", today);
