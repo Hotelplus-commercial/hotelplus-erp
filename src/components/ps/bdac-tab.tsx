@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ChartHint, ChartTooltip, DashCard, SummaryNote } from "@/components/ps/dash-card";
 import { useContractLifecycle } from "@/lib/contract-lifecycle";
 import {
-  LINE_LABEL, STAGE_LABEL, bdacConfig, bdacLine, cycleAgg, cycleLegLimit, filterLine, monthRange, thaiMonth, thaiShort,
+  LINE_LABEL, STAGE_LABEL, bdacConfig, bdacLine, cycleAgg, cycleLegLimit, filterLine, monthRange, thaiMonth,
   v_bdac_conversion_cohort, v_bdac_carry, v_bdac_cycle_time, v_bdac_deal_aging, v_bdac_diagnostic_bin, v_bdac_flow, v_bdac_stage_current,
   type CycleLeg, type LineFilter, type Range, type SlaTone,
 } from "@/lib/bdac-views";
@@ -19,6 +19,7 @@ import { periodRange, selectedPeriod, useDashboardGlobal, type GlobalFilter } fr
 import { summaryRules } from "@/lib/summaryRules";
 import { STATUS_TH, createTask, useTickets } from "@/lib/tickets-l0";
 import { cn } from "@/lib/utils";
+import { MON_EN, formatDateEn, formatMonthEn } from "@/lib/date-en";
 
 const RANGES = { mtd: "เดือนนี้", "3m": "3 เดือน", "6m": "6 เดือน", all: "ทั้งหมด" } as const;
 type RangeKey = keyof typeof RANGES;
@@ -61,7 +62,7 @@ function DeltaLine({ cur, prev, label }: { cur: number; prev: number | null; lab
   const d = cur - prev;
   return (
     <span className={cn("text-xs font-medium", d > 0 ? "text-[#1F7A6E]" : d < 0 ? "text-[#A86B00]" : "text-muted-foreground")}>
-      {d > 0 ? `▲ +${d}` : d < 0 ? `▼ ${d}` : "— คงที่"} จาก {label}
+      {d > 0 ? `▲ +${d}` : d < 0 ? `▼ −${Math.abs(d)}` : "— คงที่"} จาก {label}
     </span>
   );
 }
@@ -131,6 +132,9 @@ function SlaBar({ on, amber, over, big = false }: { on: number; amber: number; o
   );
 }
 
+/** §6: the ⑤ "นับจาก" leg label (same legs as bdacSla) rendered with the English date formatter. */
+const SLA_REF_LEG: Record<number, string> = { 6: "Approved QT", 7: "Sent Contract", 8: "Contract Signed", 9: "Contract Signed" };
+
 const OWNER_COLORS = ["#0E7C86", "#6E62B6", "#3D4D55", "#D9A13B", "#C8553D", "#8A9AA2"];
 
 export function BdacTab({ source, globalFilter, clock }: { source?: ContractLifecycle[]; globalFilter?: GlobalFilter; clock?: number }) {
@@ -162,8 +166,8 @@ export function BdacTab({ source, globalFilter, clock }: { source?: ContractLife
   const bin = v_bdac_diagnostic_bin();
 
   const open = (id: string) => !demo && void navigate({ to: "/ps/contract-dashboard", hash: `contract-card-${id}` });
-  const prevLabel = range.to - range.from > 32 * 86_400_000 ? "ช่วงก่อนหน้า" : (thaiMonth(new Date(prev.from).toISOString().slice(0, 7)).split(" ")[0] ?? "");
-  const rangeLabel = `${thaiShort(new Date(range.from).toISOString())} – ${thaiShort(new Date(range.to - 1).toISOString())}`;
+  const prevLabel = range.to - range.from > 32 * 86_400_000 ? "ช่วงก่อนหน้า" : formatMonthEn(new Date(prev.from).toISOString().slice(0, 7), { monthOnly: true });
+  const rangeLabel = `${formatDateEn(range.from, now)} – ${formatDateEn(range.to - 1, now)}`;
 
   /* ② numbers */
   const onN = wip.filter((x) => x.is_on_time).length;
@@ -327,7 +331,7 @@ export function BdacTab({ source, globalFilter, clock }: { source?: ContractLife
           answer={selected ? <span className={selPct === 100 ? "text-[#0A5E66]" : selected.carry > 0 ? "text-[#A63E29]" : "text-muted-foreground"}>{selPct}%</span> : "—"}
           answerSub={selected && (
             <span className="flex flex-col items-end gap-0.5 text-xs text-muted-foreground">
-              <span>cohort {thaiMonth(selected.month)} · WON {selected.won}/{selected.size} · KPI 100%</span>
+              <span>cohort {formatMonthEn(selected.month)} · WON {selected.won}/{selected.size} · KPI 100%</span>
               {selected.carry > 0 && <span className="font-semibold text-[#A63E29]">⚑ carry {selected.carry} ดีล</span>}
             </span>
           )}
@@ -341,7 +345,7 @@ export function BdacTab({ source, globalFilter, clock }: { source?: ContractLife
           }
           noteKey="bdac.coh"
           noteLines={selected ? [
-            `cohort ${thaiMonth(selected.month)} ปิด WON ${selected.won} จาก ${selected.size} ดีล (${selPct}%) เทียบ KPI 100%${selected.carry > 0 ? ` · carry ${selected.carry} ดีล` : ""}`,
+            `cohort ${formatMonthEn(selected.month)} ปิด WON ${selected.won} จาก ${selected.size} ดีล (${selPct}%) เทียบ KPI 100%${selected.carry > 0 ? ` · carry ${selected.carry} ดีล` : ""}`,
             carry.length ? `มีดีล carry ข้ามเดือน ${carry.length} ดีล · นานสุด ${maxCarryDays} วันนับจากส่งสัญญา` : `ฐานเล็ก: ดูจำนวนจริงประกอบ`,
           ] : ["ยังไม่มีข้อมูลพอสรุป"]}
           howToRead="1 แท่ง = ดีลที่ Sent Contract ในเดือนนั้น · เส้นประ = KPI 100% · ส่วนแดง ⚑ = ส่งไปตั้งแต่เดือนก่อนแต่ยังไม่ WON · คลิกแท่งเพื่อเลือก cohort"
@@ -356,7 +360,7 @@ export function BdacTab({ source, globalFilter, clock }: { source?: ContractLife
                 return (
                   <ChartHint
                     key={c.month}
-                    header={`Sent Contract ${thaiMonth(c.month)} · ${c.size} ดีล${isCur ? " (เดือนปัจจุบัน)" : ""}`}
+                    header={`Sent Contract ${formatMonthEn(c.month)} · ${c.size} ดีล${isCur ? " (เดือนปัจจุบัน)" : ""}`}
                     lines={[`WON ${c.won} (${p}%) · KPI 100%`, c.carry > 0 ? `⚑ carry ${c.carry} ดีล (ยังไม่ WON)` : c.open_current > 0 ? `ยังเปิด ${c.open_current} ดีล (ยังอยู่ในเดือน)` : `ปิดครบตาม KPI`]}
                   >
                     <button
@@ -371,7 +375,7 @@ export function BdacTab({ source, globalFilter, clock }: { source?: ContractLife
                         {c.carry > 0 && <span className="w-full bg-[#C8553D]" style={{ height: `${(c.carry / c.size) * 100}%` }} />}
                         {c.open_current > 0 && <span className="w-full bg-[#E2F1F2]" style={{ height: `${(c.open_current / c.size) * 100}%` }} />}
                       </span>
-                      <span className="text-[11px] text-muted-foreground">{thaiMonth(c.month)}</span>
+                      <span className="text-[11px] text-muted-foreground">{formatMonthEn(c.month)}</span>
                       <span className="text-[11px] text-muted-foreground tabular-nums">n={c.size}</span>
                     </button>
                   </ChartHint>
@@ -390,7 +394,7 @@ export function BdacTab({ source, globalFilter, clock }: { source?: ContractLife
                     <div className="min-w-0">
                       <p className="text-sm font-semibold">{c.hotel_name} <span className="ml-1 text-xs font-normal text-muted-foreground">{c.deal_id} · {c.service_line ? LINE_LABEL(c.service_line) : "—"}</span></p>
                       <p className="mt-0.5 text-xs text-muted-foreground">
-                        cohort {thaiMonth(c.cohort_month)} · ตอนนี้ {STAGE_LABEL[c.current_stage]} · {c.current_substep ?? (c.current_stage === 7 ? "รอลูกค้าเซ็น" : c.current_stage === 8 ? "รอชำระ Set up fee" : "รอ AC ออกใบเสร็จ")} · BD {owner(c.bd_owner_id)}
+                        cohort {formatMonthEn(c.cohort_month)} · ตอนนี้ {STAGE_LABEL[c.current_stage]} · {c.current_substep ?? (c.current_stage === 7 ? "รอลูกค้าเซ็น" : c.current_stage === 8 ? "รอชำระ Set up fee" : "รอ AC ออกใบเสร็จ")} · BD {owner(c.bd_owner_id)}
                       </p>
                     </div>
                     <span className="rounded-full bg-[#FBEDE9] px-2.5 py-1 text-xs font-semibold text-[#A63E29]">ค้าง {c.days_since_sent_contract} วันนับจากส่งสัญญา</span>
@@ -417,7 +421,7 @@ export function BdacTab({ source, globalFilter, clock }: { source?: ContractLife
       {/* ④ Cycle time — full width on its own row (v2.1) */}
       <CycleCard
         rows={cycleRows} agg={agg} leg={leg} setLeg={setLeg} byOwner={byOwner} setByOwner={setByOwner}
-        ownerGroups={ownerGroups} ownerRows={ownerRows} range={range}
+        ownerGroups={ownerGroups} ownerRows={ownerRows} range={range} now={now}
       />
 
       {/* ⑤ Deal table (full width, no SummaryNote) */}
@@ -453,7 +457,7 @@ export function BdacTab({ source, globalFilter, clock }: { source?: ContractLife
                       </span>
                     )}
                   </td>
-                  <td className="text-xs text-muted-foreground">{a.sla_ref_label ?? "—"}</td>
+                  <td className="text-xs text-muted-foreground">{a.sla_ref_at ? `${SLA_REF_LEG[a.stage] ?? ""} ${formatDateEn(a.sla_ref_at, now)}` : "—"}</td>
                   <td>
                     <span className="inline-flex items-center gap-2 whitespace-nowrap">
                       <span className="grid size-6 place-items-center rounded-full bg-[#E2F1F2] text-[11px] font-bold text-[#0A5E66]">{owner(a.deal.bd_owner_id)[0] ?? "—"}</span>
@@ -488,7 +492,6 @@ export function BdacTab({ source, globalFilter, clock }: { source?: ContractLife
 }
 
 /* ④ Cycle time v2.1 — full-width card, time-scale X axis with tick-only labels, median + SLA lines. */
-const THAI_MON = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
 const DAY_MS = 86_400_000;
 
 function useContainerWidth() {
@@ -508,12 +511,12 @@ function useContainerWidth() {
 /** Tick marks for the time axis: ≤31d → every 2–4 days · ≤120d → weekly · longer → monthly. Max ~10 ticks. */
 function xTicks(range: Range): { t: number; label: string }[] {
   const span = Math.max(1, Math.round((range.to - range.from) / DAY_MS));
-  const fmtDM = (t: number) => { const d = new Date(t); return `${d.getDate()} ${THAI_MON[d.getMonth()]}`; };
+  const fmtDM = (t: number) => { const d = new Date(t); return `${d.getDate()} ${MON_EN[d.getMonth()]}`; };
   if (span > 120) {
     const out: { t: number; label: string }[] = [];
     let d = new Date(range.from); d = new Date(d.getFullYear(), d.getMonth(), 1);
     while (d.getTime() < range.to) {
-      if (d.getTime() >= range.from) out.push({ t: d.getTime(), label: `${THAI_MON[d.getMonth()]} ${String(d.getFullYear() + 543).slice(-2)}` });
+      if (d.getTime() >= range.from) out.push({ t: d.getTime(), label: `${MON_EN[d.getMonth()]} ${String(d.getFullYear()).slice(-2)}` });
       d = new Date(d.getFullYear(), d.getMonth() + 1, 1);
     }
     return out.slice(0, 10);
@@ -524,9 +527,9 @@ function xTicks(range: Range): { t: number; label: string }[] {
   return out.slice(0, 10);
 }
 
-function CycleCard({ rows, agg, leg, setLeg, byOwner, setByOwner, ownerGroups, ownerRows, range }: {
+function CycleCard({ rows, agg, leg, setLeg, byOwner, setByOwner, ownerGroups, ownerRows, range, now }: {
   rows: ReturnType<typeof v_bdac_cycle_time>; agg: ReturnType<typeof cycleAgg>; leg: CycleLeg; setLeg: (l: CycleLeg) => void;
-  byOwner: boolean; setByOwner: (b: boolean) => void; ownerGroups: string[]; ownerRows: (g: string) => ReturnType<typeof v_bdac_cycle_time>; range: Range;
+  byOwner: boolean; setByOwner: (b: boolean) => void; ownerGroups: string[]; ownerRows: (g: string) => ReturnType<typeof v_bdac_cycle_time>; range: Range; now: number;
 }) {
   const [activeDay, setActiveDay] = useState<string | null>(null);
   const { ref, w: W } = useContainerWidth();
@@ -631,7 +634,7 @@ function CycleCard({ rows, agg, leg, setLeg, byOwner, setByOwner, ownerGroups, o
                 <g key={k}>
                   <rect
                     x={cx - hitW / 2} y={PT} width={hitW} height={plotH}
-                    fill="transparent" tabIndex={0} role="button" aria-label={`${thaiShort(k)} · ${rs.length} ดีล`}
+                    fill="transparent" tabIndex={0} role="button" aria-label={`${formatDateEn(k, now)} · ${rs.length} ดีล`}
                     onMouseEnter={() => setActiveDay(k)} onMouseLeave={() => setActiveDay(null)}
                     onFocus={() => setActiveDay(k)} onBlur={() => setActiveDay(null)}
                   />
@@ -663,7 +666,7 @@ function CycleCard({ rows, agg, leg, setLeg, byOwner, setByOwner, ownerGroups, o
               style={flip ? { right: `${100 - ((activeX - 12) / W) * 100}%` } : { left: `${((activeX + 12) / W) * 100}%` }}
             >
               <ChartTooltip
-                header={`${thaiShort(activeDay)} · ${active.length} ดีล${active.length > 1 && activeAgg.median != null ? ` · median ${fmtD(activeAgg.median)} วัน` : ""}${activeAgg.over_sla_count ? ` · เกิน ${activeAgg.over_sla_count}` : ""}`}
+                header={`${formatDateEn(activeDay, now)} · ${active.length} ดีล${active.length > 1 && activeAgg.median != null ? ` · median ${fmtD(activeAgg.median)} วัน` : ""}${activeAgg.over_sla_count ? ` · เกิน ${activeAgg.over_sla_count}` : ""}`}
                 lines={[...active]
                   .sort((a, b) => b.days - a.days)
                   .slice(0, 3)
