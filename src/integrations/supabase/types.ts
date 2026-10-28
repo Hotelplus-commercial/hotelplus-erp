@@ -863,6 +863,28 @@ export type Database = {
         }
         Relationships: []
       }
+      v_bdac_contract_revenue_ranking: {
+        Row: {
+          ae_owner_id: string | null
+          amount_thb: number | null
+          avg_rank: number | null
+          billing_period: string | null
+          contract_id: string | null
+          has_bill: boolean | null
+          hotel_id: string | null
+          hotel_name: string | null
+          invoice_count: number | null
+          lens: string | null
+          marcom_owner_id: string | null
+          marcom_thb: number | null
+          orm_owner_id: string | null
+          orm_thb: number | null
+          prev_rank: number | null
+          rank: number | null
+          service_lines: string[] | null
+        }
+        Relationships: []
+      }
       v_meeting_by_owner: {
         Row: {
           a_base: number | null
