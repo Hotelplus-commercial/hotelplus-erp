@@ -237,3 +237,27 @@ describe('§9.12 dark mode', () => {
     expect(block).toContain('.dark{--r2-indigo:');
   });
 });
+
+describe('§2.3 detail-tab ณ วันนี้ cards', () => {
+  test('PS, task and On-board snapshot cards carry the chip and no Δ', async () => {
+    const { createMemoryHistory, createRootRoute, createRouter, RouterProvider } = await import('@tanstack/react-router');
+    const { QueryClient, QueryClientProvider } = await import('@tanstack/react-query');
+    const { PsReportTab } = await import('../src/components/ps/ps-report-tab');
+    const { Account360Provider } = await import('../src/components/ps/account-360');
+    const { DashboardGlobal, selectedPeriod } = await import('../src/lib/ps-dashboard-global');
+    const { buildDemoReport, DEMO_NOW } = await import('../src/lib/ps-demo-fixture');
+    const report = buildDemoReport(defaultGlobalFilter);
+    const el = h(DashboardGlobal.Provider, { value: { filter: defaultGlobalFilter, demo: true, now: DEMO_NOW } },
+      h(Account360Provider, { report, children: h(PsReportTab, { report, filter: { ...defaultGlobalFilter, period: selectedPeriod(defaultGlobalFilter, new Date(DEMO_NOW)) }, loading: false, error: false }) }));
+    const rootRoute = createRootRoute({ component: () => el });
+    const router = createRouter({ routeTree: rootRoute, history: createMemoryHistory({ initialEntries: ['/'] }) });
+    await router.load();
+    const html = renderToStaticMarkup(h(QueryClientProvider, { client: new QueryClient() }, h(RouterProvider, { router } as never)));
+    const cards = html.split('<section class="dash-card"').slice(1);
+    const now = cards.filter((c) => c.includes('data-testid="now-chip"'));
+    const timed = cards.filter((c) => c.includes('data-testid="compare-control"'));
+    expect(now.length).toBe(4);
+    expect(timed.length).toBe(5);
+    for (const c of now) { const head = c.split('</header>')[0]!; expect(text(head)).not.toMatch(/Δ|▲|▼/); }
+  });
+});
