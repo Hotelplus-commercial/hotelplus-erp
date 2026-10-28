@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { ChartHint, ChartSkeleton, DashCard } from './dash-card';
 import { Button } from '@/components/ui/button';
 import type { PhaseTimeRow } from '@/lib/servicing-dashboard-types';
@@ -15,7 +15,7 @@ const plots:Record<string,PlotRow[]>={
  PS:[{label:'ช่วง AE',sub:'สร้างการ์ด → Approved',phase:'P1',lane:'AE'},{label:'ช่วงเตรียมระบบ · Specialist (ORM)',sub:'Approved → ส่ง handover ครบ',phase:'P2',lane:'Specialist',ormOnly:true},{label:'ช่วงเตรียมระบบ · Specialist (Marcom)',sub:'สงวนไว้ · รอ implement',phase:'P2',lane:'Specialist',reserved:true}],
 };
 const inPeriod=(r:PhaseTimeRow,p:Period)=>r.go_live_at.slice(0,10)>=p.from&&r.go_live_at.slice(0,10)<=p.to;
-export function ServicingPhaseChart({rows,service,periodA,periodB,compare,pending,periodLabel}: {rows:PhaseTimeRow[];service:string;periodA:Period;periodB:Period;compare:boolean;pending:boolean;periodLabel:string}) {
+export function ServicingPhaseChart({rows,service,periodA,periodB,compare,pending,periodLabel,period}: {rows:PhaseTimeRow[];service:string;periodA:Period;periodB:Period;compare:boolean;pending:boolean;periodLabel:string;period?:React.ReactNode}) {
  const [view,setView]=useState('PS');
  const active=service==='Marcom'&&view==='ORM'?'Marcom':service==='ORM'&&view==='Marcom'?'ORM':view;
  const options=['PS',...(service!=='Marcom'?['ORM']:[]),...(service!=='ORM'?['Marcom']:[])];
@@ -30,7 +30,7 @@ export function ServicingPhaseChart({rows,service,periodA,periodB,compare,pendin
  }
  if(!summaries.length&&a.length)summaries.push('ทุกทีมทันกำหนด ทั้งหมดในมุมมองนี้');
  if(a.length&&summaries.length<2)summaries.push('ฐานเล็ก: 1 โรงแรมขยับ % ได้มาก ให้ดูจำนวนประกอบ');
- return <DashCard info={servicingInfo()} title="② เวลาราย owner เทียบกำหนดเสร็จ" question={`แต่ละทีมใช้เวลาในช่วงของตัวเองกี่วัน? (การ์ดที่ Go Live ใน ${periodLabel} · แยก service line)`} answer={a.length?`${pct(ok,a.length)}%`:'—'} answerTone={red?'watch':'accent'} answerSub={a.length?`ทันกำหนด ${ok} จาก ${a.length} · เลยกำหนด ${red}${compare?` · B ${b.length?pct(b.filter(r=>r.zone==='ok').length,b.length)+'%':'—'}`:''}`:undefined} noteNamespace="servicing" noteKey="owner" noteLines={a.length?summaries:['ยังไม่มีข้อมูลพอสรุป']} howToRead="แต่ละแถว = 1 ช่วงงาน · 1 จุด = 1 โรงแรม · จุดบนพื้นขาว = ทันกำหนด · ช่วงทำงานคู่ขนานกันจึงห้ามบวกรวม · ช่วงรอประชุมไม่อยู่ในแถวใด">
+ return <DashCard period={period} info={servicingInfo()} title="② เวลาราย owner เทียบกำหนดเสร็จ" question={`แต่ละทีมใช้เวลาในช่วงของตัวเองกี่วัน? (การ์ดที่ Go Live ใน ${periodLabel} · แยก service line)`} answer={a.length?`${pct(ok,a.length)}%`:'—'} answerTone={red?'watch':'accent'} answerSub={a.length?`ทันกำหนด ${ok} จาก ${a.length} · เลยกำหนด ${red}${compare?` · B ${b.length?pct(b.filter(r=>r.zone==='ok').length,b.length)+'%':'—'}`:''}`:undefined} noteNamespace="servicing" noteKey="owner" noteLines={a.length?summaries:['ยังไม่มีข้อมูลพอสรุป']} howToRead="แต่ละแถว = 1 ช่วงงาน · 1 จุด = 1 โรงแรม · จุดบนพื้นขาว = ทันกำหนด · ช่วงทำงานคู่ขนานกันจึงห้ามบวกรวม · ช่วงรอประชุมไม่อยู่ในแถวใด">
   <div className="sv-controls" role="group" aria-label="เวลาราย owner">{options.map(v=><Button key={v} size="sm" variant={active===v?'default':'ghost'} aria-pressed={active===v} onClick={()=>setView(v)}>{v==='PS'?'PS ทีม (AE / Specialist)':v}</Button>)}</div>
   {pending||!a.length?<ChartSkeleton text="รอ source"/>:<>
    <div className="sv-plot-legend">1 จุด = 1 โรงแรม · ชี้ที่จุดเพื่อดูชื่อโรงแรมและผู้ดูแล <span>median · เส้นเป้า</span><span className="sv-tone-ok">ทันกำหนด</span><span className="sv-tone-amber">ใกล้ถึงกำหนด</span><span className="sv-tone-red">เลยกำหนด</span></div>

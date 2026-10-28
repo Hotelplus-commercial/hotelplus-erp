@@ -5,6 +5,8 @@ import { useMemo, useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { ArrowUpRight, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { NowChip, useCardCompare } from "./compare-control";
+import { TH_MONTH } from "@/lib/card-compare";
 import {
   useDashboardGlobal,
   selectedPeriod,
@@ -153,8 +155,8 @@ const dropText = (parts: [string, number][], label: string) => {
   return `${label}: ${nonZero.map(([t, n]) => `${t} ${n}`).join(" · ")}`;
 };
 
-function FunnelCard({ cards, cardsB, now, months, compare }: {
-  cards: MeetingRow[]; cardsB: MeetingRow[]; now: Date; months: string[]; compare: boolean;
+function FunnelCard({ cards, cardsB, now, months, compare, period }: {
+  cards: MeetingRow[]; cardsB: MeetingRow[]; now: Date; months: string[]; compare: boolean; period?: ReactNode;
 }) {
   const orm = aggregateFunnel(cards, "ORM", now);
   const mc = aggregateFunnel(cards, "Marcom", now);
@@ -184,6 +186,7 @@ function FunnelCard({ cards, cardsB, now, months, compare }: {
 
   return (
     <DashCard
+      period={period}
       title="① Funnel การประชุม"
       question="ฐานคือการ์ด Tier A · ไปถึงขั้นไหน หลุดที่ใด และเกินฐานหรือไม่?"
       answer={fmt(aPct, "%")}
@@ -315,6 +318,7 @@ function TierAPending({ rows, now }: { rows: MeetingRow[]; now: Date }) {
           <ChevronRight className={cn("size-4 transition-transform", open && "rotate-90")} />
           <span>
             <span className="block text-base font-semibold">② Tier A ที่ยังไม่สำเร็จ</span>
+            <span className="dash-card-period"><NowChip /></span>
             <span className="block text-[13px] text-muted-foreground">ใบไหนยังขาด ใครดูแล ทันก่อน cutoff {cutoffLabel} ไหม?</span>
           </span>
         </span>
@@ -383,10 +387,13 @@ function ownerOrder(rows: MeetingRow[], lens: Lens): string[] {
   return [...present].sort((a, b) => a.localeCompare(b));
 }
 
-function OwnerCards({ rows, rowsB, lens, setLens, months, now, compare, service }: {
+function OwnerCards({ rows, rowsB, lens, setLens, months, now, compare, service, period4a, period4b, rows4b, rowsB4b }: {
   rows: MeetingRow[]; rowsB: MeetingRow[]; lens: Lens; setLens: (l: Lens) => void;
   months: string[]; now: Date; compare: boolean; service: string;
+  /** Header R2: ④a / ④b own their compare periods (④b rows come from its own period when given). */
+  period4a?: ReactNode; period4b?: ReactNode; rows4b?: MeetingRow[]; rowsB4b?: MeetingRow[];
 }) {
+  const r4b = rows4b ?? rows, rB4b = rowsB4b ?? rowsB;
   const late = isRangeLate(months, now);
   const owners = ownerOrder(rows, lens);
   const byOwner = (o: string, src: MeetingRow[]) => src.find((r) => String(r["owner"]) === o);
@@ -394,8 +401,8 @@ function OwnerCards({ rows, rowsB, lens, setLens, months, now, compare, service 
   const totalDone = rows.reduce((s, r) => s + Number(r[isMc ? "mc_completed" : "a_completed"] ?? 0), 0);
   const totalBase = rows.reduce((s, r) => s + Number(r[isMc ? "mc_base" : "a_base"] ?? 0), 0);
   const totalPct = pctOf(totalDone, totalBase);
-  const totalScheduled = rows.reduce((s, r) => s + Number(r["scheduled_completed"] ?? 0) + Number(r["scheduled_waiting"] ?? 0) + Number(r["scheduled_no_show"] ?? 0), 0);
-  const maxScheduled = Math.max(1, ...rows.map((r) => Number(r["scheduled_completed"] ?? 0) + Number(r["scheduled_waiting"] ?? 0) + Number(r["scheduled_no_show"] ?? 0)));
+  const totalScheduled = r4b.reduce((s, r) => s + Number(r["scheduled_completed"] ?? 0) + Number(r["scheduled_waiting"] ?? 0) + Number(r["scheduled_no_show"] ?? 0), 0);
+  const maxScheduled = Math.max(1, ...r4b.map((r) => Number(r["scheduled_completed"] ?? 0) + Number(r["scheduled_waiting"] ?? 0) + Number(r["scheduled_no_show"] ?? 0)));
   const title4a = lens === "ORM_TEAM" ? "④a นัดประชุม Tier A สำเร็จ รายทีม" : lens === "AE" ? "④a นัดประชุม Tier A สำเร็จ ราย AE" : "④a ประชุม Marcom สำเร็จ รายคน";
 
   return (
@@ -417,6 +424,7 @@ function OwnerCards({ rows, rowsB, lens, setLens, months, now, compare, service 
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
         <DashCard
+          period={period4a}
           title={title4a}
           question={isMc ? "ประชุมสำเร็จทั้งหมดรายคน (Tier TBD)" : "แต่ละหน่วยผ่าน Tier A กี่เปอร์เซ็นต์?"}
           answer={fmt(totalPct, "%")}
@@ -462,18 +470,19 @@ function OwnerCards({ rows, rowsB, lens, setLens, months, now, compare, service 
         </DashCard>
 
         <DashCard
+          period={period4b}
           title="④b จำนวนนัดที่ทำได้ทั้งเดือน"
           question={`วอลลุ่มและ workload ของแต่ละ${lens === "ORM_TEAM" ? "ทีม" : lens === "AE" ? "AE" : "คน"} (ทุก Tier · นัดแล้วขึ้นไป)`}
           answer={totalScheduled}
           answerSub="นัดทั้งหมด"
           answerTone="accent"
           noteKey={`meeting.4b.${lens}`}
-          noteLines={[`นัดรวม ${totalScheduled} ครั้ง · ประชุมสำเร็จ ${rows.reduce((s, r) => s + Number(r["scheduled_completed"] ?? 0), 0)}`]}
+          noteLines={[`นัดรวม ${totalScheduled} ครั้ง · ประชุมสำเร็จ ${r4b.reduce((s, r) => s + Number(r["scheduled_completed"] ?? 0), 0)}`]}
           howToRead="ต่อ 10 โรงแรม = นัด ÷ จำนวนโรงแรมในพอร์ต × 10 · ใช้เทียบ workload ระหว่างพอร์ตขนาดต่างกัน"
         >
           <div className="space-y-1">
-            {owners.map((o) => {
-              const r = byOwner(o, rows);
+            {ownerOrder(r4b, lens).map((o) => {
+              const r = byOwner(o, r4b);
               if (!r) return null;
               const done = Number(r["scheduled_completed"] ?? 0);
               const wait = Number(r["scheduled_waiting"] ?? 0);
@@ -481,7 +490,7 @@ function OwnerCards({ rows, rowsB, lens, setLens, months, now, compare, service 
               const total = done + wait + noShow;
               const hotels = Number(r["hotel_count"] ?? 0);
               const per10 = hotels > 0 ? (total / hotels) * 10 : null;
-              const b = compare ? byOwner(o, rowsB) : undefined;
+              const b = compare ? byOwner(o, rB4b) : undefined;
               const bTotal = b ? Number(b["scheduled_completed"] ?? 0) + Number(b["scheduled_waiting"] ?? 0) + Number(b["scheduled_no_show"] ?? 0) : null;
               return (
                 <ChartHint key={o} header={`${o} · นัด ${total} ครั้ง · พอร์ต ${hotels} โรงแรม`} lines={[
@@ -726,8 +735,8 @@ function BreakdownStrip({ title, hint, rowNames, rowKey, qs, rows, prevRows, fla
   );
 }
 
-function SurveySection({ surveys, curSurveys, prevSurveys, flags, service, compare, prevLabel }: {
-  surveys: MeetingRow[]; curSurveys: MeetingRow[]; prevSurveys: MeetingRow[]; flags: MeetingRow[]; service: string; compare: boolean; prevLabel: string;
+function SurveySection({ surveys, curSurveys, prevSurveys, flags, service, compare, prevLabel, period }: {
+  surveys: MeetingRow[]; curSurveys: MeetingRow[]; prevSurveys: MeetingRow[]; flags: MeetingRow[]; service: string; compare: boolean; prevLabel: string; period?: ReactNode;
 }) {
   const groups = [
     // R1.2 §4.1: Q8 is the AE's self-rating — never a customer-score row (shown separately at the bottom).
@@ -738,6 +747,7 @@ function SurveySection({ surveys, curSurveys, prevSurveys, flags, service, compa
 
   return (
     <DashCard
+      period={period}
       title="⑤ คะแนน Survey ราย Q"
       question="แต่ละข้อได้คะแนนเท่าไร เปลี่ยนจากเดือนก่อนแค่ไหน และโรงแรมไหนให้คะแนนต่ำ?"
       answer={fmtMedian(median(surveys.filter((r) => r["question"] === "Q7").map((r) => Number(r["score"]))))}
@@ -876,8 +886,8 @@ function Q9Expander({ rows }: { rows: MeetingRow[] }) {
 }
 
 /* ================= ⑥ Flag Board ================= */
-function FlagBoard({ flags, period, compare, periodB, service }: {
-  flags: MeetingRow[]; period: Period; compare: boolean; periodB: Period; service: string;
+function FlagBoard({ flags, period, compare, periodB, service, control }: {
+  flags: MeetingRow[]; period: Period; compare: boolean; periodB: Period; service: string; control?: ReactNode;
 }) {
   const [watchOpen, setWatchOpen] = useState(false);
   // R1.2 §4.2: collapsed on every visit (state is never persisted).
@@ -895,6 +905,7 @@ function FlagBoard({ flags, period, compare, periodB, service }: {
 
   return (
     <DashCard
+      period={control}
       title={`⑥ ${FLAG_LABEL.red} / ${FLAG_LABEL.warn}`}
       info={{
         formula: `ธงเกิดเมื่อ: คะแนน ≤${FLAG_RED_MAX} → ธงแดงทันที · คะแนน ${FLAG_WARN_SCORE} → ธงเหลือง · ได้ ${FLAG_WARN_SCORE} อีกครั้งใน ${MEETING_CONFIG.warning_window_months} เดือน → ธงแดง · ลูกค้าปฏิเสธนัด → ธงแดง · ธงแดง → ระบบสร้างงาน Coaching ส่งถึงหัวหน้าที่รับผิดชอบ`,
@@ -1045,8 +1056,14 @@ export function MeetingAnalyzerTab({
   const { filter, demo, now: clock } = useDashboardGlobal();
   const now = useMemo(() => new Date(clock), [clock]);
   const [lens, setLens] = useState<Lens>("ORM_TEAM");
-  const periodA = selectedPeriod(filter, now);
-  const periodB = filter.compare ? selectedPeriod(filter, now, "B") : prevPeriod(periodA);
+  /* Header R2 §2.3 — the KPI strip and each time-based card own a CompareControl (no global period). */
+  const today = (clock || new Date().toISOString()).slice(0, 10);
+  const kKpi = useCardCompare("meeting", "kpi", today), kFunnel = useCardCompare("meeting", "funnel", today);
+  const k4a = useCardCompare("meeting", "owner-4a", today), k4b = useCardCompare("meeting", "owner-4b", today);
+  const kSurvey = useCardCompare("meeting", "survey", today), kFlag = useCardCompare("meeting", "flags", today);
+  const cmpOn = true;
+  const periodA = kKpi.a;
+  const periodB = kKpi.b;
   // R1 [mt1-2]: M = latest card month in A; "vs เดือนก่อน" always compares M with M−1.
   const monthM = monthsInPeriod(periodA).at(-1) ?? periodA.to.slice(0, 7);
   const periodM = prevPeriod({ from: `${nextMonth(monthM)}-01`, to: `${nextMonth(monthM)}-01` });
@@ -1071,6 +1088,10 @@ export function MeetingAnalyzerTab({
     () => (views?.v_meeting_by_owner ?? []).filter((r) => monthsInPeriod(periodB).includes(String(r["card_month"])) && r["lens"] === effectiveLens),
     [views, periodB, effectiveLens],
   );
+  const ownerIn = (p: Period) => (views?.v_meeting_by_owner ?? []).filter((r) => monthsInPeriod(p).includes(String(r["card_month"])) && r["lens"] === effectiveLens);
+  const funnelA = meetingScope(views?.v_meeting_funnel ?? [], filter, kFunnel.a), funnelB = meetingScope(views?.v_meeting_funnel ?? [], filter, kFunnel.b);
+  const surveyA = meetingScope(views?.v_meeting_survey_scores ?? [], filter, kSurvey.a), surveyB = meetingScope(views?.v_meeting_survey_scores ?? [], filter, kSurvey.b);
+  const surveyBLabel = (() => { const m = monthsInPeriod(kSurvey.b); const f = m[0], l = m.at(-1); const th = (x: string) => TH_MONTH[+x.slice(5, 7) - 1] ?? ""; return f && l ? (f === l ? th(f) : `${th(f)}–${th(l)}`) : "ช่วงก่อน"; })();
   const pendingRows = useMemo(() => (views?.v_meeting_tierA_pending ?? []).map(normPending), [views]);
   const flags = views?.v_meeting_flags ?? [];
 
@@ -1129,6 +1150,7 @@ export function MeetingAnalyzerTab({
         </>
       ) : (
         <>
+          <div className="dash-card-period" data-testid="meeting-kpi-period">{kKpi.control}</div>
           <div className="mt-kpis">
             <KpiTile
               label="Tier A ประชุมสำเร็จ (KPI #1)"
@@ -1140,18 +1162,18 @@ export function MeetingAnalyzerTab({
               lines={[
                 "base = การ์ด Tier A − เลื่อนเดือนหน้า · นับที่ COMPLETED · เป้า 100%",
                 late ? `ผ่าน cutoff · ขาด ${orm.base - orm.completed.A} ใบ` : `เหลือ ${dtc} วันถึง cutoff · ค้าง ${pendingRows.length} ใบ (ดู ②)`,
-                filter.compare ? deltaText(aPct, aPctB, "pp") : "",
+                cmpOn ? deltaText(aPct, aPctB, "pp") : "",
               ]}
-              compare={filter.compare ? <>A {fmt(aPct, "%")} · B {fmt(aPctB, "%")} · {deltaText(aPct, aPctB, "pp")}</> : !late ? <>เหลือ {dtc} วันถึง cutoff · ค้าง {pendingRows.length} ใบ (ดู ②)</> : aPctM != null && aPctPrev != null ? <>Δ {aPctM - aPctPrev > 0 ? "▲ +" : "▼ "}{Math.abs(aPctM - aPctPrev).toLocaleString("th-TH", { maximumFractionDigits: 1 })} จุด จาก {prevLabel}</> : null}
+              compare={cmpOn ? <>A {fmt(aPct, "%")} · B {fmt(aPctB, "%")} · {deltaText(aPct, aPctB, "pp")}</> : !late ? <>เหลือ {dtc} วันถึง cutoff · ค้าง {pendingRows.length} ใบ (ดู ②)</> : aPctM != null && aPctPrev != null ? <>Δ {aPctM - aPctPrev > 0 ? "▲ +" : "▼ "}{Math.abs(aPctM - aPctPrev).toLocaleString("th-TH", { maximumFractionDigits: 1 })} จุด จาก {prevLabel}</> : null}
             />
             <KpiTile
               label="นัดสำเร็จ % (ทุกบริการ)"
               value={<>{fmt(tile2.pct, "%")} <small>{tile2.done}/{tile2.base}</small></>}
-              sub={filter.compare ? <>A {fmt(tile2.pct, "%")} · B {fmt(tile2B.pct, "%")} · {deltaText(tile2.pct, tile2B.pct, "pp")}</> : <>{deltaText(tile2M.pct, tile2Prev.pct, "pp")} vs {prevLabel}</>}
+              sub={cmpOn ? <>A {fmt(tile2.pct, "%")} · B {fmt(tile2B.pct, "%")} · {deltaText(tile2.pct, tile2B.pct, "pp")}</> : <>{deltaText(tile2M.pct, tile2Prev.pct, "pp")} vs {prevLabel}</>}
               lines={[
                 `ORM ${orm.completed.total}/${orm.base} · Marcom ${mc.completed.total}/${mc.base}`,
                 "ORM base = Tier A · Marcom base = ทุกโรงแรม · เกิน 100% ได้",
-                filter.compare ? `B ${fmt(tile2B.pct, "%")}` : "",
+                cmpOn ? `B ${fmt(tile2B.pct, "%")}` : "",
               ]}
             />
             <KpiTile
@@ -1187,16 +1209,20 @@ export function MeetingAnalyzerTab({
             <h2>A · นัดครบไหม</h2>
             <p>funnel · Tier A ค้าง · completion และ workload รายหน่วย</p>
           </div>
-          <FunnelCard cards={cards} cardsB={cardsB} now={now} months={monthsA} compare={filter.compare} />
+          <FunnelCard cards={funnelA} cardsB={funnelB} now={now} months={monthsInPeriod(kFunnel.a)} compare period={kFunnel.control} />
           <TierAPending rows={pendingRows} now={now} />
           <OwnerCards
-            rows={ownerRows}
-            rowsB={ownerRowsB}
+            rows={ownerIn(k4a.a)}
+            rowsB={ownerIn(k4a.b)}
+            rows4b={ownerIn(k4b.a)}
+            rowsB4b={ownerIn(k4b.b)}
+            period4a={k4a.control}
+            period4b={k4b.control}
             lens={effectiveLens}
             setLens={setLens}
-            months={monthsA}
+            months={monthsInPeriod(k4a.a)}
             now={now}
-            compare={filter.compare}
+            compare
             service={filter.service}
           />
 
@@ -1205,15 +1231,16 @@ export function MeetingAnalyzerTab({
             <p>คะแนน survey รายข้อ · ธงแดง / ธงเหลือง</p>
           </div>
           <SurveySection
-            surveys={surveys}
-            curSurveys={surveysM}
-            prevSurveys={surveysPrev}
+            surveys={surveyA}
+            curSurveys={surveyA}
+            prevSurveys={surveyB}
             flags={flags}
             service={filter.service}
-            compare={filter.compare}
-            prevLabel={prevLabel}
+            compare={false}
+            prevLabel={surveyBLabel}
+            period={kSurvey.control}
           />
-          <FlagBoard flags={flags} period={periodA} compare={filter.compare} periodB={periodB} service={filter.service} />
+          <FlagBoard flags={flags} period={kFlag.a} compare periodB={kFlag.b} service={filter.service} control={kFlag.control} />
         </>
       )}
 

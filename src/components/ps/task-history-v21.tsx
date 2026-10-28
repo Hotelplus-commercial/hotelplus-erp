@@ -1,4 +1,5 @@
 /* Task v2.1 — sparklines, ⑧ backlog history, ⑥ incoming by category, ⑦ team workload. Read-only presentation. */
+import type React from 'react';
 import { useMemo, useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -31,7 +32,7 @@ export function Sparkline({ values, tone, bRef }: { values: (number | null)[]; t
 
 /* ---------------- ⑧ ---------------- */
 const DEPTS: [string, string][] = [['ALL', 'ทั้งหมด'], ['ORM', 'ORM'], ['MARCOM', 'Marcom'], ['PS', 'PS'], ['AC', 'AC'], ['BD', 'BD']];
-export function BacklogHistoryCard({ inp, a, b, compare, earliest }: { inp: BacklogInput; a: Period; b: Period; compare: boolean; earliest?: string | undefined }) {
+export function BacklogHistoryCard({ inp, a, b, compare, earliest, period }: { inp: BacklogInput; a: Period; b: Period; compare: boolean; earliest?: string | undefined; period?: React.ReactNode }) {
   const [dept, setDept] = useState('ALL');
   const maxMonths = configAt('history_daily_max_months', inp.now.slice(0, 10));
   const daily = periodMonths(a, inp.now) <= maxMonths;
@@ -50,7 +51,7 @@ export function BacklogHistoryCard({ inp, a, b, compare, earliest }: { inp: Back
   const k = up || down, seq = monthEnds.slice(-(k + 1)), k2max = A.length ? Math.max(...A.map(r => r.k2)) : 0;
   const notes = A.length ? [...(compare && last && lastB ? [`ticket ค้างสิ้นช่วง A ${last.k1} เทียบช่วง B ${lastB.k1} (${sign(last.k1 - lastB.k1)})`] : []), ...(k ? [`ticket ค้าง${up ? 'เพิ่ม' : 'ลดลง'}ต่อเนื่อง ${k} เดือน (${seq[0]?.k1} → ${seq.at(-1)?.k1})`] : []), ...(last && last.k2 === k2max && k2max > 0 ? [`ticket เลยกำหนด ${k2max} สูงสุดในรอบ ${monthEnds.length} เดือน`] : [])].slice(0, 2) : ['ยังไม่มีข้อมูลสำหรับสรุป'];
   const ticks = A.map((r, i) => ({ i, label: thMonth(r.p.date), key: r.p.date.slice(0, 7) })).filter((t, j, arr) => j === 0 || arr[j - 1]!.key !== t.key);
-  return <DashCard title="⑧ ticket ค้างย้อนหลัง" question={`ticket ค้างเพิ่มหรือลดลงตั้งแต่เมื่อไหร่? (ทุก ticket · ${daily ? 'จุดรายวัน' : 'จุดสิ้นสัปดาห์'})`} answer={last ? last.k1 : '—'} answerSub={last ? `${last.p.isToday ? 'ค้าง ณ วันนี้' : `ค้าง ณ ${thDay(last.p.date, false)}`} · เฉลี่ย ${fmt1(avg)} · สูงสุด ${peak}` : 'รอข้อมูล'} answerTone="accent" noteNamespace="task" noteKey="backlog" noteLines={notes} howToRead={`1 จุด = ยอดค้าง ณ วันสุดท้ายของ${daily ? 'วัน' : 'สัปดาห์'} · ชี้เพื่อดูแยกสถานะและแหล่ง · เส้นประ = ช่วง B เมื่อเปิด Compare`}
+  return <DashCard period={period} title="⑧ ticket ค้างย้อนหลัง" question={`ticket ค้างเพิ่มหรือลดลงตั้งแต่เมื่อไหร่? (ทุก ticket · ${daily ? 'จุดรายวัน' : 'จุดสิ้นสัปดาห์'})`} answer={last ? last.k1 : '—'} answerSub={last ? `${last.p.isToday ? 'ค้าง ณ วันนี้' : `ค้าง ณ ${thDay(last.p.date, false)}`} · เฉลี่ย ${fmt1(avg)} · สูงสุด ${peak}` : 'รอข้อมูล'} answerTone="accent" noteNamespace="task" noteKey="backlog" noteLines={notes} howToRead={`1 จุด = ยอดค้าง ณ วันสุดท้ายของ${daily ? 'วัน' : 'สัปดาห์'} · ชี้เพื่อดูแยกสถานะและแหล่ง · เส้นประ = ช่วง B เมื่อเปิด Compare`}
     legend={<div className="task-legend task-backlog-legend"><span><i className="task-teal" />ticket เปิดทั้งหมด</span><span><i className="task-amber" />ticket เลยกำหนด</span>{compare && <span><i className="task-dashed" />ช่วง B (ช่วงก่อนหน้า)</span>}<div className="task-seg" role="group" aria-label="แผนก">{DEPTS.map(([k, l]) => <Button key={k} size="sm" variant={dept === k ? 'default' : 'ghost'} aria-pressed={dept === k} onClick={() => setDept(k)}>{l}</Button>)}</div></div>}>
     {A.length ? <div className="task-backlog-plot" ref={ref} style={{ height: H }}>
       {box.width > 0 && <svg width={W} height={H} aria-hidden="true">
@@ -68,14 +69,14 @@ export function BacklogHistoryCard({ inp, a, b, compare, earliest }: { inp: Back
 /* ---------------- ⑥ ---------------- */
 const DOMAIN_LABEL: Record<string, string> = { ORM: 'ORM', MARCOM: 'Marcom', PS: 'PS', AC: 'AC' };
 const pct = (n: number, d: number) => (d ? Math.round((n / d) * 100) : 0);
-export function CategoryIncomingCard({ rows, categories, a, b, compare }: { rows: WorkRow[]; categories: Category[]; a: Period; b: Period; compare: boolean }) {
+export function CategoryIncomingCard({ rows, categories, a, b, compare, period }: { rows: WorkRow[]; categories: Category[]; a: Period; b: Period; compare: boolean; period?: React.ReactNode }) {
   const A = categoryIncoming(rows, categories, a), B = compare ? categoryIncoming(rows, categories, b) : null;
   const [open, setOpen] = useState<string[]>([]);
   const top = A.domains[0], maxD = Math.max(1, ...A.domains.map(d => d.n), ...(B?.domains.map(d => d.n) ?? [])), maxT = Math.max(1, ...A.types.map(t => t.n), ...(B?.types.map(t => t.n) ?? []));
   const bD = (d: string) => B?.domains.find(x => x.domain === d)?.n ?? 0, bT = (t: string) => B?.types.find(x => x.type === t)?.n ?? 0;
   const delta = B ? [...A.domains].sort((x, y) => Math.abs(y.n - bD(y.domain)) - Math.abs(x.n - bD(x.domain)))[0] : null;
   const notes = top ? [...(delta && B ? [`${DOMAIN_LABEL[delta.domain]} เปลี่ยนมากสุด: A ${delta.n} · B ${bD(delta.domain)} · Δ ${sign(delta.n - bD(delta.domain))}`] : []), `${DOMAIN_LABEL[top.domain]} ${top.n} จาก ${A.psN} ticket PS เปิดเอง (${pct(top.n, A.psN)}%) · หมวดย่อยที่เข้ามากสุด: ${top.subs[0]?.label} ${top.subs[0]?.n}`, ...(A.types[0] ? [`ติดตามจากแท็บอื่น + ระบบสร้าง: ${A.types[0].label} ${A.types[0].n} จาก ${A.l0N} ใบ (${pct(A.types[0].n, A.l0N)}%)`] : [])].slice(0, 2) : ['ยังไม่มีข้อมูลสำหรับสรุป'];
-  return <DashCard title="⑥ ticket ใหม่ตามหมวด" question="ลูกค้าแจ้งเรื่องอะไรบ่อย? (ticket ใหม่ในช่วงที่เลือก)" answer={top ? `${DOMAIN_LABEL[top.domain]} ${top.n}` : '—'} answerSub={top ? `หมวดที่เข้ามากสุด · จาก ${A.psN} ticket PS เปิดเอง` : 'รอข้อมูล'} answerTone="accent" noteNamespace="task" noteKey="category" noteLines={notes} howToRead="นับ ticket ใหม่ในช่วงเวลาที่เลือก ตามหมวดปัจจุบัน · ticket ที่ติดตามจากแท็บอื่นและระบบสร้างแยกกลุ่มเพราะไม่ได้มาจากลูกค้า">
+  return <DashCard period={period} title="⑥ ticket ใหม่ตามหมวด" question="ลูกค้าแจ้งเรื่องอะไรบ่อย? (ticket ใหม่ในช่วงที่เลือก)" answer={top ? `${DOMAIN_LABEL[top.domain]} ${top.n}` : '—'} answerSub={top ? `หมวดที่เข้ามากสุด · จาก ${A.psN} ticket PS เปิดเอง` : 'รอข้อมูล'} answerTone="accent" noteNamespace="task" noteKey="category" noteLines={notes} howToRead="นับ ticket ใหม่ในช่วงเวลาที่เลือก ตามหมวดปัจจุบัน · ticket ที่ติดตามจากแท็บอื่นและระบบสร้างแยกกลุ่มเพราะไม่ได้มาจากลูกค้า">
     {A.psN + A.l0N ? <div className="task-cat">
       <p className="task-cat-group">PS เปิดเอง (ตามหมวด) · กดแถวเพื่อดูหมวดย่อย</p>
       {A.domains.map(d => { const ex = open.includes(d.domain); return <div key={d.domain}>
@@ -94,7 +95,7 @@ export function CategoryIncomingCard({ rows, categories, a, b, compare }: { rows
 
 /* ---------------- ⑦ ---------------- */
 const WDEPTS: [WorkDept, string][] = [['ORM', 'ORM'], ['MARCOM', 'Marcom'], ['PS', 'PS'], ['AC', 'AC'], ['BD', 'BD']];
-export function WorkloadCard({ rows, acts, care, a, b, compare, people, smallBase, onPerson }: { rows: WorkRow[]; acts: ActMap; care: HotelCare[]; a: Period; b: Period; compare: boolean; people: string[]; smallBase: number; onPerson?: (name: string) => void }) {
+export function WorkloadCard({ rows, acts, care, a, b, compare, people, smallBase, onPerson, period }: { period?: React.ReactNode; rows: WorkRow[]; acts: ActMap; care: HotelCare[]; a: Period; b: Period; compare: boolean; people: string[]; smallBase: number; onPerson?: (name: string) => void }) {
   const [dept, setDept] = useState<WorkDept>('ORM');
   const [expanded, setExpanded] = useState<string | null>(null);
   const A = workload(dept, rows, acts, care, a, people), B = compare ? workload(dept, rows, acts, care, b, people) : [];
@@ -102,7 +103,7 @@ export function WorkloadCard({ rows, acts, care, a, b, compare, people, smallBas
   const top = [...A].sort((x, y) => y.inN - x.inN)[0], max = Math.max(1, ...A.flatMap(r => [r.inN, r.closedN]));
   const slow = [...A].filter(r => r.close.median != null).sort((x, y) => (y.close.median ?? 0) - (x.close.median ?? 0))[0];
   const notes = !A.length ? ['ยังไม่มีข้อมูลสำหรับสรุป'] : multi ? [`${top?.label} รับงานเข้า ${top?.inN} จาก ${totalIn} งานของ ${deptLabel}`, ...(slow ? [`ปิด ticket สุทธิ median ช้าสุด: ${slow.label} ${fmt1(slow.close.median)} วัน${slow.close.N < smallBase ? ` (ฐานเล็ก ${slow.close.N} งาน)` : ''}`] : [])] : [`${deptLabel} เข้า ${A[0]!.inN} · ปิด ${A[0]!.closedN} · ค้างตอนนี้ ${A[0]!.openNow}`];
-  return <DashCard title="⑦ Workload ราย ทีม" question="แต่ละทีมรับ ticket เท่าไร ใช้เวลาเท่าไร? (ตามช่วงเวลาที่เลือก)" answer={top ? `${multi ? top.label : deptLabel} ${top.inN}` : '—'} answerSub={top ? (multi ? `รับ ticket เข้ามากสุด · ${fmt1(top.per10)} ต่อ 10 โรงแรม` : 'ticket ใหม่ในช่วงที่เลือก') : 'รอข้อมูล'} answerTone="accent" noteNamespace="task" noteKey="workload" noteLines={notes} howToRead="1 แถว = 1 ทีม · ดูรายคนได้ด้วย Person filter ด้านบน · ticket นับให้ทีมของผู้รับผิดชอบ ณ ตอนสร้าง · วัดเวลาที่ทีมกดรับ/ปิด ticket ในระบบ ไม่ใช่เวลาที่ลูกค้าได้คำตอบจริง"
+  return <DashCard period={period} title="⑦ Workload ราย ทีม" question="แต่ละทีมรับ ticket เท่าไร ใช้เวลาเท่าไร? (ตามช่วงเวลาที่เลือก)" answer={top ? `${multi ? top.label : deptLabel} ${top.inN}` : '—'} answerSub={top ? (multi ? `รับ ticket เข้ามากสุด · ${fmt1(top.per10)} ต่อ 10 โรงแรม` : 'ticket ใหม่ในช่วงที่เลือก') : 'รอข้อมูล'} answerTone="accent" noteNamespace="task" noteKey="workload" noteLines={notes} howToRead="1 แถว = 1 ทีม · ดูรายคนได้ด้วย Person filter ด้านบน · ticket นับให้ทีมของผู้รับผิดชอบ ณ ตอนสร้าง · วัดเวลาที่ทีมกดรับ/ปิด ticket ในระบบ ไม่ใช่เวลาที่ลูกค้าได้คำตอบจริง"
     legend={<div className="task-legend task-backlog-legend"><div className="task-seg" role="group" aria-label="แผนก">{WDEPTS.map(([k, l]) => <Button key={k} size="sm" variant={dept === k ? 'default' : 'ghost'} aria-pressed={dept === k} onClick={() => setDept(k)}>{l}</Button>)}</div><span><i className="task-teal" />เข้า</span><span><i className="task-neutral" />ปิด</span></div>}>
     {A.length ? <div className="task-wl-scroll"><div className="task-wl">
       <div className="task-wl-row task-wl-head"><span>ทีม</span><span>เข้า / ปิด</span><span>ค้างตอนนี้</span><span>รับงาน (median)</span><span>ปิด ticket สุทธิ (median)</span><span>เข้า / 10 โรงแรม</span></div>

@@ -11,6 +11,7 @@ import { AssignDialog } from './assignment-ui';
 import { ServicingCardDrawer } from './servicing-dashboard';
 import { OnboardingCardContent } from './onboarding-card';
 import { ChartHint, ChartSkeleton, DashCard } from './dash-card';
+import { NowChip, useCardCompare } from './compare-control';
 import { ServicingPhaseChart } from './servicing-phase-chart';
 import { ServicingGoLiveChart } from './servicing-golive-chart';
 import { useHrMembers, type AssignType } from '@/lib/hr-members';
@@ -43,6 +44,8 @@ export function ServicingTab() {
  };
  useEffect(()=>{setOverlay({});setOptimisticTickets([]);setDrill('flag');},[demo]);
  const clock=demo?SERVICING_DEMO_NOW:new Date().toISOString(),periodA=selectedPeriod(filter,new Date(clock)),periodB=selectedPeriod(filter,new Date(clock),'B');
+ /* Header R2 §2.3 — ② and ③ own a CompareControl; ① Pipeline is point-in-time (ณ วันนี้). */
+ const kPhase=useCardCompare('servicing','phase',clock.slice(0,10)),kGo=useCardCompare('servicing','golive',clock.slice(0,10));
  const rows=servicingScope((report?.rows??[]).filter(r=>r.service_variant!=null).map(r=>({...r,...overlay[r.card_id]})),filter).filter(r=>!r.go_live_at||(r.go_live_at.slice(0,10)>=periodA.from&&r.go_live_at.slice(0,10)<=periodA.to));
  const lanes=(r:ServicingRow)=>r.lanes??servicingLanes(r,clock),status=(r:ServicingRow)=>cardStatus(lanes(r)),stats=servicingStats(rows),inProgress=rows.filter(r=>!r.go_live_at),red=inProgress.filter(r=>status(r).tone==='red').length,amber=inProgress.filter(r=>status(r).tone==='amber').length,gaps=rows.filter(r=>!assignmentComplete(r));
  const demoBadges=useMemo(()=>{
@@ -71,7 +74,7 @@ export function ServicingTab() {
   ['การ์ดบริการทั้งหมด',stats.cards,'หลัง filter'],['โรงแรม',stats.hotels,'นับโรงแรมละ 1'],['Go Live',stats.goLive,`ORM ${rows.filter(r=>r.go_live_at&&r.service_line==='ORM').length} · Marcom ${rows.filter(r=>r.go_live_at&&r.service_line==='MARCOM').length}`],['กำลังดำเนินการ',stats.inProgress,`เลยกำหนด ${red} · ใกล้ถึงกำหนด ${amber}`],['⚠ รอระบุผู้ดูแล',stats.awaiting,'ORM team / Marcom ยังว่าง']
  ].map(([label,value,sub],i)=><div className={`sv-stat ${i===4?'sv-stat-gap':''}`} key={label}><span>{label}</span><strong>{pending?'—':value}</strong><small>{pending?'รอ source':sub}</small>{i===4&&<Button variant="outline" size="sm" disabled={pending} onClick={()=>selectDrill('gap')}>+ ระบุผู้ดูแล</Button>}</div>)}</div>
  {real.isError&&!demo&&<p className="text-sm text-destructive">อ่านรายงาน Servicing ไม่สำเร็จ</p>}
- <DashCard info={servicingInfo()} title="① Pipeline ตอนนี้" question="การ์ดอยู่ stage ไหน และใบไหนใกล้ถึงหรือเลยกำหนดแล้ว? (1 การ์ด = 1 บริการ)" answer={pending?'—':`${stats.inProgress} การ์ด`} answerSub={pending?undefined:<><span className="sv-text-red">เลยกำหนด {red} · ใกล้ถึงกำหนด {amber}</span><div>กำลังดำเนินการ (ยังไม่ Go Live)</div></>} noteNamespace="servicing" noteKey="pipe" noteLines={pending?['ยังไม่มีข้อมูลพอสรุป']:[`เลยกำหนด ${red} · ใกล้ถึงกำหนด ${amber} จาก ${stats.inProgress} การ์ดที่กำลังดำเนินการ`,...(most?[`stage ที่มีการ์ดมากสุดตอนนี้: ${stageName(most.key.split(':')[1]??'')} (${most.key.split(':')[0]==='ORM'?'ORM':'Marcom'}) ${most.n} การ์ด`]:[])]} howToRead="ตัวเลขในช่อง = จำนวนการ์ดที่อยู่ stage นั้นตอนนี้ · แถบสีใต้ตัวเลข = สัดส่วนทันกำหนด / ใกล้ถึงกำหนด / เลยกำหนด · ชี้เพื่อดูรายละเอียด คลิกเพื่อดูรายการ์ด">
+ <DashCard period={<NowChip/>} info={servicingInfo()} title="① Pipeline ตอนนี้" question="การ์ดอยู่ stage ไหน และใบไหนใกล้ถึงหรือเลยกำหนดแล้ว? (1 การ์ด = 1 บริการ)" answer={pending?'—':`${stats.inProgress} การ์ด`} answerSub={pending?undefined:<><span className="sv-text-red">เลยกำหนด {red} · ใกล้ถึงกำหนด {amber}</span><div>กำลังดำเนินการ (ยังไม่ Go Live)</div></>} noteNamespace="servicing" noteKey="pipe" noteLines={pending?['ยังไม่มีข้อมูลพอสรุป']:[`เลยกำหนด ${red} · ใกล้ถึงกำหนด ${amber} จาก ${stats.inProgress} การ์ดที่กำลังดำเนินการ`,...(most?[`stage ที่มีการ์ดมากสุดตอนนี้: ${stageName(most.key.split(':')[1]??'')} (${most.key.split(':')[0]==='ORM'?'ORM':'Marcom'}) ${most.n} การ์ด`]:[])]} howToRead="ตัวเลขในช่อง = จำนวนการ์ดที่อยู่ stage นั้นตอนนี้ · แถบสีใต้ตัวเลข = สัดส่วนทันกำหนด / ใกล้ถึงกำหนด / เลยกำหนด · ชี้เพื่อดูรายละเอียด คลิกเพื่อดูรายการ์ด">
  {filter.compare&&<p className="mb-3 text-xs text-muted-foreground">Pipeline เป็นภาพปัจจุบัน จึงไม่เทียบ A vs B · การเทียบดูได้ที่การ์ด ② และ ③</p>}
  {pending?<ChartSkeleton text="รอ Cloud Sync seed"/>:<>
  {(['ORM','MARCOM'] as const).filter(l=>filter.service==='ALL'||filter.service===(l==='ORM'?'ORM':'Marcom')).map(line=><div className="sv-pipeline-lane" key={line}><h3>{line==='ORM'?'ORM · Final Setup (รอ handover ก่อน Training)':'Marcom · GMB ข้าม First Sync · First Sync นับ MT เท่านั้น'}</h3><div className="sv-pipeline-scroll"><div className="sv-pipeline-grid" style={{gridTemplateColumns:`repeat(${line==='ORM'?12:10},minmax(96px,1fr))`}}>{(line==='ORM'?ORM_REPORT_STAGES:MARCOM_REPORT_STAGES).map(stage=>{
@@ -96,8 +99,8 @@ export function ServicingTab() {
  </div></div></>}
  {drillOpen&&<p className="mt-3 text-xs text-muted-foreground">หน้านี้ไม่เลื่อน stage · ดูรายละเอียดจะเปิด guided drawer เดิม · ปุ่มสร้าง Ticket เห็นเฉพาะ PM และเฉพาะการ์ดที่ใกล้ถึงหรือเลยกำหนด</p>}
  </DashCard>
- <ServicingPhaseChart rows={phaseRows} service={filter.service} periodA={periodA} periodB={periodB} compare={filter.compare} pending={pending} periodLabel={periodLabel}/>
- <ServicingGoLiveChart rows={servicingScope(report?.rows??[],filter)} service={filter.service} periodA={periodA} periodB={periodB} compare={filter.compare} pending={pending}/>
+ <ServicingPhaseChart rows={(report?.phaseRows??[]).filter(p=>servicingScope(report?.rows??[],filter).some(r=>r.card_id===p.card_id))} service={filter.service} periodA={kPhase.a} periodB={kPhase.b} compare pending={pending} periodLabel={kPhase.full} period={kPhase.control}/>
+ <ServicingGoLiveChart rows={servicingScope(report?.rows??[],filter)} service={filter.service} periodA={kGo.a} periodB={kGo.b} compare pending={pending} period={kGo.control}/>
  {assignRow&&<CaretakerModal row={assignRow} demo={demo} onClose={()=>setAssignRow(null)} onOptimistic={patch=>setOverlay(o=>({...o,[assignRow.card_id]:{...o[assignRow.card_id],...patch}}))}/>}
  <ServicingCardDrawer key={drawer??'closed'} id={drawer} readOnly onClose={()=>setDrawer(null)}/>
  </section>;

@@ -49,8 +49,8 @@ function PsDashboardPage() {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader eyebrow="PS App · Dashboard" title="PS Dashboard" description={description} />
+      {/* Header R2: the old Portfolio snapshot (PsDashboard overview) is unmounted; Active Portfolio lives in the shell. */}
       <DashboardShell
-        header={<PsDashboard part="overview" />}
         servicing={<ServicingTab />}
         overview={
           <section className="flex flex-col gap-4">

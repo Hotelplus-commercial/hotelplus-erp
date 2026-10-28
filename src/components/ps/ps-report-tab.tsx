@@ -34,6 +34,8 @@ import {
   type PsFilter,
 } from "@/lib/ps-dashboard-types";
 import { cn } from "@/lib/utils";
+import { NowChip, useCardCompare } from "./compare-control";
+import type { Period } from "@/lib/ps-dashboard-global";
 import {
   accountHealthOf,
   sortHealth,
@@ -115,7 +117,10 @@ export function PsReportTab({
   wonMtd,
   compareSide,
   comparisonFilter,
+  wonFor,
 }: {
+  /** Header R2: BD Won count for a card's own period (reconcile line on ①). */
+  wonFor?: ((p: Period) => number) | undefined;
   report?: PsReport | undefined;
   filter: PsFilter;
   loading: boolean;
@@ -132,16 +137,23 @@ export function PsReportTab({
   const views = report?.views;
   const demo = !!report?.demo;
   const now = report?.now ? new Date(report.now) : new Date();
+  /* Header R2 §2.3 — each time-based card takes its period from its own CompareControl (A) and compares
+   * against its B period; the old two-column global Compare (compareSide) keeps the passed filters. */
+  const today = now.toISOString().slice(0, 10);
+  const kFlow = useCardCompare("ps", "lifecycle", today), kChurn = useCardCompare("ps", "churn", today), kRenew = useCardCompare("ps", "renewal", today), kLife = useCardCompare("ps", "lifetime", today), kCohort = useCardCompare("ps", "onboard", today);
+  const perCard = !compareSide;
+  const fA = (k: { a: Period }): PsFilter => (perCard ? { ...filter, period: k.a } : filter);
+  const fB = (k: { b: Period }): PsFilter | undefined => (perCard ? { ...filter, period: k.b } : comparisonFilter);
   // R1.2 §3.1: In / Out = recurring (monthly) services only; setup fees and one-time jobs never count.
-  const flow = psScope(views?.v_ps_lifecycle_flow ?? [], filter, "created_at", 0, now).filter(isRecurringService);
-  const out = psScope(views?.v_ps_lifecycle_flow ?? [], filter, "inactivated_at", 0, now).filter(
+  const flow = psScope(views?.v_ps_lifecycle_flow ?? [], fA(kFlow), "created_at", 0, now).filter(isRecurringService);
+  const out = psScope(views?.v_ps_lifecycle_flow ?? [], fA(kFlow), "inactivated_at", 0, now).filter(
     (row) => isRecurringService(row) && String(row.inactivated_at) <= now.toISOString(),
   );
   const hasFlow = (views?.v_ps_lifecycle_flow ?? []).length > 0;
   const churn = latestPeriod(
-    psScope(views?.v_ps_churn_monthly ?? [], filter, "billing_period", 0, now),
+    psScope(views?.v_ps_churn_monthly ?? [], fA(kChurn), "billing_period", 0, now),
   );
-  const renewals = psScope(views?.v_ps_renewal ?? [], filter, "renewal_due_date", 0, now);
+  const renewals = psScope(views?.v_ps_renewal ?? [], fA(kRenew), "renewal_due_date", 0, now);
   const decided = renewals.filter((row) =>
     ["RENEWED", "NOT_RENEWED", "LOST"].includes(String(row.outcome)),
   );
@@ -150,8 +162,8 @@ export function PsReportTab({
     : null;
   const lifetime = psScope(
     views?.v_ps_contract_lifetime ?? [],
-    filter,
-    filter.period ? "end_date" : "none",
+    fA(kLife),
+    fA(kLife).period ? "end_date" : "none",
     0,
     now,
   );
@@ -165,7 +177,7 @@ export function PsReportTab({
   const median = quantile(ages, 0.5),
     p25 = quantile(ages, 0.25),
     p75 = quantile(ages, 0.75);
-  const cohort = psScope(views?.v_ps_onboard_cohort ?? [], filter, "billing_period", 0, now).sort(
+  const cohort = psScope(views?.v_ps_onboard_cohort ?? [], fA(kCohort), "billing_period", 0, now).sort(
     (a, b) => String(a.billing_period).localeCompare(String(b.billing_period)),
   );
   const attach = psScope(views?.v_ps_attach_rate ?? [], filter, "none");
@@ -247,7 +259,8 @@ export function PsReportTab({
       y: n(row, "age_days"),
       contract: row.contract_id,
     }));
-  const reconcileOk = wonMtd === undefined || filter.service !== "ALL" || flow.length === wonMtd;
+  const wonCard = perCard && wonFor ? wonFor(kFlow.a) : wonMtd;
+  const reconcileOk = wonCard === undefined || filter.service !== "ALL" || flow.length === wonMtd;
   // Display transforms use only the card's existing scoped rows; never fetch or alter projections.
   const months = [
     ...new Set([
@@ -267,7 +280,7 @@ export function PsReportTab({
       outs,
     };
   });
-  const churnSeries = psScope(views?.v_ps_churn_monthly ?? [], filter, "billing_period", 0, now);
+  const churnSeries = psScope(views?.v_ps_churn_monthly ?? [], fA(kChurn), "billing_period", 0, now);
   const churnChart = [...new Set(churnSeries.map((r) => String(r.billing_period)))]
     .sort()
     .map((month) => {
@@ -305,34 +318,35 @@ export function PsReportTab({
   const gradeD = tiered.filter((h) => [h.row.latest_grade, h.row.worst_grade].includes("D")).length;
   const summaries = (metric: string, values: number[], rules: Parameters<typeof summaryRules>[1]) =>
     summaryRules({ metric, values, compare: !!compareSide, empty: !values.length }, rules);
-  const previousChurnRows = comparisonFilter
+  const churnB = fB(kChurn), cohortB = fB(kCohort), lifeB = fB(kLife);
+  const previousChurnRows = churnB
     ? latestPeriod(
-        psScope(views?.v_ps_churn_monthly ?? [], comparisonFilter, "billing_period", 0, now),
+        psScope(views?.v_ps_churn_monthly ?? [], churnB, "billing_period", 0, now),
       )
     : [];
-  const comparisonChurn = comparisonFilter
+  const comparisonChurn = churnB
     ? ratio(previousChurnRows, "out_count", "active_at_start")
     : churnPrevious;
-  const comparisonCohort = comparisonFilter
-    ? psScope(views?.v_ps_onboard_cohort ?? [], comparisonFilter, "billing_period", 0, now)
+  const comparisonCohort = cohortB
+    ? psScope(views?.v_ps_onboard_cohort ?? [], cohortB, "billing_period", 0, now)
         .sort((a, b) => String(a.billing_period).localeCompare(String(b.billing_period)))
         .at(-1)
     : undefined;
-  const comparisonOnboard = comparisonFilter
+  const comparisonOnboard = cohortB
     ? typeof comparisonCohort?.["median_days"] === "number"
       ? comparisonCohort["median_days"]
       : null
     : previousMedian;
-  const comparisonLife = comparisonFilter
+  const comparisonLife = lifeB
     ? quantile(
-        psScope(views?.v_ps_contract_lifetime ?? [], comparisonFilter, "end_date", 0, now)
+        psScope(views?.v_ps_contract_lifetime ?? [], lifeB, "end_date", 0, now)
           .filter((r) => r.status === "INACTIVE" && typeof r.age_days === "number")
           .map((r) => n(r, "age_days")),
         0.5,
       )
     : null;
   const compareSub = (value: number | null, unit = "", lowerGood = false) =>
-    comparisonFilter ? (
+    perCard || comparisonFilter ? (
       <span>
         vs B {fmt(value, unit)} ·{" "}
         <Delta
@@ -452,6 +466,7 @@ export function PsReportTab({
       data-compare-side={compareSide}
     >
       <DashCard
+        period={perCard ? kFlow.control : undefined}
         title="① Lifecycle & Flow"
         info={{ count: "นับเฉพาะบริการที่เก็บรายเดือน (รวมค่าระบบ) · ไม่นับค่า setup และงาน one-time" }}
         question="ฐานลูกค้าโตหรือหด? (นับราย service)"
@@ -532,7 +547,7 @@ export function PsReportTab({
             </div>
             {!reconcileOk && (
               <p className="text-xs text-warning-foreground">
-                QA: In ({flow.length}) ≠ Won MTD ({wonMtd})
+                QA: In ({flow.length}) ≠ Won MTD ({wonCard})
               </p>
             )}
           </>
@@ -541,12 +556,13 @@ export function PsReportTab({
         )}
       </DashCard>
       <DashCard
+        period={perCard ? kChurn.control : undefined}
         title="② Churn"
         question="เดือนไหนหลุดผิดปกติ? แยก ORM / Marcom"
         answer={fmt(gross, "%")}
         answerTone="watch"
         answerSub={
-          comparisonFilter ? (
+          churnB ? (
             compareSub(comparisonChurn, "%", true)
           ) : (
             <Delta a={gross} b={churnPrevious} lowerGood unit="pp" />
@@ -635,6 +651,7 @@ export function PsReportTab({
         )}
       </DashCard>
       <DashCard
+        period={perCard ? kRenew.control : undefined}
         title="③ Renewal"
         question="ครบกำหนดงวดนี้ ต่อกี่ราย?"
         answer={fmt(renewalSuccess, "%")}
@@ -766,11 +783,12 @@ export function PsReportTab({
         )}
       </DashCard>
       <DashCard
+        period={perCard ? kLife.control : undefined}
         title="④ Contract Lifetime"
         question="ลูกค้าอยู่กับเรานานแค่ไหน?"
         answer={fmt(median, " วัน")}
         answerSub={
-          comparisonFilter
+          lifeB
             ? compareSub(comparisonLife, " วัน")
             : <>ค่ากลาง · จาก {ended.length} สัญญาที่จบแล้ว{ended.length < 10 && <span className="dash-source-pill ml-2 text-dash-watch">ข้อมูลน้อย</span>}</>
         }
@@ -842,12 +860,13 @@ export function PsReportTab({
       </DashCard>
       <div className={compareSide ? "" : "lg:col-span-2"}>
         <DashCard
+          period={perCard ? kCohort.control : undefined}
           title="⑤ On-board · Finished Cohort"
           question="เซ็นสัญญา → Go-Live ใช้กี่วัน?"
           answer={fmt(onboardMedian, " วัน")}
           answerTone="onboard"
           answerSub={
-            comparisonFilter ? (
+            cohortB ? (
               compareSub(comparisonOnboard, " วัน", true)
             ) : (
               <Delta a={onboardMedian} b={previousMedian} lowerGood unit=" วัน" />
@@ -946,6 +965,7 @@ export function PsReportTab({
       </DashCard>
       <div className={compareSide ? "" : "lg:col-span-2"}>
         <DashCard
+          period={perCard ? <NowChip /> : undefined}
           title="⑦a Risk Scorecard"
           question="มีโรงแรมเสี่ยงกี่ราย เสี่ยงด้านไหน?"
           answer={tiered.length ? `${tierCount("high")} / ${tiered.length}` : "—"}
@@ -1032,6 +1052,7 @@ export function PsReportTab({
       {compareSide !== "B" && (
         <div className={compareSide ? "" : "lg:col-span-2"}>
           <DashCard
+            period={perCard ? <NowChip /> : undefined}
             title="⑦b Account Health"
             info={scoreInfo}
             question="ใครเสี่ยง และเสี่ยงเพราะอะไร?"
@@ -1247,6 +1268,7 @@ export function PsReportTab({
       <RiskRulesDialog open={rulesOpen} onOpenChange={setRulesOpen} rules={rules} />
       <div className={compareSide ? "" : "lg:col-span-2"}>
         <DashCard
+          period={<NowChip />}
           title="ถึงรอบขึ้นค่าบริการ (Repricing)"
           info={{
             source: "คำนวณจากกติกาตายตัว ไม่ได้ใช้ AI",
@@ -1417,6 +1439,7 @@ function PendingWorkCard({ work, loading, emptyText }: { work: { pi: PendingItem
   ];
   return (
     <DashCard
+      period={<NowChip />}
       title="งานค้างของสัญญา"
       info={{ count: "นับรายสัญญาบริการ · เป็นงานที่ต้องทำ ไม่ใช่สัญญาณเสี่ยง จึงไม่นับใน Risk Scorecard / Account Health" }}
       question="สัญญาไหนยังมีงานค้างที่ต้องตาม?"
