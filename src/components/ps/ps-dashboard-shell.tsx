@@ -20,6 +20,8 @@ import { buildDemoReport, demoAcViews, demoBdacLifecycles, demoLifecycles, BDAC_
 import { Button } from "@/components/ui/button";
 import { useAcTabInput, useAcViews } from "./use-ac-views";
 import { dealBookLines } from "@/lib/bdac-scope";
+import { bdacRedirectHref } from "@/lib/office-bdac";
+import { useRouter } from "@tanstack/react-router";
 import { v_bdac_flow, v_bdac_deal_aging } from "@/lib/bdac-views";
 import { useContractLifecycle } from "@/lib/contract-lifecycle";
 import {
@@ -178,7 +180,14 @@ export function DashboardShell({
   const [tab, setTab] = useState("ps");
   const [demo, setDemo] = useState(false);
   const [ready, setReady] = useState(false);
+  const router = useRouter();
   useEffect(() => {
+    /* Hash links (#bdac) never reach the route's beforeLoad on the server — redirect them here (replace). */
+    const moved = bdacRedirectHref(window.location.search, window.location.hash);
+    if (moved) {
+      void router.navigate({ href: moved, replace: true });
+      return;
+    }
     const sp = new URLSearchParams(window.location.search);
     setDemo(sp.get("demo") === "1");
     // R1.2 §1: tab keys are unchanged (labels/order only), so ?tab=<key> links keep opening the same tab.
