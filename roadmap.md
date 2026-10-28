@@ -258,3 +258,10 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [x] Page /the-office-app/bd-ac (same components, own filters, header demo toggle)
 - [x] PS Dashboard tab removed; old links redirect
 - [x] Tests (217 → 222) + browser check
+
+## PS Dashboard · Header R2 (Customer Journey + Active Portfolio)
+- [x] Filter bar: ทีม / คน + search + status + Clear All + DEMO (old bar unmounted, shared component untouched)
+- [x] Per-card CompareControl / ณ วันนี้ across PS, AC, Meeting, Task, On-board tabs
+- [x] Customer Journey scorecard + Active Portfolio + Marcom App adapter stub + R2 demo fixture (28 Oct 2026)
+- [x] Tests 222 → 245; browser-checked in sample mode
+- [ ] Live: คะแนนบริการ waits for v_ps_service_score; Marcom deliveries wait for the Marcom App integration
