@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { RefreshCw } from "lucide-react";
 import { useState } from "react";
 
@@ -19,11 +19,17 @@ import {
 } from "@/components/ui/select";
 import { useMeetingMgmt } from "@/lib/orm-meeting";
 import { activityFeed, feedTypes } from "@/lib/ps-v4";
+import { bdacRedirectHref } from "@/lib/office-bdac";
 
 const description =
   "PS Dashboard: รายงานวงจรบริการ การต่อสัญญา Churn สุขภาพ Account และ Meeting & Survey พร้อมภาพรวมสัญญา ORM / Marcom";
 
 export const Route = createFileRoute("/ps/")({
+  /* BD-AC moved to The Office APP (RV23): old ?tab=bdac / #bdac links replace-redirect, other params kept. */
+  beforeLoad: ({ location }) => {
+    const href = bdacRedirectHref(location.searchStr, location.hash);
+    if (href) throw redirect({ href, replace: true });
+  },
   head: () => ({
     meta: [
       { title: "PS Dashboard — Partner Success | Meridia Hotel ERP" },
