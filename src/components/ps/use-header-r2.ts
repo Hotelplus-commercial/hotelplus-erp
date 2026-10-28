@@ -80,7 +80,7 @@ export function useHeaderR2(demo: boolean, report: PsReport | undefined): Header
         const flat = lines.find((l) => (l.unit_price ?? 0) > 0), comm = lines.find((l) => (l.commission_rate ?? 0) > 0);
         const content = lines.find((l) => /CONTENT|POST/.test(text(l))), ads = lines.find((l) => /ADS|BOOST/.test(text(l))), kol = lines.find((l) => /KOL/.test(text(l)));
         const id = `${c.contract_id}|${s}`;
-        contracts.push({ service: s, contract_id: id, hotel_id: c.hotel_id, hotel_name: c.customer_snapshot?.property_name ?? c.hotel_id, ae: null, orm: c.orm_team_id ?? null, marcom: c.marcom_member_id ?? null, start: c.start_date, end: c.inactivated_at ?? null,
+        contracts.push({ service: s, contract_id: id, hotel_id: c.hotel_id, hotel_name: c.customer_snapshot?.legal_name ?? c.hotel_id, ae: null, orm: c.orm_team_id ?? null, marcom: c.marcom_member_id ?? null, start: c.start_date, end: c.inactivated_at ?? null,
           sku: s === "ORM" ? { flat: !!flat, commission: !!comm } : { content: !!content, ads: !!ads, kol: !!kol },
           quota: s === "Marcom" ? { content: content?.quantity ?? null, kol: kol?.quantity ?? null } : undefined });
         const hist = renewal.history.filter((h) => h.contract_id === c.contract_id);
