@@ -246,3 +246,9 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [x] §5 Task: contract/meeting link (ticket_create_v4), จากการประชุม chip, responsible/watchers, dept→person drill, pre-meeting backlog view
 - [x] §6 Servicing → On-board label · §7 forbidden-string test across tabs · §8 demo fixture
 - [ ] Live data: cost card, grade list and pre-meeting view stay empty until invoices/meetings sync (Cloud views return 0 rows today); L0 tickets are not back-filled with a contract (browser store, no write)
+
+# BD-AC v2.2 · Restore AC finance + English dates + K1/K2
+- [x] View v_bdac_contract_revenue_ranking (migration 0024; link = invoice line contract_id); pure selectors + renewal chain in src/lib/bdac-revenue.ts; demo derived from the cost sample + contract extras.
+- [x] BdacFinanceSection: ⑥ split / ⑦ band / ⑧ table at contract level; ⑨ ⑩ ⑪ mounted from the AC tab (context prop).
+- [x] English month/date on Tab BD-AC (date-en.ts); K1 Δ hidden when previous window not covered; K2 label DEMO · 17 Oct 2026.
+- [x] 217 tests pass (13 new); browser-verified demo. Live data empty until invoices sync (0 recurring invoices in Cloud).
