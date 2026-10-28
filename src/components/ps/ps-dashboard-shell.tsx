@@ -19,7 +19,9 @@ import { readPsDashboard } from "@/lib/ps-dashboard.functions";
 import { latestPeriod, psScope, ratio, type PsReport } from "@/lib/ps-dashboard-types";
 import { buildDemoReport, demoAcViews, demoBdacLifecycles, demoLifecycles, BDAC_DEMO_NOW, DEMO_NOW } from "@/lib/ps-demo-fixture";
 import { Button } from "@/components/ui/button";
-import { readAcDashboard } from "@/lib/ac-dashboard.functions";
+import { useAcTabInput, useAcViews } from "./use-ac-views";
+import { BdacFinanceSection } from "./bdac-finance-section";
+import { formatFullDateEn } from "@/lib/date-en";
 import { v_bdac_flow, v_bdac_deal_aging } from "@/lib/bdac-views";
 import { useContractLifecycle } from "@/lib/contract-lifecycle";
 import {
@@ -73,20 +75,6 @@ const num = (v: unknown) => Number(v ?? 0) || 0;
 /** Rows inside the selected window; shift=-1 gives the same window one month earlier (MoM). */
 function scope(rows: Row[], f: Filter, shift = 0, now = new Date()) {
   return scopePeriod(rows, f, selectedPeriod(f, now, shift === 0 ? "A" : "B"));
-}
-
-function useAcViews() {
-  const { demo } = useDashboardGlobal();
-  const read = useServerFn(readAcDashboard);
-  const [ready, setReady] = useState(false);
-  useEffect(() => setReady(true), []);
-  const real = useQuery({
-    queryKey: ["ac-dashboard-views"],
-    queryFn: () => read(),
-    staleTime: 60_000,
-    enabled: ready && !demo,
-  });
-  return demo ? { data: demoAcViews(), isLoading: false, isError: false } : real;
 }
 
 function useMeetingViews() {
@@ -314,7 +302,8 @@ export function DashboardShell({
               <div data-testid="active-dashboard-tab" className="min-w-0 space-y-4">
                 {demo && (
                   <p className="text-xs font-semibold text-warning-foreground">
-                    DEMO · 30 Sep 2026
+                    {/* BD-AC v2.2 K2: Tab BD-AC runs on its own demo clock (2026-10-17); other tabs keep theirs. */}
+                    DEMO · {tab === "bdac" ? formatFullDateEn(BDAC_DEMO_NOW) : "30 Sep 2026"}
                   </p>
                 )}
                 {filter.compare && (
@@ -342,6 +331,7 @@ export function DashboardShell({
                   ) : (
                     <BdacTab source={bdacLines} globalFilter={filter} clock={bdacNow.getTime()} />
                   ))}
+                {tab === "bdac" && <BdacFinanceSection />}
                 {tab === "ac" && <AcTab />}
                 {tab === "ps" && (
                   <>
@@ -591,36 +581,7 @@ function HeadlineStrip() {
 
 /** AC tab v2.0 — delegates to the Visual Standard cards; period-scoped rows for ①②③⑥ only. */
 function AcTab() {
-  const f = useContext(FilterCtx);
-  const q = useAcViews();
-  const global = useDashboardGlobal();
-  const now = new Date(global.now);
-  const views = useMemo(() => {
-    const d = q.data;
-    if (!d) return undefined;
-    const per = selectedPeriod(f, now, "A");
-    const perB = f.compare ? selectedPeriod(f, now, "B") : null;
-    const inRange = (r: Row) => {
-      const p = String(r.billing_period ?? "").slice(0, 10);
-      return (p >= per.from && p <= per.to) || (perB != null && p >= perB.from && p <= perB.to);
-    };
-    return {
-      ...d,
-      v_ac_invoice_ranking: ((d["v_ac_invoice_ranking"] ?? []) as Row[]).filter(inRange),
-      v_ac_grade_distribution: ((d["v_ac_grade_distribution"] ?? []) as Row[]).filter(inRange),
-    };
-  }, [q.data, f, global.now]);
-  return (
-    <AcTabV2
-      views={views as Record<string, import("@/lib/ps-dashboard-types").PsReportRow[]> | undefined}
-      loading={q.isLoading}
-      error={q.isError}
-      service={f.service}
-      compare={f.compare}
-      demo={global.demo}
-      periodA={selectedPeriod(f, now, "A")}
-      periodB={f.compare ? selectedPeriod(f, now, "B") : null}
-    />
-  );
+  const { raw: _raw, ...props } = useAcTabInput();
+  return <AcTabV2 {...props} />;
 }
 

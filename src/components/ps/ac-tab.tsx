@@ -56,7 +56,12 @@ export type AcTabProps = {
 /** AE display for every list in this tab (§2.5). */
 export const aeLabel = (id: string | null | undefined) => (id ? aeNameTh(id) : "ยังไม่ระบุ AE");
 
-export function AcTab({ views, loading, error, service, compare, demo, periodA, periodB, openLists = false }: AcTabProps) {
+/** BD-AC v2.2 §5 — where a shared card is mounted. Default "ac" reproduces this tab exactly; "bdac" only renumbers
+ *  the title (⑨ ⑩ ⑪) for Tab BD-AC. Dates on these cards are already English (`Mon YY` / `D Mon`) in both places. */
+export type AcCardContext = "ac" | "bdac";
+
+/** Inputs of the shared debtor / grade cards, derived once from the AC tab props (same numbers wherever mounted). */
+export function useAcCardModel({ views, service, periodA }: { views: AcTabProps["views"]; service: AcTabProps["service"]; periodA?: { from: string; to: string } | undefined }) {
   const navigate = useNavigate();
   const openHotel = () => navigate({ to: "/ac/hotel-profile" });
 
@@ -76,6 +81,11 @@ export function AcTab({ views, loading, error, service, compare, demo, periodA, 
     () => gradeCustomers(costRows.filter((r) => service === "ALL" || r.service === service), gradeMonth),
     [costRows, gradeMonth, service],
   );
+  return { openHotel, debtors, breakdown, gradeDist, costRows, svc, chip, prevChip, customers };
+}
+
+export function AcTab({ views, loading, error, service, compare, demo, periodA, periodB, openLists = false }: AcTabProps) {
+  const { openHotel, debtors, breakdown, gradeDist, costRows, svc, chip, prevChip, customers } = useAcCardModel({ views, service, periodA });
 
   if (loading) return <p className="text-sm text-muted-foreground">กำลังโหลดรายงาน…</p>;
   if (error) return <p className="text-sm text-muted-foreground">อ่านรายงาน AC ไม่ได้ — ลองโหลดหน้าใหม่</p>;
@@ -146,7 +156,8 @@ const dMMM = (iso: string | null | undefined) =>
 
 /* ---------- ลูกหนี้ที่ต้องติดตาม (merged ④ + ⑤ + ⑧) ---------- */
 
-function DebtorCard({
+export function DebtorCard({
+  context = "ac",
   initialOpen = false,
   views,
   svc,
@@ -155,6 +166,7 @@ function DebtorCard({
   compare,
   openHotel,
 }: {
+  context?: AcCardContext;
   initialOpen?: boolean;
   views: AcViews | undefined;
   svc: (r: PsReportRow) => boolean;
@@ -214,7 +226,7 @@ function DebtorCard({
     <DashCard
       title={
         <>
-          ลูกหนี้ที่ต้องติดตาม <TimeChip label="สถานะปัจจุบัน" />
+          {context === "bdac" ? "⑪ " : ""}ลูกหนี้ที่ต้องติดตาม <TimeChip label="สถานะปัจจุบัน" />
         </>
       }
       info={{
@@ -590,7 +602,8 @@ function GradeList({ customers, initialOpen = false }: { customers: GradeCustome
 
 /* ---------- ⑥ payment grades ---------- */
 
-function GradeCard({
+export function GradeCard({
+  context = "ac",
   gradeDist,
   chip,
   prevChip,
@@ -598,6 +611,7 @@ function GradeCard({
   customers,
   initialOpen = false,
 }: {
+  context?: AcCardContext;
   gradeDist: PsReportRow[];
   chip: string;
   prevChip: string;
@@ -632,7 +646,7 @@ function GradeCard({
     <DashCard
       title={
         <>
-          ⑥ เกรดการชำระ A–D <TimeChip label={chip} />
+          {context === "bdac" ? "⑨" : "⑥"} เกรดการชำระ A–D <TimeChip label={chip} />
         </>
       }
       question="ลูกค้าจ่ายตรงเวลาแค่ไหน? (ราย customer)"
@@ -754,7 +768,8 @@ function GradeCard({
 
 /* ---------- ⑦ ORM system fee — greyed mock ---------- */
 
-function SystemFeeMock() {
+export function SystemFeeMock({ context = "ac" }: { context?: AcCardContext } = {}) {
+  const no = context === "bdac" ? "⑩" : "⑦";
   const rows = [
     ["Sala Riverside Hotel", "ORM", 4200, "15 Sep 26", "ชำระแล้ว"],
     ["Baan Talay Resort", "ORM", 3800, "15 Sep 26", "ชำระแล้ว"],
@@ -763,11 +778,11 @@ function SystemFeeMock() {
     ["Chaba Grand", "ORM", 4500, "15 Aug 26", "เลยกำหนด"],
   ];
   return (
-    <section className="dash-card ac-mock-wrap" aria-label="⑦ ค่าระบบ ORM · รอ email ingestion">
+    <section className="dash-card ac-mock-wrap" aria-label={`${no} ค่าระบบ ORM · รอ email ingestion`}>
       <div className="ac-mock" aria-hidden="true">
         <header className="dash-card-header">
           <div className="min-w-0">
-            <h2>⑦ ค่าระบบ ORM</h2>
+            <h2>{no} ค่าระบบ ORM</h2>
             <p className="dash-question">ค่าระบบเดือนนี้เท่าไร โรงแรมไหนยังไม่จ่าย?</p>
           </div>
           <div className="dash-answer-block">
@@ -819,7 +834,7 @@ function SystemFeeMock() {
       <div className="ac-mock-overlay">
         <div className="ac-mock-label">
           <Lock className="size-5 shrink-0" />
-          <div><b>⑦ ค่าระบบ ORM · รอ email ingestion</b>
+          <div><b>{no} ค่าระบบ ORM · รอ email ingestion</b>
           <span>ตัวอย่างหน้าตาเท่านั้น · จะแสดงข้อมูลจริงเมื่อเชื่อมแหล่งข้อมูลแล้ว</span></div>
         </div>
       </div>

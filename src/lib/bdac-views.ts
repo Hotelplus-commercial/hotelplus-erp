@@ -67,10 +67,29 @@ export function bdacSla(l: ContractLifecycle, now: number): SlaInfo {
 
 /* ---------- v_bdac_flow (§2.4) ---------- */
 const splitOf = (ls: ContractLifecycle[]) => ({ count: ls.length, orm: ls.filter((l) => l.service_line === "ORM").length, marcom: ls.filter((l) => l.service_line === "MARCOM").length });
+const FLOW_TS = ["approved_at", "send_contract_at", "signed_at", "payment_at", "won_at"] as const;
+/** Earliest stage timestamp in the source (null = no data). */
+export function earliestFlowData(rows: ContractLifecycle[]): number | null {
+  let min: number | null = null;
+  for (const l of rows) for (const k of FLOW_TS) {
+    const v = l[k];
+    if (!v) continue;
+    const t = new Date(v).getTime();
+    if (!Number.isNaN(t) && (min == null || t < min)) min = t;
+  }
+  return min;
+}
+/** BD-AC v2.2 K1: the previous window is computable only when the source already has data at its start
+ *  (window covered). Not computable → null (UI hides the Δ). A covered window with no deals stays a real 0. */
+export const prevComputable = (rows: ContractLifecycle[], prev: Range) => {
+  const first = earliestFlowData(rows);
+  return first != null && first <= prev.from;
+};
 export function v_bdac_flow(rows: ContractLifecycle[], r: Range, prev?: Range) {
   const at = (k: "approved_at" | "send_contract_at" | "signed_at" | "payment_at" | "won_at") => rows.filter((l) => inRange(l[k], r));
   const wonRows = at("won_at");
-  const prevCount = (k: "won_at" | "signed_at") => (prev ? rows.filter((l) => inRange(l[k], prev)).length : null);
+  const canPrev = prev ? prevComputable(rows, prev) : false;
+  const prevCount = (k: "won_at" | "signed_at") => (prev && canPrev ? rows.filter((l) => inRange(l[k], prev)).length : null);
   return {
     sent_qt: { count: null as number | null, pending_sync: true },
     approved: at("approved_at").length,
