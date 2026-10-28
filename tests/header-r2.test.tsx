@@ -212,7 +212,7 @@ describe('§7 Marcom App adapter', () => {
 });
 
 describe('§9.11 forbidden strings (scorecard + Active Portfolio)', () => {
-  const FORBIDDEN = ['RENEWAL_TERMS_APPROVAL', 'CUSTOMER_ENTITY_CHANGE', 'SOFT_FORCE', 'ADVISORY', 'SERVICING_STALL', 'CONTRACT_FOLLOWUP', 'UPSELL_PITCH', 'RENEWAL_DUE', 'GRADE_RISK', 'SURVEY_LOW', 'ASSIGNMENT_PENDING', 'RENEWED', 'NOT_RENEWED', 'IN_PROGRESS', 'LOST', 'NPS', 'row-1', '★', 'เพดาน', 'HTL-', 'customer_segment', 'EXISTING', 'ACTIVE ', 'INACTIVE', 'distinct', 'cohort', 'Cohort', 'median', 'average', 'Average'];
+  const FORBIDDEN = ['RENEWAL_TERMS_APPROVAL', 'CUSTOMER_ENTITY_CHANGE', 'SOFT_FORCE', 'ADVISORY', 'SERVICING_STALL', 'CONTRACT_FOLLOWUP', 'UPSELL_PITCH', 'RENEWAL_DUE', 'GRADE_RISK', 'SURVEY_LOW', 'ASSIGNMENT_PENDING', 'RENEWED', 'NOT_RENEWED', 'IN_PROGRESS', 'LOST', 'NPS', 'row-1', '★', 'เพดาน', 'HTL-', 'customer_segment', 'EXISTING', 'INACTIVE', 'distinct', 'cohort', 'Cohort', 'median', 'average', 'Average'];
   test('none present in rendered text (incl. ⓘ definitions)', () => {
     const p = headerDemoPortfolio();
     const sc = text(renderCard(SEL_ALL)) + text(renderCard({ kind: 'ORM', team: 'Team A' }));
@@ -222,6 +222,7 @@ describe('§9.11 forbidden strings (scorecard + Active Portfolio)', () => {
     for (const t of [sc, ap, infos]) {
       expect(FORBIDDEN.filter((w) => t.includes(w))).toEqual([]);
       expect(/(^|[^A-Za-z])pp([^A-Za-z]|$)/.test(t)).toBe(false);
+      expect(/\bACTIVE\b(?! PORTFOLIO)/.test(t)).toBe(false); // raw status enum; the spec kicker is allowed
     }
   });
 });
