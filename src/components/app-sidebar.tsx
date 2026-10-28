@@ -207,13 +207,21 @@ export function AppSidebar() {
                         isActive={officeActive}
                         tooltip="The Office APP"
                       >
-                        <Link to="/the-office-app/orm-bonus" className="flex items-center gap-2">
+                        <Link to="/the-office-app/bd-ac" search={{ demo: ticketDemo ? 1 : undefined }} className="flex items-center gap-2">
                           <Crown className="size-4 shrink-0" />
                           <span className="truncate">The Office APP</span>
                         </Link>
                       </SidebarMenuButton>
                       {!collapsed && officeActive && (
                         <SidebarMenuSub>
+                          <SidebarMenuSubItem>
+                            <SidebarMenuSubButton asChild isActive={pathname === "/the-office-app/bd-ac"}>
+                              <Link to="/the-office-app/bd-ac" search={{ demo: ticketDemo ? 1 : undefined }} className="flex items-center gap-2">
+                                <BarChart3 className="size-3.5 shrink-0" />
+                                <span className="truncate">BD-AC</span>
+                              </Link>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
                           <SidebarMenuSubItem>
                             <SidebarMenuSubButton
                               asChild

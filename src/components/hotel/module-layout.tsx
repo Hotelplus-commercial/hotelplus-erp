@@ -13,7 +13,7 @@ export function AppTabs({ tabs }: { tabs: Tab[] }) {
         <Link
           key={t.to}
           to={t.to}
-          search={t.to === "/bd/tickets" ? { demo: ticketDemo ? 1 : undefined } : {}}
+          search={t.to === "/bd/tickets" || t.to === "/the-office-app/bd-ac" ? { demo: ticketDemo ? 1 : undefined } : {}}
           className={cn(
             "shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
             pathname === t.to

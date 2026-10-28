@@ -10,7 +10,11 @@ import { shiftPeriodMonths } from '@/lib/ps-dashboard-types';
 
 const ranges = { mtd: 'เดือนนี้', '3m': '3 เดือน', '6m': '6 เดือน', '12m': '12 เดือน', all: 'ทั้งหมด', custom: 'กำหนดเอง' };
 const presets = { month: 'This month vs last month', previous: 'Last month vs 2 months ago', quarter: 'This quarter vs last quarter', year: 'This year vs last year', yoyMonth: 'เดือนนี้ vs เดือนเดียวกันปีก่อน', yoyRange: 'ช่วงที่เลือก vs ช่วงเดียวกันปีก่อน', custom: 'Custom (pick A, pick B)' };
-export function DashboardGlobalFilters({ value: f, onChange, demo, onDemo, now }: { value: GlobalFilter; onChange: (f: GlobalFilter) => void; demo: boolean; onDemo: () => void; now: Date }) {
+/** Sample-data toggle — one component, used in the filter bar (PS Dashboard) and page headers (The Office APP › BD-AC). */
+export function DemoToggle({ demo, onDemo }: { demo: boolean; onDemo: () => void }) {
+  return <Button variant={demo ? 'default' : 'outline'} size="sm" className="ml-auto" aria-pressed={demo} onClick={onDemo}>ดูข้อมูลตัวอย่าง (DEMO){demo ? ' · เปิด' : ''}</Button>;
+}
+export function DashboardGlobalFilters({ value: f, onChange, demo, onDemo, now, hideDemo = false }: { value: GlobalFilter; onChange: (f: GlobalFilter) => void; demo: boolean; onDemo: () => void; now: Date; hideDemo?: boolean }) {
   const { members } = useHrMembers();
   const active = members.filter(m => m.active);
   const roleMembers = active.filter(m => f.role === 'AE' ? m.function === 'AE' : f.role === 'ORM' ? m.function.startsWith('ORM_') : f.role === 'Marcom' ? m.function === 'MARCOM' : true);
@@ -40,7 +44,7 @@ export function DashboardGlobalFilters({ value: f, onChange, demo, onDemo, now }
     <div className="flex flex-wrap items-center gap-3 border-t pt-2">
       {!f.compare ? <><Select value={f.range} onValueChange={range => onChange({ ...f, range:range as GlobalFilter['range'], ...(range === 'custom' && !f.customPeriod ? { customPeriod: monthPeriod(now) } : {}) })}><SelectTrigger aria-label="ช่วงเวลา" className="h-9 w-36"><SelectValue /></SelectTrigger><SelectContent>{Object.entries(ranges).map(([k,l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}</SelectContent></Select>{f.range === 'custom' && <CustomRange value={f.customPeriod ?? monthPeriod(now)} onChange={customPeriod => onChange({ ...f, customPeriod })} />}</> : <><Select defaultValue="month" onValueChange={setPreset}><SelectTrigger aria-label="Compare preset" className="h-9 w-64"><SelectValue /></SelectTrigger><SelectContent>{Object.entries(presets).map(([k,l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}</SelectContent></Select>{periodPicker('A', f.periodA)}<span className="text-xs text-muted-foreground">vs</span>{periodPicker('B', f.periodB)}</>}
       <label className="flex items-center gap-2 text-sm"><ArrowLeftRight className="size-4 text-muted-foreground" />Compare<Switch aria-label="Compare" checked={f.compare} onCheckedChange={compare => onChange({ ...f, compare, ...(!f.compare ? { periodA:monthPeriod(now), periodB:monthPeriod(now,-1) } : {}) })} /></label>
-      <Button variant={demo ? 'default' : 'outline'} size="sm" className="ml-auto" aria-pressed={demo} onClick={onDemo}>ดูข้อมูลตัวอย่าง (DEMO){demo ? ' · เปิด' : ''}</Button>
+      {!hideDemo && <DemoToggle demo={demo} onDemo={onDemo} />}
     </div>
     {(f.role !== 'none' || f.teams.length > 0 || f.people.length > 0) && <p className="text-xs text-muted-foreground">{[f.role !== 'none' ? f.role : '',...f.teams,...f.people].filter(Boolean).join(' · ')} · AND</p>}
   </section>;

@@ -252,3 +252,9 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [x] BdacFinanceSection: ⑥ split / ⑦ band / ⑧ table at contract level; ⑨ ⑩ ⑪ mounted from the AC tab (context prop).
 - [x] English month/date on Tab BD-AC (date-en.ts); K1 Δ hidden when previous window not covered; K2 label DEMO · 17 Oct 2026.
 - [x] 217 tests pass (13 new); browser-verified demo. Live data empty until invoices sync (0 recurring invoices in Cloud).
+
+## BD-AC move to The Office APP v1.0
+- [x] Sidebar + Office tab bar: BD-AC first
+- [x] Page /the-office-app/bd-ac (same components, own filters, header demo toggle)
+- [x] PS Dashboard tab removed; old links redirect
+- [x] Tests (217 → 222) + browser check

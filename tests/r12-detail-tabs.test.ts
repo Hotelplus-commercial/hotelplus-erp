@@ -16,9 +16,9 @@ import { workload, workloadPeople, indexActivity } from '../src/lib/task-history
 const now = new Date(DEMO_NOW);
 
 describe('§1 tab order', () => {
-  test('labels left → right, stored keys unchanged, BD-AC last', () => {
-    expect(DASHBOARD_TABS.map(([, l]) => l)).toEqual(['ต่อสัญญา & ราคา', 'ลูกหนี้ & ค่าใช้จ่ายรายสัญญา', 'Meeting & Survey', 'ติดตามงานผู้ให้บริการ', 'On-board', 'BD-AC']);
-    expect(DASHBOARD_TABS.map(([k]) => k)).toEqual(['ps', 'ac', 'meeting', 'task', 'servicing', 'bdac']);
+  test('labels left → right, stored keys unchanged (BD-AC moved to The Office APP)', () => {
+    expect(DASHBOARD_TABS.map(([, l]) => l)).toEqual(['ต่อสัญญา & ราคา', 'ลูกหนี้ & ค่าใช้จ่ายรายสัญญา', 'Meeting & Survey', 'ติดตามงานผู้ให้บริการ', 'On-board']);
+    expect(DASHBOARD_TABS.map(([k]) => k)).toEqual(['ps', 'ac', 'meeting', 'task', 'servicing']);
   });
 });
 
