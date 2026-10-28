@@ -8,6 +8,7 @@ import type { GlobalFilter } from './ps-dashboard-global';
 import { matchesBook } from './ps-dashboard-global';
 import { accountHealthOf, DEMO_VALUE_RATIO_MIN, roiSeries, trailingValueRatio } from './account-health';
 import { crossSellRow, repricingRow, EXPANSION_DEMO, type RevenueProfile } from './expansion';
+import { applyChains, type ChainLink, type RevRow } from './bdac-revenue';
 
 export const DEMO_ENABLED = true; // Preview-safe; default OFF is controlled by React state + URL.
 export const DEMO_NOW = '2026-09-30T00:00:00.000Z';
@@ -279,6 +280,7 @@ export function demoAcViews() {
     views['v_ac_invoices_breakdown']?.push({ billing_period: '2026-09-01', customer_segment: seg, service_line: line, invoice_count: inv, collected_count: col, outstanding_count: oc, outstanding: os, overdue_count: odc, overdue_amount: oda, notdue_count: nd, notdue_amount: nd * 9000 });
   }
   views['v_ac_contract_cost_monthly'] = demoContractCost(hotels, NEW_IN_SEP);
+  views['v_bdac_contract_revenue_ranking'] = demoContractRevenue(views['v_ac_contract_cost_monthly'] ?? [], hotels);
   return views;
 }
 
@@ -411,4 +413,78 @@ const BDAC_HISTORY: DemoDeal[] = [
 ];
 export function demoBdacLifecycles(): ContractLifecycle[] {
   return [...BDAC_PIPELINE, ...BDAC_WON, ...BDAC_HISTORY].map(bdacDeal);
+}
+
+/* ---------- BD-AC v2.2 §10 — v_bdac_contract_revenue_ranking demo (contract × period × lens) ----------
+ * Derived from the v_ac_contract_cost_monthly demo rows (fee + commission per contract × service × month), so F8 holds
+ * for every contract present there. The บิลรวม row (CT-D004 · Sep 26) has no service → skipped (1 invoice) and that
+ * contract shows as Active-but-unbilled. Contract-level extras live only here (adding them to the cost sample would
+ * change the "ลูกหนี้ & ค่าใช้จ่ายรายสัญญา" tab): 11 second Marcom contracts on ORM hotels (separate rows), 2 renewed
+ * ORM contracts chained by new_contract_id, 5 Active-but-unbilled contracts. Sep 26: ALL 167 (odd) · ORM 156 · Marcom 25. */
+export const DEMO_REVENUE_RENEWAL_LINKS: (ChainLink & { request_id: string; status: 'SIGNED' })[] = [
+  { request_id: 'RR-D-AC1', contract_id: 'CT-R001', new_contract_id: 'CT-R001-R0001', status: 'SIGNED' },
+  { request_id: 'RR-D-AC2', contract_id: 'CT-R002', new_contract_id: 'CT-R002-R0002', status: 'SIGNED' },
+];
+export const DEMO_REVENUE_SKIPPED_INVOICES = 1;
+function demoContractRevenue(cost: PsReportRow[], hotels: AcDemoHotel[]): PsReportRow[] {
+  type Bill = { contract_id: string; month: string; hotel_id: string; hotel_name: string; service: 'ORM' | 'MARCOM'; amount: number; ae: string | null; owner: string | null };
+  const bills: Bill[] = [];
+  const unbilled: { contract_id: string; month: string; hotel_id: string; hotel_name: string; services: ('ORM' | 'MARCOM')[] }[] = [];
+  for (const c of cost) {
+    const month = String(c['month']).slice(0, 7);
+    const service = c['service'] === 'ORM' ? 'ORM' : 'MARCOM';
+    if (c['combined_bill'] === true) {
+      // skipped: service could not be read from the invoice line → contract Active-but-unbilled this period
+      if (!unbilled.some(u => u.contract_id === c['contract_id'] && u.month === month)) unbilled.push({ contract_id: String(c['contract_id']), month, hotel_id: String(c.hotel_id), hotel_name: String(c.hotel_name), services: ['ORM', 'MARCOM'] });
+      continue;
+    }
+    bills.push({ contract_id: String(c['contract_id']), month, hotel_id: String(c.hotel_id), hotel_name: String(c.hotel_name), service, amount: Number(c['fee_thb'] ?? 0) + Number(c['commission_thb'] ?? 0), ae: (c['ae_owner_id'] as string | null) ?? null, owner: (c['caretaker'] as string | null) ?? null });
+  }
+  const months = COST_MONTHS;
+  // 11 second contracts (Marcom) on ORM-only hotels 15–25; n 8–9 start Aug 26, n 10 starts Sep 26 (ใหม่).
+  for (let n = 0; n < 11; n++) {
+    const h = hotels[15 + n]!;
+    const start = n === 10 ? '2026-09' : n >= 8 ? '2026-08' : '2025-09';
+    months.forEach((m, mi) => {
+      if (m < start) return;
+      bills.push({ contract_id: `CT-M${String(n + 1).padStart(3, '0')}`, month: m, hotel_id: h.id, hotel_name: h.name, service: 'MARCOM', amount: Math.round((14000 + n * 2300 + (mi % 3) * 400) / 100) * 100, ae: COST_AE[n % 3]!, owner: ['แนน', 'บิว', 'โบว์'][n % 3]! });
+    });
+  }
+  // 2 renewed ORM contracts: old id billed Sep 25 → Aug 26, renewed id billed from Sep 26.
+  ([['Nara Cliff Residence', 64000], ['Chiva Lagoon Retreat', 41500]] as const).forEach(([name, base], n) => {
+    const old = `CT-R00${n + 1}`, renewed = DEMO_REVENUE_RENEWAL_LINKS[n]!.new_contract_id;
+    months.forEach((m, mi) => bills.push({ contract_id: m === '2026-09' ? renewed : old, month: m, hotel_id: hid(name), hotel_name: name, service: 'ORM', amount: Math.round((base * (m === '2026-09' ? 1.06 : 1) + (mi % 4) * 250) / 100) * 100, ae: COST_AE[n]!, owner: `ORM ทีม ${'AB'[n]}` }));
+  });
+  // 5 Active contracts without a bill in Aug + Sep 26 (billed earlier).
+  for (let n = 0; n < 5; n++) {
+    const name = `Sala Unbilled ${n + 1}`, id = `CT-U00${n + 1}`;
+    months.forEach((m) => {
+      if (m >= '2026-08') unbilled.push({ contract_id: id, month: m, hotel_id: hid(name), hotel_name: name, services: ['ORM'] });
+      else bills.push({ contract_id: id, month: m, hotel_id: hid(name), hotel_name: name, service: 'ORM', amount: 9000 + n * 700, ae: COST_AE[n % 3]!, owner: 'ORM ทีม C' });
+    });
+  }
+  const rows: RevRow[] = [];
+  for (const m of months) {
+    const inMonth = bills.filter(b => b.month === m);
+    const byContract = new Map<string, Bill[]>();
+    for (const b of inMonth) byContract.set(b.contract_id, [...(byContract.get(b.contract_id) ?? []), b]);
+    for (const lens of ['ALL', 'ORM', 'MARCOM'] as const) {
+      const lensRows: RevRow[] = [];
+      for (const [contract_id, bs] of byContract) {
+        const sel = lens === 'ALL' ? bs : bs.filter(b => b.service === lens);
+        if (!sel.length) continue;
+        const orm = sel.filter(b => b.service === 'ORM').reduce((s, b) => s + b.amount, 0);
+        const marcom = sel.filter(b => b.service === 'MARCOM').reduce((s, b) => s + b.amount, 0);
+        const b0 = sel[0]!;
+        lensRows.push({ billing_period: m, contract_id, hotel_id: b0.hotel_id, hotel_name: b0.hotel_name, service_lines: [...new Set(sel.map(b => b.service))], lens, amount_thb: orm + marcom, orm_thb: orm, marcom_thb: marcom, invoice_count: sel.length, rank: null, prev_rank: null, avg_rank: null, has_bill: true, ae_owner_id: b0.ae, orm_owner_id: sel.find(b => b.service === 'ORM')?.owner ?? null, marcom_owner_id: sel.find(b => b.service === 'MARCOM')?.owner ?? null });
+      }
+      lensRows.sort((a, b) => b.amount_thb - a.amount_thb || a.hotel_name.localeCompare(b.hotel_name) || a.contract_id.localeCompare(b.contract_id)).forEach((r, i) => { r.rank = i + 1; });
+      rows.push(...lensRows);
+      for (const u of unbilled.filter(x => x.month === m)) {
+        for (const l of lens === 'ALL' ? ['ALL'] : u.services.filter(s => s === lens)) rows.push({ billing_period: m, contract_id: u.contract_id, hotel_id: u.hotel_id, hotel_name: u.hotel_name, service_lines: u.services, lens: l as RevRow['lens'], amount_thb: 0, orm_thb: 0, marcom_thb: 0, invoice_count: 0, rank: null, prev_rank: null, avg_rank: null, has_bill: false, ae_owner_id: null, orm_owner_id: null, marcom_owner_id: null });
+      }
+    }
+  }
+  // prev_rank / avg_rank per contract (what the view returns); the UI re-applies them across renewal chains.
+  return applyChains(rows, []).map(r => ({ ...r, avg_rank: r.avg_rank == null ? null : Math.round(r.avg_rank * 10) / 10 })) as unknown as PsReportRow[];
 }
