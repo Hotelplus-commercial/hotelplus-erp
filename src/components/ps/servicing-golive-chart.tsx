@@ -8,7 +8,7 @@ import { quantile } from '@/lib/ps-servicing';
 import { calendarDays, shortThaiDate } from '@/lib/servicing-time';
 import type { Period } from '@/lib/ps-dashboard-global';
 const fmt=(n:number|null)=>n==null?'—':n.toLocaleString('th-TH',{maximumFractionDigits:1});
-export function ServicingGoLiveChart({rows,service,periodA,periodB,compare,pending}: {rows:ServicingRow[];service:string;periodA:Period;periodB:Period;compare:boolean;pending:boolean}) {
+export function ServicingGoLiveChart({rows,service,periodA,periodB,compare,pending,period}: {rows:ServicingRow[];service:string;periodA:Period;periodB:Period;compare:boolean;pending:boolean;period?:React.ReactNode}) {
  const {ref,width,height}=usePlotSize();
  const [labelWidths,setLabelWidths]=useState<number[]>([]);
  const [view,setView]=useState('ORM'),[hover,setHover]=useState<string|null>(null);
@@ -40,7 +40,7 @@ export function ServicingGoLiveChart({rows,service,periodA,periodB,compare,pendi
  const medTop=y(med??0)-24,bandHeight=y(q1??0)-y(q3??0),bandLabelTop=bandHeight<18?y(q3??0)-20:(y(q1??0)+y(q3??0))/2-9;
  // Dense narrow plots may have no clear horizontal slot inside the band.
  const iqrTop=clearLabel(right-iqrWidth,bandLabelTop,iqrWidth,18)==null?y(q3??0)-22:bandLabelTop;
- return <DashCard title="③ Overall days to Go-Live" question="สร้างการ์ด → Go Live ใช้กี่วัน? (รายการ์ด · รวมช่วงรอประชุม)" answer={med==null?'—':`${fmt(med)} วัน`} answerSub={<>{med!=null&&`median · ${active} · ${a.length} การ์ด`}{compare&&<div>A {fmt(med)} · B {fmt(mb)} · <Delta a={med} b={mb} lowerGood unit=" วัน"/></div>}</>} noteNamespace="servicing" noteKey="golive" noteLines={med==null?['ยังไม่มีข้อมูลพอสรุป']:[...(compare?[`A ${fmt(med)} · B ${fmt(mb)} · Δ ${med!=null&&mb!=null?fmt(med-mb):'—'} วัน`]:[]),`${active} ใช้ราว ${fmt(med)} วัน (median) · ครึ่งกลางอยู่ ${fmt(q1)}–${fmt(q3)} วัน`,...(a.length<30?['ฐานเล็ก: 1 การ์ดขยับค่ากลางได้ ให้ดูจำนวนประกอบ']:[])]} howToRead="1 จุด = 1 การ์ด · จุดยิ่งสูงยิ่งใช้เวลานาน · แถบจาง = ครึ่งกลางของการ์ดทั้งหมด · ไม่มีเส้นกำหนดเสร็จรวม เพราะช่วงรอประชุมขึ้นกับลูกค้า">
+ return <DashCard period={period} title="③ Overall days to Go-Live" question="สร้างการ์ด → Go Live ใช้กี่วัน? (รายการ์ด · รวมช่วงรอประชุม)" answer={med==null?'—':`${fmt(med)} วัน`} answerSub={<>{med!=null&&`median · ${active} · ${a.length} การ์ด`}{compare&&<div>A {fmt(med)} · B {fmt(mb)} · <Delta a={med} b={mb} lowerGood unit=" วัน"/></div>}</>} noteNamespace="servicing" noteKey="golive" noteLines={med==null?['ยังไม่มีข้อมูลพอสรุป']:[...(compare?[`A ${fmt(med)} · B ${fmt(mb)} · Δ ${med!=null&&mb!=null?fmt(med-mb):'—'} วัน`]:[]),`${active} ใช้ราว ${fmt(med)} วัน (median) · ครึ่งกลางอยู่ ${fmt(q1)}–${fmt(q3)} วัน`,...(a.length<30?['ฐานเล็ก: 1 การ์ดขยับค่ากลางได้ ให้ดูจำนวนประกอบ']:[])]} howToRead="1 จุด = 1 การ์ด · จุดยิ่งสูงยิ่งใช้เวลานาน · แถบจาง = ครึ่งกลางของการ์ดทั้งหมด · ไม่มีเส้นกำหนดเสร็จรวม เพราะช่วงรอประชุมขึ้นกับลูกค้า">
  <div className="sv-controls" role="group" aria-label="Overall service">{['ORM','Marcom'].filter(v=>service==='ALL'||service===v).map(v=><Button key={v} size="sm" variant={active===v?'default':'ghost'} aria-pressed={active===v} onClick={()=>setView(v)}>{v}</Button>)}</div>
  {compare&&<p className="my-3 text-xs text-muted-foreground">A = Go Live {periodA.from}–{periodA.to} (จุดเต็ม) · B = {periodB.from}–{periodB.to} (จุดจาง · เส้นประ = median B)</p>}
  {pending||!a.length?<ChartSkeleton text="รอ source"/>:<div ref={ref} className={`sv-golive-plot ${active==='Marcom'?'sv-series-marcom':''}`}>
