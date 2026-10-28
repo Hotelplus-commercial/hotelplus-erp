@@ -1,7 +1,7 @@
 /* R1.2 · Tab "ลูกหนี้ & ค่าใช้จ่ายรายสัญญา" (stored key: ac) — read-only Visual Standard cards over the
  * existing v_ac_* views + v_ac_contract_cost_monthly. Revenue cards ①②③ were removed (views kept).
  * No writes, no ticket buttons, no grade/collection logic — results only. */
-import { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Lock, Search } from "lucide-react";
 import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
@@ -33,6 +33,7 @@ import { aeNameTh } from "@/lib/ps-glossary";
 import { OPEN_STATUSES, STATUS_TH, SYSTEM_CREATOR, useTickets } from "@/lib/tickets-l0";
 import type { PsReportRow } from "@/lib/ps-dashboard-types";
 import { cn } from "@/lib/utils";
+import { NowChip, useCardCompare } from "./compare-control";
 
 const num = (v: unknown) => Number(v ?? 0) || 0;
 const pct = (n: number, d: number) => (d ? Math.round((n / d) * 100) : 0);
@@ -51,6 +52,9 @@ export type AcTabProps = {
   periodB?: { from: string; to: string } | null;
   /** Render every list expanded (used by the forbidden-string render test). */
   openLists?: boolean;
+  /** Header R2 §2.3 (PS Dashboard only): unfiltered views + clock so time-based cards own their compare period.
+   *  Absent (e.g. The Office APP › BD-AC) → cards keep reading the passed period exactly as before. */
+  cardCompare?: { raw: AcViews | undefined; today: string } | undefined;
 };
 
 /** AE display for every list in this tab (§2.5). */
@@ -84,8 +88,19 @@ export function useAcCardModel({ views, service, periodA }: { views: AcTabProps[
   return { openHotel, debtors, breakdown, gradeDist, costRows, svc, chip, prevChip, customers };
 }
 
-export function AcTab({ views, loading, error, service, compare, demo, periodA, periodB, openLists = false }: AcTabProps) {
+export function AcTab({ views, loading, error, service, compare, demo, periodA, periodB, openLists = false, cardCompare }: AcTabProps) {
   const { openHotel, debtors, breakdown, gradeDist, costRows, svc, chip, prevChip, customers } = useAcCardModel({ views, service, periodA });
+  const today = cardCompare?.today || new Date().toISOString().slice(0, 10);
+  const kGrade = useCardCompare("ac", "grade", today), kCost = useCardCompare("ac", "cost", today);
+  // Grade card: history up to the end of A; latest billed month in A vs latest billed month in B.
+  const rawGrade = useMemo(() => (cardCompare?.raw?.["v_ac_grade_distribution"] ?? []).filter(svc), [cardCompare, service]); // eslint-disable-line react-hooks/exhaustive-deps
+  const inP = (p: { from: string; to: string }) => (r: PsReportRow) => { const m = String(r.billing_period ?? "").slice(0, 10); return m >= p.from.slice(0, 7) + "-01" && m <= p.to; };
+  const gLatest = [...new Set(rawGrade.filter(inP(kGrade.a)).map((r) => String(r.billing_period).slice(0, 7)))].sort().at(-1) ?? null;
+  const gPrev = [...new Set(rawGrade.filter(inP(kGrade.b)).map((r) => String(r.billing_period).slice(0, 7)))].sort().at(-1) ?? null;
+  const gradeCustomersA = useMemo(
+    () => gradeCustomers(costRows.filter((r) => service === "ALL" || r.service === service), latestCostMonth(costRows, kGrade.a)),
+    [costRows, service, kGrade.a.from, kGrade.a.to], // eslint-disable-line react-hooks/exhaustive-deps
+  );
 
   if (loading) return <p className="text-sm text-muted-foreground">กำลังโหลดรายงาน…</p>;
   if (error) return <p className="text-sm text-muted-foreground">อ่านรายงาน AC ไม่ได้ — ลองโหลดหน้าใหม่</p>;
@@ -94,13 +109,21 @@ export function AcTab({ views, loading, error, service, compare, demo, periodA, 
     <div className="flex min-w-0 flex-col gap-5" data-testid="ac-tab" data-demo={demo || undefined}>
       <DefinitionStrip />
       <SectionHead title="ลูกหนี้ & การเก็บเงิน" desc="ค้างเท่าไร · อยู่ขั้นไหน · ใครจ่ายช้า · ต้องตามใคร" />
-      <DebtorCard initialOpen={openLists} views={views} svc={svc} debtors={debtors.filter(svc)} breakdown={breakdown.filter(svc)} compare={compare} openHotel={openHotel} />
+      <DebtorCard initialOpen={openLists} views={views} svc={svc} debtors={debtors.filter(svc)} breakdown={breakdown.filter(svc)} compare={cardCompare ? false : compare} openHotel={openHotel} period={cardCompare ? <NowChip /> : undefined} />
       <div className="ac-row2">
-        <GradeCard gradeDist={gradeDist.filter(svc)} chip={chip} prevChip={prevChip} compare={compare} customers={customers} initialOpen={openLists} />
+        {cardCompare ? (
+          <GradeCard gradeDist={rawGrade.filter((r) => String(r.billing_period ?? "").slice(0, 10) <= kGrade.a.to)} chip={gLatest ? monYY(gLatest) : "—"} prevChip={gPrev ? monYY(gPrev) : "—"} compare customers={gradeCustomersA} initialOpen={openLists} period={kGrade.control} periodKeys={{ latest: gLatest, prev: gPrev }} />
+        ) : (
+          <GradeCard gradeDist={gradeDist.filter(svc)} chip={chip} prevChip={prevChip} compare={compare} customers={customers} initialOpen={openLists} />
+        )}
         <SystemFeeMock />
       </div>
       <SectionHead title="ค่าใช้จ่ายรายสัญญา" desc="แต่ละสัญญาบริการจ่ายเราเดือนละเท่าไร · ใช้เตรียมคุยราคาตอนต่อสัญญา · ไม่ใช่การจัดอันดับ" />
-      <ContractCostCard initialOpen={openLists} rows={costRows} service={service} compare={compare} periodA={periodA} periodB={periodB ?? null} />
+      {cardCompare ? (
+        <ContractCostCard initialOpen={openLists} rows={costRows} service={service} compare periodA={kCost.a} periodB={kCost.b} period={kCost.control} />
+      ) : (
+        <ContractCostCard initialOpen={openLists} rows={costRows} service={service} compare={compare} periodA={periodA} periodB={periodB ?? null} />
+      )}
     </div>
   );
 }
@@ -165,7 +188,10 @@ export function DebtorCard({
   breakdown,
   compare,
   openHotel,
+  period,
 }: {
+  /** Header R2: card-header period slot (PS Dashboard only). */
+  period?: React.ReactNode;
   context?: AcCardContext;
   initialOpen?: boolean;
   views: AcViews | undefined;
@@ -224,6 +250,7 @@ export function DebtorCard({
   const empty = !list.length;
   return (
     <DashCard
+      period={period}
       title={
         <>
           {context === "bdac" ? "⑪ " : ""}ลูกหนี้ที่ต้องติดตาม <TimeChip label="สถานะปัจจุบัน" />
@@ -395,7 +422,9 @@ function ContractCostCard({
   compare,
   periodA,
   periodB,
+  period,
 }: {
+  period?: React.ReactNode;
   initialOpen?: boolean;
   rows: ReturnType<typeof toCostRows>;
   service: "ALL" | "ORM" | "Marcom";
@@ -422,6 +451,7 @@ function ContractCostCard({
   const empty = !scoped.length;
   return (
     <DashCard
+      period={period}
       title={
         <>
           ค่าใช้จ่ายรายสัญญา <TimeChip label={month ? monYY(month) : "—"} />
@@ -610,7 +640,12 @@ export function GradeCard({
   compare,
   customers,
   initialOpen = false,
+  period,
+  periodKeys,
 }: {
+  period?: React.ReactNode;
+  /** Header R2: latest billed month in A and in B (PS Dashboard only); absent → last two periods as before. */
+  periodKeys?: { latest: string | null; prev: string | null } | undefined;
   context?: AcCardContext;
   gradeDist: PsReportRow[];
   chip: string;
@@ -624,8 +659,8 @@ export function GradeCard({
     () => [...new Set(gradeDist.map((r) => String(r.billing_period).slice(0, 7)))].sort(),
     [gradeDist],
   );
-  const latest = periods.at(-1) ?? null;
-  const prev = periods.at(-2) ?? null;
+  const latest = periodKeys ? periodKeys.latest : (periods.at(-1) ?? null);
+  const prev = periodKeys ? periodKeys.prev : (periods.at(-2) ?? null);
   const byPeriod = (p: string | null) =>
     (["A", "B", "C", "D"] as const).map((g) => ({
       g,
@@ -644,6 +679,7 @@ export function GradeCard({
   const hover = hoverGrade ? cur.find((x) => x.g === hoverGrade) : null;
   return (
     <DashCard
+      period={period}
       title={
         <>
           {context === "bdac" ? "⑨" : "⑥"} เกรดการชำระ A–D <TimeChip label={chip} />

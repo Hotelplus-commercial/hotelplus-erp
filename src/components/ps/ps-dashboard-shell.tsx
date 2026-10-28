@@ -564,7 +564,8 @@ function HeadlineStrip({ summaryOnly = false }: { summaryOnly?: boolean }) {
 
 /** AC tab v2.0 — delegates to the Visual Standard cards; period-scoped rows for ①②③⑥ only. */
 function AcTab() {
-  const { raw: _raw, ...props } = useAcTabInput();
-  return <AcTabV2 {...props} />;
+  const { raw, ...props } = useAcTabInput();
+  const { now } = useDashboardGlobal();
+  return <AcTabV2 {...props} cardCompare={{ raw, today: (now || new Date().toISOString()).slice(0, 10) }} />;
 }
 
