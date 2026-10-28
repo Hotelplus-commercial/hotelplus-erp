@@ -5,7 +5,7 @@ import { createServerFn } from '@tanstack/react-start';
  * the cloud mirror, never browser storage). Returns aggregated view rows only; never writes.
  * Test mode (no auth) — close before production together with Cloud Sync writes.
  */
-const VIEWS = ['v_ac_debtors','v_ac_invoices_breakdown','v_ac_invoice_ranking','v_ac_grade_distribution','v_ac_overdue','v_ac_suspended','v_ac_legal','v_ac_system_fee','v_ac_contract_cost_monthly'] as const;
+const VIEWS = ['v_ac_debtors','v_ac_invoices_breakdown','v_ac_invoice_ranking','v_ac_grade_distribution','v_ac_overdue','v_ac_suspended','v_ac_legal','v_ac_system_fee','v_ac_contract_cost_monthly','v_bdac_contract_revenue_ranking'] as const;
 type Row = Record<string, string | number | boolean | null>;
 
 export const readAcDashboard = createServerFn({ method: 'GET' }).handler(async () => {
