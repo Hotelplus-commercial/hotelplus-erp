@@ -13,6 +13,7 @@ import { DashboardGlobal, defaultGlobalFilter, periodRange, selectedPeriod } fro
 import { BdacTab } from '../src/components/ps/bdac-tab';
 import { BdacFinanceSection } from '../src/components/ps/bdac-finance-section';
 import { AcTab } from '../src/components/ps/ac-tab';
+import { ContractLifecycleProvider } from '../src/lib/contract-lifecycle';
 
 async function render(el: ReactElement) {
   const rootRoute = createRootRoute({ component: () => el });
@@ -115,7 +116,7 @@ describe('§6 English dates + K2', () => {
     const value = { filter: defaultGlobalFilter, demo: true, now: DEMO_NOW };
     const html = await render(
       h(DashboardGlobal.Provider, { value },
-        h('div', null,
+        h(ContractLifecycleProvider, null,
           h(BdacTab, { source: demoBdacLifecycles(), globalFilter: defaultGlobalFilter, clock: new Date(BDAC_DEMO_NOW).getTime() }),
           h(BdacFinanceSection))),
     );
@@ -132,7 +133,7 @@ describe('F5 mounted cards show the AC tab numbers', () => {
   test('⑨ grade and ⑪ debtor answers equal the AC tab', async () => {
     const value = { filter: defaultGlobalFilter, demo: true, now: DEMO_NOW };
     const period = selectedPeriod(defaultGlobalFilter, new Date(DEMO_NOW));
-    const answers = (html: string) => [...html.matchAll(/class="dash-answer[^"]*">([^<]+)</g)].map((m) => m[1]);
+    const answers = (html: string) => [...html.matchAll(/class="dash-answer(?: [^"]*)?">([^<]+)</g)].map((m) => m[1]);
     const ac = answers(await render(h(DashboardGlobal.Provider, { value }, h(AcTab, { views: demoAcViews(), loading: false, error: false, service: 'ALL', compare: false, demo: true, periodA: period, periodB: null }))));
     const fin = answers(await render(h(DashboardGlobal.Provider, { value }, h(BdacFinanceSection))));
     // AC tab order: debtor, grade, ORM fee mock, cost · BD-AC order: ⑥ ⑦ ⑧, ⑨ grade, ⑩ mock, ⑪ debtor
