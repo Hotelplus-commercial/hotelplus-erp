@@ -5,26 +5,11 @@ import { HEADER_DEMO_NOW, headerDemoPortfolio } from './ps-header-r2-demo';
 import type { ChurnRow, HRow, PortfolioContract, PriceRow } from './ps-header-r2';
 import type { L0Status, L0Ticket } from './tickets-l0';
 import { aeNameTh } from './ps-glossary';
-import { addDays, evaluateSignals, tierOf, type AeLabel, type EndReason, type ServiceContract, type SignalInputs, type Svc, type Tier, type TierSnapshot } from './contract-tab-r1';
+import { addDays, evaluateSignals, tierOf, type AeLabel, type BaseContract, type EndReason, type ServiceContract, type SignalInputs, type Svc, type TabR1Data, type Tier, type TierSnapshot } from './contract-tab-r1';
 
 export const TAB_R1_DEMO_NOW = HEADER_DEMO_NOW;
 
-/** Contract base for card ⑦ (one row per active service contract). */
-export type BaseContract = {
-  contract_id: string; hotel_id: string; hotel_name: string; hotel_name_en: string | null; hotel_name_th: string | null;
-  service: Svc; ae: string | null; orm_team: string | null; marcom: string | null;
-  start: string | null; term_end: string | null; inputs: SignalInputs;
-};
-export type TabR1Data = {
-  today: string; demo: boolean;
-  /** Card ① contracts (12-month in / out). */
-  flow: ServiceContract[];
-  /** Header “ใช้งาน” per service (same source as the header). */
-  activeToday: Record<Svc, number>;
-  base: BaseContract[];
-  /** Demo-only existing tickets (merged with the ticket store for reads). */
-  seedTickets: L0Ticket[];
-};
+export type { BaseContract, TabR1Data } from './contract-tab-r1';
 
 /* ---------- additions ---------- */
 type Add = { id: string; en: string; th: string; svc: Svc; start: string; end: string | null; reason: EndReason | null; renewal_of?: string; ae: string; orm: string | null; marcom: string | null; sku: PortfolioContract['sku']; quota?: PortfolioContract['quota']; price?: Omit<PriceRow, 'contract_id' | 'effective_from' | 'effective_to'> };

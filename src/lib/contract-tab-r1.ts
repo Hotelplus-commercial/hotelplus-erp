@@ -354,3 +354,36 @@ export function evaluateAlerts(rows: HealthRow[], snaps: TierSnapshot[], existin
 }
 /** Today's snapshot rows (one per active contract). */
 export const snapshotOf = (rows: HealthRow[], today: string): TierSnapshot[] => rows.map((r) => ({ contract_id: r.contract_id, date: today, tier: r.tier, bad_count: r.bad }));
+
+/* ================= row assembly ================= */
+/** Contract base for card ⑦ (one row per active service contract). */
+export type BaseContract = {
+  contract_id: string; hotel_id: string; hotel_name: string; hotel_name_en: string | null; hotel_name_th: string | null;
+  service: Svc; ae: string | null; orm_team: string | null; marcom: string | null;
+  start: string | null; term_end: string | null; inputs: SignalInputs;
+};
+export type TabR1Data = {
+  today: string; demo: boolean;
+  /** Card ① contracts (12-month in / out). */
+  flow: ServiceContract[];
+  /** Header “ใช้งาน” per service (same source as the header). */
+  activeToday: Record<Svc, number>;
+  base: BaseContract[];
+  /** Demo-only existing tickets (merged with the ticket store for reads). */
+  seedTickets: L0Ticket[];
+};
+const aeShort = (id: string | null) => { if (!id) return '—'; const m = /^AE\d+-(.+)$/.exec(id); return m ? m[1]! : id; };
+export function buildRows(base: BaseContract[], ctx: { today: string; labels: AeLabel[]; snaps: TierSnapshot[]; tickets: L0Ticket[] }): HealthRow[] {
+  return base.map((b) => {
+    const { signals, evaluated } = evaluateSignals(b.service, b.inputs);
+    const { tier, bad } = tierOf(signals);
+    return {
+      contract_id: b.contract_id, hotel_id: b.hotel_id, hotel_name: b.hotel_name, hotel_name_en: b.hotel_name_en, hotel_name_th: b.hotel_name_th,
+      service: b.service, ae: b.ae, ae_name: aeShort(b.ae), orm_team: b.orm_team, marcom: b.marcom,
+      owner2: b.service === 'ORM' ? (b.orm_team ? `ORM ทีม ${b.orm_team}` : null) : b.marcom,
+      start: b.start, term_end: b.term_end, signals, evaluated: [...evaluated],
+      ae_labels: ctx.labels.filter((l) => l.contract_id === b.contract_id),
+      tier, bad, tier30: tier30(ctx.snaps, b.contract_id, ctx.today), tickets: ticketsOfContract(ctx.tickets, b.contract_id),
+    };
+  });
+}
