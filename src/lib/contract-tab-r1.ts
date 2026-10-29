@@ -319,10 +319,10 @@ export async function sendBatch(boxes: Box[], write: (b: Box) => Promise<boolean
   return Promise.all(boxes.map(run));
 }
 /** §6.5: labels that are not a current system signal of the contract become AE labels (once per contract + label). */
-export function newAeLabels(box: Box, row: Pick<HealthRow, 'contract_id' | 'signals'>, existing: AeLabel[], batch: string, at: string): AeLabel[] {
+export function newAeLabels(box: Box, row: Pick<HealthRow, 'contract_id' | 'signals'>, existing: AeLabel[], batch: string, at: string, by: TicketAssignee): AeLabel[] {
   const sys = new Set(row.signals.map((s) => s.key));
   const have = new Set(existing.filter((l) => l.contract_id === row.contract_id).map((l) => l.label_key));
-  return box.labels.filter((l) => !sys.has(l) && !have.has(l)).map((l, i) => ({ id: `${box.ticket_id}-L${i + 1}`, contract_id: row.contract_id, label_key: l, source: 'AE', created_by: box.recipient.role === 'AE' ? box.recipient : box.recipient, created_at: at, ticket_id: box.ticket_id, batch_id: batch }));
+  return box.labels.filter((l) => !sys.has(l) && !have.has(l)).map((l, i) => ({ id: `${box.ticket_id}-L${i + 1}`, contract_id: row.contract_id, label_key: l, source: 'AE', created_by: by, created_at: at, ticket_id: box.ticket_id, batch_id: batch }));
 }
 
 /* ================= §7 bell events ================= */
