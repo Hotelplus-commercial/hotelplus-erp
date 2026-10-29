@@ -19,7 +19,7 @@ export const phaseTh = (p: string | null | undefined) => (p ? PHASE_TH[p] ?? p :
 export const DEPT_TH: Record<string, string> = { MARCOM: "Marcom", OFFICE: "The Office", AUTO: "Automation" };
 export const deptTh = (d: string | null | undefined) => (d ? DEPT_TH[d] ?? d : "—");
 const STATUS_TH: Record<string, string> = {
-  open: "รอเริ่ม", NEW: "รอเริ่ม", "in-progress": "กำลังทำ", ACK: "กำลังทำ", IN_PROGRESS: "กำลังทำ",
+  open: "รอเริ่ม", NEW: "New", "in-progress": "กำลังทำ", ACK: "กำลังทำ", IN_PROGRESS: "กำลังทำ", // Tab R1 §6.6: NEW = New (all ticket types)
   waiting: "รอลูกค้า", resolved: "เสร็จ", closed: "เสร็จ", DONE: "เสร็จ", CANCELLED: "ยกเลิก",
 };
 /** Ticket status (PS case + L0). waiting with a non-customer reason → "รอ · {reason}". */
