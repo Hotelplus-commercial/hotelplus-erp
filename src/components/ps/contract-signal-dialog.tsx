@@ -114,8 +114,7 @@ export function ContractSignalDialog({ row, tickets, labels, by, creator, demo, 
   const target = boxes.find((b) => b.ticket_id === sel && !locked(b)) ?? boxes.find((b) => !locked(b));
   return (
     <Dialog open onOpenChange={(o) => { if (!o && !busy && !tour) onClose(); }}>
-      <DialogContent className="r1-dialog" onEscapeKeyDown={(e) => { if (tour) e.preventDefault(); }}>
-        <div ref={rootRef} className="contents">
+      <DialogContent ref={rootRef} className="r1-dialog" onEscapeKeyDown={(e) => { if (tour) e.preventDefault(); }}>
           <DialogHeader className="r1-dialog-head">
             <DialogTitle>{R1_DIALOG.title} · {row.hotel_name} · {row.service}</DialogTitle>
             <DialogDescription className="sr-only">{R1_DIALOG.toInfo}</DialogDescription>
@@ -215,8 +214,7 @@ export function ContractSignalDialog({ row, tickets, labels, by, creator, demo, 
             <button type="button" onClick={onClose} disabled={busy}>{R1_DIALOG.cancel}</button>
             <button type="button" className="r1-primary" disabled={!canSend(boxes) || busy} onClick={() => send(false)}>{failed ? R1_DIALOG.resend(pending.length) : R1_DIALOG.send(pending.length)}</button>
           </footer>
-          <GuidedTour open={tour} onClose={() => setTour(false)} root={rootRef.current} steps={R1_TOUR.dialog.map((s, i) => ({ ...s, target: `d${i + 1}` }))} />
-        </div>
+          <GuidedTour open={tour} onClose={() => setTour(false)} root={rootRef.current} container={rootRef.current} steps={R1_TOUR.dialog.map((s, i) => ({ ...s, target: `d${i + 1}` }))} />
       </DialogContent>
     </Dialog>
   );

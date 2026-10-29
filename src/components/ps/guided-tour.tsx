@@ -3,10 +3,12 @@
 import { useEffect, useLayoutEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { R1_TOUR } from "@/lib/ps-glossary";
+import { cn } from "@/lib/utils";
 
 export type TourStep = { target: string; title: string; text: string };
 
-export function GuidedTour({ steps, open, onClose, root }: { steps: TourStep[]; open: boolean; onClose: () => void; root?: HTMLElement | null }) {
+/** `container` (e.g. a modal) = render inside it, positioned relative to it (a modal blocks clicks outside itself). */
+export function GuidedTour({ steps, open, onClose, root, container }: { steps: TourStep[]; open: boolean; onClose: () => void; root?: HTMLElement | null; container?: HTMLElement | null }) {
   const [i, setI] = useState(0);
   const [rect, setRect] = useState<DOMRect | null>(null);
   useEffect(() => { if (open) setI(0); }, [open]);
@@ -15,11 +17,16 @@ export function GuidedTour({ steps, open, onClose, root }: { steps: TourStep[]; 
     const el = (root ?? document).querySelector(`[data-tour="${steps[i]?.target}"]`) as HTMLElement | null;
     if (!el) { setRect(null); return; }
     el.scrollIntoView({ block: "center", behavior: "auto" });
-    const upd = () => setRect(el.getBoundingClientRect());
+    const upd = () => {
+      const r = el.getBoundingClientRect();
+      if (!container) { setRect(r); return; }
+      const c = container.getBoundingClientRect();
+      setRect(new DOMRect(r.left - c.left + container.scrollLeft, r.top - c.top + container.scrollTop, r.width, r.height));
+    };
     upd();
     window.addEventListener("resize", upd); window.addEventListener("scroll", upd, true);
     return () => { window.removeEventListener("resize", upd); window.removeEventListener("scroll", upd, true); };
-  }, [open, i, steps, root]);
+  }, [open, i, steps, root, container]);
   useEffect(() => {
     if (!open) return;
     const k = (e: KeyboardEvent) => { if (e.key === "Escape") { e.stopPropagation(); onClose(); } };
@@ -29,11 +36,12 @@ export function GuidedTour({ steps, open, onClose, root }: { steps: TourStep[]; 
   if (!open || typeof document === "undefined") return null;
   const step = steps[i]!;
   const pad = 6;
-  const below = rect ? rect.bottom + 180 < window.innerHeight : true;
-  const panelTop = rect ? (below ? rect.bottom + pad + 10 : Math.max(12, rect.top - pad - 10 - 170)) : window.innerHeight / 2 - 80;
-  const panelLeft = rect ? Math.min(Math.max(12, rect.left), window.innerWidth - 352) : window.innerWidth / 2 - 170;
+  const H = container ? container.scrollHeight : window.innerHeight, W = container ? container.clientWidth : window.innerWidth;
+  const below = rect ? rect.bottom + 180 < H : true;
+  const panelTop = rect ? (below ? rect.bottom + pad + 10 : Math.max(12, rect.top - pad - 10 - 170)) : H / 2 - 80;
+  const panelLeft = rect ? Math.min(Math.max(12, rect.left), W - 352) : W / 2 - 170;
   return createPortal(
-    <div className="r1-tour" role="dialog" aria-modal="true" aria-label={step.title}>
+    <div className={cn("r1-tour", container && "is-local")} role="dialog" aria-modal="true" aria-label={step.title}>
       {rect ? (
         <div className="r1-tour-spot" style={{ top: rect.top - pad, left: rect.left - pad, width: rect.width + pad * 2, height: rect.height + pad * 2 }} />
       ) : <div className="r1-tour-dim" />}
@@ -48,6 +56,6 @@ export function GuidedTour({ steps, open, onClose, root }: { steps: TourStep[]; 
         </div>
       </div>
     </div>,
-    document.body,
+    container ?? document.body,
   );
 }
