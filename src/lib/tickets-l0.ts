@@ -5,7 +5,7 @@ import { useEffect, useState, useSyncExternalStore } from 'react';
 import { stageCloudDoc } from './cloud-sync';
 import { DEMO_NOW } from './ps-demo-fixture';
 
-export type TicketType = 'UPSELL_PITCH' | 'RENEWAL_DUE' | 'GRADE_RISK' | 'SURVEY_LOW' | 'CONTRACT_FOLLOWUP' | 'SERVICING_STALL' | 'CUSTOMER_ENTITY_CHANGE';
+export type TicketType = 'UPSELL_PITCH' | 'RENEWAL_DUE' | 'GRADE_RISK' | 'SURVEY_LOW' | 'CONTRACT_FOLLOWUP' | 'SERVICING_STALL' | 'CUSTOMER_ENTITY_CHANGE' | 'CONTRACT_SIGNAL';
 export type Dept = 'BD' | 'ORM' | 'MARCOM' | 'PS' | 'AC' | 'AUTO' | 'HR' | 'OFFICE';
 export type Role = 'PM' | Dept;
 /** Pseudo-user for BOT-generated tickets (display "The Office"); never a switcher role, so BOT tickets have no CANCEL action. */
@@ -27,6 +27,8 @@ export type BotPayload = {
   attachments?: TicketAttachment[];
   /** R1.2 §5.1: optional link to the service contract / monthly meeting the ticket is about. */
   contract_id?: string | null; meeting_id?: string | null;
+  /** Tab R1 §6.1 CONTRACT_SIGNAL: always kind NEW here; labels = signal catalog keys; one batch per dialog send. */
+  kind?: 'NEW'; labels?: string[]; batch_id?: string; drive_attachments?: { name: string; drive_url: string }[];
   phase?: 'P1'|'P2'|'P3'; lane?: 'AE'|'Specialist'|'ORM'|'Marcom'; days_in_phase?: number; sla_days?: number; target_days?: number; tone?: 'ok'|'amber'|'red'; current_stage?: string; owner_id?: string|null; recipient?: string; recipient_member_id?: string|null;
 };
 export type TicketAttachment = { id: string; name: string; size: number; mime: string; by: string; at: string; data_url: string };
@@ -40,10 +42,13 @@ export function attachmentError(existing: number, f: { size: number; mime: strin
   return null;
 }
 export type L0Status = 'NEW' | 'ACK' | 'IN_PROGRESS' | 'DONE' | 'CANCELLED';
+export type TicketAssignee = { member_id: string; display: string; role: string };
 export type L0Ticket = {
   ticket_id: string; type: TicketType; source_app: 'PS_DASHBOARD' | 'BD_APP' | 'PS_DASHBOARD_BOT'; created_by: Creator; target_dept: Dept;
-  subject_ref: { hotel_id: string; hotel_name: string; gap_service: string; service_line?: string; deal_id?: string; card_id?:string; service_variant?:string };
+  subject_ref: { hotel_id: string; hotel_name: string; gap_service: string; service_line?: string; deal_id?: string; card_id?:string; service_variant?:string; contract_id?: string; service?: string };
   payload: { readiness_tier: string; chips: string[]; note: string } & BotPayload;
+  /** Tab R1 §6.1: optional single recipient (target_dept is derived from it). */
+  assignee?: TicketAssignee;
   status: L0Status; created_at: string; revision: number;
   audit: { at: string; by: Creator; from_status: L0Status | null; to_status: L0Status }[];
 };
@@ -52,10 +57,12 @@ export const DEPTS: Dept[] = ['BD', 'ORM', 'MARCOM', 'PS', 'AC', 'AUTO', 'HR', '
 /** Layer 1: every department now has a workspace, so nothing parks as "รอ pickup". */
 export const DEPTS_WITH_WORKSPACE: Dept[] = [...DEPTS];
 export const OPEN_STATUSES: L0Status[] = ['NEW', 'ACK', 'IN_PROGRESS'];
-export const STATUS_TH: Record<L0Status, string> = { NEW: 'ใหม่', ACK: 'รับแล้ว', IN_PROGRESS: 'กำลังทำ', DONE: 'เสร็จ', CANCELLED: 'ยกเลิก' };
-export const TYPE_TH: Record<TicketType, string> = { UPSELL_PITCH: 'เสนอขายบริการเพิ่ม', RENEWAL_DUE: 'ใกล้ครบสัญญา', GRADE_RISK: 'เสี่ยงเกรดการชำระ (D)', SURVEY_LOW: 'คะแนนบริการต่ำ', CONTRACT_FOLLOWUP: 'ติดตามดีลค้างข้ามเดือน', SERVICING_STALL: 'ติดตามการ์ดเกิน SLA', CUSTOMER_ENTITY_CHANGE: 'เปลี่ยนนิติบุคคล / ผู้ลงนาม' };
+/** Tab R1 §6.6: NEW = New · legacy ACK shown as กำลังทำ (stored value unchanged). */
+export const STATUS_TH: Record<L0Status, string> = { NEW: 'New', ACK: 'กำลังทำ', IN_PROGRESS: 'กำลังทำ', DONE: 'เสร็จ', CANCELLED: 'ยกเลิก' };
+export const TYPE_TH: Record<TicketType, string> = { UPSELL_PITCH: 'เสนอขายบริการเพิ่ม', RENEWAL_DUE: 'ใกล้ครบสัญญา', GRADE_RISK: 'เสี่ยงเกรดการชำระ (D)', SURVEY_LOW: 'คะแนนบริการต่ำ', CONTRACT_FOLLOWUP: 'ติดตามดีลค้างข้ามเดือน', SERVICING_STALL: 'ติดตามการ์ดเกิน SLA', CUSTOMER_ENTITY_CHANGE: 'เปลี่ยนนิติบุคคล / ผู้ลงนาม', CONTRACT_SIGNAL: 'แจ้งเรื่องของสัญญา' };
 const OPEN: L0Status[] = ['NEW', 'ACK', 'IN_PROGRESS'];
-const NEXT: Partial<Record<L0Status, L0Status>> = { NEW: 'ACK', ACK: 'IN_PROGRESS', IN_PROGRESS: 'DONE' };
+/** Tab R1 §6.6 — every type: NEW → IN_PROGRESS → DONE (+ CANCELLED by creator). ACK is never offered; legacy ACK continues like IN_PROGRESS. */
+const NEXT: Partial<Record<L0Status, L0Status>> = { NEW: 'IN_PROGRESS', ACK: 'DONE', IN_PROGRESS: 'DONE' };
 const KEY = 'meridia.tickets.v1';
 
 type State = { seq: number; items: L0Ticket[] };
@@ -95,13 +102,33 @@ export function findOpenByDeal(type: TicketType, deal_id: string) {
 }
 
 /** Central generic engine. Returns the new id, or the existing open id (dedup). */
-export function createTask(i: { type: TicketType; target_dept: Dept; subject_ref: L0Ticket['subject_ref']; payload: L0Ticket['payload']; created_by: Creator; source_app?: L0Ticket['source_app'] }): { ticket_id: string; deduped: boolean } {
+export function createTask(i: { type: TicketType; target_dept: Dept; subject_ref: L0Ticket['subject_ref']; payload: L0Ticket['payload']; created_by: Creator; source_app?: L0Ticket['source_app']; ticket_id?: string; assignee?: TicketAssignee }): { ticket_id: string; deduped: boolean } {
+  if (i.type === 'CONTRACT_SIGNAL') return createReserved(i);
   const existing = i.type === 'SERVICING_STALL' && i.payload.event_key ? findOpenByEvent(i.type,i.subject_ref.hotel_id,i.payload.event_key) : i.subject_ref.deal_id ? findOpenByDeal(i.type, i.subject_ref.deal_id) : findOpen(i.type, i.subject_ref.hotel_id, i.subject_ref.gap_service);
   if (existing) return { ticket_id: existing.ticket_id, deduped: true };
   const s = cur(); const seq = s.seq + 1; const at = now(); // Level B: replace with revision-locked reservation.
   const t: L0Ticket = { ticket_id: `TKT-${String(seq).padStart(6, '0')}`, type: i.type, source_app: i.source_app ?? 'PS_DASHBOARD', created_by: i.created_by, target_dept: i.target_dept, subject_ref: i.subject_ref, payload: i.payload, status: 'NEW', created_at: at, revision: 0, audit: [{ at, by: i.created_by, from_status: null, to_status: 'NEW' }] };
   commit({ seq, items: [...s.items, t] });
   return { ticket_id: t.ticket_id, deduped: false };
+}
+
+/** Tab R1 §6.4: reserve the next consecutive number for one recipient box (unused numbers stay as gaps). */
+export function reserveTicketId(): string {
+  const s = cur(); const seq = s.seq + 1;
+  commit({ ...s, seq });
+  return `TKT-${String(seq).padStart(6, '0')}`;
+}
+/** CONTRACT_SIGNAL: one ticket per recipient box — no dedup (the dialog warns on duplicates); a reserved id is reused on resend. */
+function createReserved(i: Parameters<typeof createTask>[0]): { ticket_id: string; deduped: boolean } {
+  const s = cur();
+  const id = i.ticket_id ?? `TKT-${String(s.seq + 1).padStart(6, '0')}`;
+  const found = s.items.find((t) => t.ticket_id === id);
+  if (found) return { ticket_id: id, deduped: true };
+  const n = Number(id.replace(/\D/g, '')) || 0;
+  const at = now();
+  const t: L0Ticket = { ticket_id: id, type: i.type, source_app: i.source_app ?? 'PS_DASHBOARD', created_by: i.created_by, target_dept: i.target_dept, subject_ref: i.subject_ref, payload: i.payload, status: 'NEW', created_at: at, revision: 0, audit: [{ at, by: i.created_by, from_status: null, to_status: 'NEW' }], ...(i.assignee ? { assignee: i.assignee } : {}) };
+  commit({ seq: Math.max(s.seq, n), items: [...s.items, t] });
+  return { ticket_id: id, deduped: false };
 }
 
 /** Add an attachment (no status / routing change). */
