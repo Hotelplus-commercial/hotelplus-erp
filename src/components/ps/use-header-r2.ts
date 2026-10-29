@@ -14,6 +14,7 @@ import { aeNameTh } from "@/lib/ps-glossary";
 import type { PsReport, PsReportRow } from "@/lib/ps-dashboard-types";
 import type { GradeRow, HRow, JourneyInput, PortfolioContract, PriceRow, Svc } from "@/lib/ps-header-r2";
 import { headerDemoInput, headerDemoMarcom, headerDemoPortfolio, HEADER_DEMO_NOW } from "@/lib/ps-header-r2-demo";
+import { tabR1HeaderActive, tabR1HeaderChurn, tabR1HeaderPortfolio } from "@/lib/contract-tab-r1-demo";
 import type { MarcomRecord } from "@/lib/marcom-app-source";
 import type { ServicingReport } from "@/lib/servicing-dashboard-types";
 import { useAcViews } from "./use-ac-views";
@@ -41,7 +42,11 @@ export function useHeaderR2(demo: boolean, report: PsReport | undefined): Header
   const crm = useCrmOptional();
   const renewal = useRenewalStore();
   return useMemo(() => {
-    if (demo) return { today: HEADER_DEMO_NOW, journey: headerDemoInput(), portfolio: headerDemoPortfolio(), marcom: headerDemoMarcom(), loading: false };
+    if (demo) {
+      // Tab R1 §11: demo additions also feed the header so header ใช้งาน / หลุด and cards ① / ⑦ agree (fixture itself unchanged).
+      const j = headerDemoInput(), p = headerDemoPortfolio(), ap = tabR1HeaderPortfolio();
+      return { today: HEADER_DEMO_NOW, journey: { ...j, active: [...j.active, ...tabR1HeaderActive()], churn: [...j.churn, ...tabR1HeaderChurn()] }, portfolio: { contracts: [...p.contracts, ...ap.contracts], prices: [...p.prices, ...ap.prices] }, marcom: headerDemoMarcom(), loading: false };
+    }
     const today = new Date().toISOString().slice(0, 10);
     const views = report?.views;
     const upcoming: HRow[] = v_bdac_deal_aging(lifecycles, Date.now()).flatMap((x) => { const s = svcOf(x.deal.service_line); return s ? [{ service: s, hotel_name: x.deal.hotel_name ?? undefined, ae: null, orm: null, marcom: null }] : []; });
