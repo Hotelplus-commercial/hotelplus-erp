@@ -1115,6 +1115,10 @@
 .dash-info-pop { max-width:360px; max-height:min(60vh,420px); overflow-y:auto; background:var(--tooltip-bg,#1C2B33) !important; color:#fff !important; border:none !important; font-size:13px; line-height:1.5; padding:12px 14px; }
 .dash-info-block + .dash-info-block { margin-top:8px; }
 .dash-info-block strong { display:block; font-size:12px; opacity:.75; font-weight:600; }
+/* Tab R1 §2 — shared service tokens (Header R2 rows + PS Dashboard charts read the same values). Strong = in / increase · light = out / decrease. */
+:root{--svc-orm:#2563C9;--svc-orm-light:#AFC8F2;--svc-orm-tint:#EAF1FC;--svc-marcom:#D63F7A;--svc-marcom-light:#F4B6CE;--svc-marcom-tint:#FCEBF2;}
+.dark{--svc-orm:#6E9BEA;--svc-orm-light:#34507E;--svc-orm-tint:#1C2A42;--svc-marcom:#EE7BA7;--svc-marcom-light:#6E3550;--svc-marcom-tint:#3A1F2C;}
+@theme inline{--color-svc-orm:var(--svc-orm);--color-svc-marcom:var(--svc-marcom);}
 /* Header R2 §2 — per-card CompareControl and "ณ วันนี้" chip */
 .dash-card-period{margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
 .cmp-pill{height:28px;gap:6px;padding:0 10px;border-radius:9999px;font-size:12px;font-weight:500;color:var(--accent-strong);border-color:var(--border-subtle);background:var(--accent-soft);font-variant-numeric:tabular-nums;}
@@ -1208,10 +1212,6 @@
 .ap-sec{font-size:11.5px;color:var(--text-caption);font-variant-numeric:tabular-nums;}
 .ap-note{margin-top:10px;font-size:12px;color:var(--text-caption);}
 
-/* Tab R1 §2 — shared service tokens (Header R2 rows + PS Dashboard charts read the same values). Strong = in / increase · light = out / decrease. */
-:root{--svc-orm:#2563C9;--svc-orm-light:#AFC8F2;--svc-orm-tint:#EAF1FC;--svc-marcom:#D63F7A;--svc-marcom-light:#F4B6CE;--svc-marcom-tint:#FCEBF2;}
-.dark{--svc-orm:#6E9BEA;--svc-orm-light:#34507E;--svc-orm-tint:#1C2A42;--svc-marcom:#EE7BA7;--svc-marcom-light:#6E3550;--svc-marcom-tint:#3A1F2C;}
-@theme inline{--color-svc-orm:var(--svc-orm);--color-svc-marcom:var(--svc-marcom);}
 .sv-series-orm{--sv-series:var(--svc-orm);} .sv-golive-plot.sv-series-marcom{--sv-series:var(--svc-marcom);}
 /* Tab R1 — cards ① In/Out and ⑦ Contract Health */
 .r1-card .dash-card-header{align-items:flex-start;}
