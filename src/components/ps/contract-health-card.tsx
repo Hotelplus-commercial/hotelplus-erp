@@ -102,7 +102,7 @@ export function ContractHealthCard({ data, onOpenTask }: { data: TabR1Data | und
     : [pageRows];
 
   return (
-    <section ref={cardRef} id="contract-health" className="dash-card r1-card r1-health" data-testid="r1-health">
+    <section className="dash-card r1-card r1-health" ref={cardRef} id="contract-health" data-testid="r1-health">
       <header className="dash-card-header">
         <div className="min-w-0">
           <h2>{R1_TITLES.health}<InfoButton info={{ read: R1_HEALTH.info }} /></h2>
