@@ -44,6 +44,8 @@ import { PSDASH_FLAGS, inScope, rowMatches, selFromFilter } from "@/lib/ps-heade
 import { aeNameTh } from "@/lib/ps-glossary";
 import { DashboardCompare } from "./dashboard-compare";
 import { TaskTab } from "./task-tab";
+import { PsReportWithR1 } from "./ps-tab-r1";
+import { PendingWorkPanel } from "./ps-report-tab";
 import { useHrMembers, teamLabel } from "@/lib/hr-members";
 import { cn } from "@/lib/utils";
 import { ChartHint, SummaryNote, Delta } from "./dash-card";
@@ -323,20 +325,29 @@ export function DashboardShell({
                         ))}
                       </div>
                     ) : (
-                      <PsReportTab
+                      <PsReportWithR1
+                        raw={ps.data}
+                        demo={demo}
                         report={data}
                         filter={periodFilter}
                         loading={report.isLoading}
                         error={report.isError}
                         wonMtd={wonMtd}
                         wonFor={(p) => v_bdac_flow(lines, periodRange(p)).won}
+                        onOpenTask={() => { setTab("task"); window.scrollTo({ top: 0 }); }}
                       />
                     )}
                     {overview}
                   </>
                 )}
                 {tab === "meeting" && <MeetingTab />}
-                {tab === "task" && <TaskTab />}
+                {tab === "task" && (
+                  <>
+                    <TaskTab />
+                    {/* Tab R1 §9.3: งานค้างของสัญญา (moved from ต่อสัญญา & ราคา, content unchanged) */}
+                    <div className="mt-6"><PendingWorkPanel report={data} filter={periodFilter} loading={report.isLoading} /></div>
+                  </>
+                )}
                 {tab === "servicing" && servicing}
               </div>
             </div>

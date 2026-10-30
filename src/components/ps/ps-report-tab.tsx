@@ -1468,7 +1468,7 @@ export function PendingWorkPanel({ report, filter, loading }: { report?: PsRepor
   const now = report?.now ? new Date(report.now) : new Date();
   const work = useMemo(() => {
     const health = psScope(views?.v_ps_account_health ?? [], filter, "none");
-    const flowAll = psScope(views?.v_ps_lifecycle_flow ?? [], filter, "none");
+    const flowAll = views?.v_ps_lifecycle_flow ?? [];
     return pendingWorkOf({ health, lifetime: psScope(views?.v_ps_contract_lifetime ?? [], filter, "none"), renewals: psScope(views?.v_ps_renewal ?? [], filter, "none"), flow: flowAll, now });
   }, [views, filter, now.getTime()]); // eslint-disable-line react-hooks/exhaustive-deps
   return <PendingWorkCard work={work} loading={!report || loading} emptyText={loading ? "กำลังโหลดรายงาน…" : "ยังไม่มีข้อมูล"} />;
