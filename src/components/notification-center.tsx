@@ -14,6 +14,17 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { notifications as seed } from "@/lib/erp-data";
 import { cn } from "@/lib/utils";
+import { markAlertRead, resetContractHealthDemo, useContractHealthStore } from "@/lib/contract-health-store";
+import { QUICK_OF, type ChAlert } from "@/lib/contract-tab-r1";
+import { R1_ALERT_TH, R1_TIER_TH } from "@/lib/ps-glossary";
+
+/** Tab R1 §7 — the four contract-health events, shown only in the AE Workspace bell. */
+const chText = (a: ChAlert) =>
+  a.kind === "CH_NO_TICKET" ? R1_ALERT_TH.CH_NO_TICKET(a.n ?? 0)
+  : a.kind === "CH_DUE_SOON" ? R1_ALERT_TH.CH_DUE_SOON(a.hotel_name ?? "", a.service ?? "", a.n ?? 0)
+  : a.kind === "CH_TIER_WORSE" ? R1_ALERT_TH.CH_TIER_WORSE(a.hotel_name ?? "", a.service ?? "", R1_TIER_TH[a.tier ?? "A"], R1_TIER_TH[a.from ?? "G"])
+  : R1_ALERT_TH.CH_OPPORTUNITY(a.hotel_name ?? "", a.service ?? "", a.label ?? "");
+const aeShort = (id: string) => /^AE\d+-(.+)$/.exec(id)?.[1] ?? id;
 
 const severityStyles = {
   critical: { icon: CircleAlert, className: "bg-destructive/10 text-destructive" },
@@ -27,7 +38,14 @@ export function NotificationCenter() {
   useEffect(() => { setTicketDemo(new URLSearchParams(window.location.search).get("demo") === "1"); }, [location.pathname, location.searchStr]);
   const tickets = useTickets().filter(t => t.status === "NEW" || t.status === "ACK" || t.status === "IN_PROGRESS");
   const [items, setItems] = useState(seed);
-  const unread = items.filter((n) => n.unread).length + tickets.filter(t => t.status === "NEW").length;
+  useEffect(() => { if (!demo) resetContractHealthDemo(); }, [demo]);
+  const aeBell = location.pathname.startsWith("/ps/ae-workspace");
+  const ch = useContractHealthStore(demo);
+  const chAes = [...new Set(ch.alerts.map((a) => a.ae))].sort();
+  const [viewAe, setViewAe] = useState<string>("");
+  const ae = viewAe && chAes.includes(viewAe) ? viewAe : chAes[0] ?? "";
+  const chAlerts = aeBell ? ch.alerts.filter((a) => a.ae === ae).slice().reverse() : [];
+  const unread = items.filter((n) => n.unread).length + tickets.filter(t => t.status === "NEW").length + chAlerts.filter((a) => !a.read).length;
 
   return (
     <Popover>
@@ -58,6 +76,21 @@ export function NotificationCenter() {
         </div>
         <Separator />
         <ScrollArea className="max-h-[22rem]">
+          {aeBell && chAes.length > 0 && <div className="border-b px-4 py-3" data-testid="ch-bell">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <p className="text-xs font-medium text-muted-foreground">{R1_ALERT_TH.head}</p>
+              <label className="flex items-center gap-1 text-[11px] text-muted-foreground">{R1_ALERT_TH.viewAs}
+                <select className="rounded border bg-background px-1 py-0.5 text-[11px]" value={ae} onChange={(e) => setViewAe(e.target.value)}>
+                  {chAes.map((a) => <option key={a} value={a}>{aeShort(a)}</option>)}
+                </select>
+              </label>
+            </div>
+            <ul className="space-y-1">{chAlerts.map((a) => <li key={a.key}>
+              <a className={cn("block rounded px-2 py-1.5 text-xs hover:bg-muted/60", !a.read && "bg-primary/[0.04] font-medium")}
+                href={`/ps?tab=ps&ch=${QUICK_OF[a.kind]}${a.hotel_name ? `&chq=${encodeURIComponent(a.hotel_name)}` : ""}${demo ? "&demo=1" : ""}`}
+                onClick={() => markAlertRead(demo, a.key)}>{chText(a)}</a>
+            </li>)}</ul>
+          </div>}
           {tickets.length > 0 && <div className="border-b px-4 py-3">
             <p className="mb-2 text-xs font-medium text-muted-foreground">งาน Ticket</p>
             <ul className="space-y-2">{tickets.map(t => <li key={t.ticket_id}>
