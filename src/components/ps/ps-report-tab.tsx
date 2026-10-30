@@ -34,6 +34,14 @@ import {
   type PsFilter,
 } from "@/lib/ps-dashboard-types";
 import { cn } from "@/lib/utils";
+import { R1_RENEWAL_CHIP, R1_TITLES } from "@/lib/ps-glossary";
+import { tabR1Demo } from "@/lib/contract-tab-r1-demo";
+import type { TabR1Data } from "@/lib/contract-tab-r1";
+import { ContractInOutCard } from "./contract-inout-card";
+import { ContractHealthCard } from "./contract-health-card";
+
+/** Tab R1 §1 — cards unmounted from this tab; their code stays for reference (never rendered). */
+const R1_LEGACY = false as boolean;
 import { NowChip, useCardCompare } from "./compare-control";
 import type { Period } from "@/lib/ps-dashboard-global";
 import {
@@ -118,9 +126,15 @@ export function PsReportTab({
   compareSide,
   comparisonFilter,
   wonFor,
+  r1,
+  onOpenTask,
 }: {
   /** Header R2: BD Won count for a card's own period (reconcile line on ①). */
   wonFor?: ((p: Period) => number) | undefined;
+  /** Tab R1: data feed for cards ① In/Out and ⑦ Contract Health (DEMO falls back to the demo additions). */
+  r1?: TabR1Data | undefined;
+  /** Tab R1: ticket count click → open the Task tab for this contract. */
+  onOpenTask?: ((contractId: string) => void) | undefined;
   report?: PsReport | undefined;
   filter: PsFilter;
   loading: boolean;
@@ -142,6 +156,7 @@ export function PsReportTab({
   const today = now.toISOString().slice(0, 10);
   const kFlow = useCardCompare("ps", "lifecycle", today), kChurn = useCardCompare("ps", "churn", today), kRenew = useCardCompare("ps", "renewal", today), kLife = useCardCompare("ps", "lifetime", today), kCohort = useCardCompare("ps", "onboard", today);
   const perCard = !compareSide;
+  const r1Data = useMemo(() => r1 ?? (demo ? tabR1Demo() : undefined), [r1, demo]);
   const fA = (k: { a: Period }): PsFilter => (perCard ? { ...filter, period: k.a } : filter);
   const fB = (k: { b: Period }): PsFilter | undefined => (perCard ? { ...filter, period: k.b } : comparisonFilter);
   // R1.2 §3.1: In / Out = recurring (monthly) services only; setup fees and one-time jobs never count.
@@ -448,7 +463,7 @@ export function PsReportTab({
             cx={props.cx}
             cy={props.cy}
             r={4}
-            fill={line === "ORM" ? "var(--watch-line)" : "var(--series-2)"}
+            fill={line === "ORM" ? "var(--svc-orm)" : "var(--svc-marcom)"}
             tabIndex={0}
             role="button"
             aria-label={`${r.month} ${line} ${fmt(value, "%")}`}
@@ -465,6 +480,13 @@ export function PsReportTab({
       data-testid="ps-report-tab"
       data-compare-side={compareSide}
     >
+      {compareSide !== "B" && (
+        <div className={compareSide ? "" : "lg:col-span-2"}>
+          <ContractInOutCard data={r1Data} />
+        </div>
+      )}
+      {/* Tab R1 §1: old ① Lifecycle & Flow and ② Churn are unmounted from this tab (code kept). */}
+      {R1_LEGACY && (<>
       <DashCard
         period={perCard ? kFlow.control : undefined}
         title="① Lifecycle & Flow"
@@ -594,7 +616,7 @@ export function PsReportTab({
         legend={
           <>
             <span className="text-dash-watch">━ ORM</span>
-            <span className="text-series-2">┄ Marcom</span>
+            <span style={{ color: "var(--svc-marcom)" }}>— Marcom</span>
           </>
         }
       >
@@ -625,7 +647,7 @@ export function PsReportTab({
                   <Line
                     type="monotone"
                     dataKey="ORM"
-                    stroke="var(--watch-line)"
+                    stroke="var(--svc-orm)"
                     strokeWidth={2.5}
                     connectNulls={false}
                     dot={churnDot("ORM")}
@@ -636,8 +658,7 @@ export function PsReportTab({
                   <Line
                     type="monotone"
                     dataKey="Marcom"
-                    stroke="var(--series-2)"
-                    strokeDasharray="6 4"
+                    stroke="var(--svc-marcom)"
                     strokeWidth={2.5}
                     dot={churnDot("Marcom")}
                     activeDot={{ r: 6 }}
@@ -650,9 +671,11 @@ export function PsReportTab({
           <ChartSkeleton text={emptyText} />
         )}
       </DashCard>
+      </>)}
       <DashCard
         period={perCard ? kRenew.control : undefined}
-        title="③ Renewal"
+        title={R1_TITLES.renewal}
+        right={decided.length ? <span className="r1-churn-chip tabular-nums">{R1_RENEWAL_CHIP(fmt(((decided.length - renewed) / decided.length) * 100, "%"))}</span> : undefined}
         question="ครบกำหนดงวดนี้ ต่อกี่ราย?"
         answer={fmt(renewalSuccess, "%")}
         answerSub={`${RENEWAL_LABEL.renewed} ${renewed} / ${decided.length}`}
@@ -784,7 +807,7 @@ export function PsReportTab({
       </DashCard>
       <DashCard
         period={perCard ? kLife.control : undefined}
-        title="④ Contract Lifetime"
+        title={R1_TITLES.lifetime}
         question="ลูกค้าอยู่กับเรานานแค่ไหน?"
         answer={fmt(median, " วัน")}
         answerSub={
@@ -861,7 +884,7 @@ export function PsReportTab({
       <div className={compareSide ? "" : "lg:col-span-2"}>
         <DashCard
           period={perCard ? kCohort.control : undefined}
-          title="⑤ On-board · Finished Cohort"
+          title={R1_TITLES.setup}
           question="เซ็นสัญญา → Go-Live ใช้กี่วัน?"
           answer={fmt(onboardMedian, " วัน")}
           answerTone="onboard"
@@ -955,7 +978,7 @@ export function PsReportTab({
         </DashCard>
       </div>
       <DashCard
-        title="⑥ Off-board"
+        title={R1_TITLES.offboard}
         question="บริการที่สิ้นสุดเป็นอย่างไร?"
         noteKey="offboard"
         noteLines={summaryRules({ metric: "Off-board", empty: true }, ["R-EMPTY"])}
@@ -966,7 +989,7 @@ export function PsReportTab({
       <div className={compareSide ? "" : "lg:col-span-2"}>
         <DashCard
           period={perCard ? <NowChip /> : undefined}
-          title="⑦a Risk Scorecard"
+          title={R1_TITLES.signals}
           question="มีโรงแรมเสี่ยงกี่ราย เสี่ยงด้านไหน?"
           answer={tiered.length ? `${tierCount("high")} / ${tiered.length}` : "—"}
           answerTone="action"
@@ -1050,6 +1073,12 @@ export function PsReportTab({
         </DashCard>
       </div>
       {compareSide !== "B" && (
+        <div className={compareSide ? "" : "lg:col-span-2"}>
+          <ContractHealthCard data={r1Data} onOpenTask={onOpenTask} />
+        </div>
+      )}
+      {/* Tab R1 §1: old ⑦b Account Health is unmounted from this tab (code kept). */}
+      {R1_LEGACY && compareSide !== "B" && (
         <div className={compareSide ? "" : "lg:col-span-2"}>
           <DashCard
             period={perCard ? <NowChip /> : undefined}
@@ -1260,7 +1289,8 @@ export function PsReportTab({
           </DashCard>
         </div>
       )}
-      {compareSide !== "B" && (
+      {/* Tab R1 §9.3: งานค้างของสัญญา moved to the end of the Task tab (PendingWorkPanel, same content). */}
+      {R1_LEGACY && compareSide !== "B" && (
         <div className={compareSide ? "" : "lg:col-span-2"}>
           <PendingWorkCard work={pendingWork} loading={!report} emptyText={emptyText} />
         </div>
@@ -1269,7 +1299,7 @@ export function PsReportTab({
       <div className={compareSide ? "" : "lg:col-span-2"}>
         <DashCard
           period={<NowChip />}
-          title="ถึงรอบขึ้นค่าบริการ (Repricing)"
+          title={R1_TITLES.offer}
           info={{
             source: "คำนวณจากกติกาตายตัว ไม่ได้ใช้ AI",
             formula: `เข้ารายการเมื่อ (1) ครบรอบขึ้นราคา หรือ (2) ราคาต่ำกว่ามูลค่าเมื่อเทียบกับโรงแรมอื่น และผ่านเกณฑ์คัดกรอง · ช่วงที่แนะนำมาจากแนวโน้มรายได้: +${UPLIFT_FLOOR_MIN}–${UPLIFT_FLOOR_MAX}% · +${UPLIFT_MID_MIN}–${UPLIFT_MID_MAX}% · +${UPLIFT_CEILING_MIN}–${UPLIFT_CEILING_MAX}% · รายได้ขาลง = ยังไม่แนะนำให้ขึ้น · ปรับเฉพาะค่าบริการรายเดือนแบบคงที่ ไม่แตะ % ค่าคอม · ราคาสุดท้าย AE เป็นผู้ตัดสิน`,
@@ -1431,6 +1461,18 @@ function RiskRulesDialog({ open, onOpenChange, rules }: { open: boolean; onOpenC
 }
 
 /* ---------- R1.2 §3.3 งานค้างของสัญญา (pending work, not risk) ---------- */
+/** Tab R1 §9.3 — the same งานค้างของสัญญา card, mounted at the end of the Task tab (content unchanged). */
+export function PendingWorkPanel({ report, filter, loading }: { report?: PsReport | undefined; filter: PsFilter; loading: boolean }) {
+  const views = report?.views;
+  const now = report?.now ? new Date(report.now) : new Date();
+  const work = useMemo(() => {
+    const health = psScope(views?.v_ps_account_health ?? [], filter, "none");
+    const flowAll = views?.v_ps_lifecycle_flow ?? [];
+    return pendingWorkOf({ health, lifetime: psScope(views?.v_ps_contract_lifetime ?? [], filter, "none"), renewals: psScope(views?.v_ps_renewal ?? [], filter, "none"), flow: flowAll, now });
+  }, [views, filter, now.getTime()]); // eslint-disable-line react-hooks/exhaustive-deps
+  return <PendingWorkCard work={work} loading={!report || loading} emptyText={loading ? "กำลังโหลดรายงาน…" : "ยังไม่มีข้อมูล"} />;
+}
+
 function PendingWorkCard({ work, loading, emptyText }: { work: { pi: PendingItem[]; renew: PendingItem[] }; loading: boolean; emptyText: string }) {
   const [open, setOpen] = useState<"pi" | "renew" | null>(null);
   const rows: { key: "pi" | "renew"; label: string; items: PendingItem[]; dateLabel: string }[] = [

@@ -29,7 +29,7 @@ function Hl({ text, q }: { text: string; q: string }) {
   return <>{text.slice(0, r[0])}<mark>{text.slice(r[0], r[1])}</mark>{text.slice(r[1])}</>;
 }
 
-export function ContractHealthCard({ data, onOpenTask }: { data: TabR1Data | undefined; onOpenTask?: (contractId: string) => void }) {
+export function ContractHealthCard({ data, onOpenTask }: { data: TabR1Data | undefined; onOpenTask?: ((contractId: string) => void) | undefined }) {
   const demo = !!data?.demo;
   const today = data?.today ?? new Date().toISOString().slice(0, 10);
   const store = useContractHealthStore(demo);
@@ -102,7 +102,7 @@ export function ContractHealthCard({ data, onOpenTask }: { data: TabR1Data | und
     : [pageRows];
 
   return (
-    <section ref={cardRef} id="contract-health" className="dash-card r1-card r1-health" data-testid="r1-health">
+    <section className="dash-card r1-card r1-health" ref={cardRef} id="contract-health" data-testid="r1-health">
       <header className="dash-card-header">
         <div className="min-w-0">
           <h2>{R1_TITLES.health}<InfoButton info={{ read: R1_HEALTH.info }} /></h2>
@@ -221,7 +221,7 @@ export function ContractHealthCard({ data, onOpenTask }: { data: TabR1Data | und
 }
 
 function HealthRowView({ r, q, today, first, canCreate, onCreate, onOpen, onOpenTask }: {
-  r: HealthRow; q: string; today: string; first: boolean; canCreate: boolean; onCreate: () => void; onOpen: () => void; onOpenTask?: (contractId: string) => void;
+  r: HealthRow; q: string; today: string; first: boolean; canCreate: boolean; onCreate: () => void; onOpen: () => void; onOpenTask?: ((contractId: string) => void) | undefined;
 }) {
   const mark = tierMark(r.tier, r.tier30);
   const due = isDueSoon(r, today) ? daysToEnd(r, today) : null;

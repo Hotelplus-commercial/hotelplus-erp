@@ -15,12 +15,13 @@ describe('Layer 0 ticket oracle', () => {
   });
   test('target advances, creator cancels, revision rejects stale actions, terminal tickets cannot advance', () => {
     const { ticket_id } = createTask(input);
-    expect(transition(ticket_id, 0, 'ACK', 'ORM')).toBe(false);
-    expect(transition(ticket_id, 0, 'ACK', 'BD')).toBe(true);
+    // Tab R1 §6.6: no "รับแล้ว" (ACK) step — NEW → IN_PROGRESS → DONE.
+    expect(transition(ticket_id, 0, 'ACK', 'BD')).toBe(false);
+    expect(transition(ticket_id, 0, 'IN_PROGRESS', 'ORM')).toBe(false);
+    expect(transition(ticket_id, 0, 'IN_PROGRESS', 'BD')).toBe(true);
     expect(transition(ticket_id, 0, 'CANCELLED', 'PM')).toBe(false);
-    expect(transition(ticket_id, 1, 'IN_PROGRESS', 'BD')).toBe(true);
-    expect(transition(ticket_id, 2, 'DONE', 'BD')).toBe(true);
-    expect(transition(ticket_id, 3, 'CANCELLED', 'PM')).toBe(false);
+    expect(transition(ticket_id, 1, 'DONE', 'BD')).toBe(true);
+    expect(transition(ticket_id, 2, 'CANCELLED', 'PM')).toBe(false);
     expect(findOpen('UPSELL_PITCH', 'H1', 'Marcom')).toBeUndefined();
     expect(createTask(input).ticket_id).toBe('TKT-000002');
     const open = findOpen('UPSELL_PITCH', 'H1', 'Marcom');
@@ -43,9 +44,8 @@ describe('Layer 0 ticket oracle', () => {
     expect(createTask(followup)).toEqual({ ticket_id: 'TKT-000001', deduped: false });
     expect(createTask(followup)).toEqual({ ticket_id: 'TKT-000001', deduped: true });
     expect(findOpenByDeal('CONTRACT_FOLLOWUP', 'D-2402')?.payload.followup?.bd_name).toBe('ปาล์ม');
-    expect(transition('TKT-000001', 0, 'ACK', 'BD')).toBe(true);
-    expect(transition('TKT-000001', 1, 'IN_PROGRESS', 'BD')).toBe(true);
-    expect(transition('TKT-000001', 2, 'DONE', 'BD')).toBe(true);
+    expect(transition('TKT-000001', 0, 'IN_PROGRESS', 'BD')).toBe(true); // Tab R1 §6.6: no ACK step
+    expect(transition('TKT-000001', 1, 'DONE', 'BD')).toBe(true);
     expect(createTask(followup).ticket_id).toBe('TKT-000002'); // DONE แล้วสร้างใหม่ได้
   });
 });
