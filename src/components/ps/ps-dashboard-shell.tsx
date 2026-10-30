@@ -9,7 +9,7 @@ import { createContext, useContext, useMemo, useState, useEffect, type ReactNode
 
 import { Chip } from "@/components/crm/crm-ui";
 import { AcTab as AcTabV2 } from "@/components/ps/ac-tab";
-import { PsReportTab } from "@/components/ps/ps-report-tab";
+import { PendingWorkPanel, PsReportTab } from "@/components/ps/ps-report-tab";
 import { Account360Provider } from "@/components/ps/account-360";
 import { MeetingAnalyzerTab } from "./meeting-analyzer-tab";
 import { readMeetingDashboard } from "@/lib/meeting-dashboard.functions";
@@ -45,7 +45,6 @@ import { aeNameTh } from "@/lib/ps-glossary";
 import { DashboardCompare } from "./dashboard-compare";
 import { TaskTab } from "./task-tab";
 import { PsReportWithR1 } from "./ps-tab-r1";
-import { PendingWorkPanel } from "./ps-report-tab";
 import { useHrMembers, teamLabel } from "@/lib/hr-members";
 import { cn } from "@/lib/utils";
 import { ChartHint, SummaryNote, Delta } from "./dash-card";
