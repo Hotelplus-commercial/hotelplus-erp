@@ -253,11 +253,13 @@ describe('§2.3 detail-tab ณ วันนี้ cards', () => {
     const router = createRouter({ routeTree: rootRoute, history: createMemoryHistory({ initialEntries: ['/'] }) });
     await router.load();
     const html = renderToStaticMarkup(h(QueryClientProvider, { client: new QueryClient() }, h(RouterProvider, { router } as never)));
-    const cards = html.split('<section class="dash-card"').slice(1);
+    const cards = html.split('<section class="dash-card').slice(1);
     const now = cards.filter((c) => c.includes('data-testid="now-chip"'));
     const timed = cards.filter((c) => c.includes('data-testid="compare-control"'));
+    // Tab R1 §1: ⑦b and the pending-work card left this tab, ① In/Out + ⑦ Contract Health (ณ วันนี้) joined;
+    // old ① Lifecycle / ② Churn (time-based) were unmounted.
     expect(now.length).toBe(4);
-    expect(timed.length).toBe(5);
+    expect(timed.length).toBe(3);
     for (const c of now) { const head = c.split('</header>')[0]!; expect(text(head)).not.toMatch(/Δ|▲|▼/); }
   });
 });
