@@ -100,7 +100,7 @@ export const APPROVER_ROLE_TH: Record<string, string> = { PM: "PM", HOC: "Head o
 
 /* ===================== Tab R1 · ต่อสัญญา & ราคา (2026-10-29) — display text only ===================== */
 export const CONTRACT_SIGNAL_TYPE_TH = "แจ้งเรื่องของสัญญา";
-TICKET_TYPE_TH.CONTRACT_SIGNAL = CONTRACT_SIGNAL_TYPE_TH;
+TICKET_TYPE_TH["CONTRACT_SIGNAL"] = CONTRACT_SIGNAL_TYPE_TH;
 /** §1 card titles in this tab (keys/routes/order unchanged). */
 export const R1_TITLES = {
   inOut: "สัญญาเข้า–ออก (In / Out · Churn)",

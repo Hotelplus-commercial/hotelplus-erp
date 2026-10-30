@@ -291,7 +291,7 @@ export type RecipientRole = 'AE' | 'ORM' | 'MARCOM' | 'HEAD_AE' | 'HEAD_ORM' | '
 export function recipientDept(role: RecipientRole): Dept {
   return role === 'AE' || role === 'HEAD_AE' ? 'PS' : role === 'ORM' || role === 'HEAD_ORM' ? 'ORM' : role === 'MARCOM' || role === 'HEAD_MARCOM' ? 'MARCOM' : 'BD';
 }
-export type Box = { ticket_id: string; recipient: TicketAssignee & { role: RecipientRole }; labels: string[]; note: string; state: 'draft' | 'sending' | 'ok' | 'fail'; error?: string };
+export type Box = { ticket_id: string; recipient: TicketAssignee & { role: RecipientRole }; labels: string[]; note: string; state: 'draft' | 'sending' | 'ok' | 'fail'; error?: string | undefined };
 export const unsent = (boxes: Box[]) => boxes.filter((b) => b.state !== 'ok');
 export const canSend = (boxes: Box[]) => boxes.length > 0 && unsent(boxes).length > 0 && unsent(boxes).every((b) => b.labels.length > 0);
 export const sameRecipient = (a: TicketAssignee | undefined, b: TicketAssignee) => !!a && a.member_id === b.member_id && a.role === b.role;

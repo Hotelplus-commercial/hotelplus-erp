@@ -116,7 +116,7 @@ function InOutPanel({ svc, active, s, today, view }: { svc: Svc; active: number;
   );
 }
 
-function WaterfallCol({ m, yPct, last, next }: { m: FlowMonth; yPct: (v: number) => number; last: boolean; next?: FlowMonth }) {
+function WaterfallCol({ m, yPct, last, next }: { m: FlowMonth; yPct: (v: number) => number; last: boolean; next?: FlowMonth | undefined }) {
   const top = m.start + m.ins.length;
   return (
     <div className="r1-wf">

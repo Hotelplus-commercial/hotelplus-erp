@@ -97,7 +97,7 @@ export function ContractSignalDialog({ row, tickets, labels, by, creator, demo, 
     else toast.error(R1_DIALOG.toastPartial(ok, bad));
   };
 
-  const chip = (key: string, opts: { from?: "sys" | "ae"; draggable?: boolean; onClick?: () => void; remove?: () => void; disabled?: boolean } = {}) => {
+  const chip = (key: string, opts: { from?: "sys" | "ae"; draggable?: boolean; onClick?: () => void; remove?: (() => void) | undefined; disabled?: boolean } = {}) => {
     const e = catalogByKey.get(key);
     if (!e) return null;
     return (

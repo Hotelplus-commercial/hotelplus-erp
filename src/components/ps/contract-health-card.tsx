@@ -29,7 +29,7 @@ function Hl({ text, q }: { text: string; q: string }) {
   return <>{text.slice(0, r[0])}<mark>{text.slice(r[0], r[1])}</mark>{text.slice(r[1])}</>;
 }
 
-export function ContractHealthCard({ data, onOpenTask }: { data: TabR1Data | undefined; onOpenTask?: (contractId: string) => void }) {
+export function ContractHealthCard({ data, onOpenTask }: { data: TabR1Data | undefined; onOpenTask?: ((contractId: string) => void) | undefined }) {
   const demo = !!data?.demo;
   const today = data?.today ?? new Date().toISOString().slice(0, 10);
   const store = useContractHealthStore(demo);
@@ -221,7 +221,7 @@ export function ContractHealthCard({ data, onOpenTask }: { data: TabR1Data | und
 }
 
 function HealthRowView({ r, q, today, first, canCreate, onCreate, onOpen, onOpenTask }: {
-  r: HealthRow; q: string; today: string; first: boolean; canCreate: boolean; onCreate: () => void; onOpen: () => void; onOpenTask?: (contractId: string) => void;
+  r: HealthRow; q: string; today: string; first: boolean; canCreate: boolean; onCreate: () => void; onOpen: () => void; onOpenTask?: ((contractId: string) => void) | undefined;
 }) {
   const mark = tierMark(r.tier, r.tier30);
   const due = isDueSoon(r, today) ? daysToEnd(r, today) : null;
