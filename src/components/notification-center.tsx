@@ -86,9 +86,9 @@ export function NotificationCenter() {
               </label>
             </div>
             <ul className="space-y-1">{chAlerts.map((a) => <li key={a.key}>
-              <a className={cn("block rounded px-2 py-1.5 text-xs hover:bg-muted/60", !a.read && "bg-primary/[0.04] font-medium")}
-                href={`/ps?tab=ps&ch=${QUICK_OF[a.kind]}${a.hotel_name ? `&chq=${encodeURIComponent(a.hotel_name)}` : ""}${demo ? "&demo=1" : ""}`}
-                onClick={() => markAlertRead(demo, a.key)}>{chText(a)}</a>
+              <Link className={cn("block rounded px-2 py-1.5 text-xs hover:bg-muted/60", !a.read && "bg-primary/[0.04] font-medium")}
+                to="/ps" search={{ tab: "ps", ch: QUICK_OF[a.kind], chq: a.hotel_name ?? undefined, demo: demo ? 1 : undefined }}
+                onClick={() => markAlertRead(demo, a.key)}>{chText(a)}</Link>
             </li>)}</ul>
           </div>}
           {tickets.length > 0 && <div className="border-b px-4 py-3">
