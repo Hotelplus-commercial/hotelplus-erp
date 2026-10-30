@@ -213,7 +213,7 @@ function FunnelCard({ cards, cardsB, now, months, compare, period }: {
       <div className="mt-funnel-grid">
         {showOrm && (
           <div>
-            <h3 className="text-sm font-semibold text-primary">{SERVICE_NAME.ORM}</h3>
+            <h3 className="text-sm font-semibold" style={{ color: "var(--svc-orm)" }}>{SERVICE_NAME.ORM}</h3>
             <p className="mb-2 text-xs text-muted-foreground">ฐาน = การ์ด Tier A ของเดือนนี้ทั้งหมด ({orm.base})</p>
             {ormRows.map((row) => {
               const over = pctOf(row.counts.total, orm.base);
@@ -247,7 +247,7 @@ function FunnelCard({ cards, cardsB, now, months, compare, period }: {
         )}
         {showMc && (
           <div>
-            <h3 className="text-sm font-semibold" style={{ color: "var(--series-2)" }}>{SERVICE_NAME.Marcom}</h3>
+            <h3 className="text-sm font-semibold" style={{ color: "var(--svc-marcom)" }}>{SERVICE_NAME.Marcom}</h3>
             <p className="mb-2 text-xs text-muted-foreground">ฐาน = ทุกโรงแรมที่มี Marcom ({mc.base})</p>
             <MarcomRow label="การ์ดของเดือน" count={mc.base} base={mc.base} tooltip={[`การ์ด Marcom ทั้งหมด ${mc.base}`]} />
             <MarcomRow
@@ -771,7 +771,7 @@ function SurveySection({ surveys, curSurveys, prevSurveys, flags, service, compa
           return (
             <div key={g.key}>
               <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold">
-                <i className={cn("inline-block size-2.5 rounded-full", g.key === "ORM" ? "bg-primary" : g.key === "Marcom" ? "bg-series-2" : "bg-muted-foreground")} />
+                <i className={cn("inline-block size-2.5 rounded-full", g.key === "ORM" ? "bg-svc-orm" : g.key === "Marcom" ? "bg-svc-marcom" : "bg-muted-foreground")} />
                 {g.key === "ภาพรวม" ? "ภาพรวม" : SERVICE_NAME[g.key as "ORM" | "Marcom"]}
                 <span className="font-normal text-muted-foreground">· n = {n} ฉบับ</span>
               </h3>

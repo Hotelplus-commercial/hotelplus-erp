@@ -463,7 +463,7 @@ export function PsReportTab({
             cx={props.cx}
             cy={props.cy}
             r={4}
-            fill={line === "ORM" ? "var(--watch-line)" : "var(--series-2)"}
+            fill={line === "ORM" ? "var(--svc-orm)" : "var(--svc-marcom)"}
             tabIndex={0}
             role="button"
             aria-label={`${r.month} ${line} ${fmt(value, "%")}`}
@@ -616,7 +616,7 @@ export function PsReportTab({
         legend={
           <>
             <span className="text-dash-watch">━ ORM</span>
-            <span className="text-series-2">┄ Marcom</span>
+            <span style={{ color: "var(--svc-marcom)" }}>— Marcom</span>
           </>
         }
       >
@@ -647,7 +647,7 @@ export function PsReportTab({
                   <Line
                     type="monotone"
                     dataKey="ORM"
-                    stroke="var(--watch-line)"
+                    stroke="var(--svc-orm)"
                     strokeWidth={2.5}
                     connectNulls={false}
                     dot={churnDot("ORM")}
@@ -658,8 +658,7 @@ export function PsReportTab({
                   <Line
                     type="monotone"
                     dataKey="Marcom"
-                    stroke="var(--series-2)"
-                    strokeDasharray="6 4"
+                    stroke="var(--svc-marcom)"
                     strokeWidth={2.5}
                     dot={churnDot("Marcom")}
                     activeDot={{ r: 6 }}
