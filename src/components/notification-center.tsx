@@ -14,7 +14,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { notifications as seed } from "@/lib/erp-data";
 import { cn } from "@/lib/utils";
-import { markAlertRead, resetContractHealthDemo, useContractHealthStore } from "@/lib/contract-health-store";
+import { markAlertRead, resetContractHealthDemo, runDemoDayIfNeeded, useContractHealthStore } from "@/lib/contract-health-store";
 import { QUICK_OF, type ChAlert } from "@/lib/contract-tab-r1";
 import { R1_ALERT_TH, R1_TIER_TH } from "@/lib/ps-glossary";
 
@@ -41,6 +41,8 @@ export function NotificationCenter() {
   useEffect(() => { if (!demo) resetContractHealthDemo(); }, [demo]);
   const aeBell = location.pathname.startsWith("/ps/ae-workspace");
   const ch = useContractHealthStore(demo);
+  const allTickets = useTickets();
+  useEffect(() => { if (demo && aeBell) runDemoDayIfNeeded(allTickets); }, [demo, aeBell, allTickets]);
   const chAes = [...new Set(ch.alerts.map((a) => a.ae))].sort();
   const [viewAe, setViewAe] = useState<string>("");
   const ae = viewAe && chAes.includes(viewAe) ? viewAe : chAes[0] ?? "";
