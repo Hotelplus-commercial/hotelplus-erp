@@ -3,8 +3,9 @@
  * seeded from the demo additions, never persisted. Not mirrored to Cloud: the Cloud doc-key list has no entry
  * for these collections yet (adding one is outside this patch). */
 import { useEffect, useState, useSyncExternalStore } from 'react';
-import type { AeLabel, ChAlert, TierSnapshot } from './contract-tab-r1';
-import { tabR1DemoLabels, tabR1DemoSnapshots } from './contract-tab-r1-demo';
+import { buildRows, evaluateAlerts, snapshotOf, type AeLabel, type ChAlert, type TierSnapshot } from './contract-tab-r1';
+import { tabR1Demo, tabR1DemoLabels, tabR1DemoSnapshots } from './contract-tab-r1-demo';
+import type { L0Ticket } from './tickets-l0';
 
 export type ChAlertRec = ChAlert & { read?: boolean };
 type State = { labels: AeLabel[]; snapshots: TierSnapshot[]; alerts: ChAlertRec[]; lastRun: string | null };
@@ -59,4 +60,15 @@ export function useContractHealthStore(isDemo: boolean): State {
   useEffect(() => { setHydrated(true); }, []);
   useSyncExternalStore((cb) => { listeners.add(cb); return () => listeners.delete(cb); }, () => version, () => 0);
   return hydrated ? contractHealthState(isDemo) : empty();
+}
+/** DEMO only: the demo rows are bundled, so the AE Workspace bell can run the day's evaluation itself
+ * (live runs it on the first PS Dashboard load of the day, where the source projections are read). */
+export function runDemoDayIfNeeded(storeTickets: L0Ticket[]) {
+  const d = tabR1Demo();
+  const s = contractHealthState(true);
+  if (s.lastRun === d.today) return;
+  const seen = new Set(storeTickets.map((t) => t.ticket_id));
+  const tickets = [...d.seedTickets.filter((t) => !seen.has(t.ticket_id)), ...storeTickets];
+  const rows = buildRows(d.base, { today: d.today, labels: s.labels, snaps: s.snapshots, tickets });
+  recordDay(true, d.today, snapshotOf(rows, d.today), evaluateAlerts(rows, s.snapshots, new Set(s.alerts.map((a) => a.key)), d.today, new Date().toISOString()));
 }

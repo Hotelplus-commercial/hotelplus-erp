@@ -7,7 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { InfoButton } from "./dash-card";
 import { GuidedTour } from "./guided-tour";
 import { R1_DIALOG, R1_TOUR, R1_STATUS_TH } from "@/lib/ps-glossary";
-import { createTask, reserveTicketId, ticketById, type Creator, type L0Ticket, type TicketAssignee } from "@/lib/tickets-l0";
+import { createTask, peekNextSeq, ticketById, ticketIdOf, type Creator, type L0Ticket, type TicketAssignee } from "@/lib/tickets-l0";
 import { addAeLabels } from "@/lib/contract-health-store";
 import {
   SIGNAL_CATALOG, SIGNAL_GROUPS, canSend, catalogByKey, duplicateHits, isSelectable, newAeLabels, recipientDept, sendBatch, unsent, warnBdm,
@@ -35,7 +35,10 @@ export function ContractSignalDialog({ row, tickets, labels, by, creator, demo, 
 }) {
   const recipients = useMemo(() => recipientsOf(row), [row]);
   const batch = useRef(`B-${Date.now().toString(36)}`).current;
-  const [boxes, setBoxes] = useState<Box[]>(() => [{ ticket_id: reserveTicketId(), recipient: recipients[0]!, labels: [], note: "", state: "draft" }]);
+  // Box numbers are consecutive from the next free number when the dialog opens; a resend reuses them (pure — no write until Send).
+  const [base] = useState(() => peekNextSeq());
+  const [made, setMade] = useState(1);
+  const [boxes, setBoxes] = useState<Box[]>(() => [{ ticket_id: ticketIdOf(base), recipient: recipients[0]!, labels: [], note: "", state: "draft" }]);
   const [sel, setSel] = useState(() => boxes[0]!.ticket_id);
   const [q, setQ] = useState("");
   const [dups, setDups] = useState<ReturnType<typeof duplicateHits> | null>(null);
@@ -57,7 +60,8 @@ export function ContractSignalDialog({ row, tickets, labels, by, creator, demo, 
   const removeLabel = (boxId: string, key: string) => setBoxes((bs) => bs.map((b) => (b.ticket_id === boxId && !locked(b) ? { ...b, labels: b.labels.filter((l) => l !== key) } : b)));
   const addAll = () => setBoxes((bs) => bs.map((b) => (locked(b) ? b : { ...b, labels: [...new Set([...b.labels, ...found])] })));
   const addRecipient = (r: Recipient) => {
-    const id = reserveTicketId();
+    const id = ticketIdOf(base + made);
+    setMade((n) => n + 1);
     setBoxes((bs) => [...bs, { ticket_id: id, recipient: r, labels: [], note: "", state: "draft" }]);
     setSel(id); setAddOpen(false);
   };
@@ -67,13 +71,15 @@ export function ContractSignalDialog({ row, tickets, labels, by, creator, demo, 
   const failed = boxes.some((b) => b.state === "fail");
 
   const write = (b: Box) => {
+    const taken = ticketById(b.ticket_id);
+    if (taken && taken.payload.batch_id !== batch) return false; // number already used elsewhere → this box fails, nothing overwritten
     createTask({
       type: "CONTRACT_SIGNAL", ticket_id: b.ticket_id, target_dept: recipientDept(b.recipient.role), assignee: { member_id: b.recipient.member_id, display: b.recipient.display, role: b.recipient.role },
       subject_ref: { hotel_id: row.hotel_id, hotel_name: row.hotel_name, gap_service: row.service, service_line: row.service, contract_id: row.contract_id, service: row.service },
       payload: { readiness_tier: "", chips: [], note: b.note, kind: "NEW", labels: b.labels, batch_id: batch, contract_id: row.contract_id, drive_attachments: [] },
       created_by: creator,
     });
-    return !!ticketById(b.ticket_id);
+    return ticketById(b.ticket_id)?.payload.batch_id === batch;
   };
   const send = async (confirmed = false) => {
     if (!canSend(boxes) || busy) return;
