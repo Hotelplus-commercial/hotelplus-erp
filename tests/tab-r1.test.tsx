@@ -8,7 +8,7 @@ const L0 = await import('../src/lib/tickets-l0');
 const R = await import('../src/lib/contract-tab-r1');
 const D = await import('../src/lib/contract-tab-r1-demo');
 const { headerDemoInput } = await import('../src/lib/ps-header-r2-demo');
-const { STATUS_TH } = await import('../src/lib/ps-glossary');
+const { R1_STATUS_TH } = await import('../src/lib/ps-glossary');
 
 const today = D.TAB_R1_DEMO_NOW;
 const demoRows = () => {
@@ -104,7 +104,7 @@ describe('§4 card ⑦ Contract Health', () => {
     expect(and.length).toBeGreaterThan(0);
     expect(and.every((r) => r.ae === 'AE002-มายด์' && r.service === 'ORM' && r.orm_team === 'A')).toBe(true);
     expect(and.map((r) => r.contract_id)).toContain('R1-O2');
-    expect(R.groupHit(row('R2-M4'), [7])).toBe(true); // AE label คู่แข่งเสนอถูกกว่า (group 7)
+    expect(R.groupHit(row('R2-M4'), [1])).toBe(true); // AE label คู่แข่งเสนอถูกกว่า (group 1)
     expect(R.groupHit(row('R2-O1'), [3])).toBe(true); // system OVERDUE (group 3)
   });
   test('14 · quick filters AND + live counts', () => {
@@ -172,7 +172,7 @@ describe('§6 ticket dialog', () => {
     expect(L0.allowedNext(t, 'BD')).toEqual(['IN_PROGRESS']);
     expect(L0.allowedNext({ ...t, status: 'ACK' }, 'BD')).toEqual(['DONE']);
     expect(L0.STATUS_TH.ACK).toBe('กำลังทำ'); expect(L0.STATUS_TH.NEW).toBe('New');
-    expect(STATUS_TH.NEW).toBe('New');
+    expect(R1_STATUS_TH['NEW']).toBe('New'); expect(R1_STATUS_TH['ACK']).toBe('กำลังทำ');
     expect(R.ticketsOfContract(D.tabR1DemoTickets(), 'R2-M2').map((x) => x.status)).toEqual(['ACK']);
   });
 });
