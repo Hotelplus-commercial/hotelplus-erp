@@ -265,3 +265,11 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [x] Customer Journey scorecard + Active Portfolio + Marcom App adapter stub + R2 demo fixture (28 Oct 2026)
 - [x] Tests 222 → 245; browser-checked in sample mode
 - [ ] Live: คะแนนบริการ waits for v_ps_service_score; Marcom deliveries wait for the Marcom App integration
+
+## PS Dashboard · Tab R1 ต่อสัญญา & ราคา
+- [x] Card ① In/Out (Monthly Flow + Waterfall) and card ⑦ Contract Health (signals, filters, paging, tours)
+- [x] Ticket dialog (CONTRACT_SIGNAL, per-recipient boxes, duplicate check, resend) + no-ACK status rule
+- [x] AE bell events, daily tier snapshot, demo additions, service colours, titles, pending-work card moved to Task tab
+- [x] Tests 245 → 265; browser-checked in sample mode
+- [ ] Google Drive attachments wait for a Drive connection
+- [ ] Cloud mirror for AE labels / snapshots / alerts waits for a new Cloud doc key
