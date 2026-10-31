@@ -118,6 +118,9 @@ export function reserveTicketId(): string {
   commit({ ...s, seq });
   return `TKT-${String(seq).padStart(6, '0')}`;
 }
+/** Tab R1 §6.4: the next free sequence number, read-only (the dialog numbers its boxes from it; writing a box claims it). */
+export const peekNextSeq = () => cur().seq + 1;
+export const ticketIdOf = (seq: number) => `TKT-${String(seq).padStart(6, '0')}`;
 /** CONTRACT_SIGNAL: one ticket per recipient box — no dedup (the dialog warns on duplicates); a reserved id is reused on resend. */
 function createReserved(i: Parameters<typeof createTask>[0]): { ticket_id: string; deduped: boolean } {
   const s = cur();
