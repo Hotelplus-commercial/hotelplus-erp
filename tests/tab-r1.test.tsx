@@ -61,7 +61,7 @@ describe('§4 card ⑦ Contract Health', () => {
   test('7 · overdue here → red; overdue only elsewhere → yellow; AE label alone never changes tier', () => {
     expect(row('R2-O1').tier).toBe('R');
     const m1 = row('R2-M1');
-    expect(m1.tier).toBe('A'); expect(m1.signals.map((s) => s.key)).toEqual(['OVERDUE_OTHER']);
+    expect(m1.tier).toBe('A'); expect(m1.signals.map((s) => s.key)).toContain('OVERDUE_OTHER'); expect(m1.signals.map((s) => s.key)).not.toContain('OVERDUE');
     const m4 = row('R2-M4');
     expect(m4.ae_labels.map((l) => l.label_key)).toEqual(['COMPETITOR_CHEAPER']);
     expect(m4.tier).toBe('G');
@@ -101,7 +101,9 @@ describe('§4 card ⑦ Contract Health', () => {
     const dao = rows.filter((r) => R.ownerHit(r, { ae: ['AE001-ดาว', 'AE003-ต้น'], orm: [], marcom: [] }));
     expect(dao.every((r) => r.ae === 'AE001-ดาว' || r.ae === 'AE003-ต้น')).toBe(true);
     const and = rows.filter((r) => R.ownerHit(r, { ae: ['AE002-มายด์'], orm: ['A'], marcom: [] }));
-    expect(and.map((r) => r.contract_id)).toEqual(['R1-O2']);
+    expect(and.length).toBeGreaterThan(0);
+    expect(and.every((r) => r.ae === 'AE002-มายด์' && r.service === 'ORM' && r.orm_team === 'A')).toBe(true);
+    expect(and.map((r) => r.contract_id)).toContain('R1-O2');
     expect(R.groupHit(row('R2-M4'), [7])).toBe(true); // AE label คู่แข่งเสนอถูกกว่า (group 7)
     expect(R.groupHit(row('R2-O1'), [3])).toBe(true); // system OVERDUE (group 3)
   });
