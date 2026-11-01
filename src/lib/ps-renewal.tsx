@@ -1,4 +1,5 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useMemo, useRef, useState, type ReactNode } from "react";
+import { aeCode, newCardFrom, openCardFor, rememberScanContract, scanCandidates, type ScanContract } from "./renewal-scan";
 
 /* ------------------------------------------------------------------ */
 /* v3.1 — Contract Renewal, org directory, PS Dashboard updates feed   */
@@ -69,6 +70,8 @@ export type RenewalCard = {
   markedAt?: string | undefined;
   churnType?: ChurnType | undefined;
   churnReason?: string | undefined;
+  /** Tab R2 §10.2: who created the card (missing = BOT). No backfill. */
+  created_source?: "BOT" | "AE_EARLY" | undefined;
 };
 
 /* --- Org directory (employee code + nickname) --- */
@@ -351,6 +354,10 @@ type Ctx = {
     effectiveEnd?: string,
   ) => void;
   markAllRead: () => void;
+  /** Tab R2 §7.2: create a card for a contract end date (existing open card is returned, never duplicated). */
+  createCard: (contract: ScanContract, source: "BOT" | "AE_EARLY", today: string, extra?: RenewalCard[]) => { card: RenewalCard; created: boolean };
+  /** Tab R2 §7.1 (`renewal-45day-scan`, lead = RENEWAL_CARD_LEAD_DAYS): BOT cards for contracts that reached end − 60 days. */
+  runScan: (contracts: ScanContract[], today: string, extra?: RenewalCard[]) => number;
 };
 
 const PsRenewalContext = createContext<Ctx | null>(null);
@@ -358,6 +365,8 @@ const PsRenewalContext = createContext<Ctx | null>(null);
 export function PsRenewalProvider({ children }: { children: ReactNode }) {
   const [cards, setCards] = useState<RenewalCard[]>(initialCards);
   const [updates, setUpdates] = useState<ContractUpdate[]>(initialUpdates);
+  const cardsRef = useRef(cards);
+  cardsRef.current = cards;
 
   const value = useMemo<Ctx>(
     () => ({
@@ -413,6 +422,27 @@ export function PsRenewalProvider({ children }: { children: ReactNode }) {
           ]);
       },
       markAllRead: () => setUpdates((prev) => prev.map((u) => ({ ...u, read: true }))),
+      createCard: (contract, source, today, extra = []) => {
+        rememberScanContract(contract);
+        const existing = openCardFor([...cardsRef.current, ...extra], contract);
+        if (existing) return { card: existing, created: false };
+        const owner = aeDirectory.find((a) => aeCode(a) === aeCode(contract.ae)) ?? contract.ae ?? "—";
+        const card = newCardFrom(contract, source, today, owner);
+        cardsRef.current = [...cardsRef.current, card];
+        setCards(cardsRef.current);
+        return { card, created: true };
+      },
+      runScan: (contracts, today, extra = []) => {
+        let n = 0;
+        for (const c of scanCandidates(contracts, [...cardsRef.current, ...extra], today)) {
+          rememberScanContract(c);
+          const owner = aeDirectory.find((a) => aeCode(a) === aeCode(c.ae)) ?? c.ae ?? "—";
+          cardsRef.current = [...cardsRef.current, newCardFrom(c, "BOT", today, owner)];
+          n++;
+        }
+        if (n) setCards(cardsRef.current);
+        return n;
+      },
     }),
     [cards, updates],
   );
