@@ -273,3 +273,10 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [x] Tests 245 → 265; browser-checked in sample mode
 - [ ] Google Drive attachments wait for a Drive connection
 - [ ] Cloud mirror for AE labels / snapshots / alerts waits for a new Cloud doc key
+
+## PS Dashboard · Tab R2 การต่อสัญญา (Renewal card, O-15)
+- [ ] Rules: stages, rates, compare, SLA config, urgent tiles, by-AE table, highlight, reasons aggregates
+- [ ] renewal_reasons store (browser-local, 7-day edit) + shared 3-label picker
+- [ ] New renewal card in tab (old card unmounted, code kept) + reason dialog + tour 8 steps
+- [ ] AE Workspace: Mark as Done ไม่ต่อ/ฉีกสัญญา needs 3 labels → reason record; scan 60 days + early create (?createRenewal)
+- [ ] Demo additions (28 ต.ค. 69, 12+ months history, sim 120) · glossary · rules files · tests
