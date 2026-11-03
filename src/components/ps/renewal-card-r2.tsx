@@ -229,7 +229,7 @@ export function RenewalCardR2({ data }: { data: TabR1Data | undefined }) {
         </div>
         <button type="button" className="rn2-help" onClick={openTour}>{RN2.help}</button>
       </header>
-      {(demo || true) && (
+      {(
         <div className="rn2-test">
           <label>{RN2.actAs}
             <select value={actAs} onChange={(e) => setActAs(e.target.value)} aria-label={RN2.actAs}>
