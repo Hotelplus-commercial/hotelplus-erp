@@ -465,7 +465,7 @@ export function RenewalCardModal({
 
       {/* Re-confirm modal */}
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[88vh] max-w-2xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>โปรด Re-confirm สถานะการต่อสัญญาอีกครั้ง</DialogTitle>
             <DialogDescription>{card.hotel} · {card.hotelId}</DialogDescription>
