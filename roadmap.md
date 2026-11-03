@@ -275,8 +275,8 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [ ] Cloud mirror for AE labels / snapshots / alerts waits for a new Cloud doc key
 
 ## PS Dashboard · Tab R2 การต่อสัญญา (Renewal card, O-15)
-- [ ] Rules: stages, rates, compare, SLA config, urgent tiles, by-AE table, highlight, reasons aggregates
-- [ ] renewal_reasons store (browser-local, 7-day edit) + shared 3-label picker
-- [ ] New renewal card in tab (old card unmounted, code kept) + reason dialog + tour 8 steps
-- [ ] AE Workspace: Mark as Done ไม่ต่อ/ฉีกสัญญา needs 3 labels → reason record; scan 60 days + early create (?createRenewal)
-- [ ] Demo additions (28 ต.ค. 69, 12+ months history, sim 120) · glossary · rules files · tests
+- [x] Rules, renewal_reasons store + 3-label picker, new card (old unmounted), reason dialog, tour 8 steps
+- [x] AE Workspace: Mark as Done Churn needs 3 labels → reason record; scan 60 days + early create (?createRenewal)
+- [x] Demo additions (28 ต.ค. 69, history from Q4 68, sim 120) · glossary · rules files · tests 265 → 284
+- [ ] Cloud mirror for renewal_reasons waits for a new Cloud doc key (same as R1 collections)
+- [ ] Q58 past-due effect and Q59 SLA thresholds wait for decisions
