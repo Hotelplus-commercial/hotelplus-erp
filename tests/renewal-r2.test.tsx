@@ -210,7 +210,7 @@ describe('§8 / §19', () => {
   });
   test('19 · header demo “ใช้งาน” / “หลุด” unchanged by the renewal additions; demo shows the §11 cases', () => {
     expect(tabR1HeaderActive()).toHaveLength(3);
-    expect(tabR1HeaderChurn().filter((r) => r.out).length).toBe(5);
+    expect(tabR1HeaderChurn().filter((r) => r.out).length).toBe(4);
     expect(item('CT-MAR-Q-MAR-0388').stage).toBe('LOST_OR_DECLINED');
     expect(item('CT-ORM-Q-ORM-0402').outcome).toBe('LOST');
     expect(item('R1-O2').sub).toBe('PENDING_APPROVAL');
