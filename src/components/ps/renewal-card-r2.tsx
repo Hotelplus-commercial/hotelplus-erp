@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { InfoButton } from "./dash-card";
 import { GuidedTour, type TourStep } from "./guided-tour";
 import { RenewalReasonPicker } from "./renewal-reason-picker";
-import { usePsRenewal, type RenewalCard } from "@/lib/ps-renewal";
+import { usePsRenewalCards, type RenewalCard } from "@/lib/ps-renewal";
 import { useRenewalStore } from "@/lib/renewal-store";
 import type { RenewalRequest } from "@/lib/renewal-rules";
 import { editReason, reasonFor, recordReason, setReasonsDemo, useRenewalReasons, type RenewalReason } from "@/lib/renewal-reasons";
@@ -128,7 +128,7 @@ export function RenewalCardR2({ data }: { data: TabR1Data | undefined }) {
   const today = data?.today ?? new Date().toISOString().slice(0, 10);
   const demo = !!data?.demo;
   const now = demo ? `${today}T03:00:00.000Z` : new Date().toISOString();
-  const { cards } = usePsRenewal();
+  const cards = usePsRenewalCards();
   const store = useRenewalStore();
   useEffect(() => { setReasonsDemo(demo, renewalR2DemoReasons); }, [demo]);
   const stored = useRenewalReasons();

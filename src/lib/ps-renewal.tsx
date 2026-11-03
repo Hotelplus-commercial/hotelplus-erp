@@ -457,3 +457,8 @@ export function usePsRenewal() {
 }
 
 export const truncate = (s: string, n = 60) => (s.length > n ? `${s.slice(0, n)}…` : s);
+
+/** Tab R2: read-only access that tolerates a missing provider (dashboard cards rendered alone, e.g. in tests). */
+export function usePsRenewalCards(): RenewalCard[] {
+  return useContext(PsRenewalContext)?.cards ?? [];
+}
