@@ -9,7 +9,7 @@ export const RENEWAL_REASON_EDIT_DAYS = 7;
 export type ReasonActor = { member_id: string; display: string; role: string };
 export type RenewalReason = {
   id: string; contract_id: string; service: Svc; renewal_card_id?: string | null; outcome: 'NOT_RENEWED' | 'LOST';
-  primary: [string, string]; secondary: string; note?: string;
+  primary: [string, string]; secondary: string; note?: string | undefined;
   created_by: ReasonActor; created_at: string; updated_by?: ReasonActor; updated_at?: string; editable_until: string;
 };
 

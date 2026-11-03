@@ -77,6 +77,8 @@ export const isRenewalDemo = () => demoOn;
 
 export const sourceContractFor = (hotelId: string) => contracts().find((c) => c.hotel_id === hotelId) ?? null;
 export const sourceContractById = (id: string) => contracts().find((c) => c.contract_id === id) ?? null;
+/** Tab R2 §7.1 scan feed (live): the source contracts with a term end date (read only). */
+export const scanSourceContracts = () => contracts().map((c) => ({ contract_id: c.contract_id, hotel_id: c.hotel_id, hotel_name: c.legal_entity, service: (c.terms.package.startsWith('Marcom') ? 'Marcom' : 'ORM') as 'ORM' | 'Marcom', end: c.terms.end_date, ae: null as string | null }));
 export function recoFor(hotelId: string, terms: Terms) {
   const rows = demoOn ? demoRepricing() : [];
   return recommend(rows.find((r) => r['hotel_id'] === hotelId), terms, demoOn, nowIso());

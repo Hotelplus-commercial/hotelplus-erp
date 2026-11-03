@@ -39,6 +39,7 @@ import { tabR1Demo } from "@/lib/contract-tab-r1-demo";
 import type { TabR1Data } from "@/lib/contract-tab-r1";
 import { ContractInOutCard } from "./contract-inout-card";
 import { ContractHealthCard } from "./contract-health-card";
+import { RenewalCardR2 } from "./renewal-card-r2";
 
 /** Tab R1 §1 — cards unmounted from this tab; their code stays for reference (never rendered). */
 const R1_LEGACY = false as boolean;
@@ -672,7 +673,13 @@ export function PsReportTab({
         )}
       </DashCard>
       </>)}
-      <DashCard
+      {/* Tab R2 §1.1: the renewal card in this tab is replaced (old card code kept, unmounted). */}
+      {compareSide !== "B" && (
+        <div className={compareSide ? "" : "lg:col-span-2"}>
+          <RenewalCardR2 data={r1Data} />
+        </div>
+      )}
+      {R1_LEGACY && (<DashCard
         period={perCard ? kRenew.control : undefined}
         title={R1_TITLES.renewal}
         right={decided.length ? <span className="r1-churn-chip tabular-nums">{R1_RENEWAL_CHIP(fmt(((decided.length - renewed) / decided.length) * 100, "%"))}</span> : undefined}
@@ -804,7 +811,7 @@ export function PsReportTab({
         ) : (
           <ChartSkeleton text={emptyText} />
         )}
-      </DashCard>
+      </DashCard>)}
       <DashCard
         period={perCard ? kLife.control : undefined}
         title={R1_TITLES.lifetime}

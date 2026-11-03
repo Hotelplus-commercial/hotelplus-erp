@@ -46,7 +46,7 @@ export type RenewalItem = {
   effective?: string | null;
   card_id?: string | null; created_source?: 'BOT' | 'AE_EARLY' | null;
   request_created_at?: string | null; pending_since?: string | null; link_sent_at?: string | null; signed_at?: string | null;
-  last_activity?: { at: string; what: string } | null;
+  last_activity?: { at: string; what: string } | null | undefined;
   /** Old free-text reason (RN17) — shown read-only as a note. */
   legacy_reason?: string | null;
 };

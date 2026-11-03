@@ -41,9 +41,14 @@ import {
   type RenewalStatus,
 } from "@/lib/ps-renewal";
 import { cn } from "@/lib/utils";
-import { DEMO_EXTRA_CARDS, declineRequest, latestRequestFor, openRequestFor, setRenewalDemo, signedAwaitingDone, useRenewalStore } from "@/lib/renewal-store";
+import { DEMO_EXTRA_CARDS, declineRequest, isRenewalDemo, latestRequestFor, openRequestFor, scanSourceContracts, setRenewalDemo, signedAwaitingDone, sourceContractFor, useRenewalStore } from "@/lib/renewal-store";
 import { RenewalRequestChips, RenewalRequestPanel, SignedBadge } from "@/components/ps/renewal-request-ui";
-import { RENEWAL_LABEL_TH as RL } from "@/lib/ps-glossary";
+import { RENEWAL_LABEL_TH as RL, RN2 } from "@/lib/ps-glossary";
+import { RenewalReasonPicker } from "@/components/ps/renewal-reason-picker";
+import { recordReason, setReasonsDemo } from "@/lib/renewal-reasons";
+import { isOwningAe, reasonLabel, validPick } from "@/lib/renewal-r2";
+import { EARLY_PARAM, readEarlyHandoff, scanContractById } from "@/lib/renewal-scan";
+import { RENEWAL_R2_DEMO_NOW, renewalR2DemoReasons, renewalR2DemoScanFeed } from "@/lib/renewal-r2-demo";
 
 const statusTone: Record<RenewalStatus, "muted" | "info" | "success" | "danger"> = {
   NOT_STARTED: "muted",
@@ -67,8 +72,9 @@ export function RenewalActivityCards({
   currentUser: string;
   canOverride: boolean;
 }) {
-  const { cards: baseCards } = usePsRenewal();
+  const { cards: baseCards, runScan, createCard } = usePsRenewal();
   const [demo, setDemo] = useState(false);
+  const [denied, setDenied] = useState(false);
   useEffect(() => { const on = new URLSearchParams(window.location.search).get("demo") === "1"; setRenewalDemo(on); setDemo(on); }, []);
   useRenewalStore();
   const cards = demo ? [...baseCards, ...DEMO_EXTRA_CARDS] : baseCards;
@@ -76,6 +82,23 @@ export function RenewalActivityCards({
   useEffect(() => { if (window.location.hash === "#renewal-activities") { setOpen(true); document.getElementById("renewal-activities")?.scrollIntoView({ block: "start" }); } }, []);
   const [sortAsc, setSortAsc] = useState(true);
   const [active, setActive] = useState<{ card: RenewalCard; addMode: boolean } | null>(null);
+  /* Tab R2 §7: renewal-card scan (lead RENEWAL_CARD_LEAD_DAYS) + early create deep link (?createRenewal={contract_id}, owning AE only). */
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const on = params.get("demo") === "1";
+    setReasonsDemo(on, renewalR2DemoReasons);
+    const today = on ? RENEWAL_R2_DEMO_NOW : new Date().toISOString().slice(0, 10);
+    const extra = on ? DEMO_EXTRA_CARDS : [];
+    runScan(on ? renewalR2DemoScanFeed() : scanSourceContracts(), today, extra);
+    const cid = params.get(EARLY_PARAM);
+    if (!cid) return;
+    const c = readEarlyHandoff(cid);
+    setOpen(true);
+    if (!c || !isOwningAe({ id: currentUser, role: canOverride ? "PM" : "AE" }, c.ae)) { setDenied(true); return; }
+    const { card } = createCard(c, "AE_EARLY", today, extra);
+    setActive({ card, addMode: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const visible = cards
     .filter((c) => (scope === "my" ? c.owner === currentUser : true))
@@ -98,6 +121,7 @@ export function RenewalActivityCards({
         </Button>
       </div>
 
+      {denied && <p role="alert" className="border-t px-3 py-2 text-sm text-destructive">{RN2.denied}</p>}
       {open && (
         <ul className="divide-y border-t">
           {visible.map((c) => {
@@ -204,6 +228,8 @@ export function RenewalCardModal({
   const [reason, setReason] = useState("");
   const [confirmErr, setConfirmErr] = useState<string | null>(null);
   const [effectiveEnd, setEffectiveEnd] = useState('');
+  const [picks, setPicks] = useState<string[]>([]);
+  const [pickNote, setPickNote] = useState("");
 
   if (!card) return null;
   const signedReq = latestRequestFor(card.id)?.status === "SIGNED";
@@ -235,11 +261,20 @@ export function RenewalCardModal({
 
   const confirmDone = () => {
     if (outcome === "COMPLETED" && !signedReq) return setConfirmErr(RL.needSigned);
-    if (outcome === "CHURN" && !reason.trim()) return setConfirmErr("กรอกเหตุผล");
+    // Tab R2 §6.2: ไม่ต่อ / ฉีกสัญญา needs exactly 3 labels (replaces the free-text reason for new entries).
+    if (outcome === "CHURN" && !validPick(picks)) return setConfirmErr(RN2.picker.more(3 - picks.length));
     if (outcome === 'CHURN' && !effectiveEnd) return setConfirmErr('ระบุวันสิ้นสุดสัญญา');
+    const reasonText = outcome === "CHURN" ? [...picks.map(reasonLabel), pickNote.trim()].filter(Boolean).join(" · ") : reason.trim();
     const openReq = openRequestFor(card.id);
-    if (outcome === "CHURN" && openReq) { const o = declineRequest(openReq.id, reason.trim()); if (!o.ok) return setConfirmErr(o.error); }
-    markDone(card.id, outcome, currentUser, churnType, reason.trim(), effectiveEnd);
+    if (outcome === "CHURN" && openReq) { const o = declineRequest(openReq.id, reasonText); if (!o.ok) return setConfirmErr(o.error); }
+    markDone(card.id, outcome, currentUser, churnType, reasonText, effectiveEnd);
+    if (outcome === "CHURN") {
+      const src = sourceContractFor(card.hotelId);
+      const cid = card.created_source ? card.id.replace(/^RN-/, "") : src?.contract_id ?? card.id;
+      const service = scanContractById(cid)?.service ?? (src?.terms.package.startsWith("Marcom") ? "Marcom" : "ORM");
+      const now = isRenewalDemo() ? `${RENEWAL_R2_DEMO_NOW}T03:00:00.000Z` : new Date().toISOString();
+      recordReason({ contract_id: cid, service, renewal_card_id: card.id, outcome: churnType.includes("Early") ? "LOST" : "NOT_RENEWED", picks, note: pickNote, by: { member_id: currentUser, display: currentUser, role: canOverride ? "PM" : "AE" } }, now);
+    }
     setConfirmOpen(false);
     onClose();
     toast.success(
@@ -430,7 +465,7 @@ export function RenewalCardModal({
 
       {/* Re-confirm modal */}
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[88vh] max-w-2xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>โปรด Re-confirm สถานะการต่อสัญญาอีกครั้ง</DialogTitle>
             <DialogDescription>{card.hotel} · {card.hotelId}</DialogDescription>
@@ -470,12 +505,19 @@ export function RenewalCardModal({
                 </Select>
               </div>
             )}
+            {outcome === "CHURN" ? (
+              <div>
+                <Label className="text-xs">{RN2.markDone.reasons} *</Label>
+                <RenewalReasonPicker value={picks} onChange={(v) => { setPicks(v); setConfirmErr(null); }} note={pickNote} onNote={setPickNote} idPrefix="md" />
+              </div>
+            ) : (
             <div>
               <Label className="text-xs">
-                Reason {outcome === "CHURN" ? "*" : "(optional)"}
+                Reason (optional)
               </Label>
               <Textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={3} />
             </div>
+            )}
             {outcome === 'CHURN' && <div className="space-y-1"><Label htmlFor="renewal-effective-end" className="text-xs">วันสิ้นสุดสัญญาที่มีผล *</Label><Input id="renewal-effective-end" type="date" value={effectiveEnd} onChange={e => setEffectiveEnd(e.target.value)} /><p className="text-xs text-muted-foreground">สิ้นสุดบริการตามวันที่นี้ ไม่ใช่ทันทีที่บันทึกผล</p></div>}
             {confirmErr && <p className="text-xs text-destructive">{confirmErr}</p>}
           </div>
@@ -483,7 +525,7 @@ export function RenewalCardModal({
             <Button variant="outline" onClick={() => setConfirmOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={confirmDone}>Confirm</Button>
+            <Button onClick={confirmDone} disabled={outcome === "CHURN" && !validPick(picks)}>{outcome === "CHURN" ? RN2.markDone.confirm : "Confirm"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
