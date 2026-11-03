@@ -115,12 +115,12 @@ function subText(i: RenewalItem, today: string) {
   if (i.sub === "PENDING_APPROVAL") { const n = pendingDays(i, today) ?? 0; return <span className={cn(n > RENEWAL_SLA.PENDING_APPROVAL_MAX_DAYS && "rn2-amber")}>{RN2.card.sub.pending(n)}{n > RENEWAL_SLA.PENDING_APPROVAL_MAX_DAYS ? RN2.card.over2 : ""}</span>; }
   return <span>{RN2.card.sub[i.sub]}</span>;
 }
-function Delta({ a, b, goodUp, unit = "" }: { a: number | null; b: number | null; goodUp: boolean; unit?: string }) {
+function Delta({ a, b, goodUp, unit = "" }: { a: number | null; b: number | null; goodUp: boolean | null; unit?: string }) {
   if (a == null || b == null) return <span className="rn2-delta">{RN2.noCompare}</span>;
   const d = a - b;
   if (Math.abs(d) < 0.05) return <span className="rn2-delta">{RN2.same}</span>;
-  const good = goodUp ? d > 0 : d < 0;
-  return <span className={cn("rn2-delta", good ? "is-good" : "is-bad")}>{d > 0 ? "▲" : "▼"} {unit ? Math.abs(d).toFixed(1) : Math.abs(d)}{unit}</span>;
+  const good = goodUp == null ? null : goodUp ? d > 0 : d < 0;
+  return <span className={cn("rn2-delta", good === true && "is-good", good === false && "is-bad")}>{d > 0 ? "▲" : "▼"} {unit ? Math.abs(d).toFixed(1) : Math.abs(d)}{unit}</span>;
 }
 
 /* ---------------- main card ---------------- */
@@ -270,7 +270,7 @@ export function RenewalCardR2({ data }: { data: TabR1Data | undefined }) {
           <strong className="tabular-nums">{A.total} <small>{RN2.kpi.unit}</small></strong>
           <small>{RN2.kpi.svcLine(A.orm, A.marcom)}</small>
           <hr />
-          <small>{B ? <>{RN2.kpi.cmpCount(B.total)} · <Delta a={A.total} b={B.total} goodUp /></> : RN2.noCompare}</small>
+          <small>{B ? <>{RN2.kpi.cmpCount(B.total)} · <Delta a={A.total} b={B.total} goodUp={null} /></> : RN2.noCompare}</small>
         </div>
         <div className="rn2-kpi">
           <span>{RN2.kpi.renewed}<InfoButton info={{ count: RN2.kpiInfo.renewed }} /></span>

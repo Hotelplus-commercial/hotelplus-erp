@@ -75,7 +75,8 @@ describe('§1 period and compare', () => {
 describe('§4 by AE / team', () => {
   test('6 · no total column / row, divider present, zero = ·, dots follow the rules; team view lists ORM teams A–E', () => {
     const html = renderCard();
-    expect(html).not.toMatch(/รวม/);
+    const boxes = html.slice(html.indexOf('rn2-boxes'), html.indexOf('rn2-legend'));
+    expect(boxes).not.toMatch(/รวม/); expect(boxes).not.toContain('rn2-stage');
     expect(html).toContain('rn2-div');
     const rows = R.byOwner(items(), 'ORM', 'ae', Q4, today, today, hasR);
     const dao = rows.find((r) => r.key === 'AE001-ดาว')!;
