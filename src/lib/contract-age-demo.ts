@@ -5,7 +5,8 @@
 import { useSyncExternalStore } from 'react';
 import { TAB_R1_DEMO_NOW, tabR1DemoBase, tabR1DemoFlow } from './contract-tab-r1-demo';
 import { headerDemoPortfolio } from './ps-header-r2-demo';
-import { REASON_KEYS } from './renewal-r2';
+import { REASON_KEYS, reasonLabel } from './renewal-r2';
+import { rateText } from './contract-age';
 import { editableUntil, type RenewalReason } from './renewal-reasons';
 import type { PriceHistoryRow } from './renewal-rules';
 import type { L0Ticket } from './tickets-l0';
@@ -140,8 +141,51 @@ export function contractAgeDemo(): ContractAgeDemo {
   }
   const lockTarget = sources.find((s) => s.contract_id.startsWith('CT-ORM-L') && s.end_kind === 'NOT_RENEWED' && s.ended_at && s.ended_at < '2026-09-01')!;
   const tickets: L0Ticket[] = [welcomeBackSeed('TKT-000951', lockTarget)];
+  // R3.1 §7: three more Welcome Back tickets on existing demo lost contracts (รอมอบหมาย · มอบหมายแล้ว BD 1 · กำลังทำ BD 2).
+  const wbPicks = sources.filter((s) => s.contract_id !== lockTarget.contract_id && s.contract_id.startsWith('CT-') && s.ended_at && (s.end_kind === 'NOT_RENEWED' || s.end_kind === 'LOST') && reasons.some((r) => r.contract_id === s.contract_id) && prices.some((p) => p.contract_id === s.contract_id))
+    .sort((a, b) => b.ended_at!.localeCompare(a.ended_at!) || a.contract_id.localeCompare(b.contract_id)).slice(0, 3);
+  wbPicks.forEach((s, i) => tickets.push(welcomeBackR31(i, s, prices.filter((p) => p.contract_id === s.contract_id), reasons.find((r) => r.contract_id === s.contract_id)!, firstMeeting[s.contract_id] ?? null, today)));
   cache = { sources, links: [], prices, upsell, reasons, tickets, firstMeeting, lowSurveys };
   return cache;
+}
+/** R3.1 §7 demo Welcome Back tickets with a realistic R3 §6.1 payload (in memory only). */
+function welcomeBackR31(i: number, s: AgeContractSource, cycles: PriceHistoryRow[], r: RenewalReason, firstMeeting: string | null, today: string): L0Ticket {
+  const ids = ['TKT-000952', 'TKT-000953', 'TKT-000954'] as const;
+  const created = [T('2026-10-26'), T('2026-10-24'), T('2026-10-21')][i]!;
+  const by = (['PS', 'PM', 'PS'] as const)[i]!;
+  const last = cycles.slice().sort((a, b) => b.cycle_no - a.cycle_no)[0] ?? null;
+  const outcome = s.end_kind === 'LOST' ? 'ยกเลิกก่อนกำหนด' : 'ไม่ต่อ';
+  const age = s.go_live_at && s.ended_at ? Math.round((Date.parse(s.ended_at) - Date.parse(s.go_live_at)) / 864e5) : null;
+  const since = s.ended_at ? Math.max(0, Math.round((Date.parse(today) - Date.parse(s.ended_at)) / 864e5)) : null;
+  const primary = r.primary.map(reasonLabel);
+  const msg = ['GM คนใหม่เริ่มงานเดือนนี้ เปิดรับคุยเรื่องรีวิวออนไลน์อีกครั้ง', '', 'เจ้าของบอกว่างบปีหน้าอนุมัติแล้ว อยากให้ BD ติดต่อกลับช่วงต้นเดือน'][i]!;
+  const shared = i === 2;
+  const timeline = shared ? [
+    ...(s.go_live_at ? [{ at: s.go_live_at, text: 'Go Live', tone: 'green' }] : []),
+    ...(firstMeeting ? [{ at: firstMeeting, text: 'ประชุมรายเดือนครั้งแรก', tone: 'grey' }] : []),
+    ...(s.notice_at ? [{ at: s.notice_at, text: s.end_kind === 'LOST' ? 'แจ้งยกเลิก' : 'แจ้งไม่ต่อ', tone: 'red' }] : []),
+    ...(s.ended_at ? [{ at: s.ended_at, text: 'สิ้นสุดสัญญา', tone: 'red' }] : []),
+  ] : undefined;
+  const audit: L0Ticket['audit'] = [{ at: created, by, from_status: null, to_status: 'NEW' }];
+  const assigned = i === 0 ? null : i === 1 ? { member_id: 'BD-T1', label: 'BD 1 (ทดสอบ)', at: T('2026-10-27') } : { member_id: 'BD-T2', label: 'BD 2 (ทดสอบ)', at: T('2026-10-22') };
+  if (assigned) audit.push({ at: assigned.at, by: 'BD', from_status: 'NEW', to_status: 'NEW', note: `assigned → ${assigned.label}`, actor: 'BDM (ทดสอบ)' });
+  if (i === 2) audit.push({ at: T('2026-10-23'), by: 'BD', from_status: 'NEW', to_status: 'IN_PROGRESS', actor: 'BD 2 (ทดสอบ)' });
+  return {
+    ticket_id: ids[i]!, type: 'WELCOME_BACK', source_app: 'PS_DASHBOARD', created_by: by, target_dept: 'BD',
+    subject_ref: { hotel_id: s.hotel_id, hotel_name: s.hotel_name_th ?? s.hotel_id, gap_service: s.service, service_line: s.service, contract_id: s.contract_id, service: s.service },
+    payload: {
+      readiness_tier: '', chips: primary, note: msg || `${s.hotel_name_en ?? s.hotel_id} · ${s.service} · ${outcome}`, contract_id: s.contract_id,
+      snapshot: {
+        contract_info: { name_en: s.hotel_name_en ?? '', name_th: s.hotel_name_th ?? '', contract_id: s.contract_id, service: s.service, signed: s.signed_at ?? '', go_live: s.go_live_at ?? '', renewals: String(Math.max(0, cycles.length - 1)), ae: s.ae_name ?? '', team: s.team_label ?? '' },
+        package_rate: last ? { package: last.package ?? '', rate: rateText(last) } : {},
+        exit_status: { outcome, ended_at: s.ended_at ?? '', age_days: age != null ? String(age) : '', since_days: since != null ? String(since) : '' },
+        reasons: { primary, secondary: reasonLabel(r.secondary), ...(r.note ? { ae_note: r.note } : {}) },
+      },
+      ...(msg ? { message: msg } : {}), timeline_shared: shared, ...(timeline ? { timeline } : {}), drive_attachments: [],
+    },
+    assignee: { member_id: 'BDM', display: 'BDM', role: 'BDM' }, status: i === 2 ? 'IN_PROGRESS' : 'NEW', created_at: created, revision: audit.length - 1, audit,
+    ...(assigned ? { assigned_to: assigned.member_id, assigned_to_label: assigned.label, assigned_by: 'BDM-T', assigned_at: assigned.at } : {}),
+  };
 }
 function reasonRec(id: string, contract_id: string, service: AgeSvc, outcome: 'NOT_RENEWED' | 'LOST', r: (string | undefined)[], ended: string, ae: string | null): RenewalReason {
   const created = T(addDays(ended, 2));
@@ -166,6 +210,8 @@ export const demoWelcomeBackSink = {
   items: () => demoSent,
   add: (t: L0Ticket) => { demoSent = [...demoSent, t]; demoVer++; demoListeners.forEach((l) => l()); },
   at: () => `${CONTRACT_AGE_DEMO_NOW}T03:00:00.000Z`,
+  /** R3.1 §7: BD Workspace DEMO writes (assign / start / close) replace the in-memory copy, or add a copy of a seed ticket. */
+  put: (t: L0Ticket) => { demoSent = demoSent.some((x) => x.ticket_id === t.ticket_id) ? demoSent.map((x) => (x.ticket_id === t.ticket_id ? t : x)) : [...demoSent, t]; demoVer++; demoListeners.forEach((l) => l()); },
 };
 /** Next number for a DEMO send (TKT-001001 …, never the live sequence). */
 export const nextDemoTicketId = () => { let n = demoSeq + 1; while (demoSent.some((t) => t.ticket_id === `TKT-${String(n).padStart(6, '0')}`)) n++; demoSeq = n - 1; return `TKT-${String(n).padStart(6, '0')}`; };
