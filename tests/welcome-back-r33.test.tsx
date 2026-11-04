@@ -180,7 +180,6 @@ describe('R3.3 WB21 — the real two-page path', () => {
     expect(d.querySelector('[data-testid="ws-demo-bar"]')).toBeNull(); // now normal, like PS Dashboard
     // PS DEMO switched on while the page is open → the page follows (no bar)
     await fire(() => DS.setPsDemoSession(true));
-    console.log('DBG', DS.psDemoOn(), d.querySelector('[data-testid="bd-ws-mode-mismatch"]')?.textContent);
     expect(d.querySelector('[data-testid="bd-ws-mode-mismatch"]')).toBeNull();
     expect(d.querySelector('[data-testid="ws-demo-bar"]')).not.toBeNull();
   });
