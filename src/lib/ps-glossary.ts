@@ -446,7 +446,7 @@ export const CL = {
     attach: "+ แนบไฟล์", attachOff: "ยังไม่ได้เชื่อม Google Drive",
     attachInfo: "ไฟล์แนบอัปโหลดไปโฟลเดอร์ทั่วไปของสัญญาใน Google Drive · Ticket เก็บเฉพาะลิงก์ · ยังไม่ได้เชื่อม Google Drive จึงแนบไม่ได้ (ส่ง Ticket ได้ตามปกติ)",
     tickets: "Ticket ของสัญญานี้", noTickets: "ยังไม่มี Ticket",
-    ticketLine: (date: string, tl: boolean, files: number) => `Welcome Back → BDM · ${date}${tl ? " · แนบ Timeline" : ""}${files ? ` · ไฟล์ ${files}` : ""}`,
+    ticketLine: (date: string, tl: boolean, files: number, assigned: string | null = null) => `Welcome Back → BDM · ${date}${assigned ? ` · มอบหมาย ${assigned}` : ""}${tl ? " · แนบ Timeline" : ""}${files ? ` · ไฟล์ ${files}` : ""}`,
     to: "ส่งถึง BD · BDM", newBadge: "New",
     summary: "BD จะเห็นใน Ticket:",
     sumItems: { info: "ข้อมูลสัญญา", pkg: "แพ็กเกจและอัตราค่าบริการรอบสุดท้าย", timeline: "Timeline", exit: "สถานะการออก", why: "ทำไมถึงออก", msg: "ข้อความถึง BD", files: (n: number) => `ไฟล์แนบ ${n} ไฟล์`, noTimeline: "(ไม่รวม Timeline)" },

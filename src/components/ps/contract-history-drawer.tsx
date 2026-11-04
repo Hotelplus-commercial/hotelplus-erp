@@ -8,6 +8,7 @@ import { useAccount360 } from "./account-360";
 import { CL, R1_STATUS_TH, ticketTypeTh } from "@/lib/ps-glossary";
 import type { L0Ticket } from "@/lib/tickets-l0";
 import { reasonLabel } from "@/lib/renewal-r2";
+import { wbPsStatus } from "@/lib/welcome-back-routing";
 import {
   ageText, lastCycle, openWelcomeBack, quarterLabel, rateText, sinceText, thDate, timelineOf, welcomeBackInput,
   type ChurnRow, type TimelineEvent, type WelcomeBackDraft,
@@ -164,7 +165,7 @@ export function ContractHistoryDrawer({ row, feed, draft, onDraft, onClose }: {
             <h4>{D.tickets}</h4>
             {mine.length ? (
               <ul className="cl-tlist">
-                {mine.map((t) => <li key={t.ticket_id}><span className="cl-tpill">#{t.ticket_id} · {R1_STATUS_TH[t.status] ?? t.status}</span> {D.ticketLine(thDate(t.created_at.slice(0, 10)), !!t.payload.timeline_shared, t.payload.drive_attachments?.length ?? 0)}</li>)}
+                {mine.map((t) => <li key={t.ticket_id}><span className="cl-tpill">#{t.ticket_id} · {wbPsStatus(t)}</span> {D.ticketLine(thDate(t.created_at.slice(0, 10)), !!t.payload.timeline_shared, t.payload.drive_attachments?.length ?? 0, t.assigned_to_label ?? null)}</li>)}
               </ul>
             ) : <p className="cl-muted">{D.noTickets}</p>}
             {!lock && (
