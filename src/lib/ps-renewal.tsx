@@ -72,6 +72,9 @@ export type RenewalCard = {
   churnReason?: string | undefined;
   /** Tab R2 §10.2: who created the card (missing = BOT). No backfill. */
   created_source?: "BOT" | "AE_EARLY" | undefined;
+  /** R2.1 UF1: source contract carried end to end (cards made by the create path). Optional, no backfill. */
+  contract_id?: string | undefined;
+  service?: "ORM" | "Marcom" | undefined;
 };
 
 /* --- Org directory (employee code + nickname) --- */
