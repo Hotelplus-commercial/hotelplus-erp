@@ -57,7 +57,9 @@ export type L0Ticket = {
   /** Tab R1 §6.1: optional single recipient (target_dept is derived from it). */
   assignee?: TicketAssignee;
   status: L0Status; created_at: string; revision: number;
-  audit: { at: string; by: Creator; from_status: L0Status | null; to_status: L0Status }[];
+  audit: { at: string; by: Creator; from_status: L0Status | null; to_status: L0Status; /** R3.1: e.g. `assigned → {label}` */ note?: string; /** R3.1: acting member label */ actor?: string }[];
+  /** R3.1 WB3 — WELCOME_BACK only: the one person the BDM assigned (nullable; missing = not assigned). File 16 maps these. */
+  assigned_to?: string | null; assigned_to_label?: string | null; assigned_by?: string | null; assigned_at?: string | null;
 };
 
 export const DEPTS: Dept[] = ['BD', 'ORM', 'MARCOM', 'PS', 'AC', 'AUTO', 'HR', 'OFFICE'];
@@ -148,7 +150,7 @@ export const openWelcomeBackFor = (contractId: string, extra: L0Ticket[] = []) =
 export type WelcomeBackOut = { ok: true; ticket_id: string } | { ok: false; locked: L0Ticket | null; error: string };
 /** Tab R3 §6.2/§6.3: the WELCOME_BACK write. Re-checks the per-contract lock inside the write (against the current store
  * revision, plus `extra` read-only seed tickets); a locked contract writes nothing. A reserved number is reused on retry. */
-export type TicketSink = { items: () => L0Ticket[]; add: (t: L0Ticket) => void; at: () => string };
+export type TicketSink = { items: () => L0Ticket[]; add: (t: L0Ticket) => void; at: () => string; /** R3.1: replace-or-add (DEMO writes) */ put?: (t: L0Ticket) => void };
 export function createWelcomeBack(i: Parameters<typeof createTask>[0], extra: L0Ticket[] = [], sink?: TicketSink): WelcomeBackOut {
   const cid = i.subject_ref.contract_id ?? i.payload.contract_id;
   if (!cid) return { ok: false, locked: null, error: 'ไม่มีเลขสัญญา' };
@@ -223,6 +225,70 @@ export function transition(id: string, revision: number, to: L0Status, by: Role)
   commit({ ...s, items: s.items.map((x) => (x.ticket_id === id ? next : x)) });
   return true;
 }
+
+/* ================= R3.1 WELCOME_BACK routing: BDM inbox → assign one BD → that BD starts / finishes ================= */
+/** Testing-mode actor (no login): role BDM / BD / PM / PS … plus the member it plays. Simulation only, never security. */
+export type WbActor = { role: string; member_id: string | null; label: string };
+export type WbAction = 'ASSIGN' | 'SELF' | 'START' | 'DONE' | 'CANCEL';
+/** DEMO context: read-only seed tickets + the card ④ in-memory sink + the demo clock. Live mode passes nothing. */
+export type WbCtx = { extra?: L0Ticket[]; sink?: TicketSink; at?: string };
+export type WbOut = { ok: true; ticket: L0Ticket } | { ok: false; error: 'conflict' | 'not_allowed' | 'not_found' };
+/** The one permission rule for Welcome Back actions (WB4 §3.2). Other ticket types never reach this. */
+export function wbAllowed(t: L0Ticket, a: WbActor): WbAction[] {
+  if (t.type !== 'WELCOME_BACK') return [];
+  const out: WbAction[] = [];
+  const mine = !!t.assigned_to && !!a.member_id && t.assigned_to === a.member_id;
+  if (t.status === 'NEW' && a.role === 'BDM') { out.push('ASSIGN'); if (!mine) out.push('SELF'); }
+  if (t.status === 'NEW' && mine) out.push('START');
+  if ((t.status === 'IN_PROGRESS' || t.status === 'ACK') && mine) out.push('DONE');
+  if (OPEN.includes(t.status) && a.role === t.created_by) out.push('CANCEL');
+  return out;
+}
+function wbFind(id: string, ctx?: WbCtx): { t: L0Ticket; where: 'store' | 'sink' | 'extra' } | null {
+  const s = cur().items.find((x) => x.ticket_id === id); if (s) return { t: s, where: 'store' };
+  const k = ctx?.sink?.items().find((x) => x.ticket_id === id); if (k) return { t: k, where: 'sink' };
+  const e = ctx?.extra?.find((x) => x.ticket_id === id); if (e) return { t: e, where: 'extra' };
+  return null;
+}
+function wbWrite(where: 'store' | 'sink' | 'extra', next: L0Ticket, ctx?: WbCtx): boolean {
+  const s = cur();
+  if (where === 'store') { commit({ ...s, items: s.items.map((x) => (x.ticket_id === next.ticket_id ? next : x)) }); return true; }
+  if (where === 'extra' && demoOn) { commit({ ...s, items: [...s.items, next] }); return true; } // DEMO seed → in-memory copy overrides it
+  if (ctx?.sink?.put) { ctx.sink.put(next); return true; }
+  return false;
+}
+/** Shared write: revision check (optimistic lock as L0) → permission → write. Live store moves go through transition(). */
+function wbApply(t: L0Ticket, a: WbActor, need: WbAction, ctx: WbCtx | undefined, build: (cur: L0Ticket, at: string) => L0Ticket, liveTo?: L0Status): WbOut {
+  const f = wbFind(t.ticket_id, ctx);
+  if (!f || f.t.type !== 'WELCOME_BACK') return { ok: false, error: 'not_found' };
+  if (f.t.revision !== t.revision) return { ok: false, error: 'conflict' };
+  if (!wbAllowed(f.t, a).includes(need)) return { ok: false, error: 'not_allowed' };
+  if (liveTo && f.where === 'store' && !demoOn) {
+    const by: Role = need === 'CANCEL' ? (f.t.created_by as Role) : 'BD';
+    return transition(f.t.ticket_id, f.t.revision, liveTo, by) ? { ok: true, ticket: ticketById(f.t.ticket_id)! } : { ok: false, error: 'conflict' };
+  }
+  const next = build(f.t, ctx?.at ?? now());
+  return wbWrite(f.where, next, ctx) ? { ok: true, ticket: next } : { ok: false, error: 'not_found' };
+}
+const move = (t: L0Ticket, to: L0Status, at: string, a: WbActor, by: Creator): L0Ticket =>
+  ({ ...t, status: to, revision: t.revision + 1, audit: [...t.audit, { at, by, from_status: t.status, to_status: to, actor: a.label }] });
+/** BDM only, while NEW. Sets assigned_* (overwrites on re-assign); status stays NEW; audit note `assigned → {label}`; revision +1. */
+export function assignWelcomeBack(t: L0Ticket, member: { member_id: string; label: string }, by: WbActor, ctx?: WbCtx): WbOut {
+  const need: WbAction = member.member_id === by.member_id ? 'SELF' : 'ASSIGN';
+  return wbApply(t, by, wbAllowed(t, by).includes(need) ? need : 'ASSIGN', ctx, (c, at) => ({
+    ...c, assigned_to: member.member_id, assigned_to_label: member.label, assigned_by: by.member_id ?? by.role, assigned_at: at, revision: c.revision + 1,
+    audit: [...c.audit, { at, by: 'BD', from_status: 'NEW', to_status: 'NEW', note: `assigned → ${member.label}`, actor: by.label }],
+  }));
+}
+/** Assigned member only (BDM when assigned to self): NEW → IN_PROGRESS. An unassigned NEW cannot be started by anyone. */
+export const startWelcomeBack = (t: L0Ticket, by: WbActor, ctx?: WbCtx): WbOut =>
+  wbApply(t, by, 'START', ctx, (c, at) => move(c, 'IN_PROGRESS', at, by, 'BD'), 'IN_PROGRESS');
+/** Assigned member only: IN_PROGRESS → DONE (live store: existing L0 transition()). Releases the R3 §6.3 lock. */
+export const finishWelcomeBack = (t: L0Ticket, by: WbActor, ctx?: WbCtx): WbOut =>
+  wbApply(t, by, 'DONE', ctx, (c, at) => move(c, 'DONE', at, by, 'BD'), 'DONE');
+/** Creator only, before DONE (L0 rule unchanged). Releases the lock. */
+export const cancelWelcomeBack = (t: L0Ticket, by: WbActor, ctx?: WbCtx): WbOut =>
+  wbApply(t, by, 'CANCEL', ctx, (c, at) => move(c, 'CANCELLED', at, by, c.created_by), 'CANCELLED');
 
 export const isPendingPickup = (t: L0Ticket) => !DEPTS_WITH_WORKSPACE.includes(t.target_dept);
 export const ticketSnapshot = () => cur().items;
