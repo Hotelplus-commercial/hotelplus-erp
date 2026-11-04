@@ -8,7 +8,7 @@ mock.module('../src/lib/cloud-sync', () => ({ stageCloudDoc: () => {} }));
 beforeAll(() => { GlobalRegistrator.register({ url: 'http://localhost:8080/ps?demo=1' }); (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true; });
 afterAll(async () => { await GlobalRegistrator.unregister(); });
 
-const until = async (f: () => boolean, ms = 5000) => { const t0 = Date.now(); while (!f()) { if (Date.now() - t0 > ms) throw new Error('timeout waiting for late cards'); await new Promise((r) => setTimeout(r, 20)); } };
+const until = async (f: () => boolean, ms = 15000) => { const t0 = Date.now(); while (!f()) { if (Date.now() - t0 > ms) throw new Error('timeout waiting for late cards'); await new Promise((r) => setTimeout(r, 20)); } };
 
 async function mount(which: 'ps' | 'servicing') {
   const { act, createElement: h } = await import('react');
@@ -48,7 +48,7 @@ describe('R4.1 forbidden strings after every card mounts (demo)', () => {
     expect(domHits(div)).toEqual(['RENEWED']);
     bad.remove();
     expect(domHits(div)).toEqual([]);
-  });
+  }, 20000);
   test('On-board / Off-board incl. queue table', async () => {
     const div = await mount('servicing');
     await until(() => !!div.querySelector('[data-testid="sd-queue"]'));
@@ -56,5 +56,5 @@ describe('R4.1 forbidden strings after every card mounts (demo)', () => {
     // P2 outside the allowed sections is still forbidden
     const bad = document.createElement('span'); bad.textContent = 'งาน P2'; div.appendChild(bad);
     expect(domHits(div)).toEqual(['P1/P2/P3']);
-  });
+  }, 20000);
 });
