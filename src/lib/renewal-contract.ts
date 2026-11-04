@@ -21,7 +21,7 @@ export function skuForPackage(pkg: string): string {
 export function contractFromSource(src: SourceLike, createdAt: string): Contract {
   const fee = src.terms.fee_amount; const comm = src.terms.commission_pct;
   return {
-    contract_id: src.contract_id, hotel_id: src.hotel_id || undefined, from_quote_id: '', billing_status: 'ACTIVE', inactivated_at: null,
+    contract_id: src.contract_id, ...(src.hotel_id ? { hotel_id: src.hotel_id } : {}), from_quote_id: '', billing_status: 'ACTIVE', inactivated_at: null,
     customer_snapshot: { customer_id: src.customer_id, legal_name: src.legal_entity, type: 'juristic', tax_id: '', address: '', signer_name: src.signatory, contact_phone: '', contact_email: '', hotel_name: '' },
     template_snapshot: { template_id: '', version: '', body_url: '' },
     lines: [{ line_id: `${src.contract_id}-L1`, sku_snapshot: skuForPackage(src.terms.package), name_snapshot: src.terms.package, package_snapshot: null, billing: 'monthly', unit_price: fee > 0 ? fee : null, commission_rate: comm > 0 ? Math.round(comm * 100) / 10000 : null, quantity: 1 }],
