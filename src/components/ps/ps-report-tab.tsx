@@ -40,9 +40,13 @@ import type { TabR1Data } from "@/lib/contract-tab-r1";
 import { ContractInOutCard } from "./contract-inout-card";
 import { ContractHealthCard } from "./contract-health-card";
 import { RenewalCardR2 } from "./renewal-card-r2";
+import { ContractLifetimeCard } from "./contract-lifetime-card";
+import { useContractAge } from "./use-contract-age";
 
 /** Tab R1 §1 — cards unmounted from this tab; their code stays for reference (never rendered). */
 const R1_LEGACY = false as boolean;
+/** Tab R3 §1 — old card ④ อายุสัญญา unmounted from this tab; code kept (never rendered). */
+const R3_LEGACY_LIFETIME = false as boolean;
 import { NowChip, useCardCompare } from "./compare-control";
 import type { Period } from "@/lib/ps-dashboard-global";
 import {
@@ -158,6 +162,8 @@ export function PsReportTab({
   const kFlow = useCardCompare("ps", "lifecycle", today), kChurn = useCardCompare("ps", "churn", today), kRenew = useCardCompare("ps", "renewal", today), kLife = useCardCompare("ps", "lifetime", today), kCohort = useCardCompare("ps", "onboard", today);
   const perCard = !compareSide;
   const r1Data = useMemo(() => r1 ?? (demo ? tabR1Demo() : undefined), [r1, demo]);
+  /* Tab R3: one `v_ps_contract_age` feed for card ④ and the card ⑦ age cell. */
+  const ageFeed = useContractAge(r1Data);
   const fA = (k: { a: Period }): PsFilter => (perCard ? { ...filter, period: k.a } : filter);
   const fB = (k: { b: Period }): PsFilter | undefined => (perCard ? { ...filter, period: k.b } : comparisonFilter);
   // R1.2 §3.1: In / Out = recurring (monthly) services only; setup fees and one-time jobs never count.
@@ -812,7 +818,13 @@ export function PsReportTab({
           <ChartSkeleton text={emptyText} />
         )}
       </DashCard>)}
-      <DashCard
+      {/* Tab R3 §1: card ④ อายุสัญญา is replaced in this tab (old card code kept, unmounted). */}
+      {compareSide !== "B" && (
+        <div className={compareSide ? "" : "lg:col-span-2"}>
+          <ContractLifetimeCard feed={ageFeed} />
+        </div>
+      )}
+      {R3_LEGACY_LIFETIME && (<DashCard
         period={perCard ? kLife.control : undefined}
         title={R1_TITLES.lifetime}
         question="ลูกค้าอยู่กับเรานานแค่ไหน?"
@@ -887,7 +899,7 @@ export function PsReportTab({
         ) : (
           <ChartSkeleton text={emptyText} />
         )}
-      </DashCard>
+      </DashCard>)}
       <div className={compareSide ? "" : "lg:col-span-2"}>
         <DashCard
           period={perCard ? kCohort.control : undefined}
@@ -1081,7 +1093,7 @@ export function PsReportTab({
       </div>
       {compareSide !== "B" && (
         <div className={compareSide ? "" : "lg:col-span-2"}>
-          <ContractHealthCard data={r1Data} onOpenTask={onOpenTask} />
+          <ContractHealthCard data={r1Data} onOpenTask={onOpenTask} ages={ageFeed?.index} />
         </div>
       )}
       {/* Tab R1 §1: old ⑦b Account Health is unmounted from this tab (code kept). */}
