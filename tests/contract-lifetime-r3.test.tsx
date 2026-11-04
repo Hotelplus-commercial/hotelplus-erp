@@ -76,7 +76,7 @@ describe('§1.2 / §8 age definition (shared with card ⑦)', () => {
     expect(A.healthAgeDays(r1o1)).toBeNull();
     const { ContractHealthCard } = await import('../src/components/ps/contract-health-card');
     const { tabR1Demo } = await import('../src/lib/contract-tab-r1-demo');
-    const only = { ...tabR1Demo(), base: tabR1Demo().base.filter((b) => b.contract_id === 'R1-O1') };
+    const only = { ...tabR1Demo(), base: tabR1Demo().base.filter((b) => b.contract_id === 'R1-O1').map((b) => ({ ...b, inputs: { overdue_this: true, overdue_other: false } })) }; // red so the row is visible without the green toggle
     expect(text(renderToStaticMarkup(h(ContractHealthCard, { data: only, ages: A.ageIndex(demoRows()) })))).toContain(CL.setupAge);
   });
   test('ageText: month = 30.42 days; under a month → days', () => {
