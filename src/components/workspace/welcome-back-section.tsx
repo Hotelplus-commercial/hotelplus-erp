@@ -67,7 +67,20 @@ export function WelcomeBackSection({ actor, demo, initialTicket }: { actor: WbAc
       ))}
       <Sheet open={!!open} onOpenChange={(o) => !o && setOpenId(null)}>
         <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-lg">
-          {open && <WbDetail t={open} actor={actor} ctx={ctx} />}
+          {open && (
+            <>
+              <SheetHeader className="mb-4 space-y-1 text-left">
+                <SheetTitle>{WB.detail.title(open.ticket_id)}</SheetTitle>
+                <SheetDescription asChild>
+                  <div className="flex flex-wrap items-center gap-2 text-xs">
+                    <Badge variant="secondary">{wbPill(open)}</Badge>
+                    <span>{WB.sentByRole(open.created_by, ROLE_TH[open.created_by] ?? open.created_by, thDate(open.created_at))}</span>
+                  </div>
+                </SheetDescription>
+              </SheetHeader>
+              <WbDetailBody t={open} actor={actor} ctx={ctx} />
+            </>
+          )}
         </SheetContent>
       </Sheet>
     </section>
@@ -96,7 +109,8 @@ function WbRow({ t, onOpen }: { t: L0Ticket; onOpen: () => void }) {
 
 const ROLE_TH: Record<string, string> = { PM: "PM", PS: "PS", AE: "AE" };
 
-function WbDetail({ t, actor, ctx }: { t: L0Ticket; actor: WbActor; ctx: WbCtx | undefined }) {
+/** §5 body (sections 1–8 + actions footer); the drawer header (title · status · ส่งโดย) wraps it. */
+export function WbDetailBody({ t, actor, ctx }: { t: L0Ticket; actor: WbActor; ctx: WbCtx | undefined }) {
   const D = WB.detail;
   const s = t.payload.snapshot;
   const ci = s?.contract_info ?? {};
@@ -114,16 +128,6 @@ function WbDetail({ t, actor, ctx }: { t: L0Ticket; actor: WbActor; ctx: WbCtx |
   const files = t.payload.drive_attachments ?? [];
   return (
     <div className="space-y-4 text-sm" data-testid="wb-detail">
-      <SheetHeader className="space-y-1 text-left">
-        <SheetTitle>{D.title(t.ticket_id)}</SheetTitle>
-        <SheetDescription asChild>
-          <div className="flex flex-wrap items-center gap-2 text-xs">
-            <Badge variant="secondary">{wbPill(t)}</Badge>
-            <span>{WB.sentByRole(t.created_by, ROLE_TH[t.created_by] ?? t.created_by, thDate(t.created_at))}</span>
-          </div>
-        </SheetDescription>
-      </SheetHeader>
-
       <Sec id="info" title={D.info}>
         <dl className="grid grid-cols-[minmax(5rem,8rem)_minmax(0,1fr)] gap-1 break-words">
           <dt className="text-muted-foreground">{D.hotel}</dt><dd>{hotel}</dd>
