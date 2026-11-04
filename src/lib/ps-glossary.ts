@@ -446,7 +446,7 @@ export const CL = {
     attach: "+ แนบไฟล์", attachOff: "ยังไม่ได้เชื่อม Google Drive",
     attachInfo: "ไฟล์แนบอัปโหลดไปโฟลเดอร์ทั่วไปของสัญญาใน Google Drive · Ticket เก็บเฉพาะลิงก์ · ยังไม่ได้เชื่อม Google Drive จึงแนบไม่ได้ (ส่ง Ticket ได้ตามปกติ)",
     tickets: "Ticket ของสัญญานี้", noTickets: "ยังไม่มี Ticket",
-    ticketLine: (date: string, tl: boolean, files: number) => `Welcome Back → BDM · ${date}${tl ? " · แนบ Timeline" : ""}${files ? ` · ไฟล์ ${files}` : ""}`,
+    ticketLine: (date: string, tl: boolean, files: number, assigned: string | null = null) => `Welcome Back → BDM · ${date}${assigned ? ` · มอบหมาย ${assigned}` : ""}${tl ? " · แนบ Timeline" : ""}${files ? ` · ไฟล์ ${files}` : ""}`,
     to: "ส่งถึง BD · BDM", newBadge: "New",
     summary: "BD จะเห็นใน Ticket:",
     sumItems: { info: "ข้อมูลสัญญา", pkg: "แพ็กเกจและอัตราค่าบริการรอบสุดท้าย", timeline: "Timeline", exit: "สถานะการออก", why: "ทำไมถึงออก", msg: "ข้อความถึง BD", files: (n: number) => `ไฟล์แนบ ${n} ไฟล์`, noTimeline: "(ไม่รวม Timeline)" },
@@ -578,4 +578,27 @@ export const SD = {
     notFound: "ไม่พบการ์ดนี้", demoOpen: "DEMO · ไม่มีการ์ดจริงให้เปิด", notLocal: "ยังไม่พบการ์ดนี้ในเครื่องนี้ · เปิดที่ On-boarding Process",
   },
   liveNoSurvey: "ยังไม่มีข้อมูล",
+} as const;
+
+/* ===================== R3.1 · Welcome Back → BDM → BD (BD Workspace 🎫 lane + PS drawer line) — display text only ===================== */
+export const WB = {
+  roleBdm: "สวมบท BDM", roleBd: "สวมบท BD", member: (name: string) => `BD: ${name}`, memberAria: "เลือกสมาชิก BD (ทดสอบ)", testData: "ข้อมูลทดสอบ",
+  section: "Welcome Back",
+  pending: (n: number) => `รอมอบหมาย (${n})`, assigned: (n: number) => `มอบหมายแล้ว (${n})`, mine: (n: number) => `ของฉัน (${n})`, sent: (n: number) => `ที่ฉันส่ง (${n})`, closed: (n: number) => `เสร็จ / ยกเลิกแล้ว (${n})`,
+  showClosed: "แสดงที่เสร็จ / ยกเลิกแล้ว",
+  emptyBdm: "ไม่มี Welcome Back รอมอบหมาย", emptyBd: "ยังไม่มี Welcome Back ที่มอบหมายให้คุณ", emptySent: "ยังไม่มี Welcome Back ที่ส่ง",
+  exitOn: (d: string) => `ออกเมื่อ ${d}`, sentBy: (who: string, d: string) => `ส่งโดย ${who} · ${d}`, sentByRole: (who: string, role: string, d: string) => `ส่งโดย ${who} (${role}) · ${d}`,
+  pill: { pending: "รอมอบหมาย", assigned: (n: string) => `มอบหมายแล้ว · ${n}`, working: (n: string | null) => (n ? `กำลังทำ · ${n}` : "กำลังทำ"), done: "เสร็จ", cancelled: "ยกเลิก" },
+  ps: { pending: "รอ BDM มอบหมาย", assigned: "มอบหมายแล้ว", working: "กำลังทำ", done: "เสร็จ", cancelled: "ยกเลิก", assignedTo: (n: string) => ` · มอบหมาย ${n}` },
+  detail: {
+    title: (id: string) => `Welcome Back · #${id}`, close: "ปิด",
+    info: "ข้อมูลสัญญา", hotel: "โรงแรม", contract: "เลขสัญญา", service: "บริการ", period: "เริ่ม → สิ้นสุด", ae: "AE เดิม",
+    pkg: "แพ็กเกจและอัตราค่าบริการรอบสุดท้าย", pkgName: "แพ็กเกจ", rate: "อัตราค่าบริการ", upsell: "Upsell",
+    exit: "สถานะการออก", why: "ทำไมถึงออก", primary: "เหตุผลหลัก", secondary: "เหตุผลรอง", aeNote: (n: string) => `หมายเหตุจาก AE: ${n}`, noReason: "ยังไม่บันทึกเหตุผล",
+    msg: "ข้อความถึง BD", timeline: "Timeline", files: "ไฟล์แนบ", history: "ประวัติ Ticket",
+    created: (who: string) => `สร้างโดย ${who}`, assignedEv: (by: string, to: string) => `มอบหมาย ${by} → ${to}`, started: (who: string) => `เริ่มทำ · ${who}`, doneEv: (who: string) => `เสร็จ · ${who}`, cancelledEv: (who: string) => `ยกเลิก · ${who}`,
+    pick: "เลือก BD", assign: "มอบหมาย", reassign: "เปลี่ยนผู้รับผิดชอบ", self: "ฉันทำเอง", start: "เริ่มทำ", done: "เสร็จ", cancel: "ยกเลิก", readOnly: "ดูอย่างเดียว",
+  },
+  toast: { assigned: (n: string) => `มอบหมายให้ ${n} แล้ว`, started: "เริ่มทำแล้ว", closed: "ปิด Ticket แล้ว", cancelled: "ยกเลิก Ticket แล้ว" },
+  conflict: "ข้อมูลเปลี่ยนแล้ว · โหลดใหม่", notAllowed: "บทบาทนี้ทำรายการนี้ไม่ได้",
 } as const;

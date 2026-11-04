@@ -302,5 +302,13 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [x] Card ④ rebuilt (KPI, two zone views, Go Live highlight, distribution, churn table, survival) · old card unmounted
 - [x] Contract-history drawer + WELCOME_BACK ticket with per-contract lock · card ⑦ age from first Go Live
 - [x] Glossary `CL` + 8-step tour · demo additions · rules files · tests 306 → 330
-- [ ] O-25 BD-side Welcome Back view · Upsell capture in PM contract entry (later patches)
+- [x] O-25 BD-side Welcome Back view — R3.1 BDM → BD routing (basic)
+- [ ] Upsell capture in PM contract entry (later patch)
+
+## R3.1 · Welcome Back BDM → BD routing
+- [x] Testing roles สวมบท BDM / BD + member pick (testing list) in BD Workspace
+- [x] assign / start / finish / cancel helpers + Welcome Back section and detail drawer in BD Workspace 🎫
+- [x] PS drawer line shows assignment · DEMO store shared with BD Workspace · 3 demo tickets · tests 357 → 370
+- [ ] Bell targeting BDM / BD member — the bell has no role or member target yet (skipped)
+- [ ] HOC / MD read-only view — no HOC / MD role in the workspace switcher yet
 - [ ] Google Drive attachments wait for a Drive connection

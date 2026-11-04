@@ -17,6 +17,10 @@ import { TicketAttachments } from "@/components/ps/renewal-request-ui";
 import { reportStageLabel, statusText } from '@/lib/servicing-time';
 import { servicingLanes } from '@/lib/servicing-time';
 import { demoServicingRows, SERVICING_DEMO_NOW } from '@/lib/servicing-demo';
+import { WelcomeBackSection } from "./welcome-back-section";
+import { WB_TEST_BDS, wbActorOf } from "@/lib/welcome-back-routing";
+import { isRenewalTestMode } from "@/lib/renewal-test-actor";
+import { WB } from "@/lib/ps-glossary";
 
 const fmt = (iso: string) => new Date(iso).toLocaleString("th-TH", { dateStyle: "medium", timeStyle: "short" });
 const RANGES: { key: DateRange; label: string }[] = [{ key: "today", label: "วันนี้" }, { key: "7d", label: "7 วัน" }, { key: "14d", label: "14 วัน" }];
@@ -25,10 +29,16 @@ const RANGES: { key: DateRange; label: string }[] = [{ key: "today", label: "ว
 export function WorkspaceShell({ config, demo, ticket }: { config: WorkspaceConfig; demo: boolean; ticket?: string | undefined }) {
   const [ready, setReady] = useState(false);
   useEffect(() => { setRenewalDemo(demo); setTicketDemo(demo); setReady(true); }, [demo]);
-  const [role, setRole] = useState<Role>(config.dept_key);
+  // R3.1 WB2: BD Workspace adds สวมบท BDM and a BD member pick under สวมบท BD (testing mode only). Default role unchanged.
+  const [role, setRole] = useState<Role | "BDM">(config.dept_key);
+  const [bdMember, setBdMember] = useState<string>(WB_TEST_BDS[0].member_id);
   const [range, setRange] = useState<DateRange>("today");
   useEffect(() => { setRole(config.dept_key); }, [config.dept_key]);
   if (!ready) return null;
+  const wbTest = config.dept_key === "BD" && isRenewalTestMode();
+  const deptRole: Role = role === "BDM" ? "BD" : role; // BDM works other ticket types as BD (unchanged rules)
+  const roles: (Role | "BDM")[] = ["PM", ...DEPTS];
+  if (wbTest) roles.splice(roles.indexOf("BD"), 0, "BDM");
 
   return (
     <div className="space-y-4">
@@ -38,10 +48,18 @@ export function WorkspaceShell({ config, demo, ticket }: { config: WorkspaceConf
         <div className="flex flex-wrap items-center gap-3">
           <label className="flex items-center gap-2 text-sm">
             <span className="text-muted-foreground">สวมบท (โหมดทดสอบ)</span>
-            <select aria-label="สวมบท" className="rounded-md border bg-background px-2 py-1" value={role} onChange={(e) => setRole(e.target.value as Role)}>
-              {(["PM", ...DEPTS] as Role[]).map((r) => <option key={r} value={r}>สวมบท {r}</option>)}
+            <select aria-label="สวมบท" className="rounded-md border bg-background px-2 py-1" value={role} onChange={(e) => setRole(e.target.value as Role | "BDM")}>
+              {roles.map((r) => <option key={r} value={r}>สวมบท {r}</option>)}
             </select>
           </label>
+          {wbTest && role === "BD" && (
+            <label className="flex items-center gap-2 text-sm">
+              <select aria-label={WB.memberAria} className="rounded-md border bg-background px-2 py-1" value={bdMember} onChange={(e) => setBdMember(e.target.value)}>
+                {WB_TEST_BDS.map((m) => <option key={m.member_id} value={m.member_id}>{WB.member(m.label)}</option>)}
+              </select>
+              <Badge variant="outline" className="text-[10px]">{WB.testData}</Badge>
+            </label>
+          )}
           <div role="group" aria-label="ช่วงวันที่" className="flex rounded-md border p-0.5">
             {RANGES.map((r) => (
               <button key={r.key} type="button" aria-pressed={range === r.key} onClick={() => setRange(r.key)}
@@ -52,7 +70,7 @@ export function WorkspaceShell({ config, demo, ticket }: { config: WorkspaceConf
       </div>
       <p className="text-xs text-muted-foreground">โหมดทดสอบ (เครื่องเดียว ไม่มีล็อกอิน) — การส่ง ticket ข้ามเครื่องจะใช้ได้เมื่อมี Cloud Sync Level B</p>
 
-      {role === "PM" && <PmTester />}
+      {deptRole === "PM" && <PmTester />}
 
       <div className="grid gap-4 lg:grid-cols-[1fr_1fr_1.4fr]">
         <Lane title="⏰ ตารางนัด">
@@ -70,7 +88,8 @@ export function WorkspaceShell({ config, demo, ticket }: { config: WorkspaceConf
           ))}
         </Lane>
         <Lane title="🎫 Tickets" focus>
-          <TicketsLane dept={config.ticket_target_dept} role={role} initialTicket={ticket} />
+          {config.ticket_target_dept === "BD" && <WelcomeBackSection actor={wbActorOf(role, bdMember)} demo={demo} initialTicket={ticket} />}
+          <TicketsLane dept={config.ticket_target_dept} role={deptRole} initialTicket={ticket} />
         </Lane>
       </div>
     </div>
@@ -93,12 +112,14 @@ function TicketsLane({ dept, role, initialTicket }: { dept: Dept; role: Role; in
   const [showClosed, setShowClosed] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
   useEffect(() => {
-    const t = initialTicket && tickets.find((x) => x.ticket_id === initialTicket && (x.target_dept === dept || isWatcherOf(x, dept)));
+    const t = initialTicket && tickets.find((x) => x.ticket_id === initialTicket && x.type !== "WELCOME_BACK" && (x.target_dept === dept || isWatcherOf(x, dept)));
     if (t) { setOpenId(t.ticket_id); setShowClosed(!OPEN_STATUSES.includes(t.status)); }
   }, [initialTicket, dept]); // eslint-disable-line react-hooks/exhaustive-deps
   const inbound = tickets.filter((t) => t.target_dept === dept || isWatcherOf(t, dept));
-  const rows = sortBotFirst(inbound.filter((t) => OPEN_STATUSES.includes(t.status) !== showClosed));
-  const open = inbound.find((t) => t.ticket_id === openId) ?? null;
+  // R3.1: Welcome Back has its own section (BDM-first visibility); every other type stays in this table unchanged.
+  const listed = inbound.filter((t) => t.type !== "WELCOME_BACK");
+  const rows = sortBotFirst(listed.filter((t) => OPEN_STATUSES.includes(t.status) !== showClosed));
+  const open = listed.find((t) => t.ticket_id === openId) ?? null;
   // Digest round = the latest BOT round present in this lane (demo clock-safe), fallback to today.
   const round = inbound.map((t) => t.payload.generated_round).filter((r): r is string => !!r).sort().pop() ?? new Date().toISOString().slice(0, 10);
   const digest = digestFor(inbound, round);
