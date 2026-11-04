@@ -17,7 +17,7 @@ import { addMainContract, mainContractById, mainContracts, setMainContractDemo }
 import { buildRenewedContract, contractFromSource, svcOfPackage } from './renewal-contract';
 import { readEarlyHandoff, toIsoDate } from './renewal-scan';
 import { renewalR2DemoItems, renewalR2Sim, RENEWAL_R2_DEMO_NOW } from './renewal-r2-demo';
-import { tabR1DemoBase, tabR1HeaderPortfolio } from './contract-tab-r1-demo';
+import { tabR1DemoBase, tabR1DemoFlow, tabR1HeaderPortfolio } from './contract-tab-r1-demo';
 import { headerDemoPortfolio } from './ps-header-r2-demo';
 
 export type SourceContract = {
