@@ -169,7 +169,7 @@ export function RenewalApprovalList({ scope }: { scope: "PM" | "OVERDUE" }) {
                   <dt className="text-muted-foreground">เงื่อนไข</dt><dd>{thb(r.old_terms.fee_amount)} → {thb(r.new_terms.fee_amount)} ({d >= 0 ? "+" : ""}{thb(d)} · {pct.toFixed(1)}%) · {r.changed_fields.map((f) => L.fields[f]).join(", ") || "—"}</dd>
                   <dt className="text-muted-foreground">คำแนะนำระบบ</dt><dd>{recoLabel(r.reco_snapshot)}</dd>
                   <dt className="text-muted-foreground">เหตุผล AE</dt><dd>{r.reason_code ? `${r.reason_code}${r.reason_text ? ` · ${r.reason_text}` : ""}` : "—"}</dd>
-                  <dt className="text-muted-foreground">ราคาล่าสุด</dt><dd>{last ? `รอบ ${last.cycle_no} · ${thb(last.fee_amount)} · ${last.effective_from} – ${last.effective_to}` : "—"}</dd>
+                  <dt className="text-muted-foreground">ราคาล่าสุด</dt><dd>{last ? `รอบ ${last.cycle_no} · ${last.fee_amount == null ? "—" : thb(last.fee_amount)} · ${last.effective_from} – ${last.effective_to}` : "—"}</dd>
                   <dt className="text-muted-foreground">เปลี่ยนนิติบุคคล</dt><dd>{t ? `#${t.ticket_id} · ${STATUS_TH[t.status]}` : "ไม่มี"}</dd>
                 </dl>
                 <Textarea aria-label="ความเห็นเมื่อส่งกลับ" value={comment} onChange={(e) => setComment(e.target.value)} placeholder="ความเห็น (บังคับเมื่อส่งกลับ)" />
