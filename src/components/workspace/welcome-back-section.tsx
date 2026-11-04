@@ -79,6 +79,7 @@ export function WelcomeBackSection({ actor, demo, initialTicket, onGoBdm }: { ac
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h4 className="flex items-center gap-2 text-sm font-medium" data-testid="wb-heading">
           {sender ? <>{WB.bdSent} <Badge variant="secondary" className="tabular-nums">{openCount}</Badge></> : WB.bdMine(openCount)}
+          <RefreshBtn />
         </h4>
         <ClosedToggle on={showClosed} set={setShowClosed} />
       </div>
@@ -91,7 +92,7 @@ export function WelcomeBackSection({ actor, demo, initialTicket, onGoBdm }: { ac
 }
 
 /** R3.2 WB10 — BDM Workspace › Welcome Back: รอมอบหมาย · มอบหมายแล้ว (member chips) · ปิดแล้ว (toggle). Same row / drawer / actions as R3.1. */
-export function BdmWelcomeBackSection({ actor, demo, initialTicket }: { actor: WbActor; demo: boolean; initialTicket?: string | undefined }) {
+export function BdmWelcomeBackSection({ actor, demo, initialTicket, psDemo, testing }: { actor: WbActor; demo: boolean; initialTicket?: string | undefined; psDemo?: boolean; testing?: boolean }) {
   const { tickets, ctx } = useWelcomeBackSource(demo);
   const [showClosed, setShowClosed] = useState(false);
   const [member, setMember] = useState<string | null>(null);
@@ -110,6 +111,7 @@ export function BdmWelcomeBackSection({ actor, demo, initialTicket }: { actor: W
         <h4 className="text-sm font-medium">{WB.section}</h4>
         <ClosedToggle on={showClosed} set={setShowClosed} />
       </div>
+      {testing && <WbCheckPanel tickets={tickets} demo={demo} psDemo={!!psDemo} />}
       {groups.map((g) => (
         <div key={g.key} className="space-y-1.5">
           {g.key === "assigned" && (
@@ -128,6 +130,37 @@ export function BdmWelcomeBackSection({ actor, demo, initialTicket }: { actor: W
   );
 }
 
+/** R3.3 WB17: small `รีเฟรช` icon next to a Welcome Back group heading. */
+function RefreshBtn() {
+  return (
+    <button type="button" aria-label={WB.refresh} title={WB.refresh} data-testid="wb-refresh" onClick={refreshWelcomeBack}
+      className="inline-flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground">
+      <RefreshCw className="size-3.5" aria-hidden />
+    </button>
+  );
+}
+
+/** R3.3 WB19 — testing-mode only, read only, collapsed: where the page reads from and how every Welcome Back is grouped. */
+function WbCheckPanel({ tickets, demo, psDemo }: { tickets: L0Ticket[]; demo: boolean; psDemo: boolean }) {
+  const C = WB.check;
+  const a = wbAudit(tickets);
+  return (
+    <details className="rounded-md border border-dashed px-3 py-1.5 text-xs" data-testid="wb-check">
+      <summary className="cursor-pointer text-muted-foreground">{C.toggle}</summary>
+      <div className="mt-1.5 space-y-0.5 tabular-nums" data-testid="wb-check-body">
+        <p>{C.page(WB.modeName(demo), pageDateLabel(demo))} · {C.ps(WB.modeName(psDemo))}</p>
+        <p>{C.inStore(a.inStore)} · {C.pending(a.pending)} · {C.assigned(a.assigned)} · {C.closed(a.closed)}</p>
+        {a.hidden.length > 0 && (
+          <div data-testid="wb-check-hidden">
+            <p>{C.hidden(a.hidden.length)}</p>
+            <ul>{a.hidden.map((h) => <li key={h.id}>{C.hiddenRow(h.id, h.reason)}</li>)}</ul>
+          </div>
+        )}
+      </div>
+    </details>
+  );
+}
+
 function ClosedToggle({ on, set }: { on: boolean; set: (v: boolean) => void }) {
   return (
     <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -139,7 +172,7 @@ function ClosedToggle({ on, set }: { on: boolean; set: (v: boolean) => void }) {
 function WbGroupList({ g, hideLabel, onOpen, onAssign, sub }: { g: WbGroup; hideLabel?: boolean; onOpen: (id: string) => void; onAssign?: ((id: string) => void) | undefined; sub?: boolean }) {
   return (
     <div className="space-y-1.5" data-testid={`wb-group-${g.key}`}>
-      {!hideLabel && <p className="text-xs font-medium text-muted-foreground">{g.label}</p>}
+      {!hideLabel && <p className="flex items-center gap-1 text-xs font-medium text-muted-foreground">{g.label} <RefreshBtn /></p>}
       {g.rows.length === 0 ? (g.empty ? <p className="rounded-md border border-dashed px-3 py-2 text-center text-xs text-muted-foreground">{g.empty}</p> : null) : (
         <ul className="space-y-1.5">
           {g.rows.map((t) => <WbRow key={t.ticket_id} t={t} onOpen={() => onOpen(t.ticket_id)} onAssign={onAssign ? () => onAssign(t.ticket_id) : undefined} sub={sub} />)}
