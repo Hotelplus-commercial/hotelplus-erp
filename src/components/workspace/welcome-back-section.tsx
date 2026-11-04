@@ -3,7 +3,7 @@
  * BDM-first routing: BDM sees all and assigns one BD (or ฉันทำเอง); a BD sees only tickets assigned to them; the creator
  * role keeps its own tickets for the L0 cancel. Writes only through assign/start/finish/cancelWelcomeBack (revision-checked).
  * DEMO: reads and writes card ④'s in-memory Welcome Back store (plus its seed tickets); nothing reaches real storage. */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -142,9 +142,7 @@ function WbDrawer({ t, actor, ctx, focusAssign, onClose }: { t: L0Ticket | null;
     <Sheet open={!!t} onOpenChange={(o) => !o && onClose()}>
       <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-lg"
         onOpenAutoFocus={(e) => {
-          if (!focusAssign) return;
-          e.preventDefault();
-          requestAnimationFrame(() => { const el = document.querySelector<HTMLSelectElement>("[data-wb-assign]"); el?.scrollIntoView({ block: "center" }); el?.focus(); });
+          if (focusAssign) e.preventDefault(); // the body focuses its assign control instead
         }}>
         {t && (
           <>
@@ -158,7 +156,7 @@ function WbDrawer({ t, actor, ctx, focusAssign, onClose }: { t: L0Ticket | null;
                 </div>
               </SheetDescription>
             </SheetHeader>
-            <WbDetailBody t={t} actor={actor} ctx={ctx} />
+            <WbDetailBody t={t} actor={actor} ctx={ctx} focusAssign={!!focusAssign} />
           </>
         )}
       </SheetContent>
@@ -201,7 +199,7 @@ function WbRow({ t, onOpen, onAssign, sub }: { t: L0Ticket; onOpen: () => void; 
 const ROLE_TH: Record<string, string> = { PM: "PM", PS: "PS", AE: "AE" };
 
 /** §5 body (sections 1–8 + actions footer); the drawer header (title · status · ส่งโดย) wraps it. */
-export function WbDetailBody({ t, actor, ctx }: { t: L0Ticket; actor: WbActor; ctx: WbCtx | undefined }) {
+export function WbDetailBody({ t, actor, ctx, focusAssign }: { t: L0Ticket; actor: WbActor; ctx: WbCtx | undefined; focusAssign?: boolean }) {
   const D = WB.detail;
   const s = t.payload.snapshot;
   const ci = s?.contract_info ?? {};
@@ -210,6 +208,12 @@ export function WbDetailBody({ t, actor, ctx }: { t: L0Ticket; actor: WbActor; c
   const actions = wbActions(t, actor);
   const [pick, setPick] = useState<string>(t.assigned_to && WB_TEST_BDS.some((m) => m.member_id === t.assigned_to) ? t.assigned_to : WB_TEST_BDS[0].member_id);
   const [err, setErr] = useState<string | null>(null);
+  const assignRef = useRef<HTMLSelectElement>(null);
+  useEffect(() => { // R3.2 quick `มอบหมาย`: open the drawer at the assign control
+    if (!focusAssign) return;
+    const id = setTimeout(() => { assignRef.current?.scrollIntoView({ block: "center" }); assignRef.current?.focus(); }, 60);
+    return () => clearTimeout(id);
+  }, [focusAssign, t.ticket_id]);
   const done = (o: WbOut, ok: string) => {
     if (o.ok) { setErr(null); toast.success(ok); return; }
     const m = o.error === "conflict" ? WB.conflict : WB.notAllowed;
@@ -269,7 +273,7 @@ export function WbDetailBody({ t, actor, ctx }: { t: L0Ticket; actor: WbActor; c
         {actions.length === 0 && <p className="text-xs text-muted-foreground">{D.readOnly}</p>}
         {actions.includes("ASSIGN") && (
           <div className="flex flex-wrap items-center gap-2">
-            <select data-wb-assign="" aria-label={D.pick} className="rounded-md border bg-background px-2 py-1 text-xs" value={pick} onChange={(e) => setPick(e.target.value)}>
+            <select ref={assignRef} data-wb-assign="" aria-label={D.pick} className="rounded-md border bg-background px-2 py-1 text-xs" value={pick} onChange={(e) => setPick(e.target.value)}>
               {WB_TEST_BDS.map((m) => <option key={m.member_id} value={m.member_id}>{m.label}</option>)}
             </select>
             <Button size="sm" onClick={() => { const m = WB_TEST_BDS.find((x) => x.member_id === pick)!; done(assignWelcomeBack(t, m, actor, ctx), WB.toast.assigned(m.label)); }}>
