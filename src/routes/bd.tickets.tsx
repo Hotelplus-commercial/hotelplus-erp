@@ -1,12 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { BdWorkspacePage } from "@/components/workspace/bd-workspace-page";
+import { BdWorkspacePage, type BdTab } from "@/components/workspace/bd-workspace-page";
 
 export const Route = createFileRoute("/bd/tickets")({
-  validateSearch: (s: Record<string, unknown>) => ({
+  validateSearch: (s: Record<string, unknown>): { demo: 1 | undefined; ticket: string | undefined; tab?: BdTab } => ({
     demo: s["demo"] === "1" || s["demo"] === 1 ? 1 : undefined,
     ticket: typeof s["ticket"] === "string" ? s["ticket"] : undefined,
-    // R3.2 WB9: ?tab=bd | bdm (no tab → BD Workspace unless the role is BDM)
-    tab: s["tab"] === "bdm" ? ("bdm" as const) : s["tab"] === "bd" ? ("bd" as const) : undefined,
+    // R3.2 WB9: ?tab=bd | bdm (optional; no tab → BD Workspace)
+    ...(s["tab"] === "bdm" || s["tab"] === "bd" ? { tab: s["tab"] as BdTab } : {}),
   }),
   head: () => ({
     meta: [
