@@ -312,3 +312,9 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [ ] Bell targeting BDM / BD member — the bell has no role or member target yet (skipped)
 - [ ] HOC / MD read-only view — no HOC / MD role in the workspace switcher yet
 - [ ] Google Drive attachments wait for a Drive connection
+
+## R3.2 · BDM Workspace tab (BD App › Workspace)
+- [x] Tabs BD Workspace · BDM Workspace (?tab=bd|bdm on /bd/tickets), page-level role switcher + banner, badge
+- [x] BDM tab: รอมอบหมาย (quick มอบหมาย) · มอบหมายแล้ว (member chips) · ปิดแล้ว; BD tab: ของฉัน / ที่ฉันส่ง / BDM hint
+- [x] PS label `รอ BDM มอบหมาย (BDM Workspace)` · DEMO send dated by the DEMO clock · #951 legacy row text · tests 370 → 382
+- [ ] Workspace demo banner still says 30 ก.ย. 2569 (outside this patch) · real BDM login (no auth yet)

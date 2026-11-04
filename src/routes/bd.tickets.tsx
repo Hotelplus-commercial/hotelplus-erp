@@ -1,9 +1,13 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { WorkspaceShell } from "@/components/workspace/workspace-shell";
-import { workspaceByDept } from "@/lib/workspace-registry";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { BdWorkspacePage, type BdTab } from "@/components/workspace/bd-workspace-page";
 
 export const Route = createFileRoute("/bd/tickets")({
-  validateSearch: (s: Record<string, unknown>) => ({ demo: s["demo"] === "1" || s["demo"] === 1 ? 1 : undefined, ticket: typeof s["ticket"] === "string" ? s["ticket"] : undefined }),
+  validateSearch: (s: Record<string, unknown>): { demo: 1 | undefined; ticket: string | undefined; tab?: BdTab } => ({
+    demo: s["demo"] === "1" || s["demo"] === 1 ? 1 : undefined,
+    ticket: typeof s["ticket"] === "string" ? s["ticket"] : undefined,
+    // R3.2 WB9: ?tab=bd | bdm (optional; no tab → BD Workspace)
+    ...(s["tab"] === "bdm" || s["tab"] === "bd" ? { tab: s["tab"] as BdTab } : {}),
+  }),
   head: () => ({
     meta: [
       { title: "BD Workspace — Ticket Inbox | Meridia Hotel ERP" },
@@ -18,6 +22,10 @@ export const Route = createFileRoute("/bd/tickets")({
 });
 
 function BdWorkspace() {
-  const { demo, ticket } = Route.useSearch();
-  return <WorkspaceShell config={workspaceByDept("BD")} demo={!!demo} ticket={ticket} />;
+  const { demo, ticket, tab } = Route.useSearch();
+  const navigate = useNavigate({ from: "/bd/tickets" });
+  return (
+    <BdWorkspacePage demo={!!demo} ticket={ticket} tab={tab}
+      onTabChange={(t) => navigate({ search: (prev) => ({ ...prev, tab: t }), replace: true })} />
+  );
 }

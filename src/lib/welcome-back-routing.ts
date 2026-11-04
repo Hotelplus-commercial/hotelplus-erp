@@ -49,6 +49,35 @@ export function wbGroups(tickets: L0Ticket[], a: WbActor, showClosed: boolean): 
   if (showClosed) out.push({ key: 'closed', label: WB.closed(closed.length), rows: closed });
   return out;
 }
+/* ---------- R3.2 WB10 / WB11 — BDM Workspace tab + BD Workspace tab (same visibility rules as wbVisible) ---------- */
+/** Roles that keep a `ที่ฉันส่ง` group in BD Workspace (sender roles). */
+export const WB_SENDER_ROLES = ['PM', 'PS', 'AE'] as const;
+export const isWbSender = (role: string) => (WB_SENDER_ROLES as readonly string[]).includes(role);
+/** BDM inbox count: Welcome Back, NEW, nobody assigned (tab badge + group 1). */
+export const wbPendingCount = (tickets: L0Ticket[]) => tickets.filter((t) => isWelcomeBack(t) && t.status === 'NEW' && !t.assigned_to).length;
+/** Members the BDM can filter `มอบหมายแล้ว` by: testing BDs + BDM (ฉันทำเอง). */
+export const WB_FILTER_MEMBERS: WbMember[] = [...WB_TEST_BDS, WB_TEST_BDM];
+/** §2 BDM tab groups: รอมอบหมาย (oldest first) · มอบหมายแล้ว (optional member filter) · ปิดแล้ว when the toggle is on. */
+export function wbBdmGroups(tickets: L0Ticket[], showClosed: boolean, member: string | null = null): WbGroup[] {
+  const vis = tickets.filter(isWelcomeBack);
+  const open = vis.filter(isOpen);
+  const pending = open.filter((t) => t.status === 'NEW' && !t.assigned_to).sort(byCreated);
+  const assigned = open.filter((t) => !pending.includes(t)).filter((t) => !member || t.assigned_to === member)
+    .sort((x, y) => (x.assigned_to_label ?? '').localeCompare(y.assigned_to_label ?? '') || byCreated(x, y));
+  const out: WbGroup[] = [{ key: 'pending', label: WB.pending(pending.length), rows: pending, empty: WB.emptyBdm }, { key: 'assigned', label: WB.assigned(assigned.length), rows: assigned }];
+  if (showClosed) { const closed = vis.filter((t) => !isOpen(t)).sort(byCreated); out.push({ key: 'closed', label: WB.closedBdm(closed.length), rows: closed }); }
+  return out;
+}
+/** §3 BD tab groups: BD member → ของฉัน · sender role (PM / PS / AE) → ที่ฉันส่ง · anyone else (BDM included) → none. Never an unassigned ticket for BD. */
+export function wbBdGroups(tickets: L0Ticket[], a: WbActor, showClosed: boolean): WbGroup[] {
+  if (a.role !== 'BD' && !isWbSender(a.role)) return [];
+  return wbGroups(tickets, a, showClosed);
+}
+/** §6.2 a Welcome Back without saved contract details (old test ticket #951) — display only. */
+export const wbMissingSnapshot = (t: L0Ticket) => !t.payload.snapshot;
+/** `{BD name} · {มอบหมายแล้ว | กำลังทำ}` for a row in มอบหมายแล้ว. */
+export const wbRowSub = (t: L0Ticket) => WB.rowSub(t.assigned_to_label ?? '—', t.status !== 'NEW');
+
 /** BD-side status pill. */
 export function wbPill(t: L0Ticket): string {
   if (t.status === 'DONE') return WB.pill.done;

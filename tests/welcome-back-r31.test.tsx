@@ -45,6 +45,17 @@ async function mountShell(dept: 'BD' | 'PS', demo: boolean, ticket?: string) {
   await until(() => !!div.querySelector('select[aria-label="สวมบท"]'));
   return div;
 }
+/** R3.2: the BD App › Workspace page (role switcher above the BD / BDM tab bar). */
+async function mountPage(demo: boolean, tab?: 'bd' | 'bdm') {
+  const { act, createElement: h } = await import('react');
+  const { createRoot } = await import('react-dom/client');
+  const { BdWorkspacePage } = await import('../src/components/workspace/bd-workspace-page');
+  const div = document.createElement('div'); document.body.appendChild(div);
+  const root = createRoot(div); roots.push(() => act(() => root.unmount()));
+  await act(async () => { root.render(h(BdWorkspacePage, { demo, ...(tab ? { tab } : {}) })); });
+  await until(() => !!div.querySelector('select[aria-label="สวมบท"]'));
+  return div;
+}
 async function pickSelect(sel: HTMLSelectElement, value: string) {
   const { act } = await import('react');
   await act(async () => { sel.value = value; sel.dispatchEvent(new Event('change', { bubbles: true })); });
@@ -87,9 +98,11 @@ describe('R3.1 §3 routing (normal mode, real ticket store)', () => {
     expect(ids(R.wbGroups(TK.ticketSnapshot(), bd2, false), 'mine')).not.toContain(s.id);
     const d = await mountShell('BD', false);
     expect(d.querySelector('[data-testid="wb-section"]')?.textContent).not.toContain(s.id); // default BD · BD 1
-    await pickSelect(roleSelect(d), 'BDM');
-    expect(groupText(d, 'pending')).toContain(s.id);
-    expect(groupText(d, 'pending')).toContain(WB.pill.pending);
+    // R3.2 (supersedes): the BDM groups moved to the BDM Workspace tab of the same page.
+    const p = await mountPage(false);
+    await pickSelect(roleSelect(p), 'BDM');
+    expect(groupText(p, 'pending')).toContain(s.id);
+    expect(groupText(p, 'pending')).toContain(WB.pill.pending);
   });
   test('3 · BDM assigns BD 1 → BD 1 ของฉัน, BD 2 not; PS drawer line shows มอบหมาย BD 1', async () => {
     live();
@@ -262,14 +275,14 @@ describe('R3.1 §5 / §7 detail view and DEMO', () => {
     TK.setTicketDemo(false);
   });
   test('13 · forbidden strings stay out of the mounted BD Workspace (BDM, closed shown)', async () => {
-    const d = await mountShell('BD', true);
+    const d = await mountPage(true); // R3.2: BDM groups live in the BDM Workspace tab
     await pickSelect(roleSelect(d), 'BDM');
-    const box = d.querySelector('[data-testid="wb-section"] input[type="checkbox"]')!;
+    const box = d.querySelector('[data-testid="wb-bdm-section"] input[type="checkbox"]')!;
     await click(box);
     await until(() => !!d.querySelector('[data-testid="wb-group-closed"]'));
-    expect(d.querySelector('[data-testid="wb-section"]')?.textContent).toContain('TKT-000952');
+    expect(d.querySelector('[data-testid="wb-bdm-section"]')?.textContent).toContain('TKT-000952');
     expect(domHits(d)).toEqual([]);
-    const bad = document.createElement('span'); bad.textContent = 'IN_PROGRESS'; d.querySelector('[data-testid="wb-section"]')!.appendChild(bad);
+    const bad = document.createElement('span'); bad.textContent = 'IN_PROGRESS'; d.querySelector('[data-testid="wb-bdm-section"]')!.appendChild(bad);
     expect(domHits(d)).toEqual(['IN_PROGRESS']);
     bad.remove();
   });

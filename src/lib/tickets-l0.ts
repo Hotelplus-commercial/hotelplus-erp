@@ -151,7 +151,8 @@ export type WelcomeBackOut = { ok: true; ticket_id: string } | { ok: false; lock
 /** Tab R3 §6.2/§6.3: the WELCOME_BACK write. Re-checks the per-contract lock inside the write (against the current store
  * revision, plus `extra` read-only seed tickets); a locked contract writes nothing. A reserved number is reused on retry. */
 export type TicketSink = { items: () => L0Ticket[]; add: (t: L0Ticket) => void; at: () => string; /** R3.1: replace-or-add (DEMO writes) */ put?: (t: L0Ticket) => void };
-export function createWelcomeBack(i: Parameters<typeof createTask>[0], extra: L0Ticket[] = [], sink?: TicketSink): WelcomeBackOut {
+/** R3.2 §6.1: `at` (optional) = the DEMO clock passed by card ④'s DEMO send step; normal mode passes nothing (real time). */
+export function createWelcomeBack(i: Parameters<typeof createTask>[0], extra: L0Ticket[] = [], sink?: TicketSink, at0?: string): WelcomeBackOut {
   const cid = i.subject_ref.contract_id ?? i.payload.contract_id;
   if (!cid) return { ok: false, locked: null, error: 'ไม่มีเลขสัญญา' };
   const others = sink ? [...extra, ...sink.items()] : extra;
@@ -160,7 +161,7 @@ export function createWelcomeBack(i: Parameters<typeof createTask>[0], extra: L0
   const s = cur();
   const id = i.ticket_id ?? `TKT-${String(s.seq + 1).padStart(6, '0')}`;
   if (s.items.some((t) => t.ticket_id === id) || others.some((t) => t.ticket_id === id)) return { ok: false, locked: null, error: 'เลข ticket นี้ถูกใช้แล้ว · ลองอีกครั้ง' };
-  const n = Number(id.replace(/\D/g, '')) || 0; const at = sink ? sink.at() : now();
+  const n = Number(id.replace(/\D/g, '')) || 0; const at = sink ? sink.at() : at0 ?? now();
   const t: L0Ticket = { ticket_id: id, type: 'WELCOME_BACK', source_app: i.source_app ?? 'PS_DASHBOARD', created_by: i.created_by, target_dept: 'BD', subject_ref: i.subject_ref, payload: { ...i.payload, contract_id: cid }, status: 'NEW', created_at: at, revision: 0, audit: [{ at, by: i.created_by, from_status: null, to_status: 'NEW' }], ...(i.assignee ? { assignee: i.assignee } : {}) };
   // DEMO page with the store in live mode: the in-memory sink takes the write (DEMO never writes browser storage).
   if (sink) { sink.add(t); return { ok: true, ticket_id: id }; }
