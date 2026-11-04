@@ -258,10 +258,12 @@ describe('§2.3 detail-tab ณ วันนี้ cards', () => {
     const timed = cards.filter((c) => c.includes('data-testid="compare-control"'));
     // Tab R1 §1: ⑦b and the pending-work card left this tab, ① In/Out + ⑦ Contract Health (ณ วันนี้) joined;
     // old ① Lifecycle / ② Churn (time-based) were unmounted.
-    expect(now.length).toBe(4);
+    // Tab R4 §1: สัญญาณจากสัญญา (ณ วันนี้) was unmounted from this tab → 4 became 3.
+    expect(now.length).toBe(3);
     // Tab R2 §1: the renewal card was replaced by one with its own period bar (เดือน · ไตรมาส · ปี · Custom), not a CompareControl.
-    // Tab R3 §1: card ④ อายุสัญญา was replaced by a `ณ วันนี้` card without any compare (only ระยะเวลา Setup keeps one).
-    expect(timed.length).toBe(1);
+    // Tab R3 §1: card ④ อายุสัญญา was replaced by a `ณ วันนี้` card without any compare (only ระยะเวลา Setup kept one).
+    // Tab R4 §0/§2: card ⑤ ระยะเวลา Setup is `ณ วันนี้` with no compare control on the chart → no CompareControl left in this tab.
+    expect(timed.length).toBe(0);
     for (const c of now) { const head = c.split('</header>')[0]!; expect(text(head)).not.toMatch(/Δ|▲|▼/); }
   });
 });

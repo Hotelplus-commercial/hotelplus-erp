@@ -1,3 +1,9 @@
+# Tab R4 · สัญญา & ราคา · ระยะเวลา Setup (O-11)
+- [x] Tab labels + unmount สัญญาณจากสัญญา; card ⑤ (timing model, versioned KPI settings + PM panel, journey chart, interactions, quick filters, stage + compare tables, quality); card ⑥ Coming soon strip.
+- [x] On-board / Off-board queue table + `?card=` deep link; HANDOVER_FIX type; DEMO additions; rules file; 25 acceptance tests.
+- [ ] Live Survey #1 / #2 per card: v_servicing_stage_cards has no survey fields (Survey #1 stored scale is 1–5, not 10) — shows ยังไม่มีข้อมูล.
+- [ ] HANDOVER_FIX creation flow (S11) and `handover_fix_enabled` live — held by spec.
+
 # Task Dashboard v2.0
 - [x] Normalize PS cases and read-only L0 tickets with shared config, scoped selectors, monthly flow view 0020 and reconciled demo.
 - [x] Rebuild Task KPI row, monitor cards, flow/department charts, unified worklist and read-only L0 drawer; preserve PS case writes.

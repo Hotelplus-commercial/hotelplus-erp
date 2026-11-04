@@ -8,9 +8,9 @@ import { defaultGlobalFilter } from '../src/lib/ps-dashboard-global';
 import { demoBdacLifecycles, demoLifecycles } from '../src/lib/ps-demo-fixture';
 
 describe('BD-AC move to The Office APP (v1.0)', () => {
-  test('PS Dashboard tab bar no longer has BD-AC; first tab is ต่อสัญญา & ราคา', () => {
+  test('PS Dashboard tab bar no longer has BD-AC; first tab is สัญญา & ราคา (Tab R4 label)', () => {
     expect(DASHBOARD_TABS.some(([k, l]) => k === 'bdac' || l === 'BD-AC')).toBe(false);
-    expect(DASHBOARD_TABS[0]![1]).toBe('ต่อสัญญา & ราคา');
+    expect(DASHBOARD_TABS[0]![1]).toBe('สัญญา & ราคา');
   });
   test('old PS Dashboard links redirect to the new page, other params kept', () => {
     expect(OFFICE_BDAC_PATH).toBe('/the-office-app/bd-ac');

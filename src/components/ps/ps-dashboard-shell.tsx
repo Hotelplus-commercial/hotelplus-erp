@@ -202,6 +202,15 @@ export function DashboardShell({
     setReady(true);
   }, []);
   useEffect(() => {
+    /* Tab R4 §6.3 deep link: card ⑤ dot click opens tab On-board / Off-board (stored key `servicing`) in place. */
+    const open = (e: Event) => {
+      const t = (e as CustomEvent<{ tab?: string }>).detail?.tab;
+      if (t && DASHBOARD_TABS.some(([k]) => k === t)) { setTab(t); window.scrollTo({ top: 0 }); }
+    };
+    window.addEventListener("psdash:open-tab", open);
+    return () => window.removeEventListener("psdash:open-tab", open);
+  }, []);
+  useEffect(() => {
     const update = () => setDemo(new URLSearchParams(window.location.search).get("demo") === "1");
     window.addEventListener("popstate", update);
     return () => window.removeEventListener("popstate", update);
