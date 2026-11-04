@@ -248,6 +248,8 @@ export function useRenewalStore() {
   useSyncExternalStore((l) => { listeners.add(l); return () => listeners.delete(l); }, () => version, () => 0);
   return cur();
 }
+/** contract_price_history rows (read only). */
+export const renewalHistory = (): PriceHistoryRow[] => cur().history;
 export const openRequestFor = (cardId: string) => cur().requests.find((r) => r.renewal_card_id === cardId && OPEN_REQUEST.includes(r.status)) ?? null;
 export const latestRequestFor = (cardId: string) => [...cur().requests].reverse().find((r) => r.renewal_card_id === cardId) ?? null;
 export const entityClosed = (r: RenewalRequest) => { const t = ticketById(r.entity_ticket_id); return !r.entity_change || t?.status === 'DONE'; };
