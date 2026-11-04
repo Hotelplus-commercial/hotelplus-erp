@@ -325,4 +325,6 @@ export const RENEWAL_TEST_SWITCH = (ae: string) => `สลับเป็น ${a
 export const RENEWAL_TEST_BANNER = (role: string, member: string) => `ทดสอบในบทบาท ${role} · ${member}`;
 export const RENEWAL_SECTION_TITLE = (n: number) => `ต้องต่อสัญญา (≤ ${n} วัน)`;
 export const RENEWAL_SOURCE_NOT_FOUND = (contractId: string) => `ไม่พบสัญญาต้นทาง ${contractId} ใน สัญญา & บริการ · แจ้ง PM ตรวจสัญญา`;
+/** v1.3 §3.6 (wired R2.1 §1.5): signing is all-or-nothing — shown on the live-link page when the new contract cannot be saved. */
+export const RENEWAL_NEW_CONTRACT_FAILED = (why: string) => `ลงนามไม่สำเร็จ · บันทึกสัญญาใหม่ไม่ได้ (${why}) · ลองอีกครั้ง`;
 export const RENEWAL_COPY_CONTRACT_ID = "คัดลอกเลขสัญญา";

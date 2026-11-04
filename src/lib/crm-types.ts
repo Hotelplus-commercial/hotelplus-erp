@@ -196,6 +196,9 @@ export type Contract = {
   live_link_signed_at: string | null;
   created_at: string;
   created_by: string;
+  /** Renewal v1.3 §3: the new contract made at signing points to its source contract + request (optional, never backfilled). */
+  renewal_of?: string | null;
+  renewal_request_id?: string | null;
 };
 
 /* ---------------- production report ---------------- */
