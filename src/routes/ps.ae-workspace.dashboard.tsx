@@ -18,6 +18,8 @@ import { JourneyBar } from "@/components/ps/meeting-ui";
 import { AeOnboardingEntry } from "@/components/ps/ae-onboarding-entry";
 import { MyDayZone } from "@/components/ps/my-day-zone";
 import { RenewalActivityCards } from "@/components/ps/renewal-ui";
+import { RENEWAL_SECTION_TITLE } from "@/lib/ps-glossary";
+import { RENEWAL_CARD_LEAD_DAYS } from "@/lib/renewal-scan";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -157,7 +159,7 @@ function DashboardTab() {
             <p className="mt-1 font-display text-4xl font-bold">
               {renewalCards.filter((c) => (scope === "my" ? c.owner === currentUser : true)).length}
             </p>
-            <p className="mt-0.5 text-xs text-muted-foreground">ต้องต่อสัญญา (≤ 45 วัน)</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">{RENEWAL_SECTION_TITLE(RENEWAL_CARD_LEAD_DAYS)}</p>
             <Button variant="link" size="sm" className="mt-1 h-auto p-0" asChild>
               <Link to="/ps">more details →</Link>
             </Button>
