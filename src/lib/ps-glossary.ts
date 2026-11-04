@@ -612,4 +612,18 @@ export const WB = {
   bdMine: (n: number) => `Welcome Back · ของฉัน (${n})`, bdSent: "Welcome Back ที่ฉันส่ง",
   rowSub: (name: string, working: boolean) => `${name} · ${working ? "กำลังทำ" : "มอบหมายแล้ว"}`,
   legacyRow: (id: string) => `#${id} · ข้อมูลสัญญาไม่ครบ (ticket ทดสอบเก่า)`, legacyNote: "ข้อมูลสัญญาไม่ครบ (ticket ทดสอบเก่า)",
+  /* R3.3 WB16–WB21 — one DEMO state, fresh reads, testing-mode check panel */
+  modeName: (demo: boolean) => (demo ? "DEMO" : "ปกติ"),
+  modeMismatch: (ps: string, page: string) => `PS Dashboard อยู่โหมด ${ps} แต่หน้านี้อยู่โหมด ${page} · ticket ที่ส่งจากอีกโหมดจะไม่แสดง`,
+  modeFix: "สลับให้ตรงกัน",
+  refresh: "รีเฟรช",
+  check: {
+    toggle: "ตรวจที่มาของ ticket ▾",
+    page: (mode: string, date: string) => `โหมดหน้านี้: ${mode} · วันที่ที่ใช้: ${date}`,
+    ps: (mode: string) => `โหมด PS Dashboard: ${mode}`,
+    inStore: (n: number) => `Welcome Back ในที่เก็บ: ${n}`, pending: (n: number) => `รอมอบหมาย: ${n}`,
+    assigned: (n: number) => `มอบหมายแล้ว: ${n}`, closed: (n: number) => `ปิดแล้ว: ${n}`,
+    hidden: (n: number) => `ไม่แสดง ${n} ใบ`, hiddenRow: (id: string, reason: string) => `#${id} · เหตุผล: ${reason}`,
+    reasonStatus: (s: string) => `สถานะ "${s}" ไม่อยู่ในกลุ่มใด`,
+  },
 } as const;
