@@ -86,7 +86,8 @@ export function useContractAge(data: TabR1Data | undefined): ContractAgeFeed | u
       return {
         today, demo: true, rows, index: ageIndex(rows), history, upsell: d.upsell, reasons, tickets: [...seed, ...own], seedTickets: seed, firstMeeting: d.firstMeeting, lowSurveys: d.lowSurveys, setupCount: rows.filter((r) => r.status === "SETUP").length,
         nextTicketId: () => (inStore ? ticketIdOf(peekNextSeq()) : nextDemoTicketId()),
-        send: (input) => (inStore ? createWelcomeBack(input, seed) : createWelcomeBack(input, seed, demoWelcomeBackSink)),
+        // R3.2 §6.1: DEMO send stamps the DEMO clock (28 ต.ค. 2569), the same clock the assign / start / finish actions use.
+        send: (input) => (inStore ? createWelcomeBack(input, seed, undefined, demoWelcomeBackSink.at()) : createWelcomeBack(input, seed, demoWelcomeBackSink)),
       };
     }
     const rows = vPsContractAge(liveAgeSources(data, cards), { today, links, history: store.history });
