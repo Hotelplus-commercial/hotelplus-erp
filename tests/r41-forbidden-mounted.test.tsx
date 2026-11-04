@@ -8,7 +8,7 @@ mock.module('../src/lib/cloud-sync', () => ({ stageCloudDoc: () => {} }));
 beforeAll(() => { GlobalRegistrator.register({ url: 'http://localhost:8080/ps?demo=1' }); (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true; });
 afterAll(async () => { await GlobalRegistrator.unregister(); });
 
-const until = async (f: () => boolean, ms = 15000) => { const t0 = Date.now(); while (!f()) { if (Date.now() - t0 > ms) throw new Error('timeout waiting for late cards'); await new Promise((r) => setTimeout(r, 20)); } };
+const until = async (f: () => boolean, ms = 15000) => { const t0 = Date.now(); while (!f()) { if (Date.now() - t0 > ms) throw new Error('timeout waiting for late cards: ' + document.body.textContent?.slice(0, 400)); await new Promise((r) => setTimeout(r, 20)); } };
 
 async function mount(which: 'ps' | 'servicing') {
   const { act, createElement: h } = await import('react');
