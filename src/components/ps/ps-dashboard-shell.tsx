@@ -215,6 +215,7 @@ export function DashboardShell({
     window.addEventListener("popstate", update);
     return () => window.removeEventListener("popstate", update);
   }, []);
+  useEffect(() => { if (ready) setPsDemoSession(demo); }, [demo, ready]); // R3.3 WB18: BD App › Workspace follows this DEMO state
   const toggleDemo = () => {
     const on = !demo;
     setDemo(on);
