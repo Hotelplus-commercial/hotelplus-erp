@@ -22,6 +22,7 @@ import { useAcTabInput, useAcViews } from "./use-ac-views";
 import { dealBookLines } from "@/lib/bdac-scope";
 import { bdacRedirectHref } from "@/lib/office-bdac";
 import { useRouter } from "@tanstack/react-router";
+import { setPsDemoSession } from "@/lib/demo-session";
 import { v_bdac_flow, v_bdac_deal_aging } from "@/lib/bdac-views";
 import { useContractLifecycle } from "@/lib/contract-lifecycle";
 import {
@@ -215,6 +216,7 @@ export function DashboardShell({
     window.addEventListener("popstate", update);
     return () => window.removeEventListener("popstate", update);
   }, []);
+  useEffect(() => { if (ready) setPsDemoSession(demo); }, [demo, ready]); // R3.3 WB18: BD App › Workspace follows this DEMO state
   const toggleDemo = () => {
     const on = !demo;
     setDemo(on);

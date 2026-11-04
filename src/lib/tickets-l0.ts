@@ -254,6 +254,8 @@ function wbFind(id: string, ctx?: WbCtx): { t: L0Ticket; where: 'store' | 'sink'
 function wbWrite(where: 'store' | 'sink' | 'extra', next: L0Ticket, ctx?: WbCtx): boolean {
   const s = cur();
   if (where === 'store') { commit({ ...s, items: s.items.map((x) => (x.ticket_id === next.ticket_id ? next : x)) }); return true; }
+  // R3.3: DEMO seed → its copy goes to the session DEMO store (same store card ④ writes), so it survives the page load.
+  if (where === 'extra' && ctx?.sink?.put) { ctx.sink.put(next); return true; }
   if (where === 'extra' && demoOn) { commit({ ...s, items: [...s.items, next] }); return true; } // DEMO seed → in-memory copy overrides it
   if (ctx?.sink?.put) { ctx.sink.put(next); return true; }
   return false;
@@ -289,6 +291,17 @@ export const finishWelcomeBack = (t: L0Ticket, by: WbActor, ctx?: WbCtx): WbOut 
 /** Creator only, before DONE (L0 rule unchanged). Releases the lock. */
 export const cancelWelcomeBack = (t: L0Ticket, by: WbActor, ctx?: WbCtx): WbOut =>
   wbApply(t, by, 'CANCEL', ctx, (c, at) => move(c, 'CANCELLED', at, by, c.created_by), 'CANCELLED');
+
+/** R3.3 WB17: re-read the real ticket store from browser storage (another tab / page may have written it). DEMO memory untouched. */
+export function reloadTickets(): boolean {
+  if (demoOn || typeof localStorage === 'undefined') return false;
+  let raw: string | null = null; try { raw = localStorage.getItem(KEY); } catch { return false; }
+  if (live && raw === JSON.stringify(live)) return false;
+  live = null; liveState();
+  version++; listeners.forEach((l) => l());
+  return true;
+}
+export const TICKETS_KEY = KEY;
 
 export const isPendingPickup = (t: L0Ticket) => !DEPTS_WITH_WORKSPACE.includes(t.target_dept);
 export const ticketSnapshot = () => cur().items;

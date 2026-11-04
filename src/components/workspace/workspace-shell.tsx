@@ -21,6 +21,7 @@ import { WelcomeBackSection } from "./welcome-back-section";
 import { WB_TEST_BDS, wbActorOf } from "@/lib/welcome-back-routing";
 import { isRenewalTestMode } from "@/lib/renewal-test-actor";
 import { WB } from "@/lib/ps-glossary";
+import { pageDateLabel } from "@/lib/demo-session";
 
 const fmt = (iso: string) => new Date(iso).toLocaleString("th-TH", { dateStyle: "medium", timeStyle: "short" });
 const RANGES: { key: DateRange; label: string }[] = [{ key: "today", label: "วันนี้" }, { key: "7d", label: "7 วัน" }, { key: "14d", label: "14 วัน" }];
@@ -70,7 +71,8 @@ export function WorkspaceShell({ config, demo, ticket, roleState, onGoBdm }: { c
 
   return (
     <div className="space-y-4">
-      {demo && <div className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs">ข้อมูลสาธิต · 30 กันยายน 2569 · ไม่บันทึก</div>}
+      {/* R3.3 WB20: BD App › Workspace uses the PS Dashboard DEMO date; other workspaces keep theirs. */}
+      {demo && <div className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs" data-testid="ws-demo-bar">ข้อมูลสาธิต · {config.dept_key === "BD" ? pageDateLabel(true) : "30 กันยายน 2569"} · ไม่บันทึก</div>}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-xl font-semibold">{config.label}</h2>
         <div className="flex flex-wrap items-center gap-3">

@@ -10,6 +10,7 @@ import { rateText } from './contract-age';
 import { editableUntil, type RenewalReason } from './renewal-reasons';
 import type { PriceHistoryRow } from './renewal-rules';
 import type { L0Ticket } from './tickets-l0';
+import { DEMO_WB_SEQ0, onDemoSessionChange, readDemoSession, saveDemoTickets } from './demo-session';
 import type { AgeContractSource, AgeSvc, RenewalLink, UpsellLine } from './contract-age';
 
 export const CONTRACT_AGE_DEMO_NOW = TAB_R1_DEMO_NOW;
@@ -203,19 +204,35 @@ function welcomeBackSeed(ticket_id: string, s: AgeContractSource): L0Ticket {
   };
 }
 
-/* ---------- DEMO Welcome Back sends while the ticket store is in live mode (memory only; a new session starts empty) ---------- */
-let demoSent: L0Ticket[] = []; let demoSeq = 1000; let demoVer = 0;
+/* ---------- DEMO Welcome Back store shared by card ④ and BD App › Workspace ----------
+ * R3.3 WB18 §3.3: kept in the session key `meridia.demo.welcomeBack.v1` (src/lib/demo-session.ts) so it survives a full page
+ * load between the two pages; cleared when PS Dashboard DEMO goes off or the browser session ends. Never the real ticket store. */
+let demoSent: L0Ticket[] = []; let demoSeq = DEMO_WB_SEQ0; let demoVer = 0; let loaded = false;
 const demoListeners = new Set<() => void>();
+const notify = () => { demoVer++; demoListeners.forEach((l) => l()); };
+function load() { if (loaded || typeof window === 'undefined') return; loaded = true; const s = readDemoSession(); demoSent = s?.items ?? []; demoSeq = s?.seq ?? DEMO_WB_SEQ0; }
+const save = () => saveDemoTickets(demoSeq, demoSent);
+/** Re-read the DEMO store from session storage (page open / tab / role change / focus / รีเฟรช). */
+export function reloadDemoWelcomeBack() {
+  if (typeof window === 'undefined') return;
+  const s = readDemoSession(); const items = s?.items ?? []; const seq = s?.seq ?? DEMO_WB_SEQ0;
+  const changed = !loaded || seq !== demoSeq || JSON.stringify(items) !== JSON.stringify(demoSent);
+  loaded = true; demoSent = items; demoSeq = seq;
+  if (changed) notify();
+}
+// PS Dashboard DEMO off removes the key → drop the in-memory copy too.
+onDemoSessionChange(() => reloadDemoWelcomeBack());
 export const demoWelcomeBackSink = {
-  items: () => demoSent,
-  add: (t: L0Ticket) => { demoSent = [...demoSent, t]; demoVer++; demoListeners.forEach((l) => l()); },
+  items: () => { load(); return demoSent; },
+  add: (t: L0Ticket) => { load(); demoSent = [...demoSent, t]; const n = Number(t.ticket_id.replace(/\D/g, '')) || 0; if (n > demoSeq) demoSeq = n; save(); notify(); },
   at: () => `${CONTRACT_AGE_DEMO_NOW}T03:00:00.000Z`,
-  /** R3.1 §7: BD Workspace DEMO writes (assign / start / close) replace the in-memory copy, or add a copy of a seed ticket. */
-  put: (t: L0Ticket) => { demoSent = demoSent.some((x) => x.ticket_id === t.ticket_id) ? demoSent.map((x) => (x.ticket_id === t.ticket_id ? t : x)) : [...demoSent, t]; demoVer++; demoListeners.forEach((l) => l()); },
+  /** R3.1 §7: BD Workspace DEMO writes (assign / start / close) replace the stored copy, or add a copy of a seed ticket. */
+  put: (t: L0Ticket) => { load(); demoSent = demoSent.some((x) => x.ticket_id === t.ticket_id) ? demoSent.map((x) => (x.ticket_id === t.ticket_id ? t : x)) : [...demoSent, t]; save(); notify(); },
 };
-/** Next number for a DEMO send (TKT-001001 …, never the live sequence). */
-export const nextDemoTicketId = () => { let n = demoSeq + 1; while (demoSent.some((t) => t.ticket_id === `TKT-${String(n).padStart(6, '0')}`)) n++; demoSeq = n - 1; return `TKT-${String(n).padStart(6, '0')}`; };
+/** Next number for a DEMO send (TKT-001001 …, never the live sequence). Read only: the send claims it. */
+export const nextDemoTicketId = () => { load(); let n = demoSeq + 1; while (demoSent.some((t) => t.ticket_id === `TKT-${String(n).padStart(6, '0')}`)) n++; return `TKT-${String(n).padStart(6, '0')}`; };
 export function useDemoWelcomeBack(): L0Ticket[] {
   useSyncExternalStore((l) => { demoListeners.add(l); return () => demoListeners.delete(l); }, () => demoVer, () => 0);
+  load();
   return demoSent;
 }

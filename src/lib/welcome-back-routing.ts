@@ -94,6 +94,19 @@ export function wbPsStatus(t: L0Ticket): string {
 }
 /** Buttons for this actor (HOC / MD: none, read only). */
 export const wbActions = (t: L0Ticket, a: WbActor): WbAction[] => (a.role === 'HOC' || a.role === 'MD' ? [] : wbAllowed(t, a));
+/** R3.3 WB19 — testing-mode check panel counts over every Welcome Back the page reads (keys only, never labels).
+ * inStore = pending + assigned + closed + hidden; hidden = in no BDM group, with the reason. */
+export type WbAudit = { inStore: number; pending: number; assigned: number; closed: number; hidden: { id: string; reason: string }[] };
+export function wbAudit(tickets: L0Ticket[]): WbAudit {
+  const vis = tickets.filter(isWelcomeBack);
+  const groups = wbBdmGroups(vis, true);
+  const of = (k: WbGroup['key']) => groups.find((g) => g.key === k)?.rows ?? [];
+  const shown = new Set([...of('pending'), ...of('assigned'), ...of('closed')].map((t) => t.ticket_id));
+  return {
+    inStore: vis.length, pending: of('pending').length, assigned: of('assigned').length, closed: of('closed').length,
+    hidden: vis.filter((t) => !shown.has(t.ticket_id)).map((t) => ({ id: t.ticket_id, reason: WB.check.reasonStatus(String(t.status)) })),
+  };
+}
 /** Merge DEMO sources: store copies override sink copies override read-only seeds (same ticket id). */
 export function wbMerge(store: L0Ticket[], sink: L0Ticket[], seed: L0Ticket[]): L0Ticket[] {
   const seen = new Set<string>(); const out: L0Ticket[] = [];

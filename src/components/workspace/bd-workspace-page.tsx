@@ -11,14 +11,34 @@ import { WB_TEST_BDS, wbActorOf, wbPendingCount } from "@/lib/welcome-back-routi
 import { WB } from "@/lib/ps-glossary";
 import { cn } from "@/lib/utils";
 import { RoleSwitcher, WorkspaceShell, type WsRoleState } from "./workspace-shell";
-import { BdmWelcomeBackSection, useWelcomeBackSource } from "./welcome-back-section";
+import { BdmWelcomeBackSection, refreshWelcomeBack, useWelcomeBackSource } from "./welcome-back-section";
+import { Button } from "@/components/ui/button";
+import { onDemoSessionChange, psDemoOn } from "@/lib/demo-session";
 
 export type BdTab = "bd" | "bdm";
 
-export function BdWorkspacePage({ demo, ticket, tab: urlTab, onTabChange }: { demo: boolean; ticket?: string | undefined; tab?: BdTab | undefined; onTabChange?: (t: BdTab) => void }) {
+/** R3.3 WB18 §3.1: `demo` = the page URL (?demo=1). The page follows PS Dashboard's DEMO state for this browser session
+ * (src/lib/demo-session.ts) — page DEMO = URL DEMO or PS DEMO; `onDemoChange` lets the route put the same mode in the URL. */
+export function BdWorkspacePage({ demo: urlDemo, ticket, tab: urlTab, onTabChange, onDemoChange }: { demo: boolean; ticket?: string | undefined; tab?: BdTab | undefined; onTabChange?: (t: BdTab) => void; onDemoChange?: (demo: boolean) => void }) {
   const config = workspaceByDept("BD");
+  const [psDemo, setPsDemo] = useState<boolean | null>(null);
+  const [forceNormal, setForceNormal] = useState(false);
+  useEffect(() => {
+    const read = () => setPsDemo(psDemoOn());
+    read();
+    const off = onDemoSessionChange(read);
+    const onVis = () => { if (document.visibilityState === "visible") read(); };
+    window.addEventListener("focus", read); document.addEventListener("visibilitychange", onVis);
+    return () => { off(); window.removeEventListener("focus", read); document.removeEventListener("visibilitychange", onVis); };
+  }, []);
+  useEffect(() => { if (!urlDemo || psDemo) setForceNormal(false); }, [urlDemo, psDemo]);
+  const demo = !forceNormal && (urlDemo || psDemo === true);
+  const mismatch = psDemo !== null && demo !== psDemo;
+  // Follow PS DEMO in the URL too, so the sidebar and the bell agree with this page.
+  useEffect(() => { if (psDemo && !urlDemo) onDemoChange?.(true); }, [psDemo, urlDemo]); // eslint-disable-line react-hooks/exhaustive-deps
+  const matchPs = () => { const on = !!psDemo; if (!on) setForceNormal(true); onDemoChange?.(on); };
   const [ready, setReady] = useState(false);
-  useEffect(() => { setRenewalDemo(demo); setTicketDemo(demo); setReady(true); }, [demo]);
+  useEffect(() => { if (psDemo === null) return; setRenewalDemo(demo); setTicketDemo(demo); setReady(true); }, [demo, psDemo]);
   const [role, setRoleRaw] = useState<Role | "BDM">(config.dept_key); // default role unchanged (BD)
   const [bdMember, setBdMember] = useState<string>(WB_TEST_BDS[0].member_id);
   const [tab, setTabRaw] = useState<BdTab>(urlTab ?? "bd");
@@ -32,6 +52,7 @@ export function BdWorkspacePage({ demo, ticket, tab: urlTab, onTabChange }: { de
   const showBdmTab = testing || isBdm; // real use: BDM only · testing mode: always
   const active: BdTab = tab === "bdm" && showBdmTab ? "bdm" : "bd";
   const { tickets } = useWelcomeBackSource(demo);
+  useEffect(() => { refreshWelcomeBack(); }, [active, role, bdMember]); // R3.3 WB17: fresh read on tab / role change
   if (!ready) return null;
   const pending = wbPendingCount(tickets);
   const actor = wbActorOf(role, bdMember);
@@ -39,6 +60,12 @@ export function BdWorkspacePage({ demo, ticket, tab: urlTab, onTabChange }: { de
 
   return (
     <div className="space-y-4">
+      {mismatch && (
+        <div role="status" data-testid="bd-ws-mode-mismatch" className="flex flex-wrap items-center gap-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs">
+          <span>{WB.modeMismatch(WB.modeName(!!psDemo), WB.modeName(demo))}</span>
+          <Button size="sm" variant="outline" className="h-7" onClick={matchPs}>{WB.modeFix}</Button>
+        </div>
+      )}
       <div className="flex flex-wrap items-center gap-3" data-testid="bd-ws-switcher">
         <RoleSwitcher dept="BD" state={state} />
         {testing && <Badge variant="outline" className="text-xs" data-testid="bd-ws-banner">{WB.banner(role, member)}</Badge>}
@@ -65,7 +92,7 @@ export function BdWorkspacePage({ demo, ticket, tab: urlTab, onTabChange }: { de
           {isBdm ? (
             // Sections routed to BDM — Welcome Back is the only one now.
             <div className="space-y-4">
-              <BdmWelcomeBackSection actor={actor} demo={demo} initialTicket={ticket} />
+              <BdmWelcomeBackSection actor={actor} demo={demo} initialTicket={ticket} psDemo={!!psDemo} testing={testing} />
             </div>
           ) : (
             <div className="space-y-2 rounded-md border border-dashed p-6 text-center text-sm" data-testid="bdm-gate">

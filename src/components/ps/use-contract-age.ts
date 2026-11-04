@@ -78,16 +78,19 @@ export function useContractAge(data: TabR1Data | undefined): ContractAgeFeed | u
       const rows = vPsContractAge(d.sources, { today, links: [...links, ...d.links], history });
       const base = isReasonsDemo() ? stored : [];
       const reasons = [...base, ...d.reasons.filter((r) => !base.some((x) => x.contract_id === r.contract_id))];
-      // DEMO: the ticket store is used only while it is in its in-memory demo mode; otherwise demo sends stay in card ④'s in-memory list.
+      // DEMO: other ticket types are read from the ticket store only while it is in its in-memory demo mode.
+      // R3.3 WB17: DEMO Welcome Back always goes to ONE store — the session DEMO store shared with BD App › Workspace
+      // (survives the page load; never the real ticket store), however DEMO was turned on.
       const inStore = isDemoTickets();
-      const own = inStore ? storeTickets : demoSent;
+      const sent = new Set(demoSent.map((t) => t.ticket_id));
+      const own = [...demoSent, ...(inStore ? storeTickets.filter((t) => !sent.has(t.ticket_id)) : [])];
       const seen = new Set(own.map((t) => t.ticket_id));
       const seed = d.tickets.filter((t) => !seen.has(t.ticket_id));
       return {
         today, demo: true, rows, index: ageIndex(rows), history, upsell: d.upsell, reasons, tickets: [...seed, ...own], seedTickets: seed, firstMeeting: d.firstMeeting, lowSurveys: d.lowSurveys, setupCount: rows.filter((r) => r.status === "SETUP").length,
-        nextTicketId: () => (inStore ? ticketIdOf(peekNextSeq()) : nextDemoTicketId()),
+        nextTicketId: () => nextDemoTicketId(),
         // R3.2 §6.1: DEMO send stamps the DEMO clock (28 ต.ค. 2569), the same clock the assign / start / finish actions use.
-        send: (input) => (inStore ? createWelcomeBack(input, seed, undefined, demoWelcomeBackSink.at()) : createWelcomeBack(input, seed, demoWelcomeBackSink)),
+        send: (input) => createWelcomeBack(input, seed, demoWelcomeBackSink),
       };
     }
     const rows = vPsContractAge(liveAgeSources(data, cards), { today, links, history: store.history });

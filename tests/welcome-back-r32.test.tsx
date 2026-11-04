@@ -213,7 +213,8 @@ describe('R3.2 §5 / §6 / §7 PS label and DEMO', () => {
     const id = feed!.nextTicketId();
     const o = feed!.send(A.welcomeBackInput(row, { ticket_id: id, role: 'PM', draft: A.EMPTY_DRAFT, cycle: null, upsell: [], reason: null, timeline: [], label: (k) => k, today: AD.CONTRACT_AGE_DEMO_NOW }));
     expect(o.ok).toBe(true);
-    expect(TK.ticketById(id)?.created_at).toBe('2026-10-28T03:00:00.000Z'); // DEMO clock, not 30 ก.ย.
+    // R3.3 WB17: a DEMO send always lands in the session DEMO store (not the ticket store's in-memory mode).
+    expect(AD.demoWelcomeBackSink.items().find((t) => t.ticket_id === id)?.created_at).toBe('2026-10-28T03:00:00.000Z'); // DEMO clock, not 30 ก.ย.
     const d = await mountPage(true);
     await pickSelect(roleSelect(d), 'BDM');
     expect(groupText(d, 'pending')).toContain(id);

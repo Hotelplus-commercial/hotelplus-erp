@@ -317,4 +317,12 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [x] Tabs BD Workspace · BDM Workspace (?tab=bd|bdm on /bd/tickets), page-level role switcher + banner, badge
 - [x] BDM tab: รอมอบหมาย (quick มอบหมาย) · มอบหมายแล้ว (member chips) · ปิดแล้ว; BD tab: ของฉัน / ที่ฉันส่ง / BDM hint
 - [x] PS label `รอ BDM มอบหมาย (BDM Workspace)` · DEMO send dated by the DEMO clock · #951 legacy row text · tests 370 → 382
-- [ ] Workspace demo banner still says 30 ก.ย. 2569 (outside this patch) · real BDM login (no auth yet)
+- [x] Workspace demo banner date (fixed in R3.3)
+- [ ] Real BDM login (no auth yet)
+
+## R3.3 · Fix: Welcome Back from card ④ missing in BDM Workspace › รอมอบหมาย
+- [x] §1 diagnosis (real browser, full page loads) — reported before the fix
+- [x] One DEMO state for the browser session (PS Dashboard DEMO switch → BD App › Workspace follows) + mismatch bar `สลับให้ตรงกัน`
+- [x] DEMO Welcome Back tickets in session key `meridia.demo.welcomeBack.v1` (survive page loads, cleared when DEMO goes off)
+- [x] Fresh reads (open · tab · role · focus · storage) + รีเฟรช button · BD DEMO bar 28 ต.ค. 2569 · testing-mode check panel
+- [x] Tests WB21 1–9
