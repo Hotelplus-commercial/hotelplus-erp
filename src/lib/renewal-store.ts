@@ -236,14 +236,19 @@ export const entityClosed = (r: RenewalRequest) => { const t = ticketById(r.enti
 export const renewalNow = nowIso;
 
 /* ---------- writes ---------- */
-type Out = { ok: true; req: RenewalRequest } | { ok: false; error: string };
+type Out = { ok: true; req: RenewalRequest } | { ok: false; error: string; miss?: { contract_id: string | null; tried: string[] } };
 function put(r: RenewalRequest, extra?: Partial<State>): Out { const s = cur(); commit({ ...s, ...extra, requests: s.requests.map((x) => (x.id === r.id ? r : x)) }); return { ok: true, req: r }; }
 const apply = (id: string, f: (r: RenewalRequest) => Out): Out => { const r = cur().requests.find((x) => x.id === id); if (!r) return { ok: false, error: 'ไม่พบคำขอ' }; const o = f(r); return o.ok ? put(o.req) : o; };
 
 /** AE pressed ต่อสัญญา: reuse the one open request, else start one with a fresh recommendation. */
-export function startRenewal(card: Pick<RenewalCard, 'id' | 'hotelId' | 'hotel' | 'owner'>): Out {
+export function startRenewal(card: Pick<RenewalCard, 'id' | 'hotelId' | 'hotel' | 'owner'> & Partial<Pick<RenewalCard, 'contractEnd' | 'contract_id' | 'service' | 'created_source'>>): Out {
   const open = openRequestFor(card.id); if (open) return { ok: true, req: open };
-  const src = sourceContractFor(card.hotelId); if (!src) return { ok: false, error: 'ไม่พบสัญญาที่ใช้งานของโรงแรมนี้' };
+  const res = resolveSourceContract(card);
+  if (!res.ok) {
+    logMiss({ card_id: card.id, event: 'source_contract_not_found', contract_id: res.contract_id, tried: res.tried, at: nowIso() });
+    return { ok: false, error: RENEWAL_SOURCE_NOT_FOUND(res.contract_id ?? `(${card.hotelId})`), miss: { contract_id: res.contract_id, tried: res.tried } };
+  }
+  const src = res.contract;
   const s = cur(); const r = newRequest(card, src, s.seq + 1, nowIso());
   commit({ ...s, seq: s.seq + 1, requests: [...s.requests, r] }); return { ok: true, req: r };
 }
