@@ -74,7 +74,8 @@ export function WelcomeBackSection({ actor, demo, initialTicket }: { actor: WbAc
                 <SheetDescription asChild>
                   <div className="flex flex-wrap items-center gap-2 text-xs">
                     <Badge variant="secondary">{wbPill(open)}</Badge>
-                    <span>{WB.sentByRole(open.created_by, ROLE_TH[open.created_by] ?? open.created_by, thDate(open.created_at))}</span>
+                    {/* No sender name is stored on the ticket (only the role), so the role is the name here. */}
+                    <span>{WB.sentBy(ROLE_TH[open.created_by] ?? open.created_by, thDate(open.created_at))}</span>
                   </div>
                 </SheetDescription>
               </SheetHeader>
