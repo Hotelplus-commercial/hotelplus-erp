@@ -26,6 +26,7 @@ function BdWorkspace() {
   const navigate = useNavigate({ from: "/bd/tickets" });
   return (
     <BdWorkspacePage demo={!!demo} ticket={ticket} tab={tab}
-      onTabChange={(t) => navigate({ search: (prev) => ({ ...prev, tab: t }), replace: true })} />
+      onTabChange={(t) => navigate({ search: (prev) => ({ ...prev, tab: t }), replace: true })}
+      onDemoChange={(on) => navigate({ search: (prev) => ({ ...prev, demo: on ? 1 : undefined }), replace: true })} />
   );
 }
