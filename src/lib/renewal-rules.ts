@@ -20,7 +20,8 @@ export type RenewalRequest = {
   link_sent_at: string | null; signed_at: string | null; new_contract_id: string | null; decline_reason?: string | null;
   created_at: string; updated_at: string;
 };
-export type PriceHistoryRow = { contract_id: string; cycle_no: number; fee_amount: number; commission_pct: number; term_months: number; package: string; effective_from: string; effective_to: string; source: 'INITIAL' | 'RENEWAL'; renewal_request_id: string | null };
+/** fee_amount / commission_pct are null when the contract does not hold that term (v1.3 §4: empty, never 0). */
+export type PriceHistoryRow = { contract_id: string; cycle_no: number; fee_amount: number | null; commission_pct: number | null; term_months: number; package: string; effective_from: string; effective_to: string; source: 'INITIAL' | 'RENEWAL'; renewal_request_id: string | null };
 export type RenewalConfig = { renewal_reco_mode: RecoMode; renewal_approval_overdue_days: number; renewal_min_raise_thb: number };
 export const DEFAULT_RENEWAL_CONFIG: RenewalConfig = { renewal_reco_mode: 'SOFT_FORCE', renewal_approval_overdue_days: 2, renewal_min_raise_thb: 500 };
 
@@ -154,6 +155,32 @@ export function cancel(r: RenewalRequest, at: string): Res {
 /* ---------- price history ---------- */
 export function initialHistory(contracts: { contract_id: string; terms: Terms }[]): PriceHistoryRow[] {
   return contracts.map(({ contract_id, terms: t }) => ({ contract_id, cycle_no: 1, fee_amount: t.fee_amount, commission_pct: t.commission_pct, term_months: t.term_months, package: t.package, effective_from: t.start_date, effective_to: t.end_date, source: 'INITIAL', renewal_request_id: null }));
+}
+/** v1.3 §4 — main-store backfill: one INITIAL row per contract (per service it holds) that has no row yet. Returns only the rows to add.
+ * Skips contracts made by a renewal (they carry their RENEWAL row) and contracts that already have any row. Terms not held → null. */
+type MainLine = { sku_snapshot: string; name_snapshot: string; billing: string; unit_price: number | null; commission_rate: number | null; quantity: number };
+type MainContract = { contract_id: string; lines: MainLine[]; start_date: string; duration_months: number; renewal_of?: string | null };
+const svcOfLine = (l: MainLine) => (/^ORM/i.test(l.sku_snapshot) ? 'ORM' : 'Marcom');
+const svcOfPkg = (p: string) => (/^marcom/i.test(p) ? 'Marcom' : 'ORM');
+export function mainStoreInitialRows(list: MainContract[], existing: PriceHistoryRow[]): PriceHistoryRow[] {
+  const out: PriceHistoryRow[] = [];
+  for (const c of list) {
+    if (c.renewal_of || !c.start_date || !/^\d{4}-\d{2}-\d{2}/.test(c.start_date)) continue;
+    const start = c.start_date.slice(0, 10); const end = addDays(addMonths(start, c.duration_months), -1);
+    const monthly = c.lines.filter((l) => l.billing === 'monthly');
+    const groups = (['ORM', 'Marcom'] as const).map((svc) => ({ svc, lines: monthly.filter((l) => svcOfLine(l) === svc) })).filter((g) => g.lines.length);
+    for (const g of groups.length ? groups : [{ svc: null, lines: [] as MainLine[] }]) {
+      const pkgName = g.lines[0] ? (g.lines[0].name_snapshot || g.lines[0].sku_snapshot) : '';
+      const pkg = g.svc && !pkgName.startsWith(g.svc) ? `${g.svc} ${pkgName}` : pkgName;
+      const has = existing.concat(out).some((h) => h.contract_id === c.contract_id && (h.source === 'RENEWAL' || !g.svc || svcOfPkg(h.package) === g.svc));
+      if (has) continue;
+      const priced = g.lines.filter((l) => l.unit_price != null && l.unit_price > 0);
+      const comm = g.lines.find((l) => l.commission_rate != null)?.commission_rate;
+      out.push({ contract_id: c.contract_id, cycle_no: 1, fee_amount: priced.length ? priced.reduce((s, l) => s + (l.unit_price ?? 0) * (l.quantity || 1), 0) : null,
+        commission_pct: comm == null ? null : Math.round(comm * 10000) / 100, term_months: c.duration_months, package: pkg, effective_from: start, effective_to: end, source: 'INITIAL', renewal_request_id: null });
+    }
+  }
+  return out;
 }
 export function renewalHistoryRow(r: RenewalRequest, prevCycle: number): PriceHistoryRow {
   const t = r.new_terms;

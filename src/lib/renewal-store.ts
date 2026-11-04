@@ -5,7 +5,7 @@ import { EXPANSION_DEMO, repricingRow, type RepriceInput } from './expansion';
 import { DEMO_NOW } from './ps-demo-fixture';
 import { addAttachment, createTask, setTicketDemo, ticketById } from './tickets-l0';
 import {
-  DEFAULT_RENEWAL_CONFIG, OPEN_REQUEST, approve, cancel, decline, defaultNewTerms, editTerms, evaluate, initialHistory, recommend,
+  DEFAULT_RENEWAL_CONFIG, OPEN_REQUEST, approve, cancel, decline, defaultNewTerms, editTerms, evaluate, mainStoreInitialRows, recommend,
   refreshGate, renewalHistoryRow, returnRequest, sendLink, sign, submit,
   type ApproverRole, type PriceHistoryRow, type RenewalConfig, type RenewalRequest, type Terms,
 } from './renewal-rules';
@@ -71,12 +71,18 @@ const nowIso = () => (demoOn ? DEMO_NOW : new Date().toISOString());
 /** R2.1: DEMO contracts materialised from the R2 demo records (in memory, reset when DEMO toggles). */
 let demoExtra: SourceContract[] = [];
 const contracts = () => (demoOn ? [...SAMPLE_CONTRACTS, ...DEMO_CONTRACTS, ...demoExtra] : SAMPLE_CONTRACTS);
-const backfill = (): PriceHistoryRow[] => initialHistory(contracts());
+/** v1.3 §4: INITIAL rows come from the main contract store only (live CRM store / DEMO contract state), never from SAMPLE_CONTRACTS. Add-only, idempotent. */
+const backfill = (existing: PriceHistoryRow[]): PriceHistoryRow[] => mainStoreInitialRows(mainContracts(), existing);
+function syncInitialHistory() {
+  const s = cur(); const add = backfill(s.history); if (add.length) commit({ ...s, history: [...s.history, ...add] });
+}
 
 function liveState(): State {
   if (live) return live;
   try { live = JSON.parse(localStorage.getItem(KEY) ?? '') as State; } catch { live = null; }
-  if (!live?.requests) live = { seq: 0, requests: [], history: backfill() };
+  if (!live?.requests) live = { seq: 0, requests: [], history: [] };
+  const add = backfill(live.history ?? []);
+  if (add.length) { live = { ...live, history: [...(live.history ?? []), ...add] }; if (typeof window !== 'undefined') { try { localStorage.setItem(KEY, JSON.stringify(live)); } catch { /* quota */ } } }
   return live;
 }
 const cur = (): State => (demoOn ? (demo ??= seedDemo()) : liveState());
@@ -180,7 +186,7 @@ function materialiseDemo(cid: string): SourceContract | null {
     demo_fallback: true, empty_fields: empty,
   };
   demoExtra = [...demoExtra, sc];
-  if (start) addMainContract(contractFromSource(sc, DEMO_NOW)); // same demo contract state the Wizard and the demo bill read
+  if (start && addMainContract(contractFromSource(sc, DEMO_NOW)).ok) queueMicrotask(syncInitialHistory); // same demo contract state; its INITIAL row follows
   return sc;
 }
 /** Store wrapper: live = main store + renewal set (never fabricates); DEMO = demo contract state + R2 fallback. */
@@ -218,7 +224,7 @@ function newRequest(card: Pick<RenewalCard, 'id' | 'hotelId' | 'hotel' | 'owner'
 }
 
 function seedDemo(): State {
-  const s: State = { seq: 0, requests: [], history: initialHistory([...SAMPLE_CONTRACTS, ...DEMO_CONTRACTS]) };
+  const s: State = { seq: 0, requests: [], history: backfill([]) };
   const mk = (card: RenewalCard) => { s.seq++; return newRequest(card, sourceContractFor(card.hotelId)!, s.seq, DEMO_NOW); };
   const [c4, c5, c6, c7] = DEMO_EXTRA_CARDS as [RenewalCard, RenewalCard, RenewalCard, RenewalCard];
   const r4 = mk(c4); const fee4 = r4.new_terms.fee_amount;
