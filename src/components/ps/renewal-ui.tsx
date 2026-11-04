@@ -41,14 +41,16 @@ import {
   type RenewalStatus,
 } from "@/lib/ps-renewal";
 import { cn } from "@/lib/utils";
-import { DEMO_EXTRA_CARDS, declineRequest, isRenewalDemo, latestRequestFor, openRequestFor, scanSourceContracts, setRenewalDemo, signedAwaitingDone, sourceContractFor, useRenewalStore } from "@/lib/renewal-store";
+import { DEMO_EXTRA_CARDS, declineRequest, isRenewalDemo, latestRequestFor, openRequestFor, scanSourceContracts, setRenewalDemo, signedAwaitingDone, sourceContractFor, sourceMissesFor, useRenewalStore } from "@/lib/renewal-store";
 import { RenewalRequestChips, RenewalRequestPanel, SignedBadge } from "@/components/ps/renewal-request-ui";
-import { RENEWAL_LABEL_TH as RL, RN2 } from "@/lib/ps-glossary";
+import { RENEWAL_LABEL_TH as RL, RENEWAL_TEST_BANNER, RENEWAL_TEST_SWITCH, RN2, aeNameTh } from "@/lib/ps-glossary";
 import { RenewalReasonPicker } from "@/components/ps/renewal-reason-picker";
 import { recordReason, setReasonsDemo } from "@/lib/renewal-reasons";
 import { isOwningAe, reasonLabel, validPick } from "@/lib/renewal-r2";
-import { EARLY_PARAM, readEarlyHandoff, scanContractById } from "@/lib/renewal-scan";
+import { EARLY_PARAM, readEarlyHandoff, scanContractById, type ScanContract } from "@/lib/renewal-scan";
 import { RENEWAL_R2_DEMO_NOW, renewalR2DemoReasons, renewalR2DemoScanFeed } from "@/lib/renewal-r2-demo";
+import { actingRenewalUser, isRenewalTestMode, setTestMember, useTestMember } from "@/lib/renewal-test-actor";
+import { useMeetingMgmt } from "@/lib/orm-meeting";
 
 const statusTone: Record<RenewalStatus, "muted" | "info" | "success" | "danger"> = {
   NOT_STARTED: "muted",
@@ -135,7 +137,13 @@ export function RenewalActivityCards({
         </Button>
       </div>
 
-      {denied && <p role="alert" className="border-t px-3 py-2 text-sm text-destructive">{RN2.denied}</p>}
+      {isRenewalTestMode() && member && !canOverride && <p className="border-t px-3 py-1.5 text-xs text-muted-foreground">{RENEWAL_TEST_BANNER("AE", aeNameTh(member))}</p>}
+      {denied && (
+        <p role="alert" className="flex flex-wrap items-center gap-2 border-t px-3 py-2 text-sm text-destructive">
+          {RN2.denied}
+          {isRenewalTestMode() && denied.ae && <button type="button" className="text-xs font-semibold text-primary underline-offset-2 hover:underline" onClick={() => switchToOwner(denied)}>{RENEWAL_TEST_SWITCH(aeNameTh(denied.ae))}</button>}
+        </p>
+      )}
       {open && (
         <ul className="divide-y border-t">
           {visible.map((c) => {
