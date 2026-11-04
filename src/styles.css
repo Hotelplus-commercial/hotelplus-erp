@@ -1697,12 +1697,12 @@ textarea.r1-input{height:auto;padding:6px 8px;resize:vertical;}
 .sd-cross{stroke:var(--text-secondary);stroke-dasharray:3 3;stroke-width:1;}
 .sd-badge{fill:var(--tooltip-bg);}.sd-badge-text{font-size:11px;font-weight:700;fill:var(--bg-card);}
 .sd-dot{cursor:pointer;outline:none;}.sd-dot:focus-visible circle:nth-child(2){stroke:var(--accent);stroke-width:2.5;}
-.sd-tip{position:fixed;z-index:80;max-width:min(380px,calc(100vw - 16px));background:var(--tooltip-bg);color:var(--bg-card);border-radius:10px;padding:10px 12px;font-size:12px;line-height:1.45;box-shadow:0 8px 24px rgb(0 0 0/.25);pointer-events:none;}
-.sd-tip .sd-t-late{color:#ff9f8a;}.sd-tip .sd-t-near{color:#ffd27a;}.sd-tip .sd-t-ok{color:#8fe0cf;}
+.sd-tip{position:fixed;z-index:80;max-width:min(380px,calc(100vw - 16px));background:var(--tooltip-bg);color:var(--bg-card);border-radius:10px;padding:10px 12px;font-size:12px;line-height:1.45;box-shadow:0 8px 24px color-mix(in srgb,var(--text-primary) 25%,transparent);pointer-events:none;}
+.sd-tip .sd-t-late{color:color-mix(in srgb,var(--grade-action) 60%,var(--bg-card));}.sd-tip .sd-t-near{color:color-mix(in srgb,var(--grade-watch) 70%,var(--bg-card));}.sd-tip .sd-t-ok{color:color-mix(in srgb,var(--grade-good) 60%,var(--bg-card));}
 .sd-tip-head{font-weight:700;font-size:12.5px;margin-bottom:2px;}.sd-tip-sub{opacity:.8;margin-bottom:4px;}
 .sd-tip-row{display:flex;justify-content:space-between;gap:14px;}.sd-tip-row>span:last-child{text-align:right;}
-.sd-tip-lanes{border-top:1px solid rgb(255 255 255/.18);margin-top:5px;padding-top:5px;}
-.sd-tip-dim{opacity:.7;}.sd-tip-foot{border-top:1px solid rgb(255 255 255/.18);margin-top:6px;padding-top:5px;opacity:.8;font-size:11px;}
+.sd-tip-lanes{border-top:1px solid color-mix(in srgb,var(--bg-card) 18%,transparent);margin-top:5px;padding-top:5px;}
+.sd-tip-dim{opacity:.7;}.sd-tip-foot{border-top:1px solid color-mix(in srgb,var(--bg-card) 18%,transparent);margin-top:6px;padding-top:5px;opacity:.8;font-size:11px;}
 .sd-tip-group{margin-top:5px;}.sd-tip-gh{font-weight:700;opacity:.9;}
 .sd-section{display:flex;flex-direction:column;gap:8px;}.sd-section h3{font-size:14px;font-weight:700;display:flex;align-items:center;gap:4px;flex-wrap:wrap;}
 .sd-table-scroll{overflow-x:auto;min-width:0;}
