@@ -253,9 +253,11 @@ export function defaultOrder(a: HealthRow, b: HealthRow) {
   return TIER_RANK[a.tier] - TIER_RANK[b.tier] || badCount(b) - badCount(a) || a.hotel_name.localeCompare(b.hotel_name, 'th');
 }
 /** Red + yellow block first, green separately after; an age / ticket sort applies inside each block. */
-export function sortRows(rows: HealthRow[], sort: SortKey, today: string) {
-  const val = (r: HealthRow) => (sort?.by === 'age' ? ageDays(r.start, today) ?? -1 : r.tickets.length);
-  const by = (a: HealthRow, b: HealthRow) => (sort ? (sort.dir === 'desc' ? val(b) - val(a) : val(a) - val(b)) || defaultOrder(a, b) : defaultOrder(a, b));
+export function sortRows(rows: HealthRow[], sort: SortKey, today: string, ageOf?: (r: HealthRow) => number | null) {
+  const val = (r: HealthRow) => (sort?.by === 'age' ? (ageOf ? ageOf(r) : ageDays(r.start, today)) ?? -1 : r.tickets.length);
+  // Tab R3 §8: with `ageOf` (age from first Go Live), contracts still in Setup (null) go last in either direction.
+  const setupLast = (a: HealthRow, b: HealthRow) => (sort?.by === 'age' && ageOf ? Number(ageOf(a) == null) - Number(ageOf(b) == null) : 0);
+  const by = (a: HealthRow, b: HealthRow) => (sort ? setupLast(a, b) || (sort.dir === 'desc' ? val(b) - val(a) : val(a) - val(b)) || defaultOrder(a, b) : defaultOrder(a, b));
   const ry = rows.filter((r) => r.tier !== 'G').sort(by), g = rows.filter((r) => r.tier === 'G').sort(by);
   return { ry, green: g };
 }

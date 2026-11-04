@@ -18,6 +18,8 @@ import {
   type HealthFilter, type HealthRow, type QuickKey, type SortKey, type Svc, type TabR1Data, type Tier,
 } from "@/lib/contract-tab-r1";
 import { cn } from "@/lib/utils";
+import { CL } from "@/lib/ps-glossary";
+import { ageText as ageTextDays, healthAgeDays, type ContractAgeRow } from "@/lib/contract-age";
 
 const QUICK_LABEL: Record<QuickKey, string> = { NO_TICKET: R1_HEALTH.qNoTicket, DUE: R1_HEALTH.qDue, WORSE: R1_HEALTH.qWorse, OPP: R1_HEALTH.qOpp };
 const thDate = (iso: string) => new Date(iso).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "2-digit", timeZone: "Asia/Bangkok" });
@@ -29,7 +31,7 @@ function Hl({ text, q }: { text: string; q: string }) {
   return <>{text.slice(0, r[0])}<mark>{text.slice(r[0], r[1])}</mark>{text.slice(r[1])}</>;
 }
 
-export function ContractHealthCard({ data, onOpenTask }: { data: TabR1Data | undefined; onOpenTask?: ((contractId: string) => void) | undefined }) {
+export function ContractHealthCard({ data, onOpenTask, ages }: { data: TabR1Data | undefined; onOpenTask?: ((contractId: string) => void) | undefined; ages?: Map<string, ContractAgeRow> | undefined }) {
   const demo = !!data?.demo;
   const today = data?.today ?? new Date().toISOString().slice(0, 10);
   const store = useContractHealthStore(demo);
@@ -79,7 +81,7 @@ export function ContractHealthCard({ data, onOpenTask }: { data: TabR1Data | und
   const counts = { R: rows.filter((r) => r.tier === "R").length, A: rows.filter((r) => r.tier === "A").length, G: rows.filter((r) => r.tier === "G").length };
   const total = rows.length;
   const filtered = filterRows(rows, filter, today);
-  const sorted = sortRows(filtered, sort, today);
+  const sorted = sortRows(filtered, sort, today, ages ? (r) => healthAgeDays(ages.get(r.contract_id)) : undefined);
   const pg = paginate(sorted, filter.tier, size, showGreen);
   const nPages = pg.pages.length;
   const cur = Math.min(page, nPages);
@@ -183,7 +185,7 @@ export function ContractHealthCard({ data, onOpenTask }: { data: TabR1Data | und
                 {groupsOfPage.map((grp, gi) => [
                   view === "hotel" && grp.length > 0 && <tr key={`g-${grp[0]!.hotel_id}`} className="r1-group-row"><td colSpan={7}>{R1_HEALTH.groupHead(grp[0]!.hotel_name, grp.length)}</td></tr>,
                   ...grp.map((r, ri) => (
-                    <HealthRowView key={r.contract_id} r={r} q={filter.q} today={today} first={gi === 0 && ri === 0}
+                    <HealthRowView key={r.contract_id} r={r} q={filter.q} today={today} first={gi === 0 && ri === 0} ages={ages}
                       canCreate={canCreate(r)} onCreate={() => setDialogRow(r.contract_id)} onOpen={() => openAccount360(r.hotel_id)} onOpenTask={onOpenTask} />
                   )),
                 ])}
@@ -220,8 +222,9 @@ export function ContractHealthCard({ data, onOpenTask }: { data: TabR1Data | und
   );
 }
 
-function HealthRowView({ r, q, today, first, canCreate, onCreate, onOpen, onOpenTask }: {
+function HealthRowView({ r, q, today, first, canCreate, onCreate, onOpen, onOpenTask, ages }: {
   r: HealthRow; q: string; today: string; first: boolean; canCreate: boolean; onCreate: () => void; onOpen: () => void; onOpenTask?: ((contractId: string) => void) | undefined;
+  ages?: Map<string, ContractAgeRow> | undefined;
 }) {
   const mark = tierMark(r.tier, r.tier30);
   const due = isDueSoon(r, today) ? daysToEnd(r, today) : null;
@@ -254,7 +257,8 @@ function HealthRowView({ r, q, today, first, canCreate, onCreate, onOpen, onOpen
         )}
       </td>
       <td data-label={R1_HEALTH.cols.age}>
-        <div className="tabular-nums">{ageText(r.start, today)}</div>
+        {/* Tab R3 §8: age from first Go Live (v_ps_contract_age, same value as card ④); Setup shows its own text. */}
+        {ages ? (healthAgeDays(ages.get(r.contract_id)) != null ? <div className="tabular-nums">{ageTextDays(healthAgeDays(ages.get(r.contract_id)))}</div> : <div className="r1-muted">{CL.setupAge}</div>) : <div className="tabular-nums">{ageText(r.start, today)}</div>}
         {due != null && <div className="r1-due tabular-nums">{R1_HEALTH.dueIn(due)}</div>}
       </td>
       <td data-label={R1_HEALTH.cols.ticket} onClick={stop}>
