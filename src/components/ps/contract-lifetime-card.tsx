@@ -13,7 +13,7 @@ import { reasonLabel } from "@/lib/renewal-r2";
 import { pageList } from "@/lib/contract-tab-r1";
 import {
   AGE_SVCS, ALL_PERIOD, CONTRACT_AGE_CONFIG as CFG, EMPTY_CHURN_FILTER, EMPTY_DRAFT, HEAT_RANGES, NO_REASON,
-  activeOf, ageText, beeswarm, churnRows, cycleSort, distribution, drawnRows, endedOf, filterChurn, heatAlpha, heatQuarters, hundredTicks,
+  activeOf, ageText, beeswarm, churnRows, cycleSort, distribution, drawnRows, filterChurn, heatAlpha, heatQuarters, hundredTicks,
   inPeriod, makeScale, medianActive, nextPeriod, pageOf, pctText, periodBounds, periodLabelOf, periodSummary, phasePills, quarterLabel,
   reasonOf, reasonOptions, sinceText, sortChurn, survivalTable, thDate, topZone, zoneBoxes, zoneCounts, zoneOf, zoneWidths, zonesFor,
   type AgeSvc, type ChurnFilter, type ChurnRow, type ChurnSort, type ContractAgeRow, type GoLivePeriod, type HeatPick, type WelcomeBackDraft, type ZoneView,
@@ -497,4 +497,3 @@ function Survival({ rows, today, period, onQuarter, heat, onHeat }: { rows: Cont
     </div>
   );
 }
-export { endedOf };
