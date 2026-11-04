@@ -395,9 +395,9 @@ function StageTable({ tab, timings, st, quick, period, latest, today }: { tab: S
                 {r.n === 0 ? <td colSpan={4} className="cl-muted">{SD.emptyLane}</td> : (<>
                   <td>{SD.stage.doing(r.n)}{tab === 'all' && r.orm > 0 && r.mc > 0 && <span className="cl-muted"> {SD.stage.split(r.orm, r.mc)}</span>}</td>
                   {r.lane.key === 'w' ? <><td>—</td><td>—</td><td>—</td></> : (<>
-                    <td><span className="sd-pill-stat sd-pill-ok">{SD.stage.pill(SD.status.ok!, r.ok, r.n)}</span></td>
-                    <td><StagePill label={SD.status.near!} a={r.near} n={r.n} tone="near" /></td>
-                    <td><StagePill label={SD.status.late!} a={r.late} n={r.n} tone="late" /></td>
+                    <td><span className="sd-pill-stat sd-pill-ok">{SD.stage.pill(SD.status['ok']!, r.ok, r.n)}</span></td>
+                    <td><StagePill label={SD.status['near']!} a={r.near} n={r.n} tone="near" /></td>
+                    <td><StagePill label={SD.status['late']!} a={r.late} n={r.n} tone="late" /></td>
                   </>)}
                 </>)}
               </tr>
