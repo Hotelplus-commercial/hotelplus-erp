@@ -11,9 +11,10 @@ import {
 } from './renewal-rules';
 import type { PsReportRow } from './ps-dashboard-types';
 import type { RenewalCard } from './ps-renewal';
-import { seedContracts } from './crm-seed';
 import type { Contract, ContractLine } from './crm-types';
-import { RENEWAL_SOURCE_NOT_FOUND } from './ps-glossary';
+import { RENEWAL_NEW_CONTRACT_FAILED, RENEWAL_SOURCE_NOT_FOUND } from './ps-glossary';
+import { addMainContract, mainContractById, mainContracts, setMainContractDemo } from './main-contract-store';
+import { buildRenewedContract, contractFromSource, svcOfPackage } from './renewal-contract';
 import { readEarlyHandoff, toIsoDate } from './renewal-scan';
 import { renewalR2DemoItems, renewalR2Sim, RENEWAL_R2_DEMO_NOW } from './renewal-r2-demo';
 import { tabR1DemoBase, tabR1HeaderPortfolio } from './contract-tab-r1-demo';
@@ -85,13 +86,24 @@ function commit(s: State) {
 }
 export function setRenewalDemo(on: boolean) {
   if (on === demoOn) return;
-  demoOn = on; demoExtra = []; demoMisses = []; setTicketDemo(on); demo = on ? seedDemo() : null; if (demo) seedDemoLinks(demo); version++; listeners.forEach((l) => l());
+  demoOn = on; demoExtra = []; demoMisses = []; setTicketDemo(on);
+  /* v1.3 §2: one demo contract state — the renewal sample contracts are seed data written into it (memory only). */
+  setMainContractDemo(on, on ? [...SAMPLE_CONTRACTS, ...DEMO_CONTRACTS].map((c) => contractFromSource(c, DEMO_NOW)) : []);
+  demo = on ? seedDemo() : null;
+  if (demo) { for (const r of demo.requests) if (r.status === 'SIGNED') writeRenewedContract(r); seedDemoLinks(demo); }
+  version++; listeners.forEach((l) => l());
 }
 export const isRenewalDemo = () => demoOn;
 
 /** Kept for the bundled demo seed; startRenewal() now uses resolveSourceContract() (R2.1 UF1). */
 export const sourceContractFor = (hotelId: string) => contracts().find((c) => c.hotel_id === hotelId) ?? null;
-export const sourceContractById = (id: string) => contracts().find((c) => c.contract_id === id) ?? (demoOn ? null : mainSources().find((c) => c.contract_id === id) ?? null);
+/** v1.3 §2: main contract store first (live CRM store / DEMO contract state), then the renewal set (live bundled sample cards only).
+ * A main contract holding ORM + Marcom lines returns the service asked for (else the service of the latest request on it). */
+export function sourceContractById(id: string, svc?: 'ORM' | 'Marcom'): SourceContract | null {
+  const want = svc ?? (() => { const r = [...cur().requests].reverse().find((x) => x.source_contract_id === id); return r ? svcOfPackage(r.old_terms.package) : undefined; })();
+  const m = mainSources().filter((c) => c.contract_id === id);
+  return (want ? m.find((c) => svcOf(c) === want) : undefined) ?? m[0] ?? contracts().find((c) => c.contract_id === id) ?? null;
+}
 
 /* ---------- R2.1 UF1 — source contract resolved by contract, never by hotel alone ---------- */
 type Svc = 'ORM' | 'Marcom';
@@ -115,11 +127,10 @@ export function sourcesFromMain(list: Contract[]): SourceContract[] {
     }];
   }));
 }
-const CRM_KEY = 'hotelplus-crm-v1';
+/** Main contract store as source contracts: live = CRM browser store; DEMO = demo contract state (R2 records keep their demo_fallback flags). */
 function mainSources(): SourceContract[] {
-  let list: Contract[] = seedContracts;
-  try { if (typeof localStorage !== 'undefined') { const p = JSON.parse(localStorage.getItem(CRM_KEY) ?? 'null') as { contracts?: Contract[] } | null; if (Array.isArray(p?.contracts)) list = p.contracts; } } catch { /* keep seed */ }
-  return sourcesFromMain(list);
+  const list = sourcesFromMain(mainContracts());
+  return demoOn ? list.map((s) => demoExtra.find((d) => d.contract_id === s.contract_id && svcOf(d) === svcOf(s)) ?? s) : list;
 }
 
 export type ResolveCard = Pick<RenewalCard, 'id' | 'hotelId'> & Partial<Pick<RenewalCard, 'contractEnd' | 'contract_id' | 'service' | 'created_source'>>;
@@ -169,11 +180,12 @@ function materialiseDemo(cid: string): SourceContract | null {
     demo_fallback: true, empty_fields: empty,
   };
   demoExtra = [...demoExtra, sc];
+  if (start) addMainContract(contractFromSource(sc, DEMO_NOW)); // same demo contract state the Wizard and the demo bill read
   return sc;
 }
 /** Store wrapper: live = main store + renewal set (never fabricates); DEMO = demo contract state + R2 fallback. */
 export function resolveSourceContract(card: ResolveCard): Resolved {
-  return resolveSourceIn(card, { main: demoOn ? [] : mainSources(), renewal: contracts(), ...(demoOn ? { demo: materialiseDemo } : {}) }, nowIso().slice(0, 10));
+  return resolveSourceIn(card, { main: mainSources(), renewal: contracts(), ...(demoOn ? { demo: materialiseDemo } : {}) }, nowIso().slice(0, 10));
 }
 /** Wizard: the renewal card for a contract id (card contract id → card whose request uses it → older hotel match). */
 export function wizardCardFor<T extends ResolveCard>(cards: T[], contractId: string, src: SourceContract | null): T | undefined {
@@ -282,10 +294,26 @@ export function raiseEntityChange(id: string, what: 'นิติบุคคล
   return put({ ...r, entity_change: true, entity_ticket_id: t.ticket_id, entity_detail: { what, detail: detail.trim() }, updated_at: nowIso() });
 }
 
-/** Signing: new ACTIVE contract from new start + RENEWAL price-history row. v1.1: the card closes only via Mark as Done. */
+/* v1.3 §3: on SIGNED the new contract is written to the main contract store (source unchanged; Billing engine untouched). */
+function baseContractFor(req: RenewalRequest, snapshot?: SourceContract): Contract | null {
+  const svc = svcOfPackage(req.old_terms.package);
+  const m = mainContractById(req.source_contract_id);
+  if (m && m.lines.some((l) => l.billing === 'monthly' && lineSvc(l) === svc)) return m;
+  const s = snapshot ?? sourceContractById(req.source_contract_id, svc);
+  return s ? contractFromSource(s, req.signed_at ?? nowIso()) : null; // renewal-set / DEMO R2 source → seed record (only the new contract is written)
+}
+function writeRenewedContract(req: RenewalRequest, snapshot?: SourceContract): { ok: true; contract_id: string } | { ok: false; error: string } {
+  const base = baseContractFor(req, snapshot); if (!base) return { ok: false, error: RENEWAL_NEW_CONTRACT_FAILED(`ไม่พบสัญญาต้นทาง ${req.source_contract_id}`) };
+  const b = buildRenewedContract(base, req); if (!b.ok) return { ok: false, error: RENEWAL_NEW_CONTRACT_FAILED(b.error) };
+  const a = addMainContract(b.contract); if (!a.ok) return { ok: false, error: RENEWAL_NEW_CONTRACT_FAILED(a.error) };
+  return { ok: true, contract_id: b.contract.contract_id };
+}
+
+/** Signing: new contract in the main store (all-or-nothing) + RENEWAL price-history row. v1.1: the card closes only via Mark as Done. */
 export function signRequest(id: string): Out {
   const r = cur().requests.find((x) => x.id === id); if (!r) return { ok: false, error: 'ไม่พบคำขอ' };
   const o = sign(r, nowIso()); if (!o.ok) return o;
+  const w = writeRenewedContract(o.req); if (!w.ok) return { ok: false, error: w.error };
   setLinkStatus(r.id, 'SIGNED', o.req.signed_at, o.req);
   const s = cur(); const prev = Math.max(0, ...s.history.filter((h) => h.contract_id === r.source_contract_id || h.renewal_request_id != null && s.requests.find((q) => q.id === h.renewal_request_id)?.source_contract_id === r.source_contract_id).map((h) => h.cycle_no));
   return put(o.req, { history: [...s.history, renewalHistoryRow(o.req, prev)] });
@@ -320,7 +348,8 @@ export function createAndSendLink(id: string): Out {
 
 /* ---------- v1.2 live_link records (browser-local, shared by every tab; snapshot makes a link self-contained) ---------- */
 export type LinkStatus = 'ACTIVE' | 'SIGNED' | 'REVOKED' | 'EXPIRED';
-export type RenewalLiveLink = { token: string; kind: 'RENEWAL'; renewal_request_id: string; contract_id: string; created_at: string; expires_at: string | null; status: LinkStatus; signed_at: string | null; signer: string | null; snapshot: { request: RenewalRequest; contract: SourceContract } };
+export type RenewalLiveLink = { token: string; kind: 'RENEWAL'; renewal_request_id: string; contract_id: string; created_at: string; expires_at: string | null; status: LinkStatus; signed_at: string | null; signer: string | null; snapshot: { request: RenewalRequest; contract: SourceContract };
+  /** v1.3 wiring: issued in DEMO (true) or live (false); older links have no value. */ demo?: boolean };
 /** Validity in days; null = never expires (BD live links have no expiry either). */
 export const RENEWAL_LINK_VALID_DAYS: number | null = null;
 const LINK_KEY = 'meridia.renewal-links.v1'; const PREVIEW_KEY = 'meridia.renewal-preview.';
@@ -335,7 +364,7 @@ function issueRenewalLink(r: RenewalRequest, src: SourceContract, at: string): R
   const links = readLinks(); const curL = [...links].reverse().find((l) => l.renewal_request_id === r.id && l.status === 'ACTIVE');
   if (curL && !isExpired(curL)) return writeLinks(links.map((l) => (l === curL ? { ...l, snapshot: { request: r, contract: src } } : l))) ? curL : null;
   const exp = RENEWAL_LINK_VALID_DAYS == null ? null : new Date(Date.parse(at) + RENEWAL_LINK_VALID_DAYS * 864e5).toISOString();
-  const rec: RenewalLiveLink = { token: newToken(), kind: 'RENEWAL', renewal_request_id: r.id, contract_id: r.source_contract_id, created_at: at, expires_at: exp, status: 'ACTIVE', signed_at: null, signer: null, snapshot: { request: r, contract: src } };
+  const rec: RenewalLiveLink = { token: newToken(), kind: 'RENEWAL', renewal_request_id: r.id, contract_id: r.source_contract_id, created_at: at, expires_at: exp, status: 'ACTIVE', signed_at: null, signer: null, snapshot: { request: r, contract: src }, demo: demoOn };
   return writeLinks([...links.map((l) => (l === curL ? { ...l, status: 'EXPIRED' as const } : l)), rec]) ? rec : null;
 }
 function setLinkStatus(requestId: string, status: LinkStatus, signedAt?: string | null, req?: RenewalRequest) {
@@ -347,15 +376,21 @@ function setLinkStatus(requestId: string, status: LinkStatus, signedAt?: string 
 export function signByToken(token: string, signer: string): { ok: true; link: RenewalLiveLink } | { ok: false; error: string } {
   const l = linkByToken(token); if (!l) return { ok: false, error: 'ไม่พบ link' };
   if (l.status !== 'ACTIVE' || isExpired(l)) return { ok: false, error: 'link นี้ใช้ลงนามไม่ได้' };
-  const local = cur().requests.find((x) => x.id === l.renewal_request_id && x.status === 'LINK_SENT');
+  const sameMode = l.demo === undefined || l.demo === demoOn;
+  const local = sameMode ? cur().requests.find((x) => x.id === l.renewal_request_id && x.status === 'LINK_SENT') : undefined;
   if (local) { const o = signRequest(local.id); if (!o.ok) return o; }
-  else { const at = nowIso(); const req = { ...l.snapshot.request, status: 'SIGNED' as const, signed_at: at, new_contract_id: `${l.contract_id}-R${l.renewal_request_id.slice(-4)}` }; setLinkStatus(l.renewal_request_id, 'SIGNED', at, req); }
+  else {
+    const at = nowIso(); const req = { ...l.snapshot.request, status: 'SIGNED' as const, signed_at: at, new_contract_id: `${l.contract_id}-R${l.renewal_request_id.slice(-4)}` };
+    // live link signed in a tab without the request: write the new contract here (all-or-nothing); DEMO links: the issuing tab writes it on pick-up
+    if (l.demo === false && !demoOn) { const w = writeRenewedContract(req, l.snapshot.contract); if (!w.ok) return { ok: false, error: w.error }; }
+    setLinkStatus(l.renewal_request_id, 'SIGNED', at, req);
+  }
   const links = readLinks(); writeLinks(links.map((x) => (x.token === token ? { ...x, signer } : x)));
   return { ok: true, link: linkByToken(token)! };
 }
 if (typeof window !== 'undefined') window.addEventListener('storage', (e) => {
   if (e.key !== LINK_KEY) return;
-  for (const l of readLinks()) if (l.status === 'SIGNED') { const r = cur().requests.find((x) => x.id === l.renewal_request_id && x.status === 'LINK_SENT'); if (r) signRequest(r.id); }
+  for (const l of readLinks()) if (l.status === 'SIGNED' && (l.demo === undefined || l.demo === demoOn)) { const r = cur().requests.find((x) => x.id === l.renewal_request_id && x.status === 'LINK_SENT'); if (r) signRequest(r.id); }
   version++; listeners.forEach((f) => f());
 });
 /** Demo seeds: every LINK_SENT / SIGNED request gets a matching RENEWAL link (deterministic token). */
@@ -364,7 +399,7 @@ function seedDemoLinks(s: State) {
   const links = readLinks().filter((l) => !l.token.startsWith('demo-'));
   for (const r of s.requests) if (r.status === 'LINK_SENT' || r.status === 'SIGNED') {
     const src = [...SAMPLE_CONTRACTS, ...DEMO_CONTRACTS].find((c) => c.contract_id === r.source_contract_id); if (!src) continue;
-    links.push({ token: `demo-${r.id.toLowerCase()}`, kind: 'RENEWAL', renewal_request_id: r.id, contract_id: r.source_contract_id, created_at: r.link_sent_at ?? DEMO_NOW, expires_at: null, status: r.status === 'SIGNED' ? 'SIGNED' : 'ACTIVE', signed_at: r.signed_at, signer: r.status === 'SIGNED' ? src.signatory : null, snapshot: { request: r, contract: src } });
+    links.push({ token: `demo-${r.id.toLowerCase()}`, kind: 'RENEWAL', renewal_request_id: r.id, contract_id: r.source_contract_id, created_at: r.link_sent_at ?? DEMO_NOW, expires_at: null, status: r.status === 'SIGNED' ? 'SIGNED' : 'ACTIVE', signed_at: r.signed_at, signer: r.status === 'SIGNED' ? src.signatory : null, snapshot: { request: r, contract: src }, demo: true });
   }
   try { localStorage.setItem(LINK_KEY, JSON.stringify(links)); } catch { /* quota */ }
 }
