@@ -317,3 +317,12 @@ export const RN2 = {
     { target: "rn2-reasons", title: "ทำไมลูกค้าไม่ต่อ / หลุด", text: "ป้ายที่พบบ่อย = 3 อันดับแรกของเหตุผลหลัก / รอง · 7 กลุ่ม = กลุ่มไหนโดนบ่อยสุด (นับเป็นป้าย)" },
   ],
 } as const;
+
+/* R2.1 UAT fix (UF2 / UF3 / UF1) — renewal labels. */
+export const RENEWAL_OWNER_ONLY_HINT = (ae: string) => `เฉพาะ AE เจ้าของสัญญา · ${ae}`;
+export const RENEWAL_OWNER_ONLY_TOOLTIP = "ปุ่มนี้ใช้ได้เฉพาะ AE เจ้าของสัญญา (การต่อสัญญาเป็นงานของเจ้าของสัญญาเท่านั้น)";
+export const RENEWAL_TEST_SWITCH = (ae: string) => `สลับเป็น ${ae} เพื่อทดสอบ`;
+export const RENEWAL_TEST_BANNER = (role: string, member: string) => `ทดสอบในบทบาท ${role} · ${member}`;
+export const RENEWAL_SECTION_TITLE = (n: number) => `ต้องต่อสัญญา (≤ ${n} วัน)`;
+export const RENEWAL_SOURCE_NOT_FOUND = (contractId: string) => `ไม่พบสัญญาต้นทาง ${contractId} ใน สัญญา & บริการ · แจ้ง PM ตรวจสัญญา`;
+export const RENEWAL_COPY_CONTRACT_ID = "คัดลอกเลขสัญญา";
