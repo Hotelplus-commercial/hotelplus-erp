@@ -32,6 +32,6 @@ export function actingRenewalUser(roleUser: string, isPm: boolean, member: strin
 }
 /** Hydration-safe hook: null on the server and during hydration, then the stored member. */
 export function useTestMember(): string | null {
-  useSyncExternalStore((l) => { listeners.add(l); return () => listeners.delete(l); }, () => version, () => -1);
-  return typeof window === 'undefined' ? null : getTestMember();
+  const v = useSyncExternalStore((l) => { listeners.add(l); return () => listeners.delete(l); }, () => version, () => -1);
+  return v === -1 ? null : getTestMember();
 }
