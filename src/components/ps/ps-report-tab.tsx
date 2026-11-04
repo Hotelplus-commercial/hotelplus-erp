@@ -42,11 +42,15 @@ import { ContractHealthCard } from "./contract-health-card";
 import { RenewalCardR2 } from "./renewal-card-r2";
 import { ContractLifetimeCard } from "./contract-lifetime-card";
 import { useContractAge } from "./use-contract-age";
+import { SetupDurationCard, SetupResetStrip } from "./setup-duration-card";
 
 /** Tab R1 §1 — cards unmounted from this tab; their code stays for reference (never rendered). */
 const R1_LEGACY = false as boolean;
 /** Tab R3 §1 — old card ④ อายุสัญญา unmounted from this tab; code kept (never rendered). */
 const R3_LEGACY_LIFETIME = false as boolean;
+/** Tab R4 §1/§2 — old ระยะเวลา Setup card and สัญญาณจากสัญญา unmounted from this tab; code kept (never rendered). */
+const R4_LEGACY_SETUP = false as boolean;
+const R4_LEGACY_SIGNALS = false as boolean;
 import { NowChip, useCardCompare } from "./compare-control";
 import type { Period } from "@/lib/ps-dashboard-global";
 import {
@@ -900,7 +904,18 @@ export function PsReportTab({
           <ChartSkeleton text={emptyText} />
         )}
       </DashCard>)}
-      <div className={compareSide ? "" : "lg:col-span-2"}>
+      {/* Tab R4 §2–§11: card ⑤ ระยะเวลา Setup (full width) + card ⑥ ระยะเวลา Reset strip directly below; old card kept, unmounted. */}
+      {compareSide !== "B" && (
+        <>
+          <div className={compareSide ? "" : "lg:col-span-2"}>
+            <SetupDurationCard />
+          </div>
+          <div className={compareSide ? "" : "lg:col-span-2"}>
+            <SetupResetStrip />
+          </div>
+        </>
+      )}
+      {R4_LEGACY_SETUP && (<div className={compareSide ? "" : "lg:col-span-2"}>
         <DashCard
           period={perCard ? kCohort.control : undefined}
           title={R1_TITLES.setup}
@@ -995,7 +1010,7 @@ export function PsReportTab({
             <ChartSkeleton text={emptyText} />
           )}
         </DashCard>
-      </div>
+      </div>)}
       <DashCard
         title={R1_TITLES.offboard}
         question="บริการที่สิ้นสุดเป็นอย่างไร?"
@@ -1005,7 +1020,8 @@ export function PsReportTab({
       >
         <ChartSkeleton source />
       </DashCard>
-      <div className={compareSide ? "" : "lg:col-span-2"}>
+      {/* Tab R4 §1: card สัญญาณจากสัญญา unmounted from this tab (content lives in สุขภาพสัญญา); code kept. */}
+      {R4_LEGACY_SIGNALS && (<div className={compareSide ? "" : "lg:col-span-2"}>
         <DashCard
           period={perCard ? <NowChip /> : undefined}
           title={R1_TITLES.signals}
@@ -1090,7 +1106,7 @@ export function PsReportTab({
             pending={expansionPending || !report}
           />
         </DashCard>
-      </div>
+      </div>)}
       {compareSide !== "B" && (
         <div className={compareSide ? "" : "lg:col-span-2"}>
           <ContractHealthCard data={r1Data} onOpenTask={onOpenTask} ages={ageFeed?.index} />

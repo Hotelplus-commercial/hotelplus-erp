@@ -23,6 +23,7 @@ import { demoServicingRows, demoServicingPhases, SERVICING_DEMO_NOW } from '@/li
 import { calendarDays, cardStatus, MARCOM_REPORT_STAGES, ORM_REPORT_STAGES, reportStageLabel, servicingLanes, servicing_sla_config, shortThaiDate, statusText, stallEventKey, type ServicingLane } from '@/lib/servicing-time';
 import { createServicingStall, stallRouting } from '@/lib/servicing-stall';
 import { OPEN_STATUSES, STATUS_TH, SYSTEM_CREATOR, useTickets, type L0Ticket } from '@/lib/tickets-l0';
+import { SetupQueueTable } from './setup-queue-table';
 const SLOT_LABEL:Record<CaretakerSlot,string>={AE:'AE',SPECIALIST:'Specialist',ORM:'ORM team',MARCOM:'Marcom'};
 const stageName=(s:string)=>plainSv(reportStageLabel(s));
 const stageKey=(r:ServicingRow)=>r.current_stage==='completed'?'completed_handover':r.current_stage==='go_live'?(r.service_line==='ORM'?'orm_go_live':'marcom_go_live'):r.current_stage;
@@ -103,6 +104,8 @@ export function ServicingTab() {
  <ServicingGoLiveChart rows={servicingScope(report?.rows??[],filter)} service={filter.service} periodA={kGo.a} periodB={kGo.b} compare pending={pending} period={kGo.control}/>
  {assignRow&&<CaretakerModal row={assignRow} demo={demo} onClose={()=>setAssignRow(null)} onOptimistic={patch=>setOverlay(o=>({...o,[assignRow.card_id]:{...o[assignRow.card_id],...patch}}))}/>}
  <ServicingCardDrawer key={drawer??'closed'} id={drawer} readOnly onClose={()=>setDrawer(null)}/>
+ {/* Tab R4 §12: queue table + deep link, after the existing content (existing cards not moved). */}
+ <SetupQueueTable/>
  </section>;
 }
 function LanePill({lane:l,gmb}:{lane:ServicingLane;gmb:boolean}) {
