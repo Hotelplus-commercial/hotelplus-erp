@@ -5,7 +5,12 @@ import { useEffect, useState, useSyncExternalStore } from 'react';
 import { stageCloudDoc } from './cloud-sync';
 import { DEMO_NOW } from './ps-demo-fixture';
 
-export type TicketType = 'UPSELL_PITCH' | 'RENEWAL_DUE' | 'GRADE_RISK' | 'SURVEY_LOW' | 'CONTRACT_FOLLOWUP' | 'SERVICING_STALL' | 'CUSTOMER_ENTITY_CHANGE' | 'CONTRACT_SIGNAL';
+export type TicketType = 'UPSELL_PITCH' | 'RENEWAL_DUE' | 'GRADE_RISK' | 'SURVEY_LOW' | 'CONTRACT_FOLLOWUP' | 'SERVICING_STALL' | 'CUSTOMER_ENTITY_CHANGE' | 'CONTRACT_SIGNAL' | 'WELCOME_BACK';
+/** Tab R3 §6.1 WELCOME_BACK snapshot (read-only for BD). */
+export type WelcomeBackSnapshot = {
+  contract_info: Record<string, string>; package_rate: Record<string, string>; exit_status: Record<string, string>;
+  reasons: { primary: string[]; secondary: string | null; ae_note?: string };
+};
 export type Dept = 'BD' | 'ORM' | 'MARCOM' | 'PS' | 'AC' | 'AUTO' | 'HR' | 'OFFICE';
 export type Role = 'PM' | Dept;
 /** Pseudo-user for BOT-generated tickets (display "The Office"); never a switcher role, so BOT tickets have no CANCEL action. */
@@ -29,6 +34,8 @@ export type BotPayload = {
   contract_id?: string | null; meeting_id?: string | null;
   /** Tab R1 §6.1 CONTRACT_SIGNAL: always kind NEW here; labels = signal catalog keys; one batch per dialog send. */
   kind?: 'NEW'; labels?: string[]; batch_id?: string; drive_attachments?: { name: string; drive_url: string }[];
+  /** Tab R3 §6.1 WELCOME_BACK: snapshot + optional message; timeline only when shared; attachment links in drive_attachments. */
+  snapshot?: WelcomeBackSnapshot; message?: string; timeline_shared?: boolean; timeline?: { at: string; text: string; tone: string }[];
   phase?: 'P1'|'P2'|'P3'; lane?: 'AE'|'Specialist'|'ORM'|'Marcom'; days_in_phase?: number; sla_days?: number; target_days?: number; tone?: 'ok'|'amber'|'red'; current_stage?: string; owner_id?: string|null; recipient?: string; recipient_member_id?: string|null;
 };
 export type TicketAttachment = { id: string; name: string; size: number; mime: string; by: string; at: string; data_url: string };
@@ -59,7 +66,7 @@ export const DEPTS_WITH_WORKSPACE: Dept[] = [...DEPTS];
 export const OPEN_STATUSES: L0Status[] = ['NEW', 'ACK', 'IN_PROGRESS'];
 /** Tab R1 §6.6: NEW = New · legacy ACK shown as กำลังทำ (stored value unchanged). */
 export const STATUS_TH: Record<L0Status, string> = { NEW: 'New', ACK: 'กำลังทำ', IN_PROGRESS: 'กำลังทำ', DONE: 'เสร็จ', CANCELLED: 'ยกเลิก' };
-export const TYPE_TH: Record<TicketType, string> = { UPSELL_PITCH: 'เสนอขายบริการเพิ่ม', RENEWAL_DUE: 'ใกล้ครบสัญญา', GRADE_RISK: 'เสี่ยงเกรดการชำระ (D)', SURVEY_LOW: 'คะแนนบริการต่ำ', CONTRACT_FOLLOWUP: 'ติดตามดีลค้างข้ามเดือน', SERVICING_STALL: 'ติดตามการ์ดเกิน SLA', CUSTOMER_ENTITY_CHANGE: 'เปลี่ยนนิติบุคคล / ผู้ลงนาม', CONTRACT_SIGNAL: 'แจ้งเรื่องของสัญญา' };
+export const TYPE_TH: Record<TicketType, string> = { UPSELL_PITCH: 'เสนอขายบริการเพิ่ม', RENEWAL_DUE: 'ใกล้ครบสัญญา', GRADE_RISK: 'เสี่ยงเกรดการชำระ (D)', SURVEY_LOW: 'คะแนนบริการต่ำ', CONTRACT_FOLLOWUP: 'ติดตามดีลค้างข้ามเดือน', SERVICING_STALL: 'ติดตามการ์ดเกิน SLA', CUSTOMER_ENTITY_CHANGE: 'เปลี่ยนนิติบุคคล / ผู้ลงนาม', CONTRACT_SIGNAL: 'แจ้งเรื่องของสัญญา', WELCOME_BACK: 'Welcome Back' };
 const OPEN: L0Status[] = ['NEW', 'ACK', 'IN_PROGRESS'];
 /** Tab R1 §6.6 — every type: NEW → IN_PROGRESS → DONE (+ CANCELLED by creator). ACK is never offered; legacy ACK continues like IN_PROGRESS. */
 const NEXT: Partial<Record<L0Status, L0Status>> = { NEW: 'IN_PROGRESS', ACK: 'DONE', IN_PROGRESS: 'DONE' };
@@ -104,6 +111,7 @@ export function findOpenByDeal(type: TicketType, deal_id: string) {
 /** Central generic engine. Returns the new id, or the existing open id (dedup). */
 export function createTask(i: { type: TicketType; target_dept: Dept; subject_ref: L0Ticket['subject_ref']; payload: L0Ticket['payload']; created_by: Creator; source_app?: L0Ticket['source_app']; ticket_id?: string; assignee?: TicketAssignee }): { ticket_id: string; deduped: boolean } {
   if (i.type === 'CONTRACT_SIGNAL') return createReserved(i);
+  if (i.type === 'WELCOME_BACK') { const o = createWelcomeBack(i); return o.ok ? { ticket_id: o.ticket_id, deduped: false } : { ticket_id: o.locked?.ticket_id ?? i.ticket_id ?? '', deduped: true }; }
   const existing = i.type === 'SERVICING_STALL' && i.payload.event_key ? findOpenByEvent(i.type,i.subject_ref.hotel_id,i.payload.event_key) : i.subject_ref.deal_id ? findOpenByDeal(i.type, i.subject_ref.deal_id) : findOpen(i.type, i.subject_ref.hotel_id, i.subject_ref.gap_service);
   if (existing) return { ticket_id: existing.ticket_id, deduped: true };
   const s = cur(); const seq = s.seq + 1; const at = now(); // Level B: replace with revision-locked reservation.
@@ -132,6 +140,30 @@ function createReserved(i: Parameters<typeof createTask>[0]): { ticket_id: strin
   const t: L0Ticket = { ticket_id: id, type: i.type, source_app: i.source_app ?? 'PS_DASHBOARD', created_by: i.created_by, target_dept: i.target_dept, subject_ref: i.subject_ref, payload: i.payload, status: 'NEW', created_at: at, revision: 0, audit: [{ at, by: i.created_by, from_status: null, to_status: 'NEW' }], ...(i.assignee ? { assignee: i.assignee } : {}) };
   commit({ seq: Math.max(s.seq, n), items: [...s.items, t] });
   return { ticket_id: id, deduped: false };
+}
+const contractOf = (t: L0Ticket) => t.subject_ref.contract_id ?? t.payload.contract_id ?? null;
+/** Tab R3 §6.3: open WELCOME_BACK (NEW / legacy ACK / IN_PROGRESS) on this contract id — per contract, never per hotel. */
+export const openWelcomeBackFor = (contractId: string, extra: L0Ticket[] = []) =>
+  [...extra, ...cur().items].find((t) => t.type === 'WELCOME_BACK' && OPEN.includes(t.status) && contractOf(t) === contractId) ?? null;
+export type WelcomeBackOut = { ok: true; ticket_id: string } | { ok: false; locked: L0Ticket | null; error: string };
+/** Tab R3 §6.2/§6.3: the WELCOME_BACK write. Re-checks the per-contract lock inside the write (against the current store
+ * revision, plus `extra` read-only seed tickets); a locked contract writes nothing. A reserved number is reused on retry. */
+export type TicketSink = { items: () => L0Ticket[]; add: (t: L0Ticket) => void; at: () => string };
+export function createWelcomeBack(i: Parameters<typeof createTask>[0], extra: L0Ticket[] = [], sink?: TicketSink): WelcomeBackOut {
+  const cid = i.subject_ref.contract_id ?? i.payload.contract_id;
+  if (!cid) return { ok: false, locked: null, error: 'ไม่มีเลขสัญญา' };
+  const others = sink ? [...extra, ...sink.items()] : extra;
+  const lock = openWelcomeBackFor(cid, others);
+  if (lock) return { ok: false, locked: lock, error: 'locked' };
+  const s = cur();
+  const id = i.ticket_id ?? `TKT-${String(s.seq + 1).padStart(6, '0')}`;
+  if (s.items.some((t) => t.ticket_id === id) || others.some((t) => t.ticket_id === id)) return { ok: false, locked: null, error: 'เลข ticket นี้ถูกใช้แล้ว · ลองอีกครั้ง' };
+  const n = Number(id.replace(/\D/g, '')) || 0; const at = sink ? sink.at() : now();
+  const t: L0Ticket = { ticket_id: id, type: 'WELCOME_BACK', source_app: i.source_app ?? 'PS_DASHBOARD', created_by: i.created_by, target_dept: 'BD', subject_ref: i.subject_ref, payload: { ...i.payload, contract_id: cid }, status: 'NEW', created_at: at, revision: 0, audit: [{ at, by: i.created_by, from_status: null, to_status: 'NEW' }], ...(i.assignee ? { assignee: i.assignee } : {}) };
+  // DEMO page with the store in live mode: the in-memory sink takes the write (DEMO never writes browser storage).
+  if (sink) { sink.add(t); return { ok: true, ticket_id: id }; }
+  commit({ seq: Math.max(s.seq, n), items: [...s.items, t] });
+  return { ok: true, ticket_id: id };
 }
 
 /** Add an attachment (no status / routing change). */
