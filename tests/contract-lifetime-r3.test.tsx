@@ -224,7 +224,7 @@ describe('§4 สัญญาที่หลุด', () => {
 describe('§5 drawer · §6 WELCOME_BACK', () => {
   const feed = () => {
     const d = AD.contractAgeDemo(); const rows = demoRows(); const tickets = [...d.tickets, ...TK.ticketSnapshot()];
-    return { today, demo: true, rows, index: A.ageIndex(rows), history: [...S.renewalHistory(), ...d.prices], upsell: d.upsell, reasons: d.reasons, tickets, seedTickets: d.tickets, firstMeeting: d.firstMeeting, lowSurveys: d.lowSurveys, setupCount: 0 };
+    return { today, demo: true, rows, index: A.ageIndex(rows), history: [...S.renewalHistory(), ...d.prices], upsell: d.upsell, reasons: d.reasons, tickets, seedTickets: d.tickets, firstMeeting: d.firstMeeting, lowSurveys: d.lowSurveys, setupCount: 0, nextTicketId: () => TK.ticketIdOf(TK.peekNextSeq()), send: (i: any) => TK.createWelcomeBack(i, d.tickets) };
   };
   const drawer = async (contractId: string, draft = A.EMPTY_DRAFT) => {
     const { ContractHistoryDrawer } = await import('../src/components/ps/contract-history-drawer');
@@ -298,6 +298,26 @@ describe('§5 drawer · §6 WELCOME_BACK', () => {
     const tableHtml = cardOf(await renderTab(), 'cl-card');
     expect(text(tableHtml)).toContain('🔒 #TKT-000951 · กำลังทำ');
     S.setRenewalDemo(false);
+  });
+});
+
+describe('DEMO isolation', () => {
+  test('DEMO page with the ticket store in live mode: Welcome Back goes to the in-memory sink, never the live store; lock still applies', () => {
+    S.setRenewalDemo(false);
+    const liveBefore = TK.ticketSnapshot().length;
+    const d = AD.contractAgeDemo(); const rows = demoRows(); S.setRenewalDemo(false);
+    const r = A.churnRows(rows, today, d.reasons, d.tickets).find((x) => !x.lock)!;
+    const inp = (id: string) => A.welcomeBackInput(r, { ticket_id: id, role: 'PM', draft: A.EMPTY_DRAFT, cycle: null, upsell: [], reason: null, timeline: [], label: reasonLabel, today });
+    const id = AD.nextDemoTicketId();
+    expect(id).toBe('TKT-001001');
+    expect(TK.createWelcomeBack(inp(id), d.tickets, AD.demoWelcomeBackSink).ok).toBe(true);
+    expect(TK.ticketSnapshot().length).toBe(liveBefore);
+    expect(AD.demoWelcomeBackSink.items().map((t) => t.ticket_id)).toEqual(['TKT-001001']);
+    expect(TK.createWelcomeBack(inp(AD.nextDemoTicketId()), d.tickets, AD.demoWelcomeBackSink).ok).toBe(false);
+    // demo price history is available without switching the store to DEMO (same backfill, nothing written)
+    const h = S.demoPriceHistory();
+    expect(h.some((x) => x.contract_id === 'R2-O7' && x.source === 'INITIAL')).toBe(true);
+    expect(M.mainContracts().some((c) => c.contract_id === 'R2-O7')).toBe(false);
   });
 });
 
