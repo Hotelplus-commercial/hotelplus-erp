@@ -95,6 +95,8 @@ export function setRenewalDemo(on: boolean) {
   demoOn = on; demoExtra = []; demoMisses = []; setTicketDemo(on);
   /* v1.3 §2: one demo contract state — the renewal sample contracts are seed data written into it (memory only). */
   setMainContractDemo(on, on ? [...SAMPLE_CONTRACTS, ...DEMO_CONTRACTS].map((c) => contractFromSource(c, DEMO_NOW)) : []);
+  /* Tab R3 addendum: all R1-/R2- demo contracts join the demo state now (not on first open), so the v1.3 §4 backfill in seedDemo() covers every demo contract. */
+  if (on) for (const id of demoBackfillIds()) materialiseDemo(id, false);
   demo = on ? seedDemo() : null;
   if (demo) { for (const r of demo.requests) if (r.status === 'SIGNED') writeRenewedContract(r); seedDemoLinks(demo); }
   version++; listeners.forEach((l) => l());
@@ -169,26 +171,34 @@ export function resolveSourceIn(card: ResolveCard, src: { main: SourceContract[]
   if (!end && !svc) { tried.push(`renewal:${card.hotelId} (only contract)`); const hit = src.renewal.filter((c) => c.hotel_id === card.hotelId); if (hit.length === 1) return ok(hit[0]!, 'LEGACY_SINGLE'); }
   return { ok: false, contract_id: null, tried };
 }
-/** DEMO §1.3 fallback: build the source contract from the R2 / Header R2 demo record (or the dashboard hand-off) — in memory only. */
-function materialiseDemo(cid: string): SourceContract | null {
+/** DEMO §1.3 fallback: build the source contract from the R2 / Header R2 demo record (or the dashboard hand-off) — in memory only.
+ * Tab R3 addendum: `sync = false` when DEMO starts (every R1-/R2- demo contract is materialised up front; seedDemo() then backfills
+ * their INITIAL rows in one pass). Ended demo contracts (only in the card ① flow) enter the demo state as TERMINATED. */
+function materialiseDemo(cid: string, sync = true): SourceContract | null {
   const have = demoExtra.find((c) => c.contract_id === cid); if (have) return have;
   const item = renewalR2DemoItems().find((i) => i.contract_id === cid) ?? (cid.startsWith('SIM-') ? renewalR2Sim(120, RENEWAL_R2_DEMO_NOW).items.find((i) => i.contract_id === cid) : undefined);
-  const rec = item ? { contract_id: item.contract_id, hotel_id: item.hotel_id, hotel_name: item.hotel_name, service: item.service, end: item.end } : readEarlyHandoff(cid);
+  const flow = item ? undefined : tabR1DemoFlow().find((f) => f.contract_id === cid);
+  const rec = item ? { contract_id: item.contract_id, hotel_id: item.hotel_id, hotel_name: item.hotel_name, service: item.service, end: item.end }
+    : readEarlyHandoff(cid) ?? (flow?.end ? { contract_id: cid, hotel_id: flow.hotel_id, hotel_name: flow.hotel_name, service: flow.service, end: flow.end } : null);
   if (!rec) return null;
   const base = tabR1DemoBase().find((b) => b.contract_id === cid);
   const price = [...headerDemoPortfolio().prices, ...tabR1HeaderPortfolio().prices].find((p) => p.contract_id === cid);
-  const end = rec.end.slice(0, 10); const start = base?.start ?? '';
+  const end = rec.end.slice(0, 10); const start = base?.start ?? flow?.start?.slice(0, 10) ?? '';
   const months = start ? Math.max(1, Math.round((Date.parse(`${addDaysIso(end, 1)}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`)) / (30.4375 * 864e5))) : 12;
   const empty = ['customer_id', 'signatory', 'kyc_docs', ...(start ? [] : ['start_date', 'term_months (ใช้ 12)']), ...(price?.fee_amount != null ? [] : ['fee_amount']), ...(price?.commission_pct != null ? [] : ['commission_pct'])];
   const sc: SourceContract = {
     contract_id: cid, hotel_id: rec.hotel_id, customer_id: '', legal_entity: rec.hotel_name, signatory: '', kyc_docs: [], service: rec.service,
     terms: { fee_amount: price?.fee_amount ?? 0, commission_pct: price?.commission_pct ?? 0, term_months: months, package: rec.service, start_date: start, end_date: end },
-    demo_fallback: true, empty_fields: empty,
+    demo_fallback: true, empty_fields: flow ? [...empty, 'inactive'] : empty,
   };
   demoExtra = [...demoExtra, sc];
-  if (start && addMainContract(contractFromSource(sc, DEMO_NOW)).ok) queueMicrotask(syncInitialHistory); // same demo contract state; its INITIAL row follows
+  const main = contractFromSource(sc, DEMO_NOW);
+  const row = flow ? { ...main, billing_status: 'TERMINATED' as const, inactivated_at: `${end}T00:00:00.000Z`, ...(flow.renewal_of ? { renewal_of: flow.renewal_of } : {}) } : main;
+  if (start && addMainContract(row).ok && sync) queueMicrotask(syncInitialHistory); // same demo contract state; its INITIAL row follows
   return sc;
 }
+/** Tab R3 addendum: every R1-/R2- demo contract (Header R2 portfolio + Tab R1 additions, active and ended). */
+const demoBackfillIds = () => tabR1DemoFlow().map((f) => f.contract_id).filter((id) => /^R[12]-/.test(id));
 /** Store wrapper: live = main store + renewal set (never fabricates); DEMO = demo contract state + R2 fallback. */
 export function resolveSourceContract(card: ResolveCard): Resolved {
   return resolveSourceIn(card, { main: mainSources(), renewal: contracts(), ...(demoOn ? { demo: materialiseDemo } : {}) }, nowIso().slice(0, 10));
