@@ -350,6 +350,13 @@ export function RenewalCardModal({
               3 · Activity Log ({card.activities.length})
             </p>
             <ul className="mt-2 flex flex-col gap-2">
+              {sourceMissesFor(card.id).map((m, k) => (
+                <li key={`miss-${k}`} className="rounded-lg border border-destructive/30 bg-destructive/5 p-2.5 text-sm" data-event={m.event}>
+                  <p className="font-medium">⚠ {m.event} · {m.contract_id ?? "—"}</p>
+                  <p className="text-xs text-muted-foreground">ลองหา: {m.tried.join(" · ")}</p>
+                  <p className="text-[11px] text-muted-foreground">by: system · {m.at.slice(0, 16).replace("T", " ")}</p>
+                </li>
+              ))}
               {card.activities.map((a) => (
                 <li key={a.id} className="rounded-lg border bg-muted/30 p-2.5 text-sm">
                   <p className="font-medium">
