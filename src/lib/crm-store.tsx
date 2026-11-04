@@ -3,6 +3,7 @@ import { stageCloudDoc } from './cloud-sync';
 import { CRM_COLLECTIONS } from './cloud-sync-keys';
 import { bangkokDate, confirmPayment, recomputeAccounting, runDailyBilling, type GradeRecord, type CollectionEvent, manualCollection } from './ac-v2-engine';
 import { resolveContractHotel, stampInvoiceHotel } from './ac-attribution';
+import { registerMainContractWriter } from './main-contract-store';
 
 import {
   lastPeriod,
@@ -169,6 +170,16 @@ export function CrmStoreProvider({ children }: { children: React.ReactNode }) {
     }
     CRM_COLLECTIONS.forEach((c) => stageCloudDoc(`crm:${c}`, { items: data[c] ?? [] }));
   }, [data, hydrated]);
+
+  /* Renewal v1.3 §3: a signed renewal adds its new contract here (add-only, idempotent by id). */
+  useEffect(() => registerMainContractWriter((c) => {
+    setData((d) => d.contracts.some((x) => x.contract_id === c.contract_id) ? d : {
+      ...d,
+      contracts: [resolveContractHotel(c, d.customers), ...d.contracts],
+      audit: [{ id: crypto.randomUUID(), at: new Date().toISOString(), actor: d.actor, action: 'contract.renewal', target: `${c.renewal_of ?? ''} → ${c.contract_id}` }, ...d.audit],
+    });
+    return true;
+  }), []);
 
   const log = useCallback(
     (d: CrmData, action: string, target: string): AuditEntry[] => [
