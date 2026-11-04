@@ -176,6 +176,13 @@
       "when": 1793170742772,
       "tag": "0024_bdac_contract_revenue_ranking",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1793761456867,
+      "tag": "0025_cloud_sync_renewal_reasons_doc",
+      "breakpoints": true
     }
   ]
 }

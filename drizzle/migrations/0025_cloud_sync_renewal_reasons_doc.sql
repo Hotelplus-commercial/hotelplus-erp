@@ -1,0 +1,3 @@
+-- R2.1 UF4: allow one new Level A doc key 'renewalReasons' (push-only mirror). Existing keys unchanged; no rows touched.
+ALTER TABLE public.crm_documents DROP CONSTRAINT crm_documents_namespace_check;
+ALTER TABLE public.crm_documents ADD CONSTRAINT crm_documents_namespace_check CHECK (namespace = ANY (ARRAY['crm','hotels','ws2','crm:customers','crm:invoices','crm:contracts','crm:products','crm:reports','crm:taxReceipts','crm:deals','crm:quotations','crm:templates','crm:invRequests','crm:liveLinks','crm:gradeRecords','crm:collectionEvents','crm:billingWaiting','crm:audit','renewalReasons']));
