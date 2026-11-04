@@ -236,7 +236,8 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 # Contract Renewal v1.3 patch (Billing)
 - [x] §5 default fee: nearest ฿100 + minimum raise (config renewal_min_raise_thb); system default never requires a reason; "ขึ้นขั้นต่ำ" line in reco box.
 - [x] §7 BD LIVE Link regression test (contract, invoice, payment blocks, signing) — test only.
-- [ ] §2–§4 one contract store / new contract on signing / backfill from main store — stopped per §1: renewal contracts (CT-HTL…) are not in AC Billing's store, สัญญา & บริการ reads a different store, AC Billing has no demo mode, Billing needs status contract_completed + production reports per contract id. Awaiting user decision.
+- [x] §2–§3 wired in R2.1 §1.5 (see Tab R2.1 section)
+- [ ] §4 backfill from main store — not requested yet
 
 # MD Review R1.2 · Detail tabs v1.1
 - [x] §1 tab labels/order (keys unchanged; BD-AC last; ?tab=<key> supported)
@@ -285,5 +286,7 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [x] UF1 source contract by contract_id (main store → renewal set → DEMO R2 fallback); live never invents; miss message + activity log
 - [x] UF2 owner-only button disabled + hint for non-owners, testing-mode switch link + banner, acting AE member carried to AE Workspace / Wizard
 - [x] UF3 AE Workspace heading from RENEWAL_CARD_LEAD_DAYS · UF4 renewalReasons Cloud doc · UF6 glossary + rules · tests 284 → 294
-- [ ] §1.5 v1.3 §2/§3 (one shared contract store, new contract on SIGNED, Billing demo) waits for the v1.3 A/B/C decision
+- [x] §1.5 v1.3 §2/§3 wired: renewal reads/writes the main contract store (live CRM store / one DEMO contract state); SIGNED adds the new contract all-or-nothing; tests 294 → 300; live browser sign verified
+- [ ] AC Billing has no DEMO screen (demo bill checked through the same engine in tests); สัญญา & บริการ list reads PS projections, not the CRM store, so the new contract shows in AC Billing data only
+- [ ] v1.3 §4 price-history backfill from the main store not requested this pass
 - [ ] Cloud doc `tickets` is not in the database's allowed list (pushes conflict) — needs approval to add
