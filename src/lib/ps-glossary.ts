@@ -589,7 +589,7 @@ export const WB = {
   emptyBdm: "ไม่มี Welcome Back รอมอบหมาย", emptyBd: "ยังไม่มี Welcome Back ที่มอบหมายให้คุณ", emptySent: "ยังไม่มี Welcome Back ที่ส่ง",
   exitOn: (d: string) => `ออกเมื่อ ${d}`, sentBy: (who: string, d: string) => `ส่งโดย ${who} · ${d}`, sentByRole: (who: string, role: string, d: string) => `ส่งโดย ${who} (${role}) · ${d}`,
   pill: { pending: "รอมอบหมาย", assigned: (n: string) => `มอบหมายแล้ว · ${n}`, working: (n: string | null) => (n ? `กำลังทำ · ${n}` : "กำลังทำ"), done: "เสร็จ", cancelled: "ยกเลิก" },
-  ps: { pending: "รอ BDM มอบหมาย", assigned: "มอบหมายแล้ว", working: "กำลังทำ", done: "เสร็จ", cancelled: "ยกเลิก", assignedTo: (n: string) => ` · มอบหมาย ${n}` },
+  ps: { pending: "รอ BDM มอบหมาย (BDM Workspace)", assigned: "มอบหมายแล้ว", working: "กำลังทำ", done: "เสร็จ", cancelled: "ยกเลิก", assignedTo: (n: string) => ` · มอบหมาย ${n}` },
   detail: {
     title: (id: string) => `Welcome Back · #${id}`, close: "ปิด",
     info: "ข้อมูลสัญญา", hotel: "โรงแรม", contract: "เลขสัญญา", service: "บริการ", period: "เริ่ม → สิ้นสุด", ae: "AE เดิม",
@@ -601,4 +601,15 @@ export const WB = {
   },
   toast: { assigned: (n: string) => `มอบหมายให้ ${n} แล้ว`, started: "เริ่มทำแล้ว", closed: "ปิด Ticket แล้ว", cancelled: "ยกเลิก Ticket แล้ว" },
   conflict: "ข้อมูลเปลี่ยนแล้ว · โหลดใหม่", notAllowed: "บทบาทนี้ทำรายการนี้ไม่ได้",
+  /* R3.2 WB9–WB15 — BD App › Workspace tabs (BD Workspace · BDM Workspace) */
+  tabs: { aria: "Workspace", bd: "BD Workspace", bdm: "BDM Workspace" },
+  bdmTitle: "BDM Workspace", bdmSub: "Ticket ที่ต้องมอบหมายให้ทีม BD",
+  bdmOnly: "BDM Workspace ใช้ได้เฉพาะ BDM", bdmSwitch: "สลับเป็น BDM เพื่อทดสอบ",
+  bdmHint: "Welcome Back อยู่ที่แท็บ BDM Workspace →",
+  banner: (role: string, member: string | null) => `ทดสอบในบทบาท ${role}${member ? ` · ${member}` : ""}`,
+  quickAssign: "มอบหมาย", allMembers: "ทุกคน", memberFilterAria: "กรองตามสมาชิก BD",
+  closedBdm: (n: number) => `ปิดแล้ว (${n})`,
+  bdMine: (n: number) => `Welcome Back · ของฉัน (${n})`, bdSent: "Welcome Back ที่ฉันส่ง",
+  rowSub: (name: string, working: boolean) => `${name} · ${working ? "กำลังทำ" : "มอบหมายแล้ว"}`,
+  legacyRow: (id: string) => `#${id} · ข้อมูลสัญญาไม่ครบ (ticket ทดสอบเก่า)`, legacyNote: "ข้อมูลสัญญาไม่ครบ (ticket ทดสอบเก่า)",
 } as const;
