@@ -1,6 +1,6 @@
 /* R4.1 §2 — forbidden-string check on the MOUNTED tabs: waits until card ⑤ and the queue table
  * (which render only after mount) show real content, then reads the text. */
-import { afterAll, beforeAll, describe, expect, mock, test } from 'bun:test';
+import { afterAll, afterEach, beforeAll, describe, expect, mock, test } from 'bun:test';
 import { GlobalRegistrator } from '@happy-dom/global-registrator';
 import { domHits } from './forbidden-words';
 
@@ -8,8 +8,10 @@ mock.module('../src/lib/cloud-sync', () => ({ stageCloudDoc: () => {} }));
 beforeAll(() => { GlobalRegistrator.register({ url: 'http://localhost:8080/ps?demo=1' }); (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true; });
 afterAll(async () => { await GlobalRegistrator.unregister(); });
 
-const until = async (f: () => boolean, ms = 15000) => { const t0 = Date.now(); while (!f()) { if (Date.now() - t0 > ms) throw new Error('timeout waiting for late cards: ' + document.body.textContent?.slice(0, 400)); await new Promise((r) => setTimeout(r, 20)); } };
+const until = async (f: () => boolean, ms = 15000) => { const t0 = Date.now(); while (!f()) { if (Date.now() - t0 > ms) throw new Error('timeout waiting for late cards: ' + document.body.textContent?.slice(0, 600)); await new Promise((r) => setTimeout(r, 20)); } };
 
+const roots: (() => unknown)[] = [];
+afterEach(() => { roots.splice(0).forEach((f) => f()); document.body.innerHTML = ''; });
 async function mount(which: 'ps' | 'servicing') {
   const { act, createElement: h } = await import('react');
   const { createRoot } = await import('react-dom/client');
@@ -33,7 +35,8 @@ async function mount(which: 'ps' | 'servicing') {
   const el = h(DashboardGlobal.Provider, { value }, body);
   const router = createRouter({ routeTree: createRootRoute({ component: () => el }), history: createMemoryHistory({ initialEntries: ['/'] }) });
   const div = document.createElement('div'); document.body.appendChild(div);
-  await act(async () => { await router.load(); createRoot(div).render(h(QueryClientProvider, { client: new QueryClient() }, h(RouterProvider, { router } as never))); });
+  const root = createRoot(div); roots.push(() => act(() => root.unmount()));
+  await act(async () => { await router.load(); root.render(h(QueryClientProvider, { client: new QueryClient() }, h(RouterProvider, { router } as never))); });
   return div;
 }
 
