@@ -1,4 +1,5 @@
-/* R3.1 WB5 / WB6 — Welcome Back section in the BD Workspace 🎫 lane + its detail drawer.
+/* R3.1 WB5 / WB6 — Welcome Back section + its detail drawer. R3.2: split into the BDM Workspace tab part
+ * (BdmWelcomeBackSection) and the BD Workspace 🎫 lane part (WelcomeBackSection: ของฉัน / ที่ฉันส่ง / BDM hint).
  * BDM-first routing: BDM sees all and assigns one BD (or ฉันทำเอง); a BD sees only tickets assigned to them; the creator
  * role keeps its own tickets for the L0 cancel. Writes only through assign/start/finish/cancelWelcomeBack (revision-checked).
  * DEMO: reads and writes card ④'s in-memory Welcome Back store (plus its seed tickets); nothing reaches real storage. */
@@ -219,6 +220,7 @@ export function WbDetailBody({ t, actor, ctx }: { t: L0Ticket; actor: WbActor; c
   return (
     <div className="space-y-4 text-sm" data-testid="wb-detail">
       <Sec id="info" title={D.info}>
+        {wbMissingSnapshot(t) && <p className="rounded-md border border-dashed px-2 py-1 text-xs text-muted-foreground" data-testid="wb-legacy-note">{WB.legacyNote}</p>}
         <dl className="grid grid-cols-[minmax(5rem,8rem)_minmax(0,1fr)] gap-1 break-words">
           <dt className="text-muted-foreground">{D.hotel}</dt><dd>{hotel}</dd>
           <dt className="text-muted-foreground">{D.contract}</dt><dd className="tabular-nums">{dash(ci["contract_id"] ?? t.subject_ref.contract_id)}</dd>
@@ -267,7 +269,7 @@ export function WbDetailBody({ t, actor, ctx }: { t: L0Ticket; actor: WbActor; c
         {actions.length === 0 && <p className="text-xs text-muted-foreground">{D.readOnly}</p>}
         {actions.includes("ASSIGN") && (
           <div className="flex flex-wrap items-center gap-2">
-            <select aria-label={D.pick} className="rounded-md border bg-background px-2 py-1 text-xs" value={pick} onChange={(e) => setPick(e.target.value)}>
+            <select data-wb-assign="" aria-label={D.pick} className="rounded-md border bg-background px-2 py-1 text-xs" value={pick} onChange={(e) => setPick(e.target.value)}>
               {WB_TEST_BDS.map((m) => <option key={m.member_id} value={m.member_id}>{m.label}</option>)}
             </select>
             <Button size="sm" onClick={() => { const m = WB_TEST_BDS.find((x) => x.member_id === pick)!; done(assignWelcomeBack(t, m, actor, ctx), WB.toast.assigned(m.label)); }}>
