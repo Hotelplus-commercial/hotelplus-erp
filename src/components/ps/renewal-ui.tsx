@@ -65,7 +65,7 @@ export function RenewalStatusBadge({ status }: { status: RenewalStatus }) {
 
 export function RenewalActivityCards({
   scope,
-  currentUser,
+  currentUser: roleUser,
   canOverride,
 }: {
   scope: "my" | "team";
@@ -73,8 +73,12 @@ export function RenewalActivityCards({
   canOverride: boolean;
 }) {
   const { cards: baseCards, runScan, createCard } = usePsRenewal();
+  const { setRole } = useMeetingMgmt();
+  /* R2.1 UF2: testing-mode acting AE member (set from the Tab R2 card); PM stays PM. */
+  const member = useTestMember();
+  const currentUser = actingRenewalUser(roleUser, canOverride, member);
   const [demo, setDemo] = useState(false);
-  const [denied, setDenied] = useState(false);
+  const [denied, setDenied] = useState<ScanContract | null>(null);
   useEffect(() => { const on = new URLSearchParams(window.location.search).get("demo") === "1"; setRenewalDemo(on); setDemo(on); }, []);
   useRenewalStore();
   const cards = demo ? [...baseCards, ...DEMO_EXTRA_CARDS] : baseCards;
@@ -82,6 +86,8 @@ export function RenewalActivityCards({
   useEffect(() => { if (window.location.hash === "#renewal-activities") { setOpen(true); document.getElementById("renewal-activities")?.scrollIntoView({ block: "start" }); } }, []);
   const [sortAsc, setSortAsc] = useState(true);
   const [active, setActive] = useState<{ card: RenewalCard; addMode: boolean } | null>(null);
+  const today = () => (isRenewalDemo() ? RENEWAL_R2_DEMO_NOW : new Date().toISOString().slice(0, 10));
+  const extraCards = () => (isRenewalDemo() ? DEMO_EXTRA_CARDS : []);
   /* Tab R2 §7: renewal-card scan (lead RENEWAL_CARD_LEAD_DAYS) + early create deep link (?createRenewal={contract_id}, owning AE only). */
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -94,11 +100,19 @@ export function RenewalActivityCards({
     if (!cid) return;
     const c = readEarlyHandoff(cid);
     setOpen(true);
-    if (!c || !isOwningAe({ id: currentUser, role: canOverride ? "PM" : "AE" }, c.ae)) { setDenied(true); return; }
+    const me = actingRenewalUser(roleUser, canOverride);
+    if (!c || !isOwningAe({ id: me, role: canOverride ? "PM" : "AE" }, c.ae)) { setDenied(c ?? { contract_id: cid, hotel_id: "", hotel_name: cid, service: "ORM", end: "", ae: null }); return; }
     const { card } = createCard(c, "AE_EARLY", today, extra);
     setActive({ card, addMode: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  /* UF2 testing-mode switch from the "no permission" message: role AE + the contract's owning AE, then open the card. */
+  const switchToOwner = (c: ScanContract) => {
+    if (!c.ae) return;
+    setTestMember(c.ae); setRole("AE"); setDenied(null);
+    const { card } = createCard(c, "AE_EARLY", today(), extraCards());
+    setActive({ card, addMode: false });
+  };
 
   const visible = cards
     .filter((c) => (scope === "my" ? c.owner === currentUser : true))
