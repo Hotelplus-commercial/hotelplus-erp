@@ -21,6 +21,7 @@ import { WelcomeBackSection } from "./welcome-back-section";
 import { WB_TEST_BDS, wbActorOf } from "@/lib/welcome-back-routing";
 import { isRenewalTestMode } from "@/lib/renewal-test-actor";
 import { WB } from "@/lib/ps-glossary";
+import { pageDateLabel } from "@/lib/demo-session";
 
 const fmt = (iso: string) => new Date(iso).toLocaleString("th-TH", { dateStyle: "medium", timeStyle: "short" });
 const RANGES: { key: DateRange; label: string }[] = [{ key: "today", label: "วันนี้" }, { key: "7d", label: "7 วัน" }, { key: "14d", label: "14 วัน" }];
