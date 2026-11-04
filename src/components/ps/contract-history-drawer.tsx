@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { InfoButton } from "./dash-card";
 import { useAccount360 } from "./account-360";
 import { CL, R1_STATUS_TH, ticketTypeTh } from "@/lib/ps-glossary";
-import { createWelcomeBack, peekNextSeq, ticketIdOf, type L0Ticket } from "@/lib/tickets-l0";
+import type { L0Ticket } from "@/lib/tickets-l0";
 import { reasonLabel } from "@/lib/renewal-r2";
 import {
   ageText, lastCycle, openWelcomeBack, quarterLabel, rateText, sinceText, thDate, timelineOf, welcomeBackInput,
@@ -22,7 +22,7 @@ export function ContractHistoryDrawer({ row, feed, draft, onDraft, onClose }: {
   const bodyRef = useRef<HTMLDivElement | null>(null);
   const back = useRef<HTMLElement | null>(null);
   const [role, setRole] = useState<"PM" | "PS" | "AE">("PM");
-  const [reserved, setReserved] = useState(() => ticketIdOf(peekNextSeq()));
+  const [reserved, setReserved] = useState(() => feed.nextTicketId());
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [showLocked, setShowLocked] = useState(false);
@@ -34,7 +34,7 @@ export function ContractHistoryDrawer({ row, feed, draft, onDraft, onClose }: {
     return () => { window.removeEventListener("keydown", k); back.current?.focus?.(); };
   }, [onClose]);
   // Same drawer for row click and `+ สร้าง`: always scrolled to the top (never jumps to the message box).
-  useEffect(() => { bodyRef.current?.scrollTo?.({ top: 0 }); bodyRef.current?.focus?.(); setErr(null); setReserved(ticketIdOf(peekNextSeq())); }, [row.contract_id]);
+  useEffect(() => { bodyRef.current?.scrollTo?.({ top: 0 }); bodyRef.current?.focus?.(); setErr(null); setReserved(feed.nextTicketId()); }, [row.contract_id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const today = feed.today;
   const cycle = lastCycle(feed.history, row.chain_ids);
@@ -52,12 +52,12 @@ export function ContractHistoryDrawer({ row, feed, draft, onDraft, onClose }: {
     if (busy) return;
     setBusy(true); setErr(null);
     const input = welcomeBackInput(row, { ticket_id: reserved, role, draft, cycle, upsell, reason: rec, timeline, label: reasonLabel, today });
-    const o = createWelcomeBack(input, feed.seedTickets);
+    const o = feed.send(input);
     setBusy(false);
     if (o.ok) {
       toast.success(CL.drawer.sent(o.ticket_id));
       onDraft({ message: "", timelineShared: false, files: [] });
-      setReserved(ticketIdOf(peekNextSeq()));
+      setReserved(feed.nextTicketId());
       return;
     }
     if (o.locked) return; // re-renders in the locked state (the open ticket is in the list)

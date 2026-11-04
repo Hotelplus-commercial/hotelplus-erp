@@ -2,6 +2,7 @@
  * Clock = Header R2 / Tab R1 demo "today" (28 Oct 2026). Reads the existing demo contracts as they are and ADDS beside them:
  * Go Live dates for them, ~88 active + ~47 ended service contracts, their price cycles (INITIAL + RENEWAL), non-renewal
  * reasons + AE notes and one WELCOME_BACK ticket in กำลังทำ (lock example). No existing demo entry is edited. */
+import { useSyncExternalStore } from 'react';
 import { TAB_R1_DEMO_NOW, tabR1DemoBase, tabR1DemoFlow } from './contract-tab-r1-demo';
 import { headerDemoPortfolio } from './ps-header-r2-demo';
 import { REASON_KEYS } from './renewal-r2';
@@ -156,4 +157,19 @@ function welcomeBackSeed(ticket_id: string, s: AgeContractSource): L0Ticket {
     assignee: { member_id: 'BDM', display: 'BDM', role: 'BDM' }, status: 'IN_PROGRESS', created_at: at, revision: 1,
     audit: [{ at, by: 'PM', from_status: null, to_status: 'NEW' }, { at: moved, by: 'BD', from_status: 'NEW', to_status: 'IN_PROGRESS' }],
   };
+}
+
+/* ---------- DEMO Welcome Back sends while the ticket store is in live mode (memory only; a new session starts empty) ---------- */
+let demoSent: L0Ticket[] = []; let demoSeq = 1000; let demoVer = 0;
+const demoListeners = new Set<() => void>();
+export const demoWelcomeBackSink = {
+  items: () => demoSent,
+  add: (t: L0Ticket) => { demoSent = [...demoSent, t]; demoVer++; demoListeners.forEach((l) => l()); },
+  at: () => `${CONTRACT_AGE_DEMO_NOW}T03:00:00.000Z`,
+};
+/** Next number for a DEMO send (TKT-001001 …, never the live sequence). */
+export const nextDemoTicketId = () => { let n = demoSeq + 1; while (demoSent.some((t) => t.ticket_id === `TKT-${String(n).padStart(6, '0')}`)) n++; demoSeq = n - 1; return `TKT-${String(n).padStart(6, '0')}`; };
+export function useDemoWelcomeBack(): L0Ticket[] {
+  useSyncExternalStore((l) => { demoListeners.add(l); return () => demoListeners.delete(l); }, () => demoVer, () => 0);
+  return demoSent;
 }

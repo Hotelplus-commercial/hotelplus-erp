@@ -5,12 +5,12 @@
  * DEMO: the R3 demo additions (src/lib/contract-age-demo.ts) beside the existing demo data. Nothing here writes. */
 import { useEffect, useMemo, useState } from "react";
 import type { TabR1Data } from "@/lib/contract-tab-r1";
-import { setRenewalDemo, useRenewalStore } from "@/lib/renewal-store";
+import { demoPriceHistory, useRenewalStore } from "@/lib/renewal-store";
 import { isReasonsDemo, useRenewalReasons, type RenewalReason } from "@/lib/renewal-reasons";
-import { useTickets, type L0Ticket } from "@/lib/tickets-l0";
+import { createWelcomeBack, isDemoTickets, peekNextSeq, ticketIdOf, useTickets, type L0Ticket, type WelcomeBackOut } from "@/lib/tickets-l0";
 import type { PriceHistoryRow } from "@/lib/renewal-rules";
 import { ageIndex, vPsContractAge, type AgeContractSource, type ContractAgeRow, type UpsellLine } from "@/lib/contract-age";
-import { contractAgeDemo } from "@/lib/contract-age-demo";
+import { contractAgeDemo, demoWelcomeBackSink, nextDemoTicketId, useDemoWelcomeBack } from "@/lib/contract-age-demo";
 
 export type ContractAgeFeed = {
   today: string; demo: boolean; rows: ContractAgeRow[]; index: Map<string, ContractAgeRow>;
@@ -20,6 +20,9 @@ export type ContractAgeFeed = {
   firstMeeting: Record<string, string>; lowSurveys: Record<string, { at: string; score: number }[]>;
   /** §9.3 report: active service contracts without a Go Live date (Setup). */
   setupCount: number;
+  /** Next ticket number to reserve, and the WELCOME_BACK write (lock re-checked inside). DEMO never writes the live store. */
+  nextTicketId: () => string;
+  send: (input: Parameters<typeof createWelcomeBack>[0]) => WelcomeBackOut;
 };
 type GoLiveCard = { property_id?: string; service_line?: string; contract_ref?: string; go_live_at?: string | null };
 const SERVICING_KEY = "meridia.ps.servicing.v5_0";
@@ -58,10 +61,7 @@ export function useContractAge(data: TabR1Data | undefined): ContractAgeFeed | u
   const stored = useRenewalReasons();
   const storeTickets = useTickets();
   const [cards, setCards] = useState<GoLiveCard[]>([]);
-  /* DEMO on the PS Dashboard = the in-memory renewal / ticket demo state (same switch the AE Workspace and Wizard use):
-   * the Tab R3 addendum backfill has run for every demo contract, and a Welcome Back sent in DEMO stays in memory. */
-  const hasData = !!data;
-  useEffect(() => { if (hasData) setRenewalDemo(!!data?.demo); }, [hasData, data?.demo]);
+  const demoSent = useDemoWelcomeBack();
   useEffect(() => {
     if (data?.demo) return;
     setCards(readGoLiveCards());
@@ -74,15 +74,23 @@ export function useContractAge(data: TabR1Data | undefined): ContractAgeFeed | u
     const links = store.requests.filter((r) => r.new_contract_id).map((r) => ({ from: r.source_contract_id, to: r.new_contract_id! }));
     if (data.demo) {
       const d = contractAgeDemo();
-      const history = [...store.history, ...d.prices];
+      const history = [...demoPriceHistory(), ...d.prices];
       const rows = vPsContractAge(d.sources, { today, links: [...links, ...d.links], history });
       const base = isReasonsDemo() ? stored : [];
       const reasons = [...base, ...d.reasons.filter((r) => !base.some((x) => x.contract_id === r.contract_id))];
-      const seen = new Set(storeTickets.map((t) => t.ticket_id));
+      // DEMO: the ticket store is used only while it is in its in-memory demo mode; otherwise demo sends stay in card ④'s in-memory list.
+      const inStore = isDemoTickets();
+      const own = inStore ? storeTickets : demoSent;
+      const seen = new Set(own.map((t) => t.ticket_id));
       const seed = d.tickets.filter((t) => !seen.has(t.ticket_id));
-      return { today, demo: true, rows, index: ageIndex(rows), history, upsell: d.upsell, reasons, tickets: [...seed, ...storeTickets], seedTickets: seed, firstMeeting: d.firstMeeting, lowSurveys: d.lowSurveys, setupCount: rows.filter((r) => r.status === "SETUP").length };
+      return {
+        today, demo: true, rows, index: ageIndex(rows), history, upsell: d.upsell, reasons, tickets: [...seed, ...own], seedTickets: seed, firstMeeting: d.firstMeeting, lowSurveys: d.lowSurveys, setupCount: rows.filter((r) => r.status === "SETUP").length,
+        nextTicketId: () => (inStore ? ticketIdOf(peekNextSeq()) : nextDemoTicketId()),
+        send: (input) => (inStore ? createWelcomeBack(input, seed) : createWelcomeBack(input, seed, demoWelcomeBackSink)),
+      };
     }
     const rows = vPsContractAge(liveAgeSources(data, cards), { today, links, history: store.history });
-    return { today, demo: false, rows, index: ageIndex(rows), history: store.history, upsell: {}, reasons: stored, tickets: storeTickets, seedTickets: [], firstMeeting: {}, lowSurveys: {}, setupCount: rows.filter((r) => r.status === "SETUP").length };
-  }, [data, store.requests, store.history, stored, storeTickets, cards]);
+    return { today, demo: false, rows, index: ageIndex(rows), history: store.history, upsell: {}, reasons: stored, tickets: storeTickets, seedTickets: [], firstMeeting: {}, lowSurveys: {}, setupCount: rows.filter((r) => r.status === "SETUP").length,
+      nextTicketId: () => ticketIdOf(peekNextSeq()), send: (input) => createWelcomeBack(input) };
+  }, [data, store.requests, store.history, stored, storeTickets, cards, demoSent]);
 }
