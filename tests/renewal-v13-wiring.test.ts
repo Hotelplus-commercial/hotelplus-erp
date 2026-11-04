@@ -24,7 +24,7 @@ describe('v1.3 §2 · one contract store (DEMO)', () => {
     S.setRenewalDemo(true);
     expect(M.mainContractById('CT-HTL0042')?.lines[0]?.unit_price).toBe(30000);
     const r = S.resolveSourceContract({ id: 'RN-1', hotelId: 'HTL0042', contractEnd: '24 Sep 2026' });
-    expect(r.ok && r.via).toBe('MAIN_ID' === 'MAIN_ID' && r.ok ? r.via : 'x');
+    expect(r.ok && r.via).toBe('MAIN_ID');
     expect(r.ok && r.contract.contract_id).toBe('CT-HTL0042');
     expect(r.ok && r.contract.terms.end_date).toBe('2026-09-24');
     S.setRenewalDemo(false);
