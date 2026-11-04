@@ -245,6 +245,7 @@ describe('R3.1 §5 / §7 detail view and DEMO', () => {
     const row = [...d.querySelectorAll('[data-testid="wb-row"]')].find((b) => b.textContent?.includes('TKT-000954'))!;
     expect(row).toBeTruthy();
     await click(row);
+    await new Promise((r) => setTimeout(r, 300)); if (!document.querySelector('[data-testid="wb-detail"]')) console.log('DBG', document.querySelectorAll('[role=dialog]').length, d.querySelector('[data-testid="wb-section"]')?.textContent?.slice(0, 600));
     await until(() => !!document.querySelector('[data-testid="wb-detail"]'));
     const detail = () => document.querySelector('[data-testid="wb-detail"]')!;
     expect([...detail().querySelectorAll('[data-sec]')].map((e) => e.getAttribute('data-sec'))).toEqual(['info', 'package', 'exit', 'why', 'message', 'timeline', 'history']);
