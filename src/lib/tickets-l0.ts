@@ -111,6 +111,7 @@ export function findOpenByDeal(type: TicketType, deal_id: string) {
 /** Central generic engine. Returns the new id, or the existing open id (dedup). */
 export function createTask(i: { type: TicketType; target_dept: Dept; subject_ref: L0Ticket['subject_ref']; payload: L0Ticket['payload']; created_by: Creator; source_app?: L0Ticket['source_app']; ticket_id?: string; assignee?: TicketAssignee }): { ticket_id: string; deduped: boolean } {
   if (i.type === 'CONTRACT_SIGNAL') return createReserved(i);
+  if (i.type === 'WELCOME_BACK') { const o = createWelcomeBack(i); return o.ok ? { ticket_id: o.ticket_id, deduped: false } : { ticket_id: o.locked?.ticket_id ?? i.ticket_id ?? '', deduped: true }; }
   const existing = i.type === 'SERVICING_STALL' && i.payload.event_key ? findOpenByEvent(i.type,i.subject_ref.hotel_id,i.payload.event_key) : i.subject_ref.deal_id ? findOpenByDeal(i.type, i.subject_ref.deal_id) : findOpen(i.type, i.subject_ref.hotel_id, i.subject_ref.gap_service);
   if (existing) return { ticket_id: existing.ticket_id, deduped: true };
   const s = cur(); const seq = s.seq + 1; const at = now(); // Level B: replace with revision-locked reservation.
