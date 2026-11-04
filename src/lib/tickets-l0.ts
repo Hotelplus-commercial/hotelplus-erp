@@ -141,6 +141,26 @@ function createReserved(i: Parameters<typeof createTask>[0]): { ticket_id: strin
   commit({ seq: Math.max(s.seq, n), items: [...s.items, t] });
   return { ticket_id: id, deduped: false };
 }
+const contractOf = (t: L0Ticket) => t.subject_ref.contract_id ?? t.payload.contract_id ?? null;
+/** Tab R3 §6.3: open WELCOME_BACK (NEW / legacy ACK / IN_PROGRESS) on this contract id — per contract, never per hotel. */
+export const openWelcomeBackFor = (contractId: string, extra: L0Ticket[] = []) =>
+  [...extra, ...cur().items].find((t) => t.type === 'WELCOME_BACK' && OPEN.includes(t.status) && contractOf(t) === contractId) ?? null;
+export type WelcomeBackOut = { ok: true; ticket_id: string } | { ok: false; locked: L0Ticket | null; error: string };
+/** Tab R3 §6.2/§6.3: the WELCOME_BACK write. Re-checks the per-contract lock inside the write (against the current store
+ * revision, plus `extra` read-only seed tickets); a locked contract writes nothing. A reserved number is reused on retry. */
+export function createWelcomeBack(i: Parameters<typeof createTask>[0], extra: L0Ticket[] = []): WelcomeBackOut {
+  const cid = i.subject_ref.contract_id ?? i.payload.contract_id;
+  if (!cid) return { ok: false, locked: null, error: 'ไม่มีเลขสัญญา' };
+  const lock = openWelcomeBackFor(cid, extra);
+  if (lock) return { ok: false, locked: lock, error: 'locked' };
+  const s = cur();
+  const id = i.ticket_id ?? `TKT-${String(s.seq + 1).padStart(6, '0')}`;
+  if (s.items.some((t) => t.ticket_id === id) || extra.some((t) => t.ticket_id === id)) return { ok: false, locked: null, error: 'เลข ticket นี้ถูกใช้แล้ว · ลองอีกครั้ง' };
+  const n = Number(id.replace(/\D/g, '')) || 0; const at = now();
+  const t: L0Ticket = { ticket_id: id, type: 'WELCOME_BACK', source_app: i.source_app ?? 'PS_DASHBOARD', created_by: i.created_by, target_dept: 'BD', subject_ref: i.subject_ref, payload: { ...i.payload, contract_id: cid }, status: 'NEW', created_at: at, revision: 0, audit: [{ at, by: i.created_by, from_status: null, to_status: 'NEW' }], ...(i.assignee ? { assignee: i.assignee } : {}) };
+  commit({ seq: Math.max(s.seq, n), items: [...s.items, t] });
+  return { ok: true, ticket_id: id };
+}
 
 /** Add an attachment (no status / routing change). */
 export function addAttachment(id: string, a: Omit<TicketAttachment, 'id' | 'at'>): string | null {
