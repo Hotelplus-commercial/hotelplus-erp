@@ -16,8 +16,9 @@ import { usePsRenewal } from "@/lib/ps-renewal";
 import { REASON_CODES, evaluate, reasonValid, rollDates, type ReasonCode, type Terms } from "@/lib/renewal-rules";
 import {
   DEMO_EXTRA_CARDS, cancelRequest, entityClosed, openRequestFor, raiseEntityChange, renewalConfig, setRenewalDemo, sourceContractById,
-  createAndSendLink, renewalPreviewPath, startRenewal, submitRequest, updateReason, updateTerms, useRenewalStore,
+  createAndSendLink, renewalPreviewPath, startRenewal, submitRequest, updateReason, updateTerms, useRenewalStore, wizardCardFor,
 } from "@/lib/renewal-store";
+import { actingRenewalUser, useTestMember } from "@/lib/renewal-test-actor";
 import { RenewalContractPreview } from "@/components/ps/renewal-contract-doc";
 import { attachmentError, ticketById, STATUS_TH } from "@/lib/tickets-l0";
 import { cn } from "@/lib/utils";
@@ -32,10 +33,11 @@ export function RenewalWizard({ contractId }: { contractId: string }) {
   useEffect(() => { setRenewalDemo(new URLSearchParams(window.location.search).get("demo") === "1"); setReady(true); }, []);
   useRenewalStore();
   const { role } = useMeetingMgmt();
-  const currentUser = role === "Partner Manager" ? "PM001-Alex" : "AE001-Nont";
+  const member = useTestMember();
+  const currentUser = role === "Partner Manager" ? "PM001-Alex" : actingRenewalUser("AE001-Nont", false, member);
   const { cards } = usePsRenewal();
   const src = ready ? sourceContractById(contractId) : null;
-  const card = src ? [...cards, ...DEMO_EXTRA_CARDS].find((c) => c.hotelId === src.hotel_id) : undefined;
+  const card = src ? wizardCardFor([...cards, ...DEMO_EXTRA_CARDS], contractId, src) : undefined;
   const [step, setStep] = useState(0);
   const [readEnd, setReadEnd] = useState(false);
   useEffect(() => { if (new URLSearchParams(window.location.search).get("step") === "3") setStep(2); }, []);
