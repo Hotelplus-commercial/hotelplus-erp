@@ -406,3 +406,38 @@ export function timelineOf(r: ContractAgeRow, ctx: { history: PriceHistoryRow[];
   if (r.ended_at) ev.push({ at: r.ended_at, text: 'สิ้นสุดสัญญา', tone: 'red' });
   return ev.sort((a, b) => a.at.localeCompare(b.at));
 }
+
+/* ================= §6 WELCOME_BACK input ================= */
+export type WelcomeBackDraft = { message: string; timelineShared: boolean; files: { name: string; drive_url: string }[] };
+export const EMPTY_DRAFT: WelcomeBackDraft = { message: '', timelineShared: false, files: [] };
+export const BDM_RECIPIENT = { member_id: 'BDM', display: 'BDM', role: 'BDM' } as const;
+export const creatorOf = (role: 'PM' | 'PS' | 'AE'): 'PM' | 'PS' => (role === 'PM' ? 'PM' : 'PS');
+/** Builds the Ticket L0 input (type WELCOME_BACK · target BD · recipient BDM). Timeline only when shared. */
+export function welcomeBackInput(r: ContractAgeRow, o: {
+  ticket_id: string; role: 'PM' | 'PS' | 'AE'; draft: WelcomeBackDraft; cycle: PriceHistoryRow | null; upsell: UpsellLine[];
+  reason: RenewalReason | null; timeline: TimelineEvent[]; label: (key: string) => string; today: string;
+}) {
+  const name = r.hotel_name_en ?? r.hotel_name_th ?? r.hotel_id;
+  const outcome = r.outcome === 'LOST' ? 'ยกเลิกก่อนกำหนด' : 'ไม่ต่อ';
+  const msg = o.draft.message.trim();
+  const primary = o.reason ? o.reason.primary.map(o.label) : [];
+  const pkg: Record<string, string> = o.cycle ? { package: o.cycle.package, rate: rateText(o.cycle) } : {};
+  if (o.upsell.length) pkg['upsell'] = o.upsell.map((u) => `${u.sku} · ${u.price.toLocaleString('en-US')} บาท/เดือน`).join(', ');
+  return {
+    type: 'WELCOME_BACK' as const, ticket_id: o.ticket_id, target_dept: 'BD' as const, created_by: creatorOf(o.role), source_app: 'PS_DASHBOARD' as const, assignee: { ...BDM_RECIPIENT },
+    subject_ref: { hotel_id: r.hotel_id, hotel_name: r.hotel_name_th ?? name, gap_service: r.service_line, service_line: r.service_line, contract_id: r.contract_id, service: r.service_line },
+    payload: {
+      readiness_tier: '', chips: primary, note: msg || `${name} · ${r.service_line} · ${outcome}`, contract_id: r.contract_id,
+      snapshot: {
+        contract_info: { name_en: r.hotel_name_en ?? '', name_th: r.hotel_name_th ?? '', contract_id: r.contract_id, service: r.service_line, signed: r.signed_at ?? '', go_live: r.first_go_live_at ?? '', renewals: String(r.renewals_count), ae: r.ae_name ?? '', team: r.team_label ?? '' },
+        package_rate: pkg,
+        exit_status: { outcome, ended_at: r.ended_at ?? '', age_days: String(r.age_days ?? ''), since_days: r.ended_at ? String(Math.max(0, dayDiff(r.ended_at, o.today))) : '' },
+        reasons: { primary, secondary: o.reason ? o.label(o.reason.secondary) : null, ...(o.reason?.note ? { ae_note: o.reason.note } : {}) },
+      },
+      ...(msg ? { message: msg } : {}),
+      timeline_shared: o.draft.timelineShared,
+      ...(o.draft.timelineShared ? { timeline: o.timeline } : {}),
+      drive_attachments: o.draft.files.map((f) => ({ name: f.name, drive_url: f.drive_url })),
+    },
+  };
+}
