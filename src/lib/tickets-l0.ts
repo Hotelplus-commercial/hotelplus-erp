@@ -274,8 +274,7 @@ const move = (t: L0Ticket, to: L0Status, at: string, a: WbActor, by: Creator): L
   ({ ...t, status: to, revision: t.revision + 1, audit: [...t.audit, { at, by, from_status: t.status, to_status: to, actor: a.label }] });
 /** BDM only, while NEW. Sets assigned_* (overwrites on re-assign); status stays NEW; audit note `assigned → {label}`; revision +1. */
 export function assignWelcomeBack(t: L0Ticket, member: { member_id: string; label: string }, by: WbActor, ctx?: WbCtx): WbOut {
-  const need: WbAction = member.member_id === by.member_id ? 'SELF' : 'ASSIGN';
-  return wbApply(t, by, wbAllowed(t, by).includes(need) ? need : 'ASSIGN', ctx, (c, at) => ({
+  return wbApply(t, by, 'ASSIGN', ctx, (c, at) => ({
     ...c, assigned_to: member.member_id, assigned_to_label: member.label, assigned_by: by.member_id ?? by.role, assigned_at: at, revision: c.revision + 1,
     audit: [...c.audit, { at, by: 'BD', from_status: 'NEW', to_status: 'NEW', note: `assigned → ${member.label}`, actor: by.label }],
   }));
