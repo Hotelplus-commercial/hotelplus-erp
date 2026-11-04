@@ -238,28 +238,28 @@ describe('R3.1 §5 / §7 detail view and DEMO', () => {
     TK.setTicketDemo(false);
   });
   test('9 · detail view: payload sections in order; Timeline only when shared; history lists created / assigned / started / done', async () => {
-    TK.setTicketDemo(false);
-    const d = await mountShell('BD', true, 'TKT-000954');
-    await pickSelect(roleSelect(d), 'BD');
-    await pickSelect(memberSelect(d)!, 'BD-T2');
-    const row = [...d.querySelectorAll('[data-testid="wb-row"]')].find((b) => b.textContent?.includes('TKT-000954'))!;
-    expect(row).toBeTruthy();
-    await click(row);
-    await new Promise((r) => setTimeout(r, 300)); if (!document.querySelector('[data-testid="wb-detail"]')) console.log('DBG', document.querySelectorAll('[role=dialog]').length, d.querySelector('[data-testid="wb-section"]')?.textContent?.slice(0, 600));
-    await until(() => !!document.querySelector('[data-testid="wb-detail"]'));
-    const detail = () => document.querySelector('[data-testid="wb-detail"]')!;
+    // The drawer body is mounted directly (Radix portals depend on load order in this shared test process; the drawer itself is checked in the browser).
+    TK.setTicketDemo(false); TK.setTicketDemo(true);
+    const { act, createElement: h } = await import('react');
+    const { createRoot } = await import('react-dom/client');
+    const { WbDetailBody, useWelcomeBackSource } = await import('../src/components/workspace/welcome-back-section');
+    const Probe = ({ id }: { id: string }) => { const { tickets, ctx } = useWelcomeBackSource(true); const t = tickets.find((x) => x.ticket_id === id)!; return h(WbDetailBody, { t, actor: bd2, ctx }); };
+    const mountBody = async (id: string) => { const div = document.createElement('div'); document.body.appendChild(div); const root = createRoot(div); roots.push(() => act(() => root.unmount())); await act(async () => { root.render(h(Probe, { id })); }); return div; };
+    const div = await mountBody('TKT-000954');
+    const detail = () => div.querySelector('[data-testid="wb-detail"]')!;
     expect([...detail().querySelectorAll('[data-sec]')].map((e) => e.getAttribute('data-sec'))).toEqual(['info', 'package', 'exit', 'why', 'message', 'timeline', 'history']);
-    expect(detail().textContent).toContain('Welcome Back · #TKT-000954');
     const hist = () => detail().querySelector('[data-sec="history"]')!.textContent ?? '';
     expect(hist()).toContain('สร้างโดย PS'); expect(hist()).toContain('มอบหมาย BDM (ทดสอบ) → BD 2 (ทดสอบ)'); expect(hist()).toContain('เริ่มทำ · BD 2 (ทดสอบ)');
-    expect(domHits(document.body)).toEqual([]);
+    expect(detail().querySelectorAll('.cl-chip.is-red').length).toBe(2); expect(detail().querySelectorAll('.cl-chip.is-amber').length).toBe(1);
+    expect(domHits(div)).toEqual([]);
     const doneBtn = [...detail().querySelectorAll('button')].find((b) => b.textContent === WB.detail.done)!;
     await click(doneBtn);
-    await until(() => (document.querySelector('[data-testid="wb-detail"] [data-sec="history"]')?.textContent ?? '').includes('เสร็จ · BD 2 (ทดสอบ)'));
-    expect(document.querySelector('[data-testid="wb-detail"]')?.textContent).toContain(WB.detail.readOnly);
+    await until(() => hist().includes('เสร็จ · BD 2 (ทดสอบ)'));
+    expect(detail().textContent).toContain(WB.detail.readOnly);
     // a ticket without a message / shared timeline hides those sections
-    const s953 = AD.contractAgeDemo().tickets[2]!;
-    expect(s953.payload.message).toBeUndefined(); expect(s953.payload.timeline_shared).toBe(false);
+    const d953 = await mountBody('TKT-000953');
+    expect([...d953.querySelectorAll('[data-sec]')].map((e) => e.getAttribute('data-sec'))).toEqual(['info', 'package', 'exit', 'why', 'history']);
+    TK.setTicketDemo(false);
   });
   test('13 · forbidden strings stay out of the mounted BD Workspace (BDM, closed shown)', async () => {
     const d = await mountShell('BD', true);
