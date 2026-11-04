@@ -4,6 +4,7 @@
  * - seq / items: DEMO Welcome Back tickets shared by card ④ and BD App › Workspace (survive page loads in this tab).
  * PS DEMO off → the key is removed (DEMO tickets cleared). Ends with the browser session. Never the real ticket store. */
 import type { L0Ticket } from './tickets-l0';
+import { HEADER_DEMO_NOW } from './ps-header-r2-demo';
 
 export const DEMO_WB_KEY = 'meridia.demo.welcomeBack.v1';
 export const DEMO_WB_SEQ0 = 1000;
@@ -38,7 +39,7 @@ export function saveDemoTickets(seq: number, items: L0Ticket[]) {
 }
 
 /** DEMO clock shared by PS Dashboard card ④ and BD App › Workspace (Header R2 / Tab R1 demo today). */
-export const DEMO_DAY = '2026-10-28';
+export const DEMO_DAY = HEADER_DEMO_NOW;
 const thLong = (d: string) => new Date(`${d.slice(0, 10)}T00:00:00Z`).toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Bangkok' });
 /** `28 ตุลาคม 2569` in DEMO; today's Bangkok date otherwise. */
 export const pageDateLabel = (demo: boolean, now: Date = new Date()) => (demo ? thLong(DEMO_DAY) : now.toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Bangkok' }));
