@@ -518,7 +518,7 @@ function buildCard(
       card_id: opts.id,
       evaluatee_specialist_id: card.assigned_specialist_id,
       evaluator_service_id: card.assigned_service_owner_id,
-      score: submitted ? 4 : null,
+      score: submitted ? 8 : null, // Survey #1 scale 0–10 (R4.1, RP123)
       comment: null,
       submitted_at: submitted ? completedAt : null,
       window_expires_at: new Date(new Date(completedAt).getTime() + 7 * DAY).toISOString(),

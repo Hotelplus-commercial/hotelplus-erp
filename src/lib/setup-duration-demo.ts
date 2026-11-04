@@ -1,5 +1,5 @@
 /* Tab R4 §15 — DEMO additions for card ⑤ ระยะเวลา Setup and the On-board / Off-board queue table only.
- * New entries (never edits the existing Servicing demo fixture); deterministic; DEMO date = R3 demo date (30 ต.ค. 2569).
+ * New entries (never edits the existing Servicing demo fixture); deterministic; DEMO date = R3 demo date (28 ต.ค. 2569).
  * HANDOVER_FIX demo tickets live here in memory only — never written to the ticket store. */
 import type { L0Ticket } from './tickets-l0';
 import type { SetupInput, SetupVariant } from './setup-timing';

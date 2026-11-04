@@ -29,15 +29,7 @@ import { getWorklist } from '../src/lib/task-worklist';
 import { taskDemo, demoCareHotels, demoServiceContracts, demoTaskMeetings, TASK_DEMO_NOW } from '../src/lib/task-demo';
 import { SEED_CATEGORIES } from '../src/lib/task-tickets';
 
-const FORBIDDEN = ['RENEWAL_TERMS_APPROVAL', 'CUSTOMER_ENTITY_CHANGE', 'SOFT_FORCE', 'ADVISORY', 'SERVICING_STALL', 'CONTRACT_FOLLOWUP', 'UPSELL_PITCH', 'RENEWAL_DUE', 'GRADE_RISK', 'SURVEY_LOW', 'ASSIGNMENT_PENDING', 'RENEWED', 'NOT_RENEWED', 'IN_PROGRESS', 'LOST', 'NPS', 'row-1', '★', 'เพดาน', 'เคส PS', 'Ticket ระบบ', 'HTL-', 'รอ BOT', 'customer_segment', 'EXISTING'];
-const visibleText = (html: string) => html.replace(/<[^>]*>/g, ' ').replace(/&quot;/g, '"').replace(/&amp;/g, '&');
-function hits(text: string) {
-  const found = FORBIDDEN.filter((w) => text.includes(w));
-  if (/(^|[^A-Za-z0-9])P[123](?![A-Za-z0-9])/.test(text)) found.push('P1/P2/P3');
-  // R1.2 §7: "NEW" as a stand-alone chip/word (raw segment or ticket status code).
-  if (/(^|[^A-Za-z0-9_])NEW(?![A-Za-z0-9_])/.test(text)) found.push('NEW');
-  return found;
-}
+import { hits, visibleText } from './forbidden-words';
 
 describe('R1.1 forbidden strings (demo mode)', () => {
   test('Tab PS', async () => {

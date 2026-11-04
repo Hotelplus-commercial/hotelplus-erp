@@ -129,7 +129,7 @@ export function goLiveBounds(ts: readonly SetupTiming[], kind: 'month' | 'quarte
 }
 const TH_MON = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
 export const dayMonth = (d: string) => `${+d.slice(8, 10)} ${TH_MON[+d.slice(5, 7) - 1]}`;
-/** `ต.ค. 69 (ถึง 30 ต.ค.)` for the current period; `ทั้งหมด` for all. */
+/** `ต.ค. 69 (ถึง 28 ต.ค.)` for the current period; `ทั้งหมด` for all. */
 export function periodTitle(p: GoLivePeriod, today: string) {
   if (p.kind === 'all') return 'ทั้งหมด';
   const label = p.kind === 'month' ? monthLabel(p.key) : quarterLabel(p.key);

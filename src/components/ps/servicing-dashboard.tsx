@@ -564,18 +564,18 @@ export function ServicingCardDrawer({ id, onClose, readOnly = false }: { id: str
 
 function HandoverSurveyForm({ id, status, score }: { id: string; status: string; score: number | null }) {
   const s = useServicing();
-  const [v, setV] = useState(4);
+  const [v, setV] = useState(8);
   const [c, setC] = useState("");
   return (
     <section className="rounded-lg border p-3 text-sm">
       <h3 className="font-semibold">◇ Survey #1 · Handover (internal)</h3>
       {status === "submitted" ? (
-        <p className="mt-1 text-muted-foreground">ส่งแล้ว · คะแนน {score}/5</p>
+        <p className="mt-1 text-muted-foreground">ส่งแล้ว · คะแนน {score}/10</p>
       ) : status === "expired" ? (
         <p className="mt-1 text-muted-foreground">หมดช่วงประเมิน 7 วัน (ไม่กระทบ pipeline)</p>
       ) : (
         <div className="mt-2 space-y-2">
-          <ScorePicker value={v} onChange={setV} max={5} />
+          <ScorePicker value={v} onChange={setV} min={0} max={10} />
           <Textarea value={c} onChange={(e) => setC(e.target.value)} placeholder="ความคิดเห็น (ไม่บังคับ)" />
           <Button variant="outline" size="sm" disabled={s.role !== "service"} onClick={() => { s.submitHandoverSurvey(id, v, c); toast.success("ส่ง Survey #1 แล้ว"); }}>
             ส่งคะแนน (Service)
