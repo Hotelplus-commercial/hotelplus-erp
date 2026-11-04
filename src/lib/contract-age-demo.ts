@@ -104,7 +104,7 @@ export function contractAgeDemo(): ContractAgeDemo {
   for (const s of specs()) {
     const no = s.svc === 'ORM' ? ++iO : ++iM; const k = iH++;
     const id = `CT-${s.svc === 'ORM' ? 'ORM' : 'MAR'}-L${String(no).padStart(3, '0')}`;
-    const [pe, pt] = PLACES[k % PLACES.length]!; const [ke, kt] = KINDS[(k + Math.floor(k / PLACES.length)) % KINDS.length]!;
+    const [pe, pt] = PLACES[k % PLACES.length]!; const [ke, kt] = KINDS[Math.floor(k / PLACES.length) % KINDS.length]!;
     const suffix = k >= PLACES.length * KINDS.length ? ' II' : '';
     let ended: string | null = null; let gl: string;
     if (s.may) { gl = MAY_GO_LIVE[s.age]!; if (s.ended) ended = addDays(gl, s.age); }

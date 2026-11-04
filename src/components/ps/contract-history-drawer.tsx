@@ -82,7 +82,7 @@ export function ContractHistoryDrawer({ row, feed, draft, onDraft, onClose }: {
           </header>
 
           {/* 2 contract info */}
-          <section className="cl-dsec" data-sec="info">
+          <div className="cl-dsec" data-sec="info">
             <h4>{D.info}</h4>
             <dl className="cl-grid2">
               <dt>{D.signed}</dt><dd>{thDate(row.signed_at)}</dd>
@@ -92,10 +92,10 @@ export function ContractHistoryDrawer({ row, feed, draft, onDraft, onClose }: {
               <dt>{D.ae}</dt><dd>{row.ae_name ?? "—"}</dd>
               <dt>{row.service_line === "ORM" ? D.ormTeam : D.marcom}</dt><dd>{row.team_label ?? "—"}</dd>
             </dl>
-          </section>
+          </div>
 
           {/* 3 package & rate (latest cycle of contract_price_history) */}
-          <section className="cl-dsec" data-sec="package">
+          <div className="cl-dsec" data-sec="package">
             <h4>{D.pkg}</h4>
             {!cycle ? <p className="cl-muted">{D.noHistory}</p> : row.service_line === "ORM" ? (
               <dl className="cl-grid2"><dt>{D.pkgOrm}</dt><dd>{cycle.package}</dd><dt>{D.rateOrm}</dt><dd>{rateText(cycle)}</dd></dl>
@@ -105,10 +105,10 @@ export function ContractHistoryDrawer({ row, feed, draft, onDraft, onClose }: {
                 {upsell.length > 0 && <><dt>{D.upsell}</dt><dd>{upsell.map((u) => <div key={u.sku}>{u.sku} · {D.perMonth(u.price)}</div>)}</dd></>}
               </dl>
             )}
-          </section>
+          </div>
 
           {/* 4 timeline */}
-          <section className="cl-dsec" data-sec="timeline">
+          <div className="cl-dsec" data-sec="timeline">
             <div className="cl-dsec-head">
               <h4>{D.timeline}</h4>
               {lock ? (
@@ -122,17 +122,17 @@ export function ContractHistoryDrawer({ row, feed, draft, onDraft, onClose }: {
                 {timeline.map((e, i) => <li key={`${e.at}-${i}`} className={`tone-${e.tone}`}><span className="cl-tl-dot" aria-hidden /><span className="tabular-nums">{thDate(e.at)}</span> · {e.text}</li>)}
               </ol>
             ) : !lock && <p className="cl-muted">{D.timelineOffNote}</p>}
-          </section>
+          </div>
 
           {/* 5 exit status */}
-          <section className={cn("cl-exit", row.outcome === "LOST" ? "is-lost" : "is-nr")} data-sec="exit">
+          <div className={cn("cl-exit", row.outcome === "LOST" ? "is-lost" : "is-nr")} data-sec="exit">
             <div className="cl-exit-outcome">{outcome}</div>
             <div className="cl-exit-big">{D.endedFor(sinceText(row.since_days))}</div>
             <div className="cl-sub tabular-nums">{D.endLine(thDate(row.ended_at), row.age_days ?? 0, ageText(row.age_days))}</div>
-          </section>
+          </div>
 
           {/* 6 why */}
-          <section className="cl-dsec" data-sec="why">
+          <div className="cl-dsec" data-sec="why">
             <h4>{D.why}</h4>
             {rec ? (
               <>
@@ -141,13 +141,13 @@ export function ContractHistoryDrawer({ row, feed, draft, onDraft, onClose }: {
                 {rec.note && <p className="cl-note">{D.aeNote(rec.created_by.display, rec.note)}</p>}
               </>
             ) : <p className="cl-muted">{CL.dot.noReason}</p>}
-          </section>
+          </div>
 
           {lock ? (
             <div className="cl-lockbox" role="status" data-testid="cl-locked">{D.locked(lock.ticket_id, R1_STATUS_TH[lock.status] ?? lock.status)}</div>
           ) : (
             /* 7 message */
-            <section className="cl-dsec" data-sec="message">
+            <div className="cl-dsec" data-sec="message">
               <h4>{D.msg}</h4>
               <p className="cl-muted">{D.msgHint}</p>
               <textarea className="r1-input cl-textarea" rows={3} value={draft.message} aria-label={D.msg} placeholder={D.msgHint} onChange={(e) => set({ message: e.target.value })} />
@@ -156,11 +156,11 @@ export function ContractHistoryDrawer({ row, feed, draft, onDraft, onClose }: {
                 <small>{D.attachOff}</small>
                 <InfoButton info={{ read: D.attachInfo }} />
               </div>
-            </section>
+            </div>
           )}
 
           {/* 8 tickets of this contract + send area */}
-          <section className="cl-dsec" data-sec="tickets">
+          <div className="cl-dsec" data-sec="tickets">
             <h4>{D.tickets}</h4>
             {mine.length ? (
               <ul className="cl-tlist">
@@ -190,7 +190,7 @@ export function ContractHistoryDrawer({ row, feed, draft, onDraft, onClose }: {
                 <button type="button" className="cl-sendbtn" disabled={busy} onClick={send}>{busy ? D.sending : D.send}</button>
               </div>
             )}
-          </section>
+          </div>
 
           {/* 9 Account 360 */}
           <button type="button" className="r1-linkbtn cl-360" onClick={() => openAccount360(row.hotel_id)}>{D.open360}</button>

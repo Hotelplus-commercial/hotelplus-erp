@@ -5,7 +5,7 @@
  * DEMO: the R3 demo additions (src/lib/contract-age-demo.ts) beside the existing demo data. Nothing here writes. */
 import { useEffect, useMemo, useState } from "react";
 import type { TabR1Data } from "@/lib/contract-tab-r1";
-import { useRenewalStore } from "@/lib/renewal-store";
+import { setRenewalDemo, useRenewalStore } from "@/lib/renewal-store";
 import { isReasonsDemo, useRenewalReasons, type RenewalReason } from "@/lib/renewal-reasons";
 import { useTickets, type L0Ticket } from "@/lib/tickets-l0";
 import type { PriceHistoryRow } from "@/lib/renewal-rules";
@@ -58,6 +58,10 @@ export function useContractAge(data: TabR1Data | undefined): ContractAgeFeed | u
   const stored = useRenewalReasons();
   const storeTickets = useTickets();
   const [cards, setCards] = useState<GoLiveCard[]>([]);
+  /* DEMO on the PS Dashboard = the in-memory renewal / ticket demo state (same switch the AE Workspace and Wizard use):
+   * the Tab R3 addendum backfill has run for every demo contract, and a Welcome Back sent in DEMO stays in memory. */
+  const hasData = !!data;
+  useEffect(() => { if (hasData) setRenewalDemo(!!data?.demo); }, [hasData, data?.demo]);
   useEffect(() => {
     if (data?.demo) return;
     setCards(readGoLiveCards());
