@@ -63,14 +63,21 @@ describe('§1.2 / §8 age definition (shared with card ⑦)', () => {
     const setup = rows.find((r) => r.contract_id === 'C2')!;
     expect(setup.status).toBe('SETUP');
     expect(A.drawnRows(rows, true, A.ALL_PERIOD).map((r) => r.contract_id)).toEqual(['C1-R1']);
-    // card ⑦ in the rendered tab (DEMO): R1-O1 is in Setup, R2-O2 shows the card ④ age
+    // card ⑦ in the rendered tab (DEMO): Sailom Beach Hotel (R2-O5, start 30 Sep, Go Live 21 Oct) shows 7 วัน = card ④ age (start-based would be 28 วัน)
     const html = await renderTab();
     const health = text(cardOf(html, 'r1-health'));
-    expect(health).toContain(CL.setupAge);
-    const r2o2 = demoRows().find((r) => r.contract_id === 'R2-O2')!;
-    expect(r2o2.age_days).toBe(A.dayDiff('2025-06-03', today));
-    expect(health).toContain(A.ageText(r2o2.age_days));
-    expect(A.ageIndex(demoRows()).get('R2-O2')?.age_days).toBe(r2o2.age_days);
+    const r2o5 = demoRows().find((r) => r.contract_id === 'R2-O5')!;
+    expect(r2o5.age_days).toBe(7);
+    expect(health).toContain(`Sailom Beach Hotel ORM มายด์ ORM ทีม A เหลือง ระบบ ▼ ตั้งค่าหรือข้อมูลโรงแรมผิด ${A.ageText(r2o5.age_days)}`);
+    expect(A.ageIndex(demoRows()).get('R2-O5')?.age_days).toBe(r2o5.age_days);
+    // R1-O1 (Go Live not yet) is Setup → card ⑦ shows the Setup text instead of an age, and sorts last by age
+    const r1o1 = A.ageIndex(demoRows()).get('R1-O1');
+    expect(r1o1?.status).toBe('SETUP');
+    expect(A.healthAgeDays(r1o1)).toBeNull();
+    const { ContractHealthCard } = await import('../src/components/ps/contract-health-card');
+    const { tabR1Demo } = await import('../src/lib/contract-tab-r1-demo');
+    const only = { ...tabR1Demo(), base: tabR1Demo().base.filter((b) => b.contract_id === 'R1-O1') };
+    expect(text(renderToStaticMarkup(h(ContractHealthCard, { data: only, ages: A.ageIndex(demoRows()) })))).toContain(CL.setupAge);
   });
   test('ageText: month = 30.42 days; under a month → days', () => {
     expect(A.ageText(20)).toBe('20 วัน');
