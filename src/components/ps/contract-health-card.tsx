@@ -13,7 +13,7 @@ import { useTickets, type L0Ticket } from "@/lib/tickets-l0";
 import { recordDay, useContractHealthStore } from "@/lib/contract-health-store";
 import { tabR1SimBase } from "@/lib/contract-tab-r1-demo";
 import {
-  EMPTY_FILTER, QUICK_KEYS, SIGNAL_GROUPS, ageText, buildRows, catalogByKey, daysToEnd, evaluateAlerts, filterRows, highlightRange, isDueSoon,
+  EMPTY_FILTER, QUICK_KEYS, SIGNAL_GROUPS, ageDays, ageText, buildRows, catalogByKey, daysToEnd, evaluateAlerts, filterRows, highlightRange, isDueSoon,
   pageList, pageSizeOptions, paginate, snapshotOf, sortRows, tierMark,
   type HealthFilter, type HealthRow, type QuickKey, type SortKey, type Svc, type TabR1Data, type Tier,
 } from "@/lib/contract-tab-r1";
@@ -81,7 +81,7 @@ export function ContractHealthCard({ data, onOpenTask, ages }: { data: TabR1Data
   const counts = { R: rows.filter((r) => r.tier === "R").length, A: rows.filter((r) => r.tier === "A").length, G: rows.filter((r) => r.tier === "G").length };
   const total = rows.length;
   const filtered = filterRows(rows, filter, today);
-  const sorted = sortRows(filtered, sort, today, ages ? (r) => healthAgeDays(ages.get(r.contract_id)) : undefined);
+  const sorted = sortRows(filtered, sort, today, ages ? (r) => (ages.has(r.contract_id) ? healthAgeDays(ages.get(r.contract_id)) : ageDays(r.start, today)) : undefined);
   const pg = paginate(sorted, filter.tier, size, showGreen);
   const nPages = pg.pages.length;
   const cur = Math.min(page, nPages);
@@ -258,7 +258,7 @@ function HealthRowView({ r, q, today, first, canCreate, onCreate, onOpen, onOpen
       </td>
       <td data-label={R1_HEALTH.cols.age}>
         {/* Tab R3 §8: age from first Go Live (v_ps_contract_age, same value as card ④); Setup shows its own text. */}
-        {ages ? (healthAgeDays(ages.get(r.contract_id)) != null ? <div className="tabular-nums">{ageTextDays(healthAgeDays(ages.get(r.contract_id)))}</div> : <div className="r1-muted">{CL.setupAge}</div>) : <div className="tabular-nums">{ageText(r.start, today)}</div>}
+        {ages?.has(r.contract_id) ? (healthAgeDays(ages.get(r.contract_id)) != null ? <div className="tabular-nums">{ageTextDays(healthAgeDays(ages.get(r.contract_id)))}</div> : <div className="r1-muted">{CL.setupAge}</div>) : <div className="tabular-nums">{ageText(r.start, today)}</div>}
         {due != null && <div className="r1-due tabular-nums">{R1_HEALTH.dueIn(due)}</div>}
       </td>
       <td data-label={R1_HEALTH.cols.ticket} onClick={stop}>
