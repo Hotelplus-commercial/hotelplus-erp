@@ -290,3 +290,11 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [ ] AC Billing has no DEMO screen (demo bill checked through the same engine in tests); สัญญา & บริการ list reads PS projections, not the CRM store, so the new contract shows in AC Billing data only
 - [x] v1.3 §4 price-history backfill from the main store (tests 300 → 306)
 - [ ] Cloud doc `tickets` is not in the database's allowed list (pushes conflict) — needs approval to add
+
+## PS Dashboard · Tab R3 อายุสัญญา (Contract Lifetime, O-16)
+- [x] Addendum: DEMO start backfills INITIAL price history for every R1-/R2- demo contract (in memory)
+- [x] Card ④ rebuilt (KPI, two zone views, Go Live highlight, distribution, churn table, survival) · old card unmounted
+- [x] Contract-history drawer + WELCOME_BACK ticket with per-contract lock · card ⑦ age from first Go Live
+- [x] Glossary `CL` + 8-step tour · demo additions · rules files · tests 306 → 330
+- [ ] O-25 BD-side Welcome Back view · Upsell capture in PM contract entry (later patches)
+- [ ] Google Drive attachments wait for a Drive connection
