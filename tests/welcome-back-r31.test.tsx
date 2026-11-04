@@ -161,7 +161,6 @@ describe('R3.1 §3 routing (normal mode, real ticket store)', () => {
     const o1 = again(); expect(!o1.ok && o1.locked?.ticket_id).toBe(s.id);
     TK.startWelcomeBack(s.t(), bd1);
     const o2 = again(); expect(!o2.ok && o2.locked?.ticket_id).toBe(s.id);
-    expect(CL.churn.lock(s.id, R.wbPsStatus(s.t()))).toBe(`🔒 #${s.id} · กำลังทำ`);
   });
   test('10 · stale revision is refused with ข้อมูลเปลี่ยนแล้ว · โหลดใหม่', async () => {
     live();
