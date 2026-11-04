@@ -115,10 +115,11 @@ describe('§4 settings', () => {
     expect(r.versions[1]!.note).toBe('แก้ไขโดย PM · ช่วง AE 4 วัน');
     expect(versionFor(r.versions, '2026-10-27').values.p1.due).toBe(7);
     expect(versionFor(r.versions, '2026-10-28').values.p1.due).toBe(4);
-    const old = getSetupTiming(card({ created_at: '2026-10-27' }), '2026-10-28'), fresh = getSetupTiming(card({ created_at: '2026-10-28' }), '2026-10-30');
+    // both cards have P1 running 5 days: yesterday's card keeps 5/7 (ok), today's card uses 3/4 (late)
+    const old = getSetupTiming(card({ created_at: '2026-10-27' }), '2026-11-01'), fresh = getSetupTiming(card({ created_at: '2026-10-28' }), '2026-11-02');
+    expect(old.lanes.p1.days).toBe(5); expect(fresh.lanes.p1.days).toBe(5);
     expect(statusFor(old, r.versions).lanes.p1).toBe('ok');
-    expect(statusFor(getSetupTiming(card({ created_at: '2026-10-28' }), '2026-11-02'), r.versions).lanes.p1).toBe('near'); // 5 days vs new 3/4 → late? 5 > 4
-    expect(statusFor(fresh, r.versions).lanes.p1).toBe('ok');
+    expect(statusFor(fresh, r.versions).lanes.p1).toBe('late');
     const r2 = saveKpiVersion(r.versions, { ...next, p1: { ok: 2, due: 5 } }, '2026-10-28', 'PM', '2026-10-28T06:00:00Z');
     expect(r2.ok && r2.versions.filter((v) => v.effective_from === '2026-10-28')).toHaveLength(1);
   });
@@ -177,8 +178,11 @@ describe('§9–§10 compare and quality', () => {
     const r = equalCountCandidates(T, ['ORM'], 'month', '2026-10');
     expect(r.nA).toBe(3);
     expect(r.candidates[0]).toMatchObject({ key: '2026-09', n: 3, equal: true });
-    const lone = equalCountCandidates(T.filter((t) => t.card_id !== 'SD-O-2026-09-1'), ['ORM'], 'month', '2026-10');
-    expect(lone.candidates[0]!.equal).toBe(true);
+    const mk = (id: string, live: string) => getSetupTiming(card({ card_id: id, created_at: addDays(live, -10), go_live_at: live }), '2026-10-30');
+    const syn = [mk('a1', '2026-10-05'), mk('a2', '2026-10-06'), mk('s1', '2026-09-03'), mk('s2', '2026-09-04'), mk('s3', '2026-09-05'), mk('j1', '2026-07-02')];
+    const near = equalCountCandidates(syn, ['ORM'], 'month', '2026-10');
+    expect(near.equalCount).toBe(0);
+    expect(near.candidates.map((c) => c.key)).toEqual(['2026-09', '2026-07']); // |3−2| = |1−2| → most recent first
     expect(rangeError('2026-05', '2026-03')).not.toBeNull();
     expect(rangeError('2024-01', '2026-01')).not.toBeNull();
     expect(rangeError('2025-01', '2026-12')).toBeNull();
