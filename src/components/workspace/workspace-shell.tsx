@@ -112,7 +112,7 @@ function TicketsLane({ dept, role, initialTicket }: { dept: Dept; role: Role; in
   const [showClosed, setShowClosed] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
   useEffect(() => {
-    const t = initialTicket && tickets.find((x) => x.ticket_id === initialTicket && (x.target_dept === dept || isWatcherOf(x, dept)));
+    const t = initialTicket && tickets.find((x) => x.ticket_id === initialTicket && x.type !== "WELCOME_BACK" && (x.target_dept === dept || isWatcherOf(x, dept)));
     if (t) { setOpenId(t.ticket_id); setShowClosed(!OPEN_STATUSES.includes(t.status)); }
   }, [initialTicket, dept]); // eslint-disable-line react-hooks/exhaustive-deps
   const inbound = tickets.filter((t) => t.target_dept === dept || isWatcherOf(t, dept));
