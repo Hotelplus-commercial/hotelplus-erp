@@ -260,7 +260,8 @@ describe('§2.3 detail-tab ณ วันนี้ cards', () => {
     // old ① Lifecycle / ② Churn (time-based) were unmounted.
     expect(now.length).toBe(4);
     // Tab R2 §1: the renewal card was replaced by one with its own period bar (เดือน · ไตรมาส · ปี · Custom), not a CompareControl.
-    expect(timed.length).toBe(2);
+    // Tab R3 §1: card ④ อายุสัญญา was replaced by a `ณ วันนี้` card without any compare (only ระยะเวลา Setup keeps one).
+    expect(timed.length).toBe(1);
     for (const c of now) { const head = c.split('</header>')[0]!; expect(text(head)).not.toMatch(/Δ|▲|▼/); }
   });
 });
