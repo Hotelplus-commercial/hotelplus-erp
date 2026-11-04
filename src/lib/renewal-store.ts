@@ -11,8 +11,20 @@ import {
 } from './renewal-rules';
 import type { PsReportRow } from './ps-dashboard-types';
 import type { RenewalCard } from './ps-renewal';
+import { seedContracts } from './crm-seed';
+import type { Contract, ContractLine } from './crm-types';
+import { RENEWAL_SOURCE_NOT_FOUND } from './ps-glossary';
+import { readEarlyHandoff, toIsoDate } from './renewal-scan';
+import { renewalR2DemoItems, renewalR2Sim, RENEWAL_R2_DEMO_NOW } from './renewal-r2-demo';
+import { tabR1DemoBase, tabR1HeaderPortfolio } from './contract-tab-r1-demo';
+import { headerDemoPortfolio } from './ps-header-r2-demo';
 
-export type SourceContract = { contract_id: string; hotel_id: string; customer_id: string; legal_entity: string; signatory: string; kyc_docs: string[]; terms: Terms };
+export type SourceContract = {
+  contract_id: string; hotel_id: string; customer_id: string; legal_entity: string; signatory: string; kyc_docs: string[]; terms: Terms;
+  /** R2.1: explicit service (else derived from package). */ service?: 'ORM' | 'Marcom';
+  /** R2.1 §1.3: DEMO-only contract built from the R2 demo record (fields it lacks stay empty, listed in empty_fields). */
+  demo_fallback?: true; empty_fields?: string[];
+};
 
 /** Sample contract terms for the bundled renewal cards (same sample set as the cards themselves). */
 const SAMPLE_CONTRACTS: SourceContract[] = [
@@ -55,7 +67,9 @@ let live: State | null = null; let demo: State | null = null; let demoOn = false
 const listeners = new Set<() => void>();
 export const renewalConfig: RenewalConfig = { ...DEFAULT_RENEWAL_CONFIG };
 const nowIso = () => (demoOn ? DEMO_NOW : new Date().toISOString());
-const contracts = () => (demoOn ? [...SAMPLE_CONTRACTS, ...DEMO_CONTRACTS] : SAMPLE_CONTRACTS);
+/** R2.1: DEMO contracts materialised from the R2 demo records (in memory, reset when DEMO toggles). */
+let demoExtra: SourceContract[] = [];
+const contracts = () => (demoOn ? [...SAMPLE_CONTRACTS, ...DEMO_CONTRACTS, ...demoExtra] : SAMPLE_CONTRACTS);
 const backfill = (): PriceHistoryRow[] => initialHistory(contracts());
 
 function liveState(): State {
@@ -71,12 +85,112 @@ function commit(s: State) {
 }
 export function setRenewalDemo(on: boolean) {
   if (on === demoOn) return;
-  demoOn = on; setTicketDemo(on); demo = on ? seedDemo() : null; if (demo) seedDemoLinks(demo); version++; listeners.forEach((l) => l());
+  demoOn = on; demoExtra = []; demoMisses = []; setTicketDemo(on); demo = on ? seedDemo() : null; if (demo) seedDemoLinks(demo); version++; listeners.forEach((l) => l());
 }
 export const isRenewalDemo = () => demoOn;
 
+/** Kept for the bundled demo seed; startRenewal() now uses resolveSourceContract() (R2.1 UF1). */
 export const sourceContractFor = (hotelId: string) => contracts().find((c) => c.hotel_id === hotelId) ?? null;
-export const sourceContractById = (id: string) => contracts().find((c) => c.contract_id === id) ?? null;
+export const sourceContractById = (id: string) => contracts().find((c) => c.contract_id === id) ?? (demoOn ? null : mainSources().find((c) => c.contract_id === id) ?? null);
+
+/* ---------- R2.1 UF1 — source contract resolved by contract, never by hotel alone ---------- */
+type Svc = 'ORM' | 'Marcom';
+export const svcOf = (c: SourceContract): Svc => c.service ?? (c.terms.package.startsWith('Marcom') ? 'Marcom' : 'ORM');
+const addDaysIso = (d: string, n: number) => new Date(Date.parse(`${d}T00:00:00Z`) + n * 864e5).toISOString().slice(0, 10);
+const addMonthsIso = (d: string, n: number) => { const x = new Date(`${d}T00:00:00Z`); x.setUTCMonth(x.getUTCMonth() + n); return x.toISOString().slice(0, 10); };
+const lineSvc = (l: ContractLine): Svc => (/^ORM/i.test(l.sku_snapshot) ? 'ORM' : 'Marcom');
+/** Main contract store (AccountingData.contracts, CRM browser copy) → one source contract per service it holds. Read only. */
+export function sourcesFromMain(list: Contract[]): SourceContract[] {
+  return list.flatMap((c) => (['ORM', 'Marcom'] as Svc[]).flatMap((svc): SourceContract[] => {
+    const lines = c.lines.filter((l) => lineSvc(l) === svc); if (!lines.length) return [];
+    const monthly = lines.filter((l) => l.billing === 'monthly'); const first = monthly[0] ?? lines[0]!;
+    const comm = lines.find((l) => l.commission_rate != null)?.commission_rate ?? null;
+    const name = first.name_snapshot || first.sku_snapshot;
+    return [{
+      contract_id: c.contract_id, hotel_id: c.hotel_id ?? '', customer_id: c.customer_snapshot.customer_id, legal_entity: c.customer_snapshot.legal_name,
+      signatory: c.customer_snapshot.signer_name, kyc_docs: c.documents ?? [], service: svc,
+      terms: { fee_amount: monthly.reduce((s, l) => s + (l.unit_price ?? 0) * (l.quantity || 1), 0), commission_pct: comm == null ? 0 : Math.round(comm * 10000) / 100, term_months: c.duration_months,
+        package: name.startsWith(svc) ? name : `${svc} ${name}`, start_date: c.start_date, end_date: addDaysIso(addMonthsIso(c.start_date, c.duration_months), -1) },
+      ...(c.billing_status === 'TERMINATED' || c.inactivated_at ? { empty_fields: ['inactive'] } : {}),
+    }];
+  }));
+}
+const CRM_KEY = 'hotelplus-crm-v1';
+function mainSources(): SourceContract[] {
+  let list: Contract[] = seedContracts;
+  try { if (typeof localStorage !== 'undefined') { const p = JSON.parse(localStorage.getItem(CRM_KEY) ?? 'null') as { contracts?: Contract[] } | null; if (Array.isArray(p?.contracts)) list = p.contracts; } } catch { /* keep seed */ }
+  return sourcesFromMain(list);
+}
+
+export type ResolveCard = Pick<RenewalCard, 'id' | 'hotelId'> & Partial<Pick<RenewalCard, 'contractEnd' | 'contract_id' | 'service' | 'created_source'>>;
+export type ResolveVia = 'MAIN_ID' | 'RENEWAL_ID' | 'DEMO_R2' | 'HOTEL_SERVICE_END' | 'LATEST_ACTIVE' | 'LEGACY_SINGLE';
+export type Resolved = { ok: true; contract: SourceContract; via: ResolveVia } | { ok: false; contract_id: string | null; tried: string[] };
+/** contract_id on the card, else the id the create path encodes (`RN-{contract_id}`). Older cards → null. */
+export const cardContractId = (c: ResolveCard): string | null => c.contract_id ?? (c.created_source && c.id.startsWith('RN-') ? c.id.slice(3) : null);
+/** Pure resolver. Order: contract_id (main → renewal set → DEMO R2 record) · no id: hotel + service + end date (main → renewal set),
+ * then latest ACTIVE hotel + service (main) · legacy bundled card with neither end date nor service: the hotel's only contract in the renewal set. */
+export function resolveSourceIn(card: ResolveCard, src: { main: SourceContract[]; renewal: SourceContract[]; demo?: (id: string) => SourceContract | null }, today: string): Resolved {
+  const tried: string[] = []; const cid = cardContractId(card); const svc = card.service ?? null; const end = toIsoDate(card.contractEnd);
+  const svcOk = (c: SourceContract) => !svc || svcOf(c) === svc;
+  const ok = (contract: SourceContract, via: ResolveVia): Resolved => ({ ok: true, contract, via });
+  if (cid) {
+    tried.push(`main:${cid}`); const m = src.main.find((c) => c.contract_id === cid && svcOk(c)); if (m) return ok(m, 'MAIN_ID');
+    tried.push(`renewal:${cid}`); const r = src.renewal.find((c) => c.contract_id === cid); if (r) return ok(r, 'RENEWAL_ID');
+    if (src.demo) { tried.push(`demo:${cid}`); const d = src.demo(cid); if (d) return ok(d, 'DEMO_R2'); }
+    return { ok: false, contract_id: cid, tried };
+  }
+  const sameHotel = (c: SourceContract) => c.hotel_id === card.hotelId && svcOk(c);
+  if (end) for (const [name, list] of [['main', src.main], ['renewal', src.renewal]] as const) {
+    tried.push(`${name}:${card.hotelId}+${svc ?? '*'}+${end}`);
+    const hit = list.filter((c) => sameHotel(c) && c.terms.end_date === end); if (hit.length === 1) return ok(hit[0]!, 'HOTEL_SERVICE_END');
+  }
+  if (svc) {
+    tried.push(`main:${card.hotelId}+${svc} ACTIVE`);
+    const act = src.main.filter((c) => sameHotel(c) && !c.empty_fields?.includes('inactive') && c.terms.start_date <= today && c.terms.end_date >= today).sort((a, b) => b.terms.start_date.localeCompare(a.terms.start_date));
+    if (act[0]) return ok(act[0], 'LATEST_ACTIVE');
+  }
+  if (!end && !svc) { tried.push(`renewal:${card.hotelId} (only contract)`); const hit = src.renewal.filter((c) => c.hotel_id === card.hotelId); if (hit.length === 1) return ok(hit[0]!, 'LEGACY_SINGLE'); }
+  return { ok: false, contract_id: null, tried };
+}
+/** DEMO §1.3 fallback: build the source contract from the R2 / Header R2 demo record (or the dashboard hand-off) — in memory only. */
+function materialiseDemo(cid: string): SourceContract | null {
+  const have = demoExtra.find((c) => c.contract_id === cid); if (have) return have;
+  const item = renewalR2DemoItems().find((i) => i.contract_id === cid) ?? (cid.startsWith('SIM-') ? renewalR2Sim(120, RENEWAL_R2_DEMO_NOW).items.find((i) => i.contract_id === cid) : undefined);
+  const rec = item ? { contract_id: item.contract_id, hotel_id: item.hotel_id, hotel_name: item.hotel_name, service: item.service, end: item.end } : readEarlyHandoff(cid);
+  if (!rec) return null;
+  const base = tabR1DemoBase().find((b) => b.contract_id === cid);
+  const price = [...headerDemoPortfolio().prices, ...tabR1HeaderPortfolio().prices].find((p) => p.contract_id === cid);
+  const end = rec.end.slice(0, 10); const start = base?.start ?? '';
+  const months = start ? Math.max(1, Math.round((Date.parse(`${addDaysIso(end, 1)}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`)) / (30.4375 * 864e5))) : 12;
+  const empty = ['customer_id', 'signatory', 'kyc_docs', ...(start ? [] : ['start_date', 'term_months (ใช้ 12)']), ...(price?.fee_amount != null ? [] : ['fee_amount']), ...(price?.commission_pct != null ? [] : ['commission_pct'])];
+  const sc: SourceContract = {
+    contract_id: cid, hotel_id: rec.hotel_id, customer_id: '', legal_entity: rec.hotel_name, signatory: '', kyc_docs: [], service: rec.service,
+    terms: { fee_amount: price?.fee_amount ?? 0, commission_pct: price?.commission_pct ?? 0, term_months: months, package: rec.service, start_date: start, end_date: end },
+    demo_fallback: true, empty_fields: empty,
+  };
+  demoExtra = [...demoExtra, sc];
+  return sc;
+}
+/** Store wrapper: live = main store + renewal set (never fabricates); DEMO = demo contract state + R2 fallback. */
+export function resolveSourceContract(card: ResolveCard): Resolved {
+  return resolveSourceIn(card, { main: demoOn ? [] : mainSources(), renewal: contracts(), ...(demoOn ? { demo: materialiseDemo } : {}) }, nowIso().slice(0, 10));
+}
+/** Wizard: the renewal card for a contract id (card contract id → card whose request uses it → older hotel match). */
+export function wizardCardFor<T extends ResolveCard>(cards: T[], contractId: string, src: SourceContract | null): T | undefined {
+  const reqCards = [...cur().requests].reverse().filter((r) => r.source_contract_id === contractId).map((r) => r.renewal_card_id);
+  return cards.find((c) => cardContractId(c) === contractId) ?? reqCards.map((id) => cards.find((c) => c.id === id)).find(Boolean) ?? (src ? cards.find((c) => c.hotelId === src.hotel_id && !cardContractId(c)) : undefined);
+}
+
+/* activity log of misses (`source_contract_not_found`): live = localStorage, DEMO = memory */
+export type SourceMiss = { card_id: string; event: 'source_contract_not_found'; contract_id: string | null; tried: string[]; at: string };
+const MISS_KEY = 'meridia.renewal-source-miss.v1';
+let demoMisses: SourceMiss[] = [];
+const readMisses = (): SourceMiss[] => { if (demoOn) return demoMisses; try { return JSON.parse(localStorage.getItem(MISS_KEY) ?? '[]') as SourceMiss[]; } catch { return []; } };
+function logMiss(m: SourceMiss) {
+  if (demoOn) demoMisses = [...demoMisses, m]; else { try { localStorage.setItem(MISS_KEY, JSON.stringify([...readMisses(), m])); } catch { /* quota */ } }
+  version++; listeners.forEach((l) => l());
+}
+export const sourceMissesFor = (cardId: string) => readMisses().filter((m) => m.card_id === cardId);
 /** Tab R2 §7.1 scan feed (live): the source contracts with a term end date (read only). */
 export const scanSourceContracts = () => contracts().map((c) => ({ contract_id: c.contract_id, hotel_id: c.hotel_id, hotel_name: c.legal_entity, service: (c.terms.package.startsWith('Marcom') ? 'Marcom' : 'ORM') as 'ORM' | 'Marcom', end: c.terms.end_date, ae: null as string | null }));
 export function recoFor(hotelId: string, terms: Terms) {
@@ -122,14 +236,19 @@ export const entityClosed = (r: RenewalRequest) => { const t = ticketById(r.enti
 export const renewalNow = nowIso;
 
 /* ---------- writes ---------- */
-type Out = { ok: true; req: RenewalRequest } | { ok: false; error: string };
+type Out = { ok: true; req: RenewalRequest } | { ok: false; error: string; miss?: { contract_id: string | null; tried: string[] } };
 function put(r: RenewalRequest, extra?: Partial<State>): Out { const s = cur(); commit({ ...s, ...extra, requests: s.requests.map((x) => (x.id === r.id ? r : x)) }); return { ok: true, req: r }; }
 const apply = (id: string, f: (r: RenewalRequest) => Out): Out => { const r = cur().requests.find((x) => x.id === id); if (!r) return { ok: false, error: 'ไม่พบคำขอ' }; const o = f(r); return o.ok ? put(o.req) : o; };
 
 /** AE pressed ต่อสัญญา: reuse the one open request, else start one with a fresh recommendation. */
-export function startRenewal(card: Pick<RenewalCard, 'id' | 'hotelId' | 'hotel' | 'owner'>): Out {
+export function startRenewal(card: Pick<RenewalCard, 'id' | 'hotelId' | 'hotel' | 'owner'> & Partial<Pick<RenewalCard, 'contractEnd' | 'contract_id' | 'service' | 'created_source'>>): Out {
   const open = openRequestFor(card.id); if (open) return { ok: true, req: open };
-  const src = sourceContractFor(card.hotelId); if (!src) return { ok: false, error: 'ไม่พบสัญญาที่ใช้งานของโรงแรมนี้' };
+  const res = resolveSourceContract(card);
+  if (!res.ok) {
+    logMiss({ card_id: card.id, event: 'source_contract_not_found', contract_id: res.contract_id, tried: res.tried, at: nowIso() });
+    return { ok: false, error: RENEWAL_SOURCE_NOT_FOUND(res.contract_id ?? `(${card.hotelId})`), miss: { contract_id: res.contract_id, tried: res.tried } };
+  }
+  const src = res.contract;
   const s = cur(); const r = newRequest(card, src, s.seq + 1, nowIso());
   commit({ ...s, seq: s.seq + 1, requests: [...s.requests, r] }); return { ok: true, req: r };
 }

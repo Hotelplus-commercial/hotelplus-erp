@@ -278,5 +278,12 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [x] Rules, renewal_reasons store + 3-label picker, new card (old unmounted), reason dialog, tour 8 steps
 - [x] AE Workspace: Mark as Done Churn needs 3 labels → reason record; scan 60 days + early create (?createRenewal)
 - [x] Demo additions (28 ต.ค. 69, history from Q4 68, sim 120) · glossary · rules files · tests 265 → 284
-- [ ] Cloud mirror for renewal_reasons waits for a new Cloud doc key (same as R1 collections)
+- [x] Cloud mirror for renewal_reasons: doc key `renewalReasons` (R2.1 UF4)
 - [ ] Q58 past-due effect and Q59 SLA thresholds wait for decisions
+
+## PS Dashboard · Tab R2.1 UAT fix (UF1–UF6)
+- [x] UF1 source contract by contract_id (main store → renewal set → DEMO R2 fallback); live never invents; miss message + activity log
+- [x] UF2 owner-only button disabled + hint for non-owners, testing-mode switch link + banner, acting AE member carried to AE Workspace / Wizard
+- [x] UF3 AE Workspace heading from RENEWAL_CARD_LEAD_DAYS · UF4 renewalReasons Cloud doc · UF6 glossary + rules · tests 284 → 294
+- [ ] §1.5 v1.3 §2/§3 (one shared contract store, new contract on SIGNED, Billing demo) waits for the v1.3 A/B/C decision
+- [ ] Cloud doc `tickets` is not in the database's allowed list (pushes conflict) — needs approval to add

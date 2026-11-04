@@ -42,6 +42,7 @@ export function newCardFrom(c: ScanContract, source: 'BOT' | 'AE_EARLY', today: 
   return {
     id: cardIdFor(c.contract_id), hotelId: c.hotel_id, hotel: c.hotel_name, contractEnd: enDate(c.end.slice(0, 10)), daysLeft: dayDiff(today, c.end),
     status: 'NOT_STARTED', owner, contact: { name: '—', phone: '—', email: '—', line: '—' }, contractFile: '—', contractGeneratedAt: '—', activities: [], created_source: source,
+    contract_id: c.contract_id, service: c.service,
   };
 }
 

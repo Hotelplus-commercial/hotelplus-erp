@@ -4,6 +4,7 @@
 import { useSyncExternalStore } from 'react';
 import { REASON_KEYS, validPick } from './renewal-r2';
 import type { Svc } from './contract-tab-r1';
+import { stageCloudDoc } from './cloud-sync';
 
 export const RENEWAL_REASON_EDIT_DAYS = 7;
 export type ReasonActor = { member_id: string; display: string; role: string };
@@ -14,6 +15,8 @@ export type RenewalReason = {
 };
 
 const KEY = 'meridia.renewal-reasons.v1';
+/** R2.1 UF4: Cloud Sync Level A doc key (push-only mirror; browser storage stays canonical). */
+export const RENEWAL_REASONS_DOC = 'renewalReasons';
 let live: RenewalReason[] | null = null; let demo: RenewalReason[] | null = null; let demoOn = false; let version = 0;
 const listeners = new Set<() => void>();
 const emit = () => { version++; listeners.forEach((l) => l()); };
@@ -21,11 +24,12 @@ function liveList(): RenewalReason[] {
   if (live) return live;
   try { live = JSON.parse(localStorage.getItem(KEY) ?? '[]') as RenewalReason[]; } catch { live = []; }
   if (!Array.isArray(live)) live = [];
+  stageCloudDoc(RENEWAL_REASONS_DOC, { items: live });
   return live;
 }
 const cur = () => (demoOn ? (demo ??= []) : liveList());
 function commit(list: RenewalReason[]) {
-  if (demoOn) demo = list; else { live = list; try { localStorage.setItem(KEY, JSON.stringify(list)); } catch { /* quota */ } }
+  if (demoOn) demo = list; else { live = list; try { localStorage.setItem(KEY, JSON.stringify(list)); } catch { /* quota */ } stageCloudDoc(RENEWAL_REASONS_DOC, { items: list }); }
   emit();
 }
 /** Demo on = fresh in-memory copy of the seed (reset only when DEMO toggles). */

@@ -41,14 +41,16 @@ import {
   type RenewalStatus,
 } from "@/lib/ps-renewal";
 import { cn } from "@/lib/utils";
-import { DEMO_EXTRA_CARDS, declineRequest, isRenewalDemo, latestRequestFor, openRequestFor, scanSourceContracts, setRenewalDemo, signedAwaitingDone, sourceContractFor, useRenewalStore } from "@/lib/renewal-store";
+import { DEMO_EXTRA_CARDS, declineRequest, isRenewalDemo, latestRequestFor, openRequestFor, scanSourceContracts, setRenewalDemo, signedAwaitingDone, sourceContractFor, sourceMissesFor, useRenewalStore } from "@/lib/renewal-store";
 import { RenewalRequestChips, RenewalRequestPanel, SignedBadge } from "@/components/ps/renewal-request-ui";
-import { RENEWAL_LABEL_TH as RL, RN2 } from "@/lib/ps-glossary";
+import { RENEWAL_LABEL_TH as RL, RENEWAL_TEST_BANNER, RENEWAL_TEST_SWITCH, RN2, aeNameTh } from "@/lib/ps-glossary";
 import { RenewalReasonPicker } from "@/components/ps/renewal-reason-picker";
 import { recordReason, setReasonsDemo } from "@/lib/renewal-reasons";
 import { isOwningAe, reasonLabel, validPick } from "@/lib/renewal-r2";
-import { EARLY_PARAM, readEarlyHandoff, scanContractById } from "@/lib/renewal-scan";
+import { EARLY_PARAM, readEarlyHandoff, scanContractById, type ScanContract } from "@/lib/renewal-scan";
 import { RENEWAL_R2_DEMO_NOW, renewalR2DemoReasons, renewalR2DemoScanFeed } from "@/lib/renewal-r2-demo";
+import { actingRenewalUser, isRenewalTestMode, setTestMember, useTestMember } from "@/lib/renewal-test-actor";
+import { useMeetingMgmt } from "@/lib/orm-meeting";
 
 const statusTone: Record<RenewalStatus, "muted" | "info" | "success" | "danger"> = {
   NOT_STARTED: "muted",
@@ -65,7 +67,7 @@ export function RenewalStatusBadge({ status }: { status: RenewalStatus }) {
 
 export function RenewalActivityCards({
   scope,
-  currentUser,
+  currentUser: roleUser,
   canOverride,
 }: {
   scope: "my" | "team";
@@ -73,8 +75,12 @@ export function RenewalActivityCards({
   canOverride: boolean;
 }) {
   const { cards: baseCards, runScan, createCard } = usePsRenewal();
+  const { setRole } = useMeetingMgmt();
+  /* R2.1 UF2: testing-mode acting AE member (set from the Tab R2 card); PM stays PM. */
+  const member = useTestMember();
+  const currentUser = actingRenewalUser(roleUser, canOverride, member);
   const [demo, setDemo] = useState(false);
-  const [denied, setDenied] = useState(false);
+  const [denied, setDenied] = useState<ScanContract | null>(null);
   useEffect(() => { const on = new URLSearchParams(window.location.search).get("demo") === "1"; setRenewalDemo(on); setDemo(on); }, []);
   useRenewalStore();
   const cards = demo ? [...baseCards, ...DEMO_EXTRA_CARDS] : baseCards;
@@ -82,6 +88,8 @@ export function RenewalActivityCards({
   useEffect(() => { if (window.location.hash === "#renewal-activities") { setOpen(true); document.getElementById("renewal-activities")?.scrollIntoView({ block: "start" }); } }, []);
   const [sortAsc, setSortAsc] = useState(true);
   const [active, setActive] = useState<{ card: RenewalCard; addMode: boolean } | null>(null);
+  const today = () => (isRenewalDemo() ? RENEWAL_R2_DEMO_NOW : new Date().toISOString().slice(0, 10));
+  const extraCards = () => (isRenewalDemo() ? DEMO_EXTRA_CARDS : []);
   /* Tab R2 §7: renewal-card scan (lead RENEWAL_CARD_LEAD_DAYS) + early create deep link (?createRenewal={contract_id}, owning AE only). */
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -94,11 +102,19 @@ export function RenewalActivityCards({
     if (!cid) return;
     const c = readEarlyHandoff(cid);
     setOpen(true);
-    if (!c || !isOwningAe({ id: currentUser, role: canOverride ? "PM" : "AE" }, c.ae)) { setDenied(true); return; }
+    const me = actingRenewalUser(roleUser, canOverride);
+    if (!c || !isOwningAe({ id: me, role: canOverride ? "PM" : "AE" }, c.ae)) { setDenied(c ?? { contract_id: cid, hotel_id: "", hotel_name: cid, service: "ORM", end: "", ae: null }); return; }
     const { card } = createCard(c, "AE_EARLY", today, extra);
     setActive({ card, addMode: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  /* UF2 testing-mode switch from the "no permission" message: role AE + the contract's owning AE, then open the card. */
+  const switchToOwner = (c: ScanContract) => {
+    if (!c.ae) return;
+    setTestMember(c.ae); setRole("AE"); setDenied(null);
+    const { card } = createCard(c, "AE_EARLY", today(), extraCards());
+    setActive({ card, addMode: false });
+  };
 
   const visible = cards
     .filter((c) => (scope === "my" ? c.owner === currentUser : true))
@@ -121,7 +137,13 @@ export function RenewalActivityCards({
         </Button>
       </div>
 
-      {denied && <p role="alert" className="border-t px-3 py-2 text-sm text-destructive">{RN2.denied}</p>}
+      {isRenewalTestMode() && member && !canOverride && <p className="border-t px-3 py-1.5 text-xs text-muted-foreground">{RENEWAL_TEST_BANNER("AE", aeNameTh(member))}</p>}
+      {denied && (
+        <p role="alert" className="flex flex-wrap items-center gap-2 border-t px-3 py-2 text-sm text-destructive">
+          {RN2.denied}
+          {isRenewalTestMode() && denied.ae && <button type="button" className="text-xs font-semibold text-primary underline-offset-2 hover:underline" onClick={() => switchToOwner(denied)}>{RENEWAL_TEST_SWITCH(aeNameTh(denied.ae))}</button>}
+        </p>
+      )}
       {open && (
         <ul className="divide-y border-t">
           {visible.map((c) => {
@@ -328,6 +350,13 @@ export function RenewalCardModal({
               3 · Activity Log ({card.activities.length})
             </p>
             <ul className="mt-2 flex flex-col gap-2">
+              {sourceMissesFor(card.id).map((m, k) => (
+                <li key={`miss-${k}`} className="rounded-lg border border-destructive/30 bg-destructive/5 p-2.5 text-sm" data-event={m.event}>
+                  <p className="font-medium">⚠ {m.event} · {m.contract_id ?? "—"}</p>
+                  <p className="text-xs text-muted-foreground">ลองหา: {m.tried.join(" · ")}</p>
+                  <p className="text-[11px] text-muted-foreground">by: system · {m.at.slice(0, 16).replace("T", " ")}</p>
+                </li>
+              ))}
               {card.activities.map((a) => (
                 <li key={a.id} className="rounded-lg border bg-muted/30 p-2.5 text-sm">
                   <p className="font-medium">

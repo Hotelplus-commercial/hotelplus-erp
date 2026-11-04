@@ -22,7 +22,8 @@ import {
   thShort, topLabels, urgentLists, validPick, windowStats, RENEWAL_SLA, CHURN_PILL,
   type Actor, type Highlight, type OwnerView, type PKind, type Range, type RenewalItem, type Stage, type TileKey, type WindowStats,
 } from "@/lib/renewal-r2";
-import { RN2, RN2_OUTCOME_TH, RN2_STAGE_TH, RN2_ZONE_TH, aeNameTh } from "@/lib/ps-glossary";
+import { RN2, RN2_OUTCOME_TH, RN2_STAGE_TH, RN2_ZONE_TH, RENEWAL_OWNER_ONLY_HINT, RENEWAL_OWNER_ONLY_TOOLTIP, RENEWAL_TEST_BANNER, RENEWAL_TEST_SWITCH, aeNameTh } from "@/lib/ps-glossary";
+import { isRenewalTestMode, setTestMember } from "@/lib/renewal-test-actor";
 import { cn } from "@/lib/utils";
 
 const pct = (v: number | null) => (v == null ? "—" : `${v.toFixed(1)}%`);
@@ -209,6 +210,7 @@ export function RenewalCardR2({ data }: { data: TabR1Data | undefined }) {
     setTile(k); setTileChip(k); applyH({ ...h, ids: lists[k].map((i) => i.contract_id) });
   };
   const early = (i: RenewalItem) => {
+    if (actor.role === "AE") setTestMember(actor.id); // UF2: carry the acting AE member into the AE Workspace / Wizard (testing mode)
     writeEarlyHandoff({ contract_id: i.contract_id, hotel_id: i.hotel_id, hotel_name: i.hotel_name, service: i.service, end: i.end, ae: i.ae });
     return `/ps/ae-workspace/dashboard?${EARLY_PARAM}=${encodeURIComponent(i.contract_id)}${demo ? "&demo=1" : ""}#renewal-activities`;
   };
@@ -239,6 +241,7 @@ export function RenewalCardR2({ data }: { data: TabR1Data | undefined }) {
             </select>
           </label>
           {demo && <label className="rn2-sim"><input type="checkbox" checked={sim} onChange={(e) => setSim(e.target.checked)} />{RN2.sim}</label>}
+          {isRenewalTestMode() && <span className="rn2-test-banner" data-testid="rn2-test-banner">{RENEWAL_TEST_BANNER(actor.role === "OTHER" ? RN2.actOther : actor.role, actor.role === "PM" ? actor.id : actor.role === "AE" ? aeNameTh(actor.id) : "—")}</span>}
         </div>
       )}
 
@@ -419,7 +422,7 @@ export function RenewalCardR2({ data }: { data: TabR1Data | undefined }) {
                             <div className="rn2-col-head"><strong>{RN2_STAGE_TH[s]} · {list.length}</strong>{hl && <span className="rn2-match">{RN2.status.match(m)}</span>}<button type="button" onClick={() => setOpen(open.filter((x) => x !== s))}>{RN2.status.colHide}</button></div>
                             {list.length ? list.map((i) => (
                               <RnCard key={i.contract_id} i={i} today={today} now={now} rec={recOf(i)} dim={hl && !hit(i)} hot={hl && hit(i)} actor={actor}
-                                earlyHref={canEarlyCreate(actor, i) ? () => early(i) : null}
+                                earlyHref={canEarlyCreate(actor, i) ? () => early(i) : null} onSwitch={i.ae ? () => setActAs(i.ae!) : null}
                                 onReason={(rec) => setDlg({ item: i, rec })} />
                             )) : <p className="rn2-empty">{RN2.status.emptyStage}</p>}
                           </div>
@@ -456,7 +459,7 @@ function topicText(k: TileKey, i: RenewalItem, today: string) {
 }
 
 /* ---------------- §5.4 contract card ---------------- */
-function RnCard({ i, today, now, rec, dim, hot, actor, earlyHref, onReason }: { i: RenewalItem; today: string; now: string; rec: RenewalReason | null; dim: boolean; hot: boolean; actor: Actor; earlyHref: (() => string) | null; onReason: (rec: RenewalReason | null) => void }) {
+export function RnCard({ i, today, now, rec, dim, hot, actor, earlyHref, onSwitch, onReason }: { i: RenewalItem; today: string; now: string; rec: RenewalReason | null; dim: boolean; hot: boolean; actor: Actor; earlyHref: (() => string) | null; onSwitch?: (() => void) | null; onReason: (rec: RenewalReason | null) => void }) {
   const C = RN2.card;
   const past = isPastDue(i, today);
   const sd = stageDays(i, today); const st = stageTone(i, today);
@@ -480,6 +483,13 @@ function RnCard({ i, today, now, rec, dim, hot, actor, earlyHref, onReason }: { 
           </dl>
           {isEarlyRequest(i) && i.stage !== "NOT_STARTED" && <span className="rn2-tag">{C.earlyTag}</span>}
           {earlyHref && <a className="rn2-early" href="#" onClick={(e) => { e.preventDefault(); window.location.assign(earlyHref()); }}>{i.card_id || today >= scanDateOf(i.end) ? C.btnStart : C.btnEarly}</a>}
+          {/* R2.1 UF2: non-owners see the owner-only button disabled + hint (own-only rule unchanged) */}
+          {!earlyHref && i.stage === "NOT_STARTED" && (
+            <div className="rn2-early-off">
+              <button type="button" disabled aria-disabled="true" title={RENEWAL_OWNER_ONLY_TOOLTIP}>{i.card_id || today >= scanDateOf(i.end) ? C.btnStart : C.btnEarly}</button>
+              <small>{RENEWAL_OWNER_ONLY_HINT(aeNameTh(i.ae))}{isRenewalTestMode() && onSwitch && <> · <button type="button" className="rn2-link" onClick={onSwitch}>{RENEWAL_TEST_SWITCH(aeNameTh(i.ae))}</button></>}</small>
+            </div>
+          )}
         </>
       )}
       {i.stage === "RENEWED" && (
