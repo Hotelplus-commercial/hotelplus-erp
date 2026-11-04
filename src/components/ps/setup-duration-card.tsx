@@ -229,7 +229,7 @@ function JourneyChart({ tab, timings, st, period, quick, latest, versions, today
             return <g key={`b-${l.id}`}>
               <rect x={x(b.start)} y={q.c - 11} width={Math.max(0, x(b.ok) - x(b.start))} height={22} rx={6} className="sd-box-ok" />
               <rect x={x(b.ok)} y={q.c - 11} width={Math.max(0, x(b.due) - x(b.ok))} height={22} rx={6} className="sd-box-near" />
-              <text x={x(b.due) + 4} y={q.c - 13} className="sd-within">{SD.within(b.due)}</text>
+              <text x={x(b.due) + 5} y={q.c + 3.5} className="sd-within">{SD.within(b.due)}</text>
             </g>;
           })}
           <path d={stair} className="sd-stair" fill="none" />

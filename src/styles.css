@@ -1747,3 +1747,6 @@ textarea.r1-input{height:auto;padding:6px 8px;resize:vertical;}
 .sd-pager{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:flex-end;font-size:12.5px;color:var(--text-secondary);}
 .sd-pager button{min-width:28px;height:28px;border-radius:7px;border:1px solid var(--border-subtle);background:var(--card);}
 .sd-pager button:disabled{opacity:.4;}.sd-pager button.is-on{background:var(--accent-soft);color:var(--accent-strong);font-weight:700;}
+.sd-table td .sd-pill-stat{white-space:nowrap;font-size:11px;padding:2px 7px;}
+.sd-section .sd-table td,.sd-section .sd-table th{padding:6px 6px;}
+.sd-section .sd-table td:first-child{white-space:normal;min-width:120px;}
