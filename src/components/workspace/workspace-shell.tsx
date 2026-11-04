@@ -25,20 +25,48 @@ import { WB } from "@/lib/ps-glossary";
 const fmt = (iso: string) => new Date(iso).toLocaleString("th-TH", { dateStyle: "medium", timeStyle: "short" });
 const RANGES: { key: DateRange; label: string }[] = [{ key: "today", label: "วันนี้" }, { key: "7d", label: "7 วัน" }, { key: "14d", label: "14 วัน" }];
 
-/** ONE generic shell (spec Layer 1 §2). Renders only from `config`. */
-export function WorkspaceShell({ config, demo, ticket }: { config: WorkspaceConfig; demo: boolean; ticket?: string | undefined }) {
+/** R3.2 WB12: the role the page plays (lifted to page level on BD App › Workspace; other workspaces keep their own). */
+export type WsRoleState = { role: Role | "BDM"; setRole: (r: Role | "BDM") => void; bdMember: string; setBdMember: (m: string) => void };
+
+/** The existing testing role switcher (options / defaults unchanged). BDM + BD member pick only on BD in testing mode. */
+export function RoleSwitcher({ dept, state }: { dept: Dept; state: WsRoleState }) {
+  const { role, setRole, bdMember, setBdMember } = state;
+  const wbTest = dept === "BD" && isRenewalTestMode();
+  const roles: (Role | "BDM")[] = ["PM", ...DEPTS];
+  if (wbTest) roles.splice(roles.indexOf("BD"), 0, "BDM");
+  return (
+    <>
+      <label className="flex items-center gap-2 text-sm">
+        <span className="text-muted-foreground">สวมบท (โหมดทดสอบ)</span>
+        <select aria-label="สวมบท" className="rounded-md border bg-background px-2 py-1" value={role} onChange={(e) => setRole(e.target.value as Role | "BDM")}>
+          {roles.map((r) => <option key={r} value={r}>สวมบท {r}</option>)}
+        </select>
+      </label>
+      {wbTest && role === "BD" && (
+        <label className="flex items-center gap-2 text-sm">
+          <select aria-label={WB.memberAria} className="rounded-md border bg-background px-2 py-1" value={bdMember} onChange={(e) => setBdMember(e.target.value)}>
+            {WB_TEST_BDS.map((m) => <option key={m.member_id} value={m.member_id}>{WB.member(m.label)}</option>)}
+          </select>
+          <Badge variant="outline" className="text-[10px]">{WB.testData}</Badge>
+        </label>
+      )}
+    </>
+  );
+}
+
+/** ONE generic shell (spec Layer 1 §2). Renders only from `config`. R3.2: `roleState` given → the page owns the switcher (not rendered here). */
+export function WorkspaceShell({ config, demo, ticket, roleState, onGoBdm }: { config: WorkspaceConfig; demo: boolean; ticket?: string | undefined; roleState?: WsRoleState; onGoBdm?: () => void }) {
   const [ready, setReady] = useState(false);
   useEffect(() => { setRenewalDemo(demo); setTicketDemo(demo); setReady(true); }, [demo]);
   // R3.1 WB2: BD Workspace adds สวมบท BDM and a BD member pick under สวมบท BD (testing mode only). Default role unchanged.
-  const [role, setRole] = useState<Role | "BDM">(config.dept_key);
-  const [bdMember, setBdMember] = useState<string>(WB_TEST_BDS[0].member_id);
+  const [ownRole, setOwnRole] = useState<Role | "BDM">(config.dept_key);
+  const [ownMember, setOwnMember] = useState<string>(WB_TEST_BDS[0].member_id);
   const [range, setRange] = useState<DateRange>("today");
-  useEffect(() => { setRole(config.dept_key); }, [config.dept_key]);
+  useEffect(() => { if (!roleState) setOwnRole(config.dept_key); }, [config.dept_key]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!ready) return null;
-  const wbTest = config.dept_key === "BD" && isRenewalTestMode();
+  const rs: WsRoleState = roleState ?? { role: ownRole, setRole: setOwnRole, bdMember: ownMember, setBdMember: setOwnMember };
+  const { role, bdMember } = rs;
   const deptRole: Role = role === "BDM" ? "BD" : role; // BDM works other ticket types as BD (unchanged rules)
-  const roles: (Role | "BDM")[] = ["PM", ...DEPTS];
-  if (wbTest) roles.splice(roles.indexOf("BD"), 0, "BDM");
 
   return (
     <div className="space-y-4">
@@ -46,20 +74,7 @@ export function WorkspaceShell({ config, demo, ticket }: { config: WorkspaceConf
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-xl font-semibold">{config.label}</h2>
         <div className="flex flex-wrap items-center gap-3">
-          <label className="flex items-center gap-2 text-sm">
-            <span className="text-muted-foreground">สวมบท (โหมดทดสอบ)</span>
-            <select aria-label="สวมบท" className="rounded-md border bg-background px-2 py-1" value={role} onChange={(e) => setRole(e.target.value as Role | "BDM")}>
-              {roles.map((r) => <option key={r} value={r}>สวมบท {r}</option>)}
-            </select>
-          </label>
-          {wbTest && role === "BD" && (
-            <label className="flex items-center gap-2 text-sm">
-              <select aria-label={WB.memberAria} className="rounded-md border bg-background px-2 py-1" value={bdMember} onChange={(e) => setBdMember(e.target.value)}>
-                {WB_TEST_BDS.map((m) => <option key={m.member_id} value={m.member_id}>{WB.member(m.label)}</option>)}
-              </select>
-              <Badge variant="outline" className="text-[10px]">{WB.testData}</Badge>
-            </label>
-          )}
+          {!roleState && <RoleSwitcher dept={config.dept_key} state={rs} />}
           <div role="group" aria-label="ช่วงวันที่" className="flex rounded-md border p-0.5">
             {RANGES.map((r) => (
               <button key={r.key} type="button" aria-pressed={range === r.key} onClick={() => setRange(r.key)}
@@ -88,7 +103,7 @@ export function WorkspaceShell({ config, demo, ticket }: { config: WorkspaceConf
           ))}
         </Lane>
         <Lane title="🎫 Tickets" focus>
-          {config.ticket_target_dept === "BD" && <WelcomeBackSection actor={wbActorOf(role, bdMember)} demo={demo} initialTicket={ticket} />}
+          {config.ticket_target_dept === "BD" && <WelcomeBackSection actor={wbActorOf(role, bdMember)} demo={demo} initialTicket={ticket} {...(onGoBdm ? { onGoBdm } : {})} />}
           <TicketsLane dept={config.ticket_target_dept} role={deptRole} initialTicket={ticket} />
         </Lane>
       </div>
