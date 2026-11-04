@@ -33,7 +33,7 @@ const live = () => { TK.setTicketDemo(true); TK.setTicketDemo(false); };
 /* ---------- mounting the real BD Workspace ---------- */
 const roots: (() => unknown)[] = [];
 afterEach(() => { roots.splice(0).forEach((f) => f()); document.body.innerHTML = ''; });
-const until = async (f: () => boolean, ms = 8000) => { const t0 = Date.now(); while (!f()) { if (Date.now() - t0 > ms) throw new Error('timeout: ' + document.body.textContent?.slice(0, 400)); await new Promise((r) => setTimeout(r, 15)); } };
+const until = async (f: () => boolean, ms = 3500) => { const t0 = Date.now(); while (!f()) { if (Date.now() - t0 > ms) throw new Error('timeout: ' + document.body.textContent?.slice(0, 400)); await new Promise((r) => setTimeout(r, 15)); } };
 async function mountShell(dept: 'BD' | 'PS', demo: boolean, ticket?: string) {
   const { act, createElement: h } = await import('react');
   const { createRoot } = await import('react-dom/client');
