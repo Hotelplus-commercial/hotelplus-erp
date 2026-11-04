@@ -212,7 +212,7 @@ function historyText(t: L0Ticket, a: L0Ticket["audit"][number]): string {
 function Sec({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
   return (
     <section data-sec={id} className="space-y-1.5">
-      <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title}</h4>
+      <h4 className="text-xs font-semibold text-muted-foreground">{title}</h4>
       {children}
     </section>
   );
