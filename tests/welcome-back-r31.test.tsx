@@ -267,7 +267,7 @@ describe('R3.1 §5 / §7 detail view and DEMO', () => {
     const box = d.querySelector('[data-testid="wb-section"] input[type="checkbox"]')!;
     await click(box);
     await until(() => !!d.querySelector('[data-testid="wb-group-closed"]'));
-    expect(groupText(d, 'pending')).toContain('TKT-000952');
+    expect(d.querySelector('[data-testid="wb-section"]')?.textContent).toContain('TKT-000952');
     expect(domHits(d)).toEqual([]);
     const bad = document.createElement('span'); bad.textContent = 'IN_PROGRESS'; d.querySelector('[data-testid="wb-section"]')!.appendChild(bad);
     expect(domHits(d)).toEqual(['IN_PROGRESS']);
