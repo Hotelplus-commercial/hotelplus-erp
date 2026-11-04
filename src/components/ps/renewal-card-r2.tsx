@@ -459,7 +459,7 @@ function topicText(k: TileKey, i: RenewalItem, today: string) {
 }
 
 /* ---------------- §5.4 contract card ---------------- */
-function RnCard({ i, today, now, rec, dim, hot, actor, earlyHref, onSwitch, onReason }: { i: RenewalItem; today: string; now: string; rec: RenewalReason | null; dim: boolean; hot: boolean; actor: Actor; earlyHref: (() => string) | null; onSwitch?: (() => void) | null; onReason: (rec: RenewalReason | null) => void }) {
+export function RnCard({ i, today, now, rec, dim, hot, actor, earlyHref, onSwitch, onReason }: { i: RenewalItem; today: string; now: string; rec: RenewalReason | null; dim: boolean; hot: boolean; actor: Actor; earlyHref: (() => string) | null; onSwitch?: (() => void) | null; onReason: (rec: RenewalReason | null) => void }) {
   const C = RN2.card;
   const past = isPastDue(i, today);
   const sd = stageDays(i, today); const st = stageTone(i, today);
