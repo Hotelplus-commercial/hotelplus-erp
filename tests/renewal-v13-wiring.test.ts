@@ -23,8 +23,9 @@ describe('v1.3 §2 · one contract store (DEMO)', () => {
   test('bundled renewal contracts live in the demo contract state; the resolver finds them there by id', () => {
     S.setRenewalDemo(true);
     expect(M.mainContractById('CT-HTL0042')?.lines[0]?.unit_price).toBe(30000);
+    const byId = S.resolveSourceContract({ id: 'RN-X', hotelId: 'HTL0042', contract_id: 'CT-HTL0042' });
+    expect(byId.ok && byId.via).toBe('MAIN_ID');
     const r = S.resolveSourceContract({ id: 'RN-1', hotelId: 'HTL0042', contractEnd: '24 Sep 2026' });
-    expect(r.ok && r.via).toBe('MAIN_ID');
     expect(r.ok && r.contract.contract_id).toBe('CT-HTL0042');
     expect(r.ok && r.contract.terms.end_date).toBe('2026-09-24');
     S.setRenewalDemo(false);
