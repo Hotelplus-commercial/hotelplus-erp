@@ -530,7 +530,7 @@ export const SD = {
     mode: "เทียบแบบ", equal: "จำนวนสัญญาเท่ากัน (แนะนำ)", custom: "Custom ช่วง A vs ช่วง B",
     needPeriod: "เลือก “ช่วง Go Live” เป็นเดือนหรือไตรมาสก่อน ระบบจะหาช่วงในอดีตที่มีจำนวนสัญญาเท่ากันมาเทียบให้",
     pick: "ช่วงที่เทียบ", option: (l: string, n: number, eq: boolean) => `${l} · ${n} สัญญา${eq ? " (เท่ากัน)" : ""}`,
-    descEqual: (a: string, n: number, b: string, m: number, back: string, k: number) => `${a} Go Live ${n} สัญญา เทียบกับ ${b} ${m} สัญญา · ช่วงที่จำนวนเท่ากันใน${back}ก่อนหน้ามี ${k} ช่วง เลือกช่วงล่าสุดให้`,
+    descEqual: (a: string, n: number, b: string, m: number, back: string, k: number) => `${a} Go Live ${n} สัญญา เทียบกับ ${b} ${m} สัญญา · ช่วงที่จำนวนเท่ากันใน ${back}ก่อนหน้ามี ${k} ช่วง เลือกช่วงล่าสุดให้`,
     descNearest: (a: string, n: number, b: string, m: number) => `${a} Go Live ${n} สัญญา เทียบกับ ${b} ${m} สัญญา · ไม่มีช่วงที่จำนวนเท่ากัน ใช้ช่วงที่ใกล้เคียงที่สุด`,
     noneA: (a: string) => `${a} ยังไม่มีสัญญา Go Live`, back24: "24 เดือน", back8: "8 ไตรมาส",
     rangeA: "ช่วง A", rangeB: "ช่วง B", warn: "จำนวนสัญญาต่างกันมาก ตีความผลด้วยความระวัง",
