@@ -7,7 +7,7 @@ import { Chip } from "@/components/crm/crm-ui";
 import { InfoButton } from "@/components/ps/dash-card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { APPROVER_ROLE_TH, RENEWAL_LABEL_TH as L, RENEWAL_RECO_TH, renewalReqStatusTh } from "@/lib/ps-glossary";
+import { APPROVER_ROLE_TH, RENEWAL_COPY_CONTRACT_ID, RENEWAL_LABEL_TH as L, RENEWAL_RECO_TH, renewalReqStatusTh } from "@/lib/ps-glossary";
 import { usePsRenewal, type RenewalCard } from "@/lib/ps-renewal";
 import { isOverdue, minRaiseApplied, type ApproverRole, type RecoSnapshot, type RenewalRequest } from "@/lib/renewal-rules";
 import {
@@ -62,9 +62,11 @@ export function RenewalRequestPanel({ card, currentUser }: { card: RenewalCard; 
   const req = latestRequestFor(card.id);
   const done = card.status === "COMPLETED" || card.status === "CHURN";
   const search = (step?: number) => ({ ...(isRenewalDemo() ? { demo: 1 } : {}), ...(step ? { step } : {}) }) as never;
+  const [miss, setMiss] = useState<{ text: string; contract_id: string | null } | null>(null);
   const openWizard = (step?: number) => {
     const o = startRenewal(card);
-    if (!o.ok) { toast.error(o.error); return; }
+    if (!o.ok) { if (o.miss) setMiss({ text: o.error, contract_id: o.miss.contract_id }); else toast.error(o.error); return; }
+    setMiss(null);
     void navigate({ to: "/ps/contract-wizard/renew/$contractId", params: { contractId: o.req.source_contract_id }, search: search(step) });
   };
   const resend = (r: RenewalRequest) => { const o = sendRenewalLink(r.id); o.ok ? toast.success(L.resendLive) : toast.error(o.error); };
@@ -115,6 +117,12 @@ export function RenewalRequestPanel({ card, currentUser }: { card: RenewalCard; 
           </>
         )}
       </div>
+      {miss && (
+        <div role="alert" className="flex flex-wrap items-center gap-2 rounded-lg border border-destructive/40 bg-destructive/5 p-2.5 text-sm">
+          <span className="min-w-0 flex-1">{miss.text}</span>
+          {miss.contract_id && <Button size="sm" variant="outline" onClick={() => { void navigator.clipboard?.writeText(miss.contract_id!); toast.success(miss.contract_id!); }}>{RENEWAL_COPY_CONTRACT_ID}</Button>}
+        </div>
+      )}
     </section>
   );
 }
