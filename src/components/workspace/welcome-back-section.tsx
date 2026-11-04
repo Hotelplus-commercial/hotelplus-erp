@@ -8,14 +8,16 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { RefreshCw } from "lucide-react";
 import {
-  assignWelcomeBack, cancelWelcomeBack, finishWelcomeBack, startWelcomeBack, useTickets,
+  TICKETS_KEY, assignWelcomeBack, cancelWelcomeBack, finishWelcomeBack, reloadTickets, startWelcomeBack, useTickets,
   type L0Ticket, type WbActor, type WbCtx, type WbOut,
 } from "@/lib/tickets-l0";
-import { CONTRACT_AGE_DEMO_NOW, contractAgeDemo, demoWelcomeBackSink, useDemoWelcomeBack } from "@/lib/contract-age-demo";
+import { CONTRACT_AGE_DEMO_NOW, contractAgeDemo, demoWelcomeBackSink, reloadDemoWelcomeBack, useDemoWelcomeBack } from "@/lib/contract-age-demo";
 import {
-  WB_FILTER_MEMBERS, WB_TEST_BDM, WB_TEST_BDS, isWbSender, wbActions, wbBdGroups, wbBdmGroups, wbMerge, wbMissingSnapshot, wbPill, wbRowSub, wbVisible, type WbGroup,
+  WB_FILTER_MEMBERS, WB_TEST_BDM, WB_TEST_BDS, isWbSender, wbActions, wbAudit, wbBdGroups, wbBdmGroups, wbMerge, wbMissingSnapshot, wbPill, wbRowSub, wbVisible, type WbGroup,
 } from "@/lib/welcome-back-routing";
+import { pageDateLabel } from "@/lib/demo-session";
 import { WB } from "@/lib/ps-glossary";
 import { cn } from "@/lib/utils";
 
@@ -26,10 +28,20 @@ const thDate = (iso: string | null | undefined) => {
 };
 const dash = (v: string | null | undefined) => (v && v.trim() ? v : "—");
 
-/** Welcome Back tickets this lane works on + the DEMO write context. */
+/** R3.3 WB17: re-read both stores (real ticket store from browser storage · DEMO session store). */
+export function refreshWelcomeBack() { reloadTickets(); reloadDemoWelcomeBack(); }
+/** Welcome Back tickets this lane works on + the DEMO write context. Fresh reads on open, focus / visible again, and storage events. */
 export function useWelcomeBackSource(demo: boolean): { tickets: L0Ticket[]; ctx: WbCtx | undefined } {
   const store = useTickets();
   const sink = useDemoWelcomeBack();
+  useEffect(() => {
+    refreshWelcomeBack();
+    const onFocus = () => refreshWelcomeBack();
+    const onVis = () => { if (document.visibilityState === "visible") refreshWelcomeBack(); };
+    const onStorage = (e: StorageEvent) => { if (!e.key || e.key === TICKETS_KEY) refreshWelcomeBack(); };
+    window.addEventListener("focus", onFocus); document.addEventListener("visibilitychange", onVis); window.addEventListener("storage", onStorage);
+    return () => { window.removeEventListener("focus", onFocus); document.removeEventListener("visibilitychange", onVis); window.removeEventListener("storage", onStorage); };
+  }, [demo]);
   return useMemo(() => {
     if (!demo) return { tickets: store.filter((t) => t.type === "WELCOME_BACK"), ctx: undefined };
     const seed = contractAgeDemo().tickets;
