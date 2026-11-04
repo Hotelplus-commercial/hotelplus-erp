@@ -31,7 +31,7 @@ export function BdWorkspacePage({ demo: urlDemo, ticket, tab: urlTab, onTabChang
     window.addEventListener("focus", read); document.addEventListener("visibilitychange", onVis);
     return () => { off(); window.removeEventListener("focus", read); document.removeEventListener("visibilitychange", onVis); };
   }, []);
-  useEffect(() => { if (!urlDemo) setForceNormal(false); }, [urlDemo]);
+  useEffect(() => { if (!urlDemo || psDemo) setForceNormal(false); }, [urlDemo, psDemo]);
   const demo = !forceNormal && (urlDemo || psDemo === true);
   const mismatch = psDemo !== null && demo !== psDemo;
   // Follow PS DEMO in the URL too, so the sidebar and the bell agree with this page.
