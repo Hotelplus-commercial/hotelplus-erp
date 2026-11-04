@@ -5,7 +5,7 @@ import { useEffect, useState, useSyncExternalStore } from 'react';
 import { stageCloudDoc } from './cloud-sync';
 import { DEMO_NOW } from './ps-demo-fixture';
 
-export type TicketType = 'UPSELL_PITCH' | 'RENEWAL_DUE' | 'GRADE_RISK' | 'SURVEY_LOW' | 'CONTRACT_FOLLOWUP' | 'SERVICING_STALL' | 'CUSTOMER_ENTITY_CHANGE' | 'CONTRACT_SIGNAL' | 'WELCOME_BACK';
+export type TicketType = 'UPSELL_PITCH' | 'RENEWAL_DUE' | 'GRADE_RISK' | 'SURVEY_LOW' | 'CONTRACT_FOLLOWUP' | 'SERVICING_STALL' | 'CUSTOMER_ENTITY_CHANGE' | 'CONTRACT_SIGNAL' | 'WELCOME_BACK' | 'HANDOVER_FIX';
 /** Tab R3 §6.1 WELCOME_BACK snapshot (read-only for BD). */
 export type WelcomeBackSnapshot = {
   contract_info: Record<string, string>; package_rate: Record<string, string>; exit_status: Record<string, string>;
@@ -52,7 +52,7 @@ export type L0Status = 'NEW' | 'ACK' | 'IN_PROGRESS' | 'DONE' | 'CANCELLED';
 export type TicketAssignee = { member_id: string; display: string; role: string };
 export type L0Ticket = {
   ticket_id: string; type: TicketType; source_app: 'PS_DASHBOARD' | 'BD_APP' | 'PS_DASHBOARD_BOT'; created_by: Creator; target_dept: Dept;
-  subject_ref: { hotel_id: string; hotel_name: string; gap_service: string; service_line?: string; deal_id?: string; card_id?:string; service_variant?:string; contract_id?: string; service?: string };
+  subject_ref: { hotel_id: string; hotel_name: string; gap_service: string; service_line?: string; deal_id?: string; card_id?:string; service_variant?:string; contract_id?: string; service?: string; /** Tab R4 §10.2 HANDOVER_FIX (optional) */ checklist_item_id?: string };
   payload: { readiness_tier: string; chips: string[]; note: string } & BotPayload;
   /** Tab R1 §6.1: optional single recipient (target_dept is derived from it). */
   assignee?: TicketAssignee;
@@ -66,7 +66,7 @@ export const DEPTS_WITH_WORKSPACE: Dept[] = [...DEPTS];
 export const OPEN_STATUSES: L0Status[] = ['NEW', 'ACK', 'IN_PROGRESS'];
 /** Tab R1 §6.6: NEW = New · legacy ACK shown as กำลังทำ (stored value unchanged). */
 export const STATUS_TH: Record<L0Status, string> = { NEW: 'New', ACK: 'กำลังทำ', IN_PROGRESS: 'กำลังทำ', DONE: 'เสร็จ', CANCELLED: 'ยกเลิก' };
-export const TYPE_TH: Record<TicketType, string> = { UPSELL_PITCH: 'เสนอขายบริการเพิ่ม', RENEWAL_DUE: 'ใกล้ครบสัญญา', GRADE_RISK: 'เสี่ยงเกรดการชำระ (D)', SURVEY_LOW: 'คะแนนบริการต่ำ', CONTRACT_FOLLOWUP: 'ติดตามดีลค้างข้ามเดือน', SERVICING_STALL: 'ติดตามการ์ดเกิน SLA', CUSTOMER_ENTITY_CHANGE: 'เปลี่ยนนิติบุคคล / ผู้ลงนาม', CONTRACT_SIGNAL: 'แจ้งเรื่องของสัญญา', WELCOME_BACK: 'Welcome Back' };
+export const TYPE_TH: Record<TicketType, string> = { UPSELL_PITCH: 'เสนอขายบริการเพิ่ม', RENEWAL_DUE: 'ใกล้ครบสัญญา', GRADE_RISK: 'เสี่ยงเกรดการชำระ (D)', SURVEY_LOW: 'คะแนนบริการต่ำ', CONTRACT_FOLLOWUP: 'ติดตามดีลค้างข้ามเดือน', SERVICING_STALL: 'ติดตามการ์ดเกิน SLA', CUSTOMER_ENTITY_CHANGE: 'เปลี่ยนนิติบุคคล / ผู้ลงนาม', CONTRACT_SIGNAL: 'แจ้งเรื่องของสัญญา', WELCOME_BACK: 'Welcome Back', HANDOVER_FIX: 'ขอแก้งานส่งมอบ' };
 const OPEN: L0Status[] = ['NEW', 'ACK', 'IN_PROGRESS'];
 /** Tab R1 §6.6 — every type: NEW → IN_PROGRESS → DONE (+ CANCELLED by creator). ACK is never offered; legacy ACK continues like IN_PROGRESS. */
 const NEXT: Partial<Record<L0Status, L0Status>> = { NEW: 'IN_PROGRESS', ACK: 'DONE', IN_PROGRESS: 'DONE' };

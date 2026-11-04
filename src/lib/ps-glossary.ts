@@ -30,11 +30,11 @@ export function ticketStatusTh(status: string, waitingReason?: string | null, re
 export const SOURCE_LABEL = { PS_CASE: "PS เปิดเอง", MEETING: "จากการประชุม", FOLLOWUP: "ติดตามจากแท็บอื่น", BOT: "ระบบสร้าง" } as const;
 /** R1.2 §1 — PS Dashboard detail tabs, left → right. Keys are the stored tab keys (never renamed). */
 export const DASHBOARD_TABS: readonly (readonly [string, string])[] = [
-  ["ps", "ต่อสัญญา & ราคา"],
+  ["ps", "สัญญา & ราคา"], // Tab R4 §1 (was ต่อสัญญา & ราคา) — label only, key unchanged
   ["ac", "ลูกหนี้ & ค่าใช้จ่ายรายสัญญา"],
   ["meeting", "Meeting & Survey"],
   ["task", "ติดตามงานผู้ให้บริการ"],
-  ["servicing", "On-board"],
+  ["servicing", "On-board / Off-board"], // Tab R4 §1 (was On-board) — label only, key unchanged
 ];
 /** BD-AC อยู่ที่ The Office APP › BD-AC (ย้ายตาม RV23) — old ?tab=bdac links redirect via src/lib/office-bdac.ts. */
 export const CONTRACT_STATUS_TH: Record<string, string> = { ACTIVE: "ใช้งาน", INACTIVE: "สิ้นสุด", UPCOMING: "รอเริ่ม", DRAFT: "ร่าง" };
