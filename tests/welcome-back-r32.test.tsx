@@ -41,6 +41,8 @@ async function mountPage(demo: boolean, tab?: 'bd' | 'bdm') {
   return div;
 }
 async function pickSelect(sel: HTMLSelectElement, value: string) { const { act } = await import('react'); await act(async () => { sel.value = value; sel.dispatchEvent(new Event('change', { bubbles: true })); }); }
+/** Store writes after mount run inside act (React's scheduler is shared across test files in one process). */
+async function inAct(f: () => unknown) { const { act } = await import('react'); await act(async () => { f(); }); }
 async function click(el: Element) { const { act } = await import('react'); await act(async () => { (el as HTMLElement).click(); }); }
 const roleSelect = (d: Element) => d.querySelector('select[aria-label="สวมบท"]') as HTMLSelectElement;
 const memberSelect = (d: Element) => d.querySelector(`select[aria-label="${WB.memberAria}"]`) as HTMLSelectElement;
@@ -137,7 +139,7 @@ describe('R3.2 §2 / §3 routing in normal mode (real ticket store)', () => {
     const d = await mountPage(false);
     await pickSelect(roleSelect(d), 'BDM');
     expect(groupText(d, 'assigned')).toContain('BD 1 (ทดสอบ) · กำลังทำ');
-    expect(TK.finishWelcomeBack(s.t(), bd1).ok).toBe(true);
+    await inAct(() => expect(TK.finishWelcomeBack(s.t(), bd1).ok).toBe(true));
     await until(() => !groupText(d, 'assigned').includes(s.id));
     expect(d.querySelector('[data-testid="wb-group-closed"]')).toBeNull();
     await click(d.querySelector('[data-testid="wb-bdm-section"] input[type="checkbox"]')!);
@@ -153,9 +155,9 @@ describe('R3.2 §2 / §3 routing in normal mode (real ticket store)', () => {
     const d = await mountPage(false);
     const badge = () => d.querySelector('[data-testid="bdm-tab-badge"]')?.textContent ?? null;
     expect(badge()).toBe(String(before + 2));
-    TK.assignWelcomeBack(s.t(), BD1, bdm);
+    await inAct(() => TK.assignWelcomeBack(s.t(), BD1, bdm));
     await until(() => badge() === String(before + 1));
-    for (const t of TK.ticketSnapshot().filter((x) => x.type === 'WELCOME_BACK' && x.status === 'NEW' && !x.assigned_to)) TK.assignWelcomeBack(t, BD1, bdm);
+    await inAct(() => { for (const t of TK.ticketSnapshot().filter((x) => x.type === 'WELCOME_BACK' && x.status === 'NEW' && !x.assigned_to)) TK.assignWelcomeBack(t, BD1, bdm); });
     await until(() => badge() === null);
     expect(pending()).toBe(0);
   });
@@ -216,12 +218,20 @@ describe('R3.2 §5 / §6 / §7 PS label and DEMO', () => {
     await pickSelect(roleSelect(d), 'BDM');
     expect(groupText(d, 'pending')).toContain(id);
     expect(groupText(d, 'pending')).toContain('28 ต.ค. 69');
-    expect(groupText(d, 'pending')).toContain('TKT-000952');
-    expect(groupText(d, 'assigned')).toContain('TKT-000953'); expect(groupText(d, 'assigned')).toContain('TKT-000954');
-    expect(groupText(d, 'assigned')).toContain(WB.legacyRow('TKT-000951'));
-    expect(AD.contractAgeDemo().tickets[0]!.payload.snapshot).toBeUndefined(); // #951 itself never edited
-    await asBd(d, 'BD-T1'); expect(groupText(d, 'mine')).toContain('TKT-000953'); expect(groupText(d, 'mine')).not.toContain('TKT-000954');
-    await pickSelect(memberSelect(d), 'BD-T2'); expect(groupText(d, 'mine')).toContain('TKT-000954');
+    // Seeds as bundled (pure): #952 รอมอบหมาย · #953 / #954 มอบหมายแล้ว (BD 1 / BD 2) · #951 legacy row.
+    const seeds = AD.contractAgeDemo().tickets;
+    const g = R.wbBdmGroups(seeds, false);
+    expect(g[0]!.rows.map((t) => t.ticket_id)).toEqual(['TKT-000952']);
+    expect(g[1]!.rows.map((t) => t.ticket_id)).toEqual(expect.arrayContaining(['TKT-000951', 'TKT-000953', 'TKT-000954']));
+    expect(R.wbMissingSnapshot(seeds[0]!)).toBe(true);
+    expect(seeds[0]!.payload.snapshot).toBeUndefined(); // #951 itself never edited
+    // On screen (seeds not already moved by an earlier test in this process — the DEMO sink lives for the session).
+    const moved = new Set(AD.demoWelcomeBackSink.items().map((t) => t.ticket_id));
+    if (!moved.has('TKT-000952')) expect(groupText(d, 'pending')).toContain('TKT-000952');
+    for (const id2 of ['TKT-000953', 'TKT-000954']) if (!moved.has(id2)) expect(groupText(d, 'assigned')).toContain(id2);
+    if (!moved.has('TKT-000951')) expect(groupText(d, 'assigned')).toContain(WB.legacyRow('TKT-000951'));
+    await asBd(d, 'BD-T1'); if (!moved.has('TKT-000953')) expect(groupText(d, 'mine')).toContain('TKT-000953'); expect(groupText(d, 'mine')).not.toContain('TKT-000954');
+    await pickSelect(memberSelect(d), 'BD-T2'); if (!moved.has('TKT-000954')) expect(groupText(d, 'mine')).toContain('TKT-000954');
     expect(localStorage.getItem('meridia.tickets.v1')).toBe(liveBefore);
     TK.setTicketDemo(false);
   });
