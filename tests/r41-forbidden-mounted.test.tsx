@@ -37,6 +37,7 @@ async function mount(which: 'ps' | 'servicing') {
   }
   const el = h(DashboardGlobal.Provider, { value }, body);
   const router = createRouter({ routeTree: createRootRoute({ component: () => el }), history: createMemoryHistory({ initialEntries: ['/'] }) });
+  if (!(document as { fonts?: unknown }).fonts) Object.defineProperty(document, 'fonts', { configurable: true, value: { ready: Promise.resolve(), addEventListener() {}, removeEventListener() {} } });
   const div = document.createElement('div'); document.body.appendChild(div);
   const root = createRoot(div); roots.push(() => act(() => root.unmount()));
   await act(async () => { await router.load(); root.render(h(QueryClientProvider, { client: new QueryClient() }, h(RouterProvider, { router } as never))); });
