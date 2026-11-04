@@ -5,7 +5,12 @@ import { useEffect, useState, useSyncExternalStore } from 'react';
 import { stageCloudDoc } from './cloud-sync';
 import { DEMO_NOW } from './ps-demo-fixture';
 
-export type TicketType = 'UPSELL_PITCH' | 'RENEWAL_DUE' | 'GRADE_RISK' | 'SURVEY_LOW' | 'CONTRACT_FOLLOWUP' | 'SERVICING_STALL' | 'CUSTOMER_ENTITY_CHANGE' | 'CONTRACT_SIGNAL';
+export type TicketType = 'UPSELL_PITCH' | 'RENEWAL_DUE' | 'GRADE_RISK' | 'SURVEY_LOW' | 'CONTRACT_FOLLOWUP' | 'SERVICING_STALL' | 'CUSTOMER_ENTITY_CHANGE' | 'CONTRACT_SIGNAL' | 'WELCOME_BACK';
+/** Tab R3 §6.1 WELCOME_BACK snapshot (read-only for BD). */
+export type WelcomeBackSnapshot = {
+  contract_info: Record<string, string>; package_rate: Record<string, string>; exit_status: Record<string, string>;
+  reasons: { primary: string[]; secondary: string | null; ae_note?: string };
+};
 export type Dept = 'BD' | 'ORM' | 'MARCOM' | 'PS' | 'AC' | 'AUTO' | 'HR' | 'OFFICE';
 export type Role = 'PM' | Dept;
 /** Pseudo-user for BOT-generated tickets (display "The Office"); never a switcher role, so BOT tickets have no CANCEL action. */
@@ -29,6 +34,8 @@ export type BotPayload = {
   contract_id?: string | null; meeting_id?: string | null;
   /** Tab R1 §6.1 CONTRACT_SIGNAL: always kind NEW here; labels = signal catalog keys; one batch per dialog send. */
   kind?: 'NEW'; labels?: string[]; batch_id?: string; drive_attachments?: { name: string; drive_url: string }[];
+  /** Tab R3 §6.1 WELCOME_BACK: snapshot + optional message; timeline only when shared; attachment links in drive_attachments. */
+  snapshot?: WelcomeBackSnapshot; message?: string; timeline_shared?: boolean; timeline?: { at: string; text: string; tone: string }[];
   phase?: 'P1'|'P2'|'P3'; lane?: 'AE'|'Specialist'|'ORM'|'Marcom'; days_in_phase?: number; sla_days?: number; target_days?: number; tone?: 'ok'|'amber'|'red'; current_stage?: string; owner_id?: string|null; recipient?: string; recipient_member_id?: string|null;
 };
 export type TicketAttachment = { id: string; name: string; size: number; mime: string; by: string; at: string; data_url: string };
@@ -59,7 +66,7 @@ export const DEPTS_WITH_WORKSPACE: Dept[] = [...DEPTS];
 export const OPEN_STATUSES: L0Status[] = ['NEW', 'ACK', 'IN_PROGRESS'];
 /** Tab R1 §6.6: NEW = New · legacy ACK shown as กำลังทำ (stored value unchanged). */
 export const STATUS_TH: Record<L0Status, string> = { NEW: 'New', ACK: 'กำลังทำ', IN_PROGRESS: 'กำลังทำ', DONE: 'เสร็จ', CANCELLED: 'ยกเลิก' };
-export const TYPE_TH: Record<TicketType, string> = { UPSELL_PITCH: 'เสนอขายบริการเพิ่ม', RENEWAL_DUE: 'ใกล้ครบสัญญา', GRADE_RISK: 'เสี่ยงเกรดการชำระ (D)', SURVEY_LOW: 'คะแนนบริการต่ำ', CONTRACT_FOLLOWUP: 'ติดตามดีลค้างข้ามเดือน', SERVICING_STALL: 'ติดตามการ์ดเกิน SLA', CUSTOMER_ENTITY_CHANGE: 'เปลี่ยนนิติบุคคล / ผู้ลงนาม', CONTRACT_SIGNAL: 'แจ้งเรื่องของสัญญา' };
+export const TYPE_TH: Record<TicketType, string> = { UPSELL_PITCH: 'เสนอขายบริการเพิ่ม', RENEWAL_DUE: 'ใกล้ครบสัญญา', GRADE_RISK: 'เสี่ยงเกรดการชำระ (D)', SURVEY_LOW: 'คะแนนบริการต่ำ', CONTRACT_FOLLOWUP: 'ติดตามดีลค้างข้ามเดือน', SERVICING_STALL: 'ติดตามการ์ดเกิน SLA', CUSTOMER_ENTITY_CHANGE: 'เปลี่ยนนิติบุคคล / ผู้ลงนาม', CONTRACT_SIGNAL: 'แจ้งเรื่องของสัญญา', WELCOME_BACK: 'Welcome Back' };
 const OPEN: L0Status[] = ['NEW', 'ACK', 'IN_PROGRESS'];
 /** Tab R1 §6.6 — every type: NEW → IN_PROGRESS → DONE (+ CANCELLED by creator). ACK is never offered; legacy ACK continues like IN_PROGRESS. */
 const NEXT: Partial<Record<L0Status, L0Status>> = { NEW: 'IN_PROGRESS', ACK: 'DONE', IN_PROGRESS: 'DONE' };
