@@ -42,7 +42,7 @@ export function liveAgeSources(data: TabR1Data, cards: GoLiveCard[]): AgeContrac
       contract_id: f.contract_id, hotel_id: f.hotel_id, hotel_name_en: b?.hotel_name_en ?? null, hotel_name_th: b?.hotel_name_th ?? f.hotel_name, service: f.service,
       ae_id: b?.ae ?? null, ae_name: b?.ae ? b.ae.replace(/^AE\d+-/, "") : null, team_label: f.service === "ORM" ? (b?.orm_team ? `ทีม ${b.orm_team}` : null) : b?.marcom ?? null,
       signed_at: f.start, go_live_at: goLive(f.contract_id, f.hotel_id, f.service), renewal_of: f.renewal_of,
-      ended_at: f.end, end_kind: kind === "RENEWAL" || kind == null ? kind : kind, notice_at: null,
+      ended_at: f.end, end_kind: kind, notice_at: null,
     });
   }
   for (const b of data.base) if (!out.some((o) => o.contract_id === b.contract_id)) out.push({
