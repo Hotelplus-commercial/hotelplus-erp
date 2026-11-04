@@ -87,7 +87,7 @@ function WbRow({ t, onOpen }: { t: L0Ticket; onOpen: () => void }) {
           <Badge variant="outline" className="ml-auto">{wbPill(t)}</Badge>
         </div>
         <div className="mt-1 text-muted-foreground">
-          {WB.exitOn(thDate(s?.exit_status.ended_at))} · {dash(s?.exit_status.outcome)} · {WB.sentBy(t.created_by, thDate(t.created_at))}
+          {WB.exitOn(thDate(s?.exit_status["ended_at"]))} · {dash(s?.exit_status["outcome"])} · {WB.sentBy(t.created_by, thDate(t.created_at))}
         </div>
       </button>
     </li>
