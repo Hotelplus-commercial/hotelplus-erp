@@ -9,7 +9,9 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
-import { addDemoTickets, isDemoTickets, useTickets, STATUS_TH, type L0Ticket } from "@/lib/tickets-l0";
+import { addDemoTickets, isDemoTickets, useTickets, STATUS_TH, TYPE_TH, type L0Ticket } from "@/lib/tickets-l0";
+/** Never show a raw type key as the subject (file 1 falls back to the type when there is no note). */
+const subjectTh = (r: ServiceTicketRow) => (r.type && r.subject === r.type ? TYPE_TH[r.type] : r.subject);
 import { ticketApi, resetDemoTickets, useDemoVersion, type Ticket as PsCase } from "@/lib/task-tickets";
 import { slaDemoTickets, ensureSlaDemoFollowups } from "@/lib/service-tickets-demo";
 import { stabDemoTickets } from "@/lib/service-ticket-tab-demo";
@@ -140,7 +142,7 @@ function ReceiverRow({ r, today, l0, canAccept, onOpen, onAccept }: { r: Service
         <span className="ml-auto tabular-nums text-muted-foreground">{r.age_days} วัน</span>
       </div>
       <button type="button" className="block w-full text-left" onClick={onOpen}>
-        <span className="font-medium">{r.hotel_name}</span> · <span>{r.subject}</span>
+        <span className="font-medium">{r.hotel_name}</span> · <span>{subjectTh(r)}</span>
         <span className="block text-muted-foreground">เปิดโดย {r.opened_by_label}{r.assignee_label ? ` · ผู้รับ ${r.assignee_label}` : ""}{sp ? ` · ${sp.system_name ?? sp.partner ?? "—"} · AE ${sp.assigned_ae ?? "—"}` : ""}</span>
       </button>
       <div className="flex flex-wrap items-center gap-1.5">
@@ -248,7 +250,7 @@ function ReceiverPanel({ r, actor, head, demo, today, l0, cats, onClose, onAccep
       <SheetContent className="w-full overflow-y-auto sm:max-w-lg" data-testid="recv-panel">
         <SheetHeader>
           <SheetTitle className="flex flex-wrap items-center gap-2"><span className="font-mono">{r.ticket_no}</span><Badge variant="outline">{SVC_STATUS_TH[r.display_status]}</Badge>{shut && <Badge variant="outline" className="text-destructive">{shut}</Badge>}</SheetTitle>
-          <SheetDescription>{r.subject}</SheetDescription>
+          <SheetDescription>{subjectTh(r)}</SheetDescription>
         </SheetHeader>
         <div className="mt-4 space-y-4 text-sm">
           <label className="flex items-center gap-2 text-xs">หมวด
