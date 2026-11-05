@@ -108,10 +108,10 @@ export const addTaskNote = (id: string, text: string, by: string, demo = isDemo(
   mutate(demo, id, (t) => (text.trim() ? { ...t, notes: [...t.notes, { at, by, text: text.trim() }] } : null));
 
 /** WC5: flag closed by a newer scored survey → `ธงปิดแล้ว · ลูกค้าให้คะแนนใหม่ {score}` (task stays open). */
-export function flagClosedNote(t: CoachingTask, demo: boolean = isDemo()): string | null {
-  const f = getSurveyFlags(demo).find((x) => x.id === t.flag_id);
+export function flagClosedNote(t: CoachingTask, demo: boolean = isDemo(), flags = getSurveyFlags(demo), surveys: { id: string }[] = getSurveys(demo)): string | null {
+  const f = flags.find((x) => x.id === t.flag_id);
   if (!f || f.status !== 'CLOSED') return null;
-  const s = f.closed_by_survey ? getSurveys(demo).find((x) => x.id === f.closed_by_survey) : undefined;
+  const s = f.closed_by_survey ? surveys.find((x) => x.id === f.closed_by_survey) : undefined;
   const score = (s as { overall?: number | null } | undefined)?.overall;
   return `ธงปิดแล้ว · ลูกค้าให้คะแนนใหม่${score != null ? ` ${score}` : ''}`;
 }

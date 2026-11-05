@@ -63,12 +63,11 @@ describe('WC routing', () => {
     ds.setPsDemoSession(false);
   });
   test('6 · flag auto-close shows ธงปิดแล้ว; task stays open', async () => {
-    const ms = await import('../src/lib/meeting-survey-store');
     const s = await import('../src/lib/coaching-store');
     const t = routeFlag(flag({ id: 'X' }), { roster, now });
-    const spy = mock(() => [{ ...flag({ id: 'X' }), status: 'CLOSED' as const, closed_by_survey: null }]);
-    const orig = ms.getSurveyFlags; (ms as { getSurveyFlags: unknown }).getSurveyFlags = spy;
-    try { expect(s.flagClosedNote(t, false) ?? 'ธงปิดแล้ว · ลูกค้าให้คะแนนใหม่').toContain('ธงปิดแล้ว'); } finally { (ms as { getSurveyFlags: unknown }).getSurveyFlags = orig; }
+    expect(s.flagClosedNote(t, false, [flag({ id: 'X' })], [])).toBeNull();
+    const closed = [{ ...flag({ id: 'X' }), status: 'CLOSED' as const, closed_by_survey: 'S9' }];
+    expect(s.flagClosedNote(t, false, closed, [{ id: 'S9', overall: 8 } as { id: string }])).toBe('ธงปิดแล้ว · ลูกค้าให้คะแนนใหม่ 8');
     expect(t.status).toBe('OPEN');
   });
   test('7 · old Q-based tasks untouched; reload twice never duplicates', async () => {
