@@ -17,6 +17,10 @@ import { PageHeader } from "@/components/erp-ui";
 import { JourneyBar } from "@/components/ps/meeting-ui";
 import { AeOnboardingEntry } from "@/components/ps/ae-onboarding-entry";
 import { MyDayZone } from "@/components/ps/my-day-zone";
+import { useSharedDemo } from "@/components/ps/ae-system-cost";
+import { DemoSwitch } from "@/components/workspace/workspace-shell";
+import { setPsDemoSession } from "@/lib/demo-session";
+import { isRenewalTestMode } from "@/lib/renewal-test-actor";
 import { RenewalActivityCards } from "@/components/ps/renewal-ui";
 import { RENEWAL_SECTION_TITLE } from "@/lib/ps-glossary";
 import { RENEWAL_CARD_LEAD_DAYS } from "@/lib/renewal-scan";
@@ -53,6 +57,8 @@ import {
 } from "@/lib/orm-meeting";
 
 
+/** Testing-only AE member list (simulation, never security). */
+const AE_TEST_MEMBERS = [{ id: "AE001-Nont", label: "Nont" }, { id: "Dao", label: "Dao" }, { id: "AE002-Fern", label: "Fern" }, { id: "AE003-Boss", label: "Boss" }];
 const pct = (n: number, total: number) => (total ? Math.round((n / total) * 100) : 0);
 
 export const Route = createFileRoute("/ps/ae-workspace/dashboard")({
@@ -81,7 +87,10 @@ function DashboardTab() {
   const { cards: renewalCards } = usePsRenewal();
   const [scope, setScope] = useState<"my" | "team">("my");
   const isPm = role === "Partner Manager";
-  const currentUser = isPm ? "PM001-Alex" : "AE001-Nont";
+  const [aeTest, setAeTest] = useState("");
+  const testMode = isRenewalTestMode();
+  const currentUser = testMode && aeTest ? aeTest : isPm ? "PM001-Alex" : "AE001-Nont";
+  const demoOn = useSharedDemo();
   const showKpi = role === "AE" || isPm;
   const overdue = propertyCards.filter((p) => p.overdue).length;
   const firstProperty = propertyCards[1] ?? propertyCards[0]!;
@@ -107,6 +116,19 @@ function DashboardTab() {
           </Select>
         }
       />
+
+      <div className="flex flex-wrap items-center justify-end gap-3">
+        {testMode && (
+          <label className="flex items-center gap-2 text-sm" data-testid="ae-test-member">
+            <span className="text-muted-foreground">สวมบท AE (โหมดทดสอบ)</span>
+            <select aria-label="เลือก AE" className="rounded-md border bg-background px-2 py-1" value={aeTest} onChange={(e) => setAeTest(e.target.value)}>
+              <option value="">ค่าเริ่มต้น</option>
+              {AE_TEST_MEMBERS.map((m) => <option key={m.id} value={m.id}>AE {m.label}</option>)}
+            </select>
+          </label>
+        )}
+        <DemoSwitch demo={demoOn} onToggle={(n) => { const u = new URL(window.location.href); u.searchParams.delete("demo"); window.history.replaceState(window.history.state, "", u.toString()); setPsDemoSession(n); }} />
+      </div>
 
       {/* Zone 0 — My Day (v4.1) */}
       <MyDayZone currentUser={currentUser} />
