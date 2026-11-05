@@ -57,7 +57,7 @@ export function attachmentError(existing: number, f: { size: number; mime: strin
   if (!ATTACH_MIME.includes(f.mime)) return 'รองรับเฉพาะ PDF / JPG / PNG';
   return null;
 }
-export type L0Status = 'NEW' | 'ACK' | 'IN_PROGRESS' | 'DONE' | 'CANCELLED';
+export type L0Status = 'NEW' | 'ACK' | 'IN_PROGRESS' | 'DONE' | 'CANCELLED' | /** Service SLA Core v1.0 §2.2 (additive) */ 'WAITING_CUSTOMER' | 'WAITING_THIRD_PARTY';
 export type TicketAssignee = { member_id: string; display: string; role: string };
 export type L0Ticket = {
   ticket_id: string; type: TicketType; source_app: 'PS_DASHBOARD' | 'BD_APP' | 'PS_DASHBOARD_BOT' | 'AC_APP'; created_by: Creator; target_dept: Dept;
@@ -69,16 +69,19 @@ export type L0Ticket = {
   audit: { at: string; by: Creator; from_status: L0Status | null; to_status: L0Status; /** R3.1: e.g. `assigned → {label}` */ note?: string; /** R3.1: acting member label */ actor?: string }[];
   /** R3.1 WB3 — WELCOME_BACK only: the one person the BDM assigned (nullable; missing = not assigned). File 16 maps these. */
   assigned_to?: string | null; assigned_to_label?: string | null; assigned_by?: string | null; assigned_at?: string | null;
+  /** Service SLA Core v1.0 §2.1 (optional, additive). accepted_by = assigned_to (reused) · label = assigned_to_label. */
+  category_id?: string | null; accepted_at?: string | null; due_date?: string | null; due_set_at?: string | null; due_set_by?: string | null;
+  waiting_on?: 'CUSTOMER' | 'OTA' | 'META' | 'GOOGLE' | 'PARTNER_SYSTEM' | 'OTHER' | null; waiting_on_note?: string | null; solved_at?: string | null;
 };
 
 export const DEPTS: Dept[] = ['BD', 'ORM', 'MARCOM', 'PS', 'AC', 'AUTO', 'HR', 'OFFICE'];
 /** Layer 1: every department now has a workspace, so nothing parks as "รอ pickup". */
 export const DEPTS_WITH_WORKSPACE: Dept[] = [...DEPTS];
-export const OPEN_STATUSES: L0Status[] = ['NEW', 'ACK', 'IN_PROGRESS'];
+export const OPEN_STATUSES: L0Status[] = ['NEW', 'ACK', 'IN_PROGRESS', 'WAITING_CUSTOMER', 'WAITING_THIRD_PARTY'];
 /** Tab R1 §6.6: NEW = New · legacy ACK shown as กำลังทำ (stored value unchanged). */
-export const STATUS_TH: Record<L0Status, string> = { NEW: 'New', ACK: 'กำลังทำ', IN_PROGRESS: 'กำลังทำ', DONE: 'เสร็จ', CANCELLED: 'ยกเลิก' };
+export const STATUS_TH: Record<L0Status, string> = { NEW: 'New', ACK: 'กำลังทำ', IN_PROGRESS: 'กำลังทำ', DONE: 'เสร็จ', CANCELLED: 'ยกเลิก', WAITING_CUSTOMER: 'รอลูกค้า', WAITING_THIRD_PARTY: 'รอ 3rd Party' };
 export const TYPE_TH: Record<TicketType, string> = { UPSELL_PITCH: 'เสนอขายบริการเพิ่ม', RENEWAL_DUE: 'ใกล้ครบสัญญา', GRADE_RISK: 'เสี่ยงเกรดการชำระ (D)', SURVEY_LOW: 'คะแนนบริการต่ำ', CONTRACT_FOLLOWUP: 'ติดตามดีลค้างข้ามเดือน', SERVICING_STALL: 'ติดตามการ์ดเกิน SLA', CUSTOMER_ENTITY_CHANGE: 'เปลี่ยนนิติบุคคล / ผู้ลงนาม', CONTRACT_SIGNAL: 'แจ้งเรื่องของสัญญา', WELCOME_BACK: 'Welcome Back', HANDOVER_FIX: 'ขอแก้งานส่งมอบ', SYSTEM_SHUTOFF: 'ปิดระบบ', PARTNER_DEAL_NOTICE: 'แจ้งข้อตกลง Partner', SYSTEM_CREDIT_NOTICE: 'แจ้งผลเครดิตค่าระบบ', SYSTEM_REACTIVATE: 'เปิดระบบคืน' };
-const OPEN: L0Status[] = ['NEW', 'ACK', 'IN_PROGRESS'];
+const OPEN: L0Status[] = ['NEW', 'ACK', 'IN_PROGRESS', 'WAITING_CUSTOMER', 'WAITING_THIRD_PARTY'];
 /** Tab R1 §6.6 — every type: NEW → IN_PROGRESS → DONE (+ CANCELLED by creator). ACK is never offered; legacy ACK continues like IN_PROGRESS. */
 const NEXT: Partial<Record<L0Status, L0Status>> = { NEW: 'IN_PROGRESS', ACK: 'DONE', IN_PROGRESS: 'DONE' };
 const KEY = 'meridia.tickets.v1';
@@ -120,13 +123,14 @@ export function findOpenByDeal(type: TicketType, deal_id: string) {
 }
 
 /** Central generic engine. Returns the new id, or the existing open id (dedup). */
-export function createTask(i: { type: TicketType; target_dept: Dept; subject_ref: L0Ticket['subject_ref']; payload: L0Ticket['payload']; created_by: Creator; source_app?: L0Ticket['source_app']; ticket_id?: string; assignee?: TicketAssignee }): { ticket_id: string; deduped: boolean } {
+export function createTask(i: { type: TicketType; target_dept: Dept; subject_ref: L0Ticket['subject_ref']; payload: L0Ticket['payload']; created_by: Creator; source_app?: L0Ticket['source_app']; ticket_id?: string; assignee?: TicketAssignee; /** SLA Core v1.0: optional category (none → default mapping in the view) */ category_id?: string | null }): { ticket_id: string; deduped: boolean } {
   if (i.type === 'CONTRACT_SIGNAL') return createReserved(i);
   if (i.type === 'WELCOME_BACK') { const o = createWelcomeBack(i); return o.ok ? { ticket_id: o.ticket_id, deduped: false } : { ticket_id: o.locked?.ticket_id ?? i.ticket_id ?? '', deduped: true }; }
   const existing = i.type === 'SERVICING_STALL' && i.payload.event_key ? findOpenByEvent(i.type,i.subject_ref.hotel_id,i.payload.event_key) : i.subject_ref.deal_id ? findOpenByDeal(i.type, i.subject_ref.deal_id) : findOpen(i.type, i.subject_ref.hotel_id, i.subject_ref.gap_service);
   if (existing) return { ticket_id: existing.ticket_id, deduped: true };
   const s = cur(); const seq = s.seq + 1; const at = now(); // Level B: replace with revision-locked reservation.
   const t: L0Ticket = { ticket_id: `TKT-${String(seq).padStart(6, '0')}`, type: i.type, source_app: i.source_app ?? 'PS_DASHBOARD', created_by: i.created_by, target_dept: i.target_dept, subject_ref: i.subject_ref, payload: i.payload, status: 'NEW', created_at: at, revision: 0, audit: [{ at, by: i.created_by, from_status: null, to_status: 'NEW' }] };
+  if (i.category_id) t.category_id = i.category_id;
   commit({ seq, items: [...s.items, t] });
   return { ticket_id: t.ticket_id, deduped: false };
 }
@@ -351,4 +355,24 @@ export function useTickets(): L0Ticket[] {
 /** Read-back for consumers: open ticket for hotel+gap+type, or undefined → show create button. */
 export function useTicketReadBack(type: TicketType, hotel_id: string, gap_service: string) {
   return useTickets().find(t => t.type === type && t.subject_ref.hotel_id === hotel_id && t.subject_ref.gap_service === gap_service && OPEN.includes(t.status));
+}
+
+/** Service SLA Core v1.0 — the one extra Layer 0 write path for the SLA services (src/lib/service-tickets.ts):
+ * applies `f`, bumps revision and appends one audit entry. Returns false when `f` refuses (null) or the ticket is missing. */
+export function patchServiceTicket(id: string, f: (t: L0Ticket) => L0Ticket | null, audit: { by: Creator; note: string; actor?: string; at?: string }): boolean {
+  const s = cur(); const t = s.items.find((x) => x.ticket_id === id);
+  if (!t) return false;
+  const n = f(t); if (!n) return false;
+  const at = audit.at ?? now();
+  const next: L0Ticket = { ...n, revision: t.revision + 1, audit: [...t.audit, { at, by: audit.by, from_status: t.status, to_status: n.status, note: audit.note, ...(audit.actor ? { actor: audit.actor } : {}) }] };
+  commit({ ...s, items: s.items.map((x) => (x.ticket_id === id ? next : x)) });
+  return true;
+}
+/** DEMO only: add SLA demo tickets to the shared DEMO ticket list (never edits existing entries; skips ids already present). */
+export function addDemoTickets(items: L0Ticket[]): number {
+  if (!demoOn) return 0;
+  const s = cur(); const have = new Set(s.items.map((t) => t.ticket_id));
+  const add = items.filter((t) => !have.has(t.ticket_id));
+  if (add.length) commit({ ...s, items: [...s.items, ...add] });
+  return add.length;
 }
