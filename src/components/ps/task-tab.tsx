@@ -39,6 +39,8 @@ import { useCrmOptional } from '@/lib/crm-store';
 import { serviceOf } from '@/lib/ac-v2-engine';
 import { readMeetingDashboard } from '@/lib/meeting-dashboard.functions';
 import { demoServiceContracts, demoTaskMeetings } from '@/lib/task-demo';
+import { ServiceTicketTab } from './service-ticket-tab';
+import { getCategories, ticketSla, SVC_DEPTS, type SvcDept } from '@/lib/service-tickets';
 import { activeContracts, meetingsFromFunnel, prefillContract, recentMeetings, type MeetingRef, type ServiceContractRef } from '@/lib/ticket-links';
 
 /** R1.2 §5.1 — service contracts (contract × service) for ticket links: demo spine, else the browser contract store (read-only). */
@@ -178,7 +180,8 @@ export function TaskTab() {
   return <div className="task-v2" data-testid="task-tab">
     {!d.demo&&<LiveTicketReader onChange={setLiveL0}/>}
     {d.demo&&<p className="task-demo-watermark">ข้อมูลสาธิต · 17 ตุลาคม 2569 · ไม่บันทึก</p>}
-    <header className="task-section-header"><h2>ticket ค้างวันนี้</h2><span className="task-current-pill">{cmpOn?'ค่าสิ้นช่วง A เทียบ B':'สถานะปัจจุบัน'}</span><span className="dash-card-period">{kKpi.control}</span></header>
+    {/* Tab R1 (ST24): old KPI strip / ค้างจากระบบ / ticket ทั้งหมด / worklist / CaseDrawer unmounted here — code kept. */}
+    {LEGACY_TASK_TAB ? <>    <header className="task-section-header"><h2>ticket ค้างวันนี้</h2><span className="task-current-pill">{cmpOn?'ค่าสิ้นช่วง A เทียบ B':'สถานะปัจจุบัน'}</span><span className="dash-card-period">{kKpi.control}</span></header>
     <div className="task-kpis">{kpis.map((k,i)=>{const h=kpiHist[i]!,loading=i<2&&(d.ticketsError||d.ticketsLoading),big=cmpOn?h.a:k.value;const momD=h.today!=null&&h.prev!=null?h.today-h.prev:null;return <ChartHint key={k.label} header={k.header} lines={[k.lines[0]??'',h.monthLine,i===3?'ประวัติเห็นเฉพาะรอบล่าสุดของ ticket ที่เคยเปิดซ้ำ':h.statLine]}><Button variant="ghost" className={`task-kpi task-kpi-${k.tone}`}><span>{k.label}</span><strong data-testid={`task-k${i+1}`} className={k.tone==='action'?'text-dash-action':k.tone==='watch'&&k.value?'text-dash-watch':''}>{loading?'—':big??'—'} <small>{k.unit}</small></strong>{cmpOn?<span className={h.a!=null&&h.b!=null?deltaTone(h.a-h.b,i):'task-delta-zero'}>{h.b==null?`A ${h.a??'—'} · B — (ยังไม่มี snapshot)`:`A ${h.a??'—'} · B ${h.b} · Δ ${h.a!=null?(h.a-h.b>0?'+':'')+(h.a-h.b):'—'}`}</span>:<span className={i===4&&soon.length?'text-dash-watch':momD!=null?deltaTone(momD,i):''}>{i===4&&soon.length?`ใกล้ครบใน ${TASK_CONFIG.renewal_buckets[1]} วัน อีก ${soon.length}`:momD==null?'—':`${momD>0?'▲ +':momD<0?'▼ ':'= '}${momD} จากสิ้นเดือนก่อน`}</span>}<small>{k.caption}</small><Sparkline values={h.vals} tone={k.tone} bRef={cmpOn?h.b:null}/><small className="task-spark-cap">{h.caption}</small></Button></ChartHint>;})}</div>
     <header className="task-section-header"><h2>ค้างจากระบบ</h2><p>อ่านอย่างเดียว · ปิดที่หน้าต้นทาง · ไม่มี Compare (สถานะปัจจุบัน)</p></header>
     <TaskMonitorV2 coaching={coaching} unassigned={unassigned} streams={streams} compare={false} demo={d.demo}/>
@@ -189,12 +192,15 @@ export function TaskTab() {
     <div className="task-grid-v21"><CategoryIncomingCard rows={rows} categories={d.categories} a={kCat.a} b={kCat.b} compare period={kCat.control}/><WorkloadCard rows={rows} acts={acts} care={care} a={kWork.a} b={kWork.b} compare period={kWork.control} people={filter.people} smallBase={configAt('workload_small_base',bkkDate(Date.parse(nowIso)))} onPerson={setPerson}/></div>
     <div className="flex flex-wrap items-center justify-end gap-2"><label>ผู้ทำรายการ</label><Select value={actor} onValueChange={setActor}><SelectTrigger aria-label="ผู้ทำรายการ" className="w-44"><SelectValue/></SelectTrigger><SelectContent>{actors.map(a=><SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent></Select></div>
     <TaskWorklistV2 rows={rows} categories={d.categories} now={d.now} demo={d.demo} compare={filter.compare} onCreate={()=>setCreating(true)} onCase={t=>setOpenId(t.id)} person={person} onPerson={setPerson} meetings={meetings} contracts={contracts}/>
+</> : <ServiceTicketTab cases={d.tickets} onCreate={()=>setCreating(true)}/>}
     <CreateCase open={creating} onClose={()=>setCreating(false)} hotels={care} categories={d.categories} actor={actor} demo={d.demo} contracts={contracts} meetings={meetings} now={d.now} onDone={t=>{refresh();toast.success(`สร้าง ${t.case_no} แล้ว`);}}/>
-    <CaseDrawer ticket={selected} onClose={()=>setOpenId(null)} care={selected?byHotel.get(selected.hotel_id):undefined} categories={d.categories} actor={actor} actors={actors} onActor={setActor} demo={d.demo} onSaved={refresh}/>
+    {LEGACY_TASK_TAB && <CaseDrawer ticket={selected} onClose={()=>setOpenId(null)} care={selected?byHotel.get(selected.hotel_id):undefined} categories={d.categories} actor={actor} actors={actors} onActor={setActor} demo={d.demo} onSaved={refresh}/>}
   </div>;
 }
 
 const NONE = '__none__';
+/** Tab R1: old layout kept behind a constant (unmounted, not deleted). */
+const LEGACY_TASK_TAB = false;
 function CreateCase({ open, onClose, hotels, categories, actor, demo, contracts, meetings, now, onDone }: { open: boolean; onClose: () => void; hotels: HotelCare[]; categories: Category[]; actor: string; demo: boolean; contracts: ServiceContractRef[]; meetings: MeetingRef[]; now: Date; onDone: (t: Ticket) => void }) {
   const [hq, setHq] = useState(''); const [hotel, setHotel] = useState<HotelCare | null>(null); const [cat, setCat] = useState(''); const [title, setTitle] = useState(''); const [desc, setDesc] = useState(''); const [dept, setDept] = useState<Team | null>(null); const [busy, setBusy] = useState(false);
   const [contractId, setContractId] = useState<string>(NONE); const [meetingId, setMeetingId] = useState<string>(NONE); const [contractTouched, setContractTouched] = useState(false);
