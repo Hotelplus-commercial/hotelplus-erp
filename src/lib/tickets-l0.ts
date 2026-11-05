@@ -5,7 +5,7 @@ import { useEffect, useState, useSyncExternalStore } from 'react';
 import { stageCloudDoc } from './cloud-sync';
 import { DEMO_NOW } from './ps-demo-fixture';
 
-export type TicketType = 'UPSELL_PITCH' | 'RENEWAL_DUE' | 'GRADE_RISK' | 'SURVEY_LOW' | 'CONTRACT_FOLLOWUP' | 'SERVICING_STALL' | 'CUSTOMER_ENTITY_CHANGE' | 'CONTRACT_SIGNAL' | 'WELCOME_BACK' | 'HANDOVER_FIX' | 'SYSTEM_SHUTOFF' | 'PARTNER_DEAL_NOTICE' | 'SYSTEM_CREDIT_NOTICE';
+export type TicketType = 'UPSELL_PITCH' | 'RENEWAL_DUE' | 'GRADE_RISK' | 'SURVEY_LOW' | 'CONTRACT_FOLLOWUP' | 'SERVICING_STALL' | 'CUSTOMER_ENTITY_CHANGE' | 'CONTRACT_SIGNAL' | 'WELCOME_BACK' | 'HANDOVER_FIX' | 'SYSTEM_SHUTOFF' | 'PARTNER_DEAL_NOTICE' | 'SYSTEM_CREDIT_NOTICE' | 'SYSTEM_REACTIVATE';
 /** Tab R3 §6.1 WELCOME_BACK snapshot (read-only for BD). */
 export type WelcomeBackSnapshot = {
   contract_info: Record<string, string>; package_rate: Record<string, string>; exit_status: Record<string, string>;
@@ -38,6 +38,10 @@ export type BotPayload = {
   snapshot?: WelcomeBackSnapshot; message?: string; timeline_shared?: boolean; timeline?: { at: string; text: string; tone: string }[];
   /** PM Workspace Partner v1.0 §2.3 SYSTEM_CREDIT_NOTICE (to AC). */
   credit_notice?: { contract: string; partner: string; result: 'APPROVED' | 'REJECTED'; approved_amount: number | null; currency: string; credit_expires_at: string | null };
+  /** AC App Partner Bills v1.0 §4: SYSTEM_SHUTOFF / SYSTEM_REACTIVATE payload (both twins). auto = created by AC App (อัตโนมัติ). */
+  shutoff?: { contract_id: string; hotel_id: string; hotel_name: string; service_line: 'ORM' | 'Marcom'; partner: string | null; system_name: string | null; assigned_ae: string | null; outstanding: number; overdue_cycles: number; note: string; twin_ticket_id: string | null; reactivated_at?: string; auto?: boolean };
+  /** PARTNER_DEAL_NOTICE detail (read-only in AC Workspace). */
+  deal_notice?: { partner: string; kind: string; benefit: string; period: string; status: string; attachment_url: string };
   phase?: 'P1'|'P2'|'P3'; lane?: 'AE'|'Specialist'|'ORM'|'Marcom'; days_in_phase?: number; sla_days?: number; target_days?: number; tone?: 'ok'|'amber'|'red'; current_stage?: string; owner_id?: string|null; recipient?: string; recipient_member_id?: string|null;
 };
 export type TicketAttachment = { id: string; name: string; size: number; mime: string; by: string; at: string; data_url: string };
@@ -53,7 +57,7 @@ export function attachmentError(existing: number, f: { size: number; mime: strin
 export type L0Status = 'NEW' | 'ACK' | 'IN_PROGRESS' | 'DONE' | 'CANCELLED';
 export type TicketAssignee = { member_id: string; display: string; role: string };
 export type L0Ticket = {
-  ticket_id: string; type: TicketType; source_app: 'PS_DASHBOARD' | 'BD_APP' | 'PS_DASHBOARD_BOT'; created_by: Creator; target_dept: Dept;
+  ticket_id: string; type: TicketType; source_app: 'PS_DASHBOARD' | 'BD_APP' | 'PS_DASHBOARD_BOT' | 'AC_APP'; created_by: Creator; target_dept: Dept;
   subject_ref: { hotel_id: string; hotel_name: string; gap_service: string; service_line?: string; deal_id?: string; card_id?:string; service_variant?:string; contract_id?: string; service?: string; /** Tab R4 §10.2 HANDOVER_FIX (optional) */ checklist_item_id?: string };
   payload: { readiness_tier: string; chips: string[]; note: string } & BotPayload;
   /** Tab R1 §6.1: optional single recipient (target_dept is derived from it). */
@@ -70,7 +74,7 @@ export const DEPTS_WITH_WORKSPACE: Dept[] = [...DEPTS];
 export const OPEN_STATUSES: L0Status[] = ['NEW', 'ACK', 'IN_PROGRESS'];
 /** Tab R1 §6.6: NEW = New · legacy ACK shown as กำลังทำ (stored value unchanged). */
 export const STATUS_TH: Record<L0Status, string> = { NEW: 'New', ACK: 'กำลังทำ', IN_PROGRESS: 'กำลังทำ', DONE: 'เสร็จ', CANCELLED: 'ยกเลิก' };
-export const TYPE_TH: Record<TicketType, string> = { UPSELL_PITCH: 'เสนอขายบริการเพิ่ม', RENEWAL_DUE: 'ใกล้ครบสัญญา', GRADE_RISK: 'เสี่ยงเกรดการชำระ (D)', SURVEY_LOW: 'คะแนนบริการต่ำ', CONTRACT_FOLLOWUP: 'ติดตามดีลค้างข้ามเดือน', SERVICING_STALL: 'ติดตามการ์ดเกิน SLA', CUSTOMER_ENTITY_CHANGE: 'เปลี่ยนนิติบุคคล / ผู้ลงนาม', CONTRACT_SIGNAL: 'แจ้งเรื่องของสัญญา', WELCOME_BACK: 'Welcome Back', HANDOVER_FIX: 'ขอแก้งานส่งมอบ', SYSTEM_SHUTOFF: 'ปิดระบบ', PARTNER_DEAL_NOTICE: 'แจ้งข้อตกลง Partner', SYSTEM_CREDIT_NOTICE: 'แจ้งผลเครดิตค่าระบบ' };
+export const TYPE_TH: Record<TicketType, string> = { UPSELL_PITCH: 'เสนอขายบริการเพิ่ม', RENEWAL_DUE: 'ใกล้ครบสัญญา', GRADE_RISK: 'เสี่ยงเกรดการชำระ (D)', SURVEY_LOW: 'คะแนนบริการต่ำ', CONTRACT_FOLLOWUP: 'ติดตามดีลค้างข้ามเดือน', SERVICING_STALL: 'ติดตามการ์ดเกิน SLA', CUSTOMER_ENTITY_CHANGE: 'เปลี่ยนนิติบุคคล / ผู้ลงนาม', CONTRACT_SIGNAL: 'แจ้งเรื่องของสัญญา', WELCOME_BACK: 'Welcome Back', HANDOVER_FIX: 'ขอแก้งานส่งมอบ', SYSTEM_SHUTOFF: 'ปิดระบบ', PARTNER_DEAL_NOTICE: 'แจ้งข้อตกลง Partner', SYSTEM_CREDIT_NOTICE: 'แจ้งผลเครดิตค่าระบบ', SYSTEM_REACTIVATE: 'เปิดระบบคืน' };
 const OPEN: L0Status[] = ['NEW', 'ACK', 'IN_PROGRESS'];
 /** Tab R1 §6.6 — every type: NEW → IN_PROGRESS → DONE (+ CANCELLED by creator). ACK is never offered; legacy ACK continues like IN_PROGRESS. */
 const NEXT: Partial<Record<L0Status, L0Status>> = { NEW: 'IN_PROGRESS', ACK: 'DONE', IN_PROGRESS: 'DONE' };
@@ -215,6 +219,32 @@ export function allowedNext(t: L0Ticket, role: Role): L0Status[] {
   if (t.type === 'SERVICING_STALL' && t.payload.condition_cleared_at && OPEN.includes(t.status) && role === t.target_dept && !out.includes('DONE')) out.push('DONE');
   if (OPEN.includes(t.status) && role === t.created_by) out.push('CANCELLED');
   return out;
+}
+
+/* ---------- AC App Partner Bills v1.0 ---------- */
+/** §5 one-click รับทราบ — only PARTNER_DEAL_NOTICE / SYSTEM_CREDIT_NOTICE, target AC, status NEW → DONE with audit note รับทราบ (no ACK step). */
+export const ACK_ONE_CLICK: TicketType[] = ['PARTNER_DEAL_NOTICE', 'SYSTEM_CREDIT_NOTICE'];
+export const canAcknowledge = (t: L0Ticket, role: Role) => ACK_ONE_CLICK.includes(t.type) && t.target_dept === 'AC' && role === 'AC' && OPEN.includes(t.status);
+export function acknowledgeNotice(id: string, revision: number, by: Role, actor?: string): boolean {
+  const s = cur(); const t = s.items.find((x) => x.ticket_id === id);
+  if (!t || t.revision !== revision || !canAcknowledge(t, by)) return false;
+  const next: L0Ticket = { ...t, status: 'DONE', revision: t.revision + 1, audit: [...t.audit, { at: now(), by, from_status: t.status, to_status: 'DONE', note: 'รับทราบ', ...(actor ? { actor } : {}) }] };
+  commit({ ...s, items: s.items.map((x) => (x.ticket_id === id ? next : x)) });
+  return true;
+}
+/** §4.2 system cancel of an open ticket with an audit note (creator unchanged). */
+export function systemCancel(id: string, note: string, by: Creator = 'AC'): boolean {
+  const s = cur(); const t = s.items.find((x) => x.ticket_id === id);
+  if (!t || !OPEN.includes(t.status)) return false;
+  const next: L0Ticket = { ...t, status: 'CANCELLED', revision: t.revision + 1, audit: [...t.audit, { at: now(), by, from_status: t.status, to_status: 'CANCELLED', note, actor: 'AC App (อัตโนมัติ)' }] };
+  commit({ ...s, items: s.items.map((x) => (x.ticket_id === id ? next : x)) });
+  return true;
+}
+/** Set payload fields of an existing ticket (twin links). No status change. */
+export function patchTicketPayload(id: string, patch: Partial<L0Ticket['payload']>): boolean {
+  const s = cur(); const t = s.items.find((x) => x.ticket_id === id); if (!t) return false;
+  commit({ ...s, items: s.items.map((x) => (x.ticket_id === id ? { ...x, payload: { ...x.payload, ...patch }, revision: x.revision + 1 } : x)) });
+  return true;
 }
 
 /** True when `dept` sees this ticket only as a read-only watcher (👁 FYI). */
