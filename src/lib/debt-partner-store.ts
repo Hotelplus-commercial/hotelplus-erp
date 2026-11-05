@@ -32,6 +32,8 @@ function loadLive(): PartnerData {
 }
 export const getPartnerData = (): PartnerData => (demoOn ? demo : loadLive());
 export const isPartnerDemo = () => demoOn;
+/** Read for a given mode without switching (e.g. the §9 renewal rows on another tab). */
+export const partnerDataFor = (isDemo: boolean): PartnerData => (isDemo ? demo : loadLive());
 
 /** Follow the PS Dashboard DEMO switch (shared DEMO-state helper). Turning DEMO on starts a fresh in-memory bundle. */
 export function setPartnerDemo(on: boolean) {

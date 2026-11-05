@@ -113,7 +113,7 @@ export function AcTab({ views, loading, error, service, compare, demo, periodA, 
     <div className="flex min-w-0 flex-col gap-5" data-testid="ac-tab" data-demo={demo || undefined}>
       <DefinitionStrip />
       <SectionHead title="ลูกหนี้ & การเก็บเงิน" desc="ใครจ่ายตรงเวลา · ค้างเท่าไร อยู่ขั้นไหน · ต้องตามใคร" />
-      <div className="ac-row2">
+      <div className={DP_LEGACY ? "ac-row2" : "min-w-0"}>
         {cardCompare ? (
           <GradeCard gradeDist={rawGrade.filter((r) => String(r.billing_period ?? "").slice(0, 10) <= kGrade.a.to)} chip={gLatest ? monYY(gLatest) : "—"} prevChip={gPrev ? monYY(gPrev) : "—"} compare customers={gradeCustomersA} initialOpen={openLists} period={kGrade.control} periodKeys={{ latest: gLatest, prev: gPrev }} />
         ) : (
