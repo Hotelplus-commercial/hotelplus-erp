@@ -10,6 +10,7 @@ import { buildRows, catalogByKey, tier30 as tierThirty, ticketsOfContract, type 
 import { tabR1Demo, tabR1DemoTickets, TAB_R1_DEMO_NOW } from './contract-tab-r1-demo';
 import { RENEWAL_OFFER_DEMO_NOW, v14DemoBase, v14DemoById, v14DemoSnapshots, v14DemoTickets } from './renewal-offer-demo';
 import { contractHealthState } from './contract-health-store';
+import { getMeetingSurveyData, surveyContext } from './meeting-survey-store';
 import type { PriceHistoryRow } from './renewal-rules';
 import type { PsReportRow } from './ps-dashboard-types';
 import type { Invoice } from './crm-types';
@@ -72,7 +73,8 @@ export function offerContextFor(a: OfferArgs): OfferContext {
     const seen = new Set(a.tickets.map((t) => t.ticket_id)); tickets = [...seed.filter((t) => !seen.has(t.ticket_id)), ...a.tickets];
     const base = v14 ? v14DemoBase() : tabR1Demo().base;
     if (!v14) { rowToday = TAB_R1_DEMO_NOW; } else snaps = v14DemoSnapshots();
-    row = buildRows(base.filter((b) => b.contract_id === a.contract_id), { today: rowToday, labels: hs.labels, snaps, tickets })[0] ?? null;
+    // One health engine (card ⑦ contracts; v1.4 offer-demo contracts are not in card ⑦): same survey inputs (surveySignalsFor via surveyContext + open survey flags) as card ⑦.
+    row = buildRows(base.filter((b) => b.contract_id === a.contract_id), { today: rowToday, labels: hs.labels, snaps, tickets, ...(v14 ? {} : { survey: surveyContext(getMeetingSurveyData(true), true) }) })[0] ?? null;
   }
   const aeLabels = hs.labels.filter((l) => l.contract_id === a.contract_id);
   let health: OfferContext['health'] = null;

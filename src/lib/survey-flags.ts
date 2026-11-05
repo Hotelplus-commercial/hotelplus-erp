@@ -121,7 +121,8 @@ export function surveySignalsFor(ref: ContractRef, data: MeetingSurveyData, flag
   const belongs = (hotelId: string | null | undefined) => { const c = contractOf?.(hotelId ?? null); return c ? c === ref.contract_id : !!hotelId && hotelId === ref.hotel_id; };
   const meetings = new Map(data.meetings.map((m) => [m.id, m]));
   const mine = data.surveys.filter((s) => s.service === svc && belongs(meetings.get(s.meeting_id)?.hotel_id));
-  const latest = mine.filter(isScored).sort((a, b) => (b.submitted_at ?? '').localeCompare(a.submitted_at ?? ''))[0];
+  // ties (same timestamp) → the later stored record is newer
+  const latest = mine.map((s, i) => [s, i] as const).filter(([s]) => isScored(s)).sort(([a, ia], [b, ib]) => (b.submitted_at ?? '').localeCompare(a.submitted_at ?? '') || ib - ia)[0]?.[0];
   const out: SurveySignal[] = []; let revenue: string | null = null;
   const push = (x: SurveySignal) => { if (!out.some((y) => y.key === x.key)) out.push(x); };
   if (latest) {
