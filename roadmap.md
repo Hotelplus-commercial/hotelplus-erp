@@ -332,3 +332,7 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [x] Types/store/Cloud mirror keys, channel at booking, no-score, customer link + public page, template v2 (off by default), Q8 hidden, DEMO §7, rules, tests.
 - [ ] Real customer-link delivery to another device: needs the portal (shared backend with login).
 - [ ] "AE ยังไม่ส่ง" on PS Dashboard Meeting analyzer left unchanged (rule 6).
+
+# Contract Health · Survey signals
+- [x] Flag rules CH1–CH6, catalog 52 + source S, survey S labels, tooltips, DEMO §6, rules, tests.
+- [ ] MEETING_REJECTED has no live write path (no meeting status change exists); DEMO only.

@@ -139,7 +139,7 @@
 - The PS Dashboard Meeting analyzer reads database views v_meeting_*, which do NOT include meetings / surveys / label answers stored in browser storage (meridia.meetings.v1, meridia.surveys.v1, meridia.survey_label_answers.v1). Files 13–15 must read through getMeetings() / getSurveys() / getSurveyLabelAnswers() (or the mirrored ps:* docs), not v_meeting_* alone.
 - Rules (channel options, template-2 topics, chip order, link state, no-score labels) live only in pure src/lib/survey-v2.ts; template-2 form = src/components/ps/survey-v2-form.tsx shared by AE and the public page. Active template version = `surveyActiveVersion` in the existing Template Management store (default 1); a survey keeps the version it was created with.
 - tier_at_generation does not exist: a booked meeting stores `tier_at_booking` (copy of the hotel tier at booking time).
-- label_key stores the label text for now — file 13 (Contract Health) must map these texts to catalog keys.
+- label_key stores the label text for now — mapped to catalog keys by labelKeyFromText() in src/lib/survey-flags.ts (done in Contract Health · Survey signals; every DEMO text maps).
 - Customer self-answer link /l/survey/$token: random 24-byte token, shows only hotel name, meeting date, AE display name and questions; no database write. Real delivery to the customer's own device needs the portal (shared backend); in the prototype it works in DEMO / the same browser. Link expiry (LINK_EXPIRED) runs when AE Workspace › Surveys or the public page opens (no server job).
 
 ## Contract Health · Survey signals (CH1–CH20)
