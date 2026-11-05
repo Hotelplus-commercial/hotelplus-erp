@@ -15,6 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { AeShutoffGroup } from "@/components/ps/ae-system-cost";
 import {
   emptyScheduledText,
   inRange,
@@ -31,7 +32,7 @@ import {
 const ORM_TINT = "#DBEAFE";
 const MARCOM_TINT = "#F3E8FF";
 
-export function MyDayZone() {
+export function MyDayZone({ currentUser = "AE001-Nont" }: { currentUser?: string }) {
   const [range, setRange] = useState<MyDayRange>("today");
   const [meeting, setMeeting] = useState<ScheduledItem | null>(null);
 
@@ -154,6 +155,8 @@ export function MyDayZone() {
               ))}
             </div>
           )}
+          {/* AE Workspace System Cost / Shut-off v1.0 (AW5): 5th group, not date-filtered, hidden when empty */}
+          <div className="mt-3"><AeShutoffGroup currentUser={currentUser} /></div>
           {todos.length > 0 && (
             <Button variant="link" size="sm" className="mt-2 h-auto p-0" asChild>
               <Link to="/ps/ae-workspace/my-tasks">View all ({todos.length}) →</Link>

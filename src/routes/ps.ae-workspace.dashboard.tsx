@@ -109,7 +109,7 @@ function DashboardTab() {
       />
 
       {/* Zone 0 — My Day (v4.1) */}
-      <MyDayZone />
+      <MyDayZone currentUser={currentUser} />
 
       {/* Zone 1 — Portfolio Overview (v3.1) */}
       <div id="zone1-renewals" className="scroll-mt-20" />

@@ -43,6 +43,7 @@ import {
 import { cn } from "@/lib/utils";
 import { DEMO_EXTRA_CARDS, declineRequest, isRenewalDemo, latestRequestFor, openRequestFor, scanSourceContracts, setRenewalDemo, signedAwaitingDone, sourceContractFor, sourceMissesFor, useRenewalStore } from "@/lib/renewal-store";
 import { RenewalOfferSection } from "@/components/ps/renewal-offer-section";
+import { KeepCreditWarning } from "@/components/ps/ae-system-cost";
 import { RenewalRequestChips, RenewalRequestPanel, SignedBadge } from "@/components/ps/renewal-request-ui";
 import { RENEWAL_LABEL_TH as RL, RENEWAL_TEST_BANNER, RENEWAL_TEST_SWITCH, RN2, aeNameTh } from "@/lib/ps-glossary";
 import { RenewalReasonPicker } from "@/components/ps/renewal-reason-picker";
@@ -550,6 +551,7 @@ export function RenewalCardModal({
             </div>
             )}
             {outcome === 'CHURN' && <div className="space-y-1"><Label htmlFor="renewal-effective-end" className="text-xs">วันสิ้นสุดสัญญาที่มีผล *</Label><Input id="renewal-effective-end" type="date" value={effectiveEnd} onChange={e => setEffectiveEnd(e.target.value)} /><p className="text-xs text-muted-foreground">สิ้นสุดบริการตามวันที่นี้ ไม่ใช่ทันทีที่บันทึกผล</p></div>}
+            {outcome === "CHURN" && churnType === "ไม่ต่อ (Non-renewal)" && <KeepCreditWarning card={card} />}
             {confirmErr && <p className="text-xs text-destructive">{confirmErr}</p>}
           </div>
           <DialogFooter>

@@ -125,3 +125,10 @@
 - AX15: only AC writes on this page (testing role switcher, simulation); PS / PM read via PS Dashboard and PM Workspace; Partner management stays in PM Workspace.
 - DEMO: one shared state (src/lib/demo-session.ts) for PS Dashboard and every Workspace (DemoSwitch link ?demo=1 / ?demo=0 works before load). Bills DEMO overlay in debt-partner-demo.ts withBillsDemo(); tickets via seedAcBillsDemo(). DEMO Layer 0 tickets persist for the browser session inside the existing DEMO session key (field l0, cleared with DEMO off) so every page reads one DEMO ticket store; seeded notices carry payload.demo_ref = the demo deal / credit ac_ticket_id.
 - Open: AC-G1 Guarantee minimum in AC billing — not built.
+
+## AE Workspace · ต้นทุนค่าระบบ + คำเตือนจ่ายล่วงหน้า + งานปิด / เปิดระบบ v1.0 (AW1–AW8)
+- AW1/AW2: renewal card section 1 tile ต้นทุนค่าระบบ right after ค่าบริการปัจจุบัน (SystemCostTile, src/components/ps/ae-system-cost.tsx); values only from costTile() in src/lib/ae-system-cost.ts over getContractSystemCost / getPrepaidUntil / monthsOver; Marcom grey, ORM without system amber แจ้ง PM.
+- AW3/AW4: Mark as Done ไม่ต่อ + ORM + prepaid beyond end → amber KeepCreditWarning (keepCreditWarning() reuses creditRows DP-O3 numbers); never blocks, saves nothing; PM Workspace picks up the saved ไม่ต่อ (PW10).
+- AW5/AW6: My Day 5th group 🔌 ปิด / เปิดระบบ (AeShutoffGroup) = open (NEW / IN_PROGRESS, stored ACK counts open) SYSTEM_SHUTOFF / SYSTEM_REACTIVATE with target PS whose AE (property assigned_ae_id → ticket payload AE) is the current AE; not date-filtered, oldest first, hidden when empty.
+- AW7/AW8: drawer shows facts + AE to-do text; owning AE only: เริ่มทำ (NEW → IN_PROGRESS) → เสร็จแล้ว (→ DONE) via Layer 0 transition() with audit; soft confirm when the service-team twin is not DONE. No ACK step.
+- DEMO: reads the one shared DEMO ticket list (seedShutoffDemo / seedAcBillsDemo are idempotent, never a second copy). O-WS8 (AE 🎫 lane) stays parked.

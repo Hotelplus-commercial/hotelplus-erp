@@ -3,6 +3,7 @@
  * then the request's reco_snapshot (taken when the AE pressed ต่อสัญญา). Labels from ps-glossary RO. */
 import { useState, useEffect } from "react";
 import { InfoButton } from "@/components/ps/dash-card";
+import { SystemCostTile } from "@/components/ps/ae-system-cost";
 import { RO, R1_TIER_TH, R1_STATUS_TH } from "@/lib/ps-glossary";
 import type { RenewalCard } from "@/lib/ps-renewal";
 import type { RecoSnapshot, RenewalRequest } from "@/lib/renewal-rules";
@@ -216,6 +217,7 @@ export function RenewalOfferSection({ card }: { card: RenewalCard }) {
               </div>
             ) : <p className="mt-1 text-muted-foreground">{RO.notFound}{f?.missing.length ? ` · ${RO.missingLine(f.missing.map((m) => RO.missing[m] ?? m).join(" · "))}` : ""}</p>}
           </div>
+          <SystemCostTile card={card} />
           {view ? <RecoBoxV14 view={view} service={ctx?.service ?? card.service ?? "ORM"} packageName={ctx?.package ?? "—"} fee={fee} /> : <p className="rounded-lg border bg-muted/30 p-3 text-sm text-muted-foreground" data-testid="ro-none">{RO.none}</p>}
         </div>
       )}
