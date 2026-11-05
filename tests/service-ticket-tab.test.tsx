@@ -101,7 +101,9 @@ describe('Tab R1 — mounted DEMO', () => {
     const { div, act } = await mountTab();
     await until(() => !!div.querySelector('[data-testid="stab-mcard"]') && Number(div.querySelector('[data-testid="stab-total"]')?.textContent) > 0);
     const total = Number(div.querySelector('[data-testid="stab-total"]')!.textContent);
-    expect(total).toBe(47); // 40 file-1 + 6 tab DEMO + 1 PS case in this test
+    expect(total).toBeGreaterThanOrEqual(47); // ≥ 40 file-1 + 6 tab DEMO + 1 PS case (other files may add DEMO tickets)
+    expect(Number(div.querySelector('[data-testid="stab-list-count"]')!.textContent!.split(' ')[0])).toBe(total);
+    expect([...div.querySelectorAll('[data-testid="stab-dept-table"] tbody tr')].reduce((a, tr) => a + Number(tr.querySelectorAll('td')[1]!.textContent), 0)).toBe(total);
     expect(div.querySelectorAll('[data-testid="stab-dept-table"] tbody tr')).toHaveLength(4);
     expect(domHits(div)).toEqual([]);
     // hover text of card ③ (keyboard focus → tooltip)
