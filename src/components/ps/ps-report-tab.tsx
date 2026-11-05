@@ -46,6 +46,8 @@ import { SetupDurationCard, SetupResetStrip } from "./setup-duration-card";
 
 /** Tab R1 §1 — cards unmounted from this tab; their code stays for reference (never rendered). */
 const R1_LEGACY = false as boolean;
+/** Tab R5 §1: old card ข้อเสนอต่อสัญญา stays in code, not rendered in tab สัญญา & ราคา. */
+const R5_OLD_OFFER_CARD = false as boolean;
 /** Tab R3 §1 — old card ④ อายุสัญญา unmounted from this tab; code kept (never rendered). */
 const R3_LEGACY_LIFETIME = false as boolean;
 /** Tab R4 §1/§2 — old ระยะเวลา Setup card and สัญญาณจากสัญญา unmounted from this tab; code kept (never rendered). */
@@ -1331,7 +1333,8 @@ export function PsReportTab({
         </div>
       )}
       <RiskRulesDialog open={rulesOpen} onOpenChange={setRulesOpen} rules={rules} />
-      <div className={compareSide ? "" : "lg:col-span-2"}>
+      {/* Tab R5 §1 (RP127): card ข้อเสนอต่อสัญญา unmounted from this tab — component, hooks and v_ps_repricing kept. */}
+      {R5_OLD_OFFER_CARD && <div className={compareSide ? "" : "lg:col-span-2"}>
         <DashCard
           period={<NowChip />}
           title={R1_TITLES.offer}
@@ -1354,7 +1357,7 @@ export function PsReportTab({
         >
           <RepricingBox rows={repriceRows} pending={repricePending || !report} />
         </DashCard>
-      </div>
+      </div>}
     </div>
   );
 }

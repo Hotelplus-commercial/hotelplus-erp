@@ -259,7 +259,8 @@ describe('§2.3 detail-tab ณ วันนี้ cards', () => {
     // Tab R1 §1: ⑦b and the pending-work card left this tab, ① In/Out + ⑦ Contract Health (ณ วันนี้) joined;
     // old ① Lifecycle / ② Churn (time-based) were unmounted.
     // Tab R4 §1: สัญญาณจากสัญญา (ณ วันนี้) was unmounted from this tab → 4 became 3.
-    expect(now.length).toBe(3);
+    // Tab R5 §1 (RP127): ข้อเสนอต่อสัญญา (ณ วันนี้) was unmounted from this tab → 3 became 2.
+    expect(now.length).toBe(2);
     // Tab R2 §1: the renewal card was replaced by one with its own period bar (เดือน · ไตรมาส · ปี · Custom), not a CompareControl.
     // Tab R3 §1: card ④ อายุสัญญา was replaced by a `ณ วันนี้` card without any compare (only ระยะเวลา Setup kept one).
     // Tab R4 §0/§2: card ⑤ ระยะเวลา Setup is `ณ วันนี้` with no compare control on the chart → no CompareControl left in this tab.

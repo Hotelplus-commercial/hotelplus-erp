@@ -9,7 +9,7 @@ import { InfoButton } from "./dash-card";
 import { GuidedTour, type TourStep } from "./guided-tour";
 import { RenewalReasonPicker } from "./renewal-reason-picker";
 import { usePsRenewalCards, type RenewalCard } from "@/lib/ps-renewal";
-import { useRenewalStore } from "@/lib/renewal-store";
+import { setRenewalDemo, useRenewalStore } from "@/lib/renewal-store";
 import type { RenewalRequest } from "@/lib/renewal-rules";
 import { editReason, reasonFor, recordReason, setReasonsDemo, useRenewalReasons, type RenewalReason } from "@/lib/renewal-reasons";
 import { cardIdFor, dayDiff, scanDateOf, toIsoDate, writeEarlyHandoff, EARLY_PARAM } from "@/lib/renewal-scan";
@@ -25,6 +25,10 @@ import {
 import { RN2, RN2_OUTCOME_TH, RN2_STAGE_TH, RN2_ZONE_TH, RENEWAL_OWNER_ONLY_HINT, RENEWAL_OWNER_ONLY_TOOLTIP, RENEWAL_TEST_BANNER, RENEWAL_TEST_SWITCH, aeNameTh } from "@/lib/ps-glossary";
 import { isRenewalTestMode, setTestMember } from "@/lib/renewal-test-actor";
 import { cn } from "@/lib/utils";
+import { OfferBlock, OfferInfoNote, OfferResult, offerInfoFor, reasonChipCls, v14BoardItems, type OfferInfo } from "./renewal-offer-r5";
+import { renewalR5DemoItems, renewalR5DemoReasons } from "@/lib/renewal-r5-demo";
+import { OFFER_CHIPS, offerChipCounts, offerHit, type ChipType } from "@/lib/renewal-r5";
+import { RN5, RO } from "@/lib/ps-glossary";
 
 const pct = (v: number | null) => (v == null ? "—" : `${v.toFixed(1)}%`);
 const svcCls = (s: string) => (s === "ORM" ? "svc-orm" : "svc-marcom");
@@ -132,6 +136,8 @@ export function RenewalCardR2({ data }: { data: TabR1Data | undefined }) {
   const cards = usePsRenewalCards();
   const store = useRenewalStore();
   useEffect(() => { setReasonsDemo(demo, renewalR2DemoReasons); }, [demo]);
+  // Tab R5: the board reads the same shared DEMO renewal store as the AE Workspace (v1.4 demo requests / snapshots); memory only.
+  useEffect(() => { setRenewalDemo(demo); }, [demo]);
   const stored = useRenewalReasons();
   const [sim, setSim] = useState(false);
   const simData = useMemo(() => (demo && sim ? renewalR2Sim(120, today) : null), [demo, sim, today]);
@@ -141,9 +147,19 @@ export function RenewalCardR2({ data }: { data: TabR1Data | undefined }) {
     // DEMO: R2 demo additions + any card made this session through the create path (early create / scan).
     const latest = (id: string) => [...store.requests].reverse().find((r) => r.renewal_card_id === id) ?? null;
     const base = renewalR2DemoItems().map((i) => { const c = cards.find((k) => k.id === cardIdFor(i.contract_id)); return c ? withCard({ ...i, last_activity: i.last_activity }, c, latest(c.id)) : i; });
-    return simData ? [...base, ...simData.items] : base;
+    // Tab R5 §6: v1.4 demo contracts + decided ต.ค. 69 offer cards (added, DEMO only).
+    const r5 = [...v14BoardItems(store.requests), ...renewalR5DemoItems()];
+    return simData ? [...base, ...r5, ...simData.items] : [...base, ...r5];
   }, [data, demo, cards, store.requests, simData]);
-  const reasons = useMemo(() => (simData ? [...stored, ...simData.reasons] : stored), [stored, simData]);
+  const reasons = useMemo(() => { const r5 = demo ? renewalR5DemoReasons() : []; return [...stored, ...r5, ...(simData?.reasons ?? [])]; }, [stored, simData, demo]);
+  /* Tab R5 — offer info per card (read only; v1.4 engine or the request's snapshot) */
+  const offers = useMemo(() => {
+    const m = new Map<string, OfferInfo>();
+    const latestOf = (id: string | null | undefined) => (id ? [...store.requests].reverse().find((r) => r.renewal_card_id === id) ?? null : null);
+    for (const i of items) if (!i.contract_id.startsWith("SIM-")) m.set(i.contract_id, offerInfoFor(i, latestOf(i.card_id), demo));
+    return m;
+  }, [items, store.requests, demo]);
+  const offerOf = (i: RenewalItem) => offers.get(i.contract_id) ?? null;
   const recOf = (i: RenewalItem) => reasonFor(reasons, i.contract_id, i.card_id);
   const hasReason = (i: RenewalItem) => !!recOf(i);
 
@@ -187,20 +203,26 @@ export function RenewalCardR2({ data }: { data: TabR1Data | undefined }) {
   const periodItems = items.filter((i) => inPeriod(i, range));
   const lists = urgentLists(items, range, today, hasReason);
   const activeTile = tile === undefined ? TILE_KEYS.find((k) => lists[k].length) ?? null : tile;
-  const hit = (i: RenewalItem) => highlightHit(i, h);
-  const hl = highlightActive(h);
+  const [offerSel, setOfferSel] = useState<Set<ChipType>>(new Set());
+  const [blockOpen, setBlockOpen] = useState<Set<string>>(new Set());
+  const hitWith = (next: Highlight, sel: ReadonlySet<ChipType>) => (i: RenewalItem) => highlightHit(i, next) && offerHit(sel, offerOf(i)?.type ?? null);
+  const hit = hitWith(h, offerSel);
+  const hl = highlightActive(h) || offerSel.size > 0;
   const nHits = hl ? periodItems.filter(hit).length : 0;
+  const chipCounts = offerChipCounts(periodItems, (i) => offerOf(i)?.type ?? null);
+  const visibleUndecided = periodItems.filter((i) => isOpen(i) && open.includes(i.stage));
+  const allOpen = visibleUndecided.length > 0 && visibleUndecided.every((i) => blockOpen.has(i.contract_id));
   const nameOf = (k: string) => (view === "ae" ? aeNameTh(k) : k);
-  const applyH = (next: Highlight, extra?: Stage[]) => {
+  const applyH = (next: Highlight, extra?: Stage[], sel: ReadonlySet<ChipType> = offerSel) => {
     setH(next);
-    const add = highlightActive(next) ? stagesWithHits(periodItems, (i) => highlightHit(i, next)) : [];
+    const add = highlightActive(next) || sel.size ? stagesWithHits(periodItems, hitWith(next, sel)) : [];
     setOpen((o) => [...new Set([...o, ...add, ...(extra ?? [])])]);
   };
   const scrollBoard = () => setTimeout(() => boardRef.current?.scrollIntoView({ block: "start", behavior: "smooth" }), 0);
   const viewCard = (i: RenewalItem) => {
     if (!inPeriod(i, range)) { setKind("month"); setAnchor(periodDate(i)); }
     const next = { ...NO_HIGHLIGHT, view: h.view, q: i.contract_id };
-    setH(next); setTileChip(null); setOpen((o) => [...new Set([...o, i.stage])]); scrollBoard();
+    setH(next); setTileChip(null); setOfferSel(new Set()); setOpen((o) => [...new Set([...o, i.stage])]); scrollBoard();
   };
   const onOwner = (key: string, stage?: Stage) => {
     const r = ownerClick(h, open, key, view, stage);
@@ -398,10 +420,20 @@ export function RenewalCardR2({ data }: { data: TabR1Data | undefined }) {
           </label>
           <input type="search" value={h.q} placeholder={RN2.status.search} aria-label={RN2.status.search} onChange={(e) => applyH({ ...h, q: e.target.value })} />
           {tileChip && <button type="button" className="rn2-chip-on" onClick={() => { setTileChip(null); applyH({ ...h, ids: null }); }}>{RN2.status.tiles[tileChip].t} ✕</button>}
-          {hl && <span className="rn2-hint">{nHits ? RN2.status.hits(nHits) : RN2.status.noHits} <button type="button" onClick={() => { setTileChip(null); setH({ ...NO_HIGHLIGHT, view }); }}>{RN2.status.clear}</button></span>}
+          {/* Tab R5 §4 — offer chips (highlight only; KPIs / AE table / reasons unchanged) */}
+          <span className="rn5-chips" role="group" aria-label={RN5.chipLabel} data-testid="rn5-chips">
+            <span className="rn5-chips-label">{RN5.chipLabel}<OfferInfoNote /></span>
+            {OFFER_CHIPS.map((t) => { const on = offerSel.has(t); return (
+              <button key={t} type="button" aria-pressed={on} data-chip={t} className={cn("rn5-chip", on && "is-on")}
+                onClick={() => { const next = new Set(offerSel); if (on) next.delete(t); else next.add(t); setOfferSel(next); applyH(h, undefined, next); }}>
+                {RO.type[t]} <b className="tabular-nums">{chipCounts[t]}</b>
+              </button>); })}
+          </span>
+          {hl && <span className="rn2-hint">{nHits ? RN2.status.hits(nHits) : RN2.status.noHits} <button type="button" onClick={() => { setTileChip(null); setOfferSel(new Set()); setH({ ...NO_HIGHLIGHT, view }); }}>{RN2.status.clear}</button></span>}
           <button type="button" role="switch" aria-checked={open.length > 0} data-tour="rn2-switch" className={cn("rn2-switch", open.length > 0 && "is-on")} onClick={() => setOpen(open.length ? [] : [...STAGE_ORDER])}>
             <i aria-hidden /> {open.length ? RN2.status.showStages : RN2.status.hideStages}
           </button>
+          <button type="button" className="rn5-all" data-testid="rn5-all" onClick={() => setBlockOpen(allOpen ? new Set() : new Set(visibleUndecided.map((i) => i.contract_id)))}>{allOpen ? RN5.closeAll : RN5.openAll}</button>
         </div>
 
         {/* §5.3 board — hidden by default */}
@@ -425,7 +457,8 @@ export function RenewalCardR2({ data }: { data: TabR1Data | undefined }) {
                             {list.length ? list.map((i) => (
                               <RnCard key={i.contract_id} i={i} today={today} now={now} rec={recOf(i)} dim={hl && !hit(i)} hot={hl && hit(i)} actor={actor}
                                 earlyHref={canEarlyCreate(actor, i) ? () => early(i) : null} onSwitch={i.ae ? () => setActAs(i.ae!) : null}
-                                onReason={(rec) => setDlg({ item: i, rec })} />
+                                onReason={(rec) => setDlg({ item: i, rec })} offer={offerOf(i)} blockOpen={blockOpen.has(i.contract_id)}
+                                onBlock={() => setBlockOpen((o) => { const n = new Set(o); if (n.has(i.contract_id)) n.delete(i.contract_id); else n.add(i.contract_id); return n; })} />
                             )) : <p className="rn2-empty">{RN2.status.emptyStage}</p>}
                           </div>
                         );
@@ -461,7 +494,7 @@ function topicText(k: TileKey, i: RenewalItem, today: string) {
 }
 
 /* ---------------- §5.4 contract card ---------------- */
-export function RnCard({ i, today, now, rec, dim, hot, actor, earlyHref, onSwitch, onReason }: { i: RenewalItem; today: string; now: string; rec: RenewalReason | null; dim: boolean; hot: boolean; actor: Actor; earlyHref: (() => string) | null; onSwitch?: (() => void) | null; onReason: (rec: RenewalReason | null) => void }) {
+export function RnCard({ i, today, now, rec, dim, hot, actor, earlyHref, onSwitch, onReason, offer = null, blockOpen = false, onBlock }: { i: RenewalItem; today: string; now: string; rec: RenewalReason | null; dim: boolean; hot: boolean; actor: Actor; earlyHref: (() => string) | null; onSwitch?: (() => void) | null; onReason: (rec: RenewalReason | null) => void; offer?: OfferInfo | null; blockOpen?: boolean; onBlock?: () => void }) {
   const C = RN2.card;
   const past = isPastDue(i, today);
   const sd = stageDays(i, today); const st = stageTone(i, today);
@@ -483,6 +516,7 @@ export function RnCard({ i, today, now, rec, dim, hot, actor, earlyHref, onSwitc
             <dt>{C.inStage}</dt><dd>{sd == null ? (i.stage === "NOT_STARTED" ? C.scanOn(thShort(scanDateOf(i.end))) : "—") : <span className={cn(`rn2-sla-${st}`)}>{C.days(sd)}</span>}</dd>
             <dt>{C.lastAct}</dt><dd>{ad == null ? C.noAct : <><span className={cn(`rn2-sla-${slaTone(ad, RENEWAL_SLA.LAST_ACTIVITY)}`)}>{C.ago(ad)}</span>{i.last_activity?.what ? ` · ${i.last_activity.what}` : ""}</>}</dd>
           </dl>
+          {offer && <OfferBlock info={offer} open={blockOpen} onToggle={() => onBlock?.()} />}
           {isEarlyRequest(i) && i.stage !== "NOT_STARTED" && <span className="rn2-tag">{C.earlyTag}</span>}
           {earlyHref && <a className="rn2-early" href="#" onClick={(e) => { e.preventDefault(); window.location.assign(earlyHref()); }}>{i.card_id || today >= scanDateOf(i.end) ? C.btnStart : C.btnEarly}</a>}
           {/* R2.1 UF2: non-owners see the owner-only button disabled + hint (own-only rule unchanged) */}
@@ -502,12 +536,13 @@ export function RnCard({ i, today, now, rec, dim, hot, actor, earlyHref, onSwitc
           {isEarlySigned(i) && <><dt /><dd><span className="rn2-tag is-good">{C.earlySigned}</span></dd></>}
         </dl>
       )}
+      {i.stage === "RENEWED" && offer && <OfferResult i={i} info={offer} rec={rec} />}
       {i.stage === "LOST_OR_DECLINED" && (
         <div className="rn2-ct-lost">
           <p>{C.result} <strong>{RN2_OUTCOME_TH[i.outcome ?? "NOT_RENEWED"]}</strong> · {thShort(periodDate(i))} · {C.ago(dayDiff(periodDate(i), today))}</p>
           {rec ? (
             <>
-              <div className="r1-chips">{rec.primary.map((k) => <span key={k} className="r1-chip is-bad">{reasonLabel(k)}</span>)}<span className="r1-chip is-amber">{reasonLabel(rec.secondary)}</span></div>
+              <div className="r1-chips">{rec.primary.map((k) => <span key={k} className={reasonChipCls(k, true)}>{reasonLabel(k)}</span>)}<span className={reasonChipCls(rec.secondary, false)}>{reasonLabel(rec.secondary)}</span></div>
               {rec.note && <p className="rn2-ct-note">{rec.note}</p>}
               {canEditReason(actor, i.ae, rec, now) ? <button type="button" className="rn2-link" onClick={() => onReason(rec)}>{C.edit(daysLeftToEdit(rec, now))}</button>
                 : <small>{C.locked(thShort(rec.created_at), aeNameTh(rec.created_by.display))}</small>}
@@ -519,6 +554,7 @@ export function RnCard({ i, today, now, rec, dim, hot, actor, earlyHref, onSwitc
               <small className="rn2-amber">{C.waiting(Math.max(0, dayDiff(periodDate(i), today)))}</small>
             </>
           )}
+          {offer && <OfferResult i={i} info={offer} rec={rec} />}
         </div>
       )}
     </article>
