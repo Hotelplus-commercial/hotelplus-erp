@@ -29,6 +29,7 @@ import { seedShutoffDemo } from "@/lib/partner-todo";
 import { ShutoffDetailRows, ShutoffRowHint, useShutoffActor } from "@/components/workspace/partner-shutoff";
 import { isPsShutoff } from "@/lib/partner-workspace";
 import type { TodoTypeGroup } from "@/lib/workspace-registry";
+import { CoachingGroup } from "@/components/workspace/coaching-group";
 
 const fmt = (iso: string) => new Date(iso).toLocaleString("th-TH", { dateStyle: "medium", timeStyle: "short" });
 const RANGES: { key: DateRange; label: string }[] = [{ key: "today", label: "วันนี้" }, { key: "7d", label: "7 วัน" }, { key: "14d", label: "14 วัน" }];
@@ -120,6 +121,9 @@ export function WorkspaceShell({ config, demo, ticket, roleState, onGoBdm }: { c
       <p className="text-xs text-muted-foreground">โหมดทดสอบ (เครื่องเดียว ไม่มีล็อกอิน) — การส่ง ticket ข้ามเครื่องจะใช้ได้เมื่อมี Cloud Sync Level B</p>
 
       {deptRole === "PM" && <PmTester />}
+
+      {/* Workspace Coaching patch v1.0 (WC7–WC9): 🎯 Coaching group from the registry row */}
+      {config.coaching && <CoachingGroup scope={config.coaching} demo={demo} />}
 
       <div className="grid gap-4 lg:grid-cols-[1fr_1fr_1.4fr]">
         <Lane title="⏰ ตารางนัด">
