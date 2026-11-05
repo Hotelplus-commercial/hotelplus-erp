@@ -1,6 +1,7 @@
 /* Workspace Coaching patch v1.0 (WC7–WC11) — 🎯 Coaching group: งานที่ฉันต้องดูแล (supervisor, actionable) + เรื่องที่เกี่ยวกับฉัน (owner, รับทราบ only).
  * Reads only useCoachingTasks(). "สมาชิกที่ดู (DEMO)" picker shows whenever DEMO is on (simulation, never security). */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { setBellViewer } from "@/lib/bell-items";
 import { Link } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -53,6 +54,8 @@ export function CoachingGroup({ scope, demo, onlyRule, defaultViewer }: { scope:
   const about = useMemo(() => tasks.filter((t) => isOwner(t, v.member) && pass(t)).sort(sortTasks), [tasks, v.member, filter]); // eslint-disable-line react-hooks/exhaustive-deps
   const now = demo ? `${DEMO_DAY.slice(0, 10)}T09:00:00+07:00` : new Date().toISOString();
   const showMine = scope !== "AE" || v.role === "PM";
+  // Service SLA Core v1.0: in DEMO the picked member is also the bell viewer (USER items + their role + this Workspace queue).
+  useEffect(() => { if (!demo || scope === "AE") return; setBellViewer({ id: `member:${viewer}`, users: [viewer], roles: v.role ? [v.role] : [], depts: [scope] }); }, [demo, viewer, scope]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <section className="space-y-3 rounded-lg border p-3" data-testid="coaching-group">

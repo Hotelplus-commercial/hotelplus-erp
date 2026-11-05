@@ -17,6 +17,9 @@ import { cn } from "@/lib/utils";
 import { markAlertRead, resetContractHealthDemo, runDemoDayIfNeeded, useContractHealthStore } from "@/lib/contract-health-store";
 import { QUICK_OF, type ChAlert } from "@/lib/contract-tab-r1";
 import { R1_ALERT_TH, R1_TIER_TH } from "@/lib/ps-glossary";
+import { markBellRead, useBellItems, useBellViewer, viewerFromPath } from "@/lib/bell-items";
+import { runServiceTicketDay } from "@/lib/service-ticket-runtime";
+import { isDemoTickets } from "@/lib/tickets-l0";
 
 /** Tab R1 §7 — the four contract-health events, shown only in the AE Workspace bell. */
 const chText = (a: ChAlert) =>
@@ -47,7 +50,13 @@ export function NotificationCenter() {
   const [viewAe, setViewAe] = useState<string>("");
   const ae = viewAe && chAes.includes(viewAe) ? viewAe : chAes[0] ?? "";
   const chAlerts = aeBell ? ch.alerts.filter((a) => a.ae === ae).slice().reverse() : [];
-  const unread = items.filter((n) => n.unread).length + tickets.filter(t => t.status === "NEW").length + chAlerts.filter((a) => !a.read).length;
+  // Service SLA Core v1.0 §7: targeted bell items for the current viewer (Workspace role / member pickers; default = Workspace department).
+  const pickedViewer = useBellViewer();
+  const viewer = pickedViewer ?? viewerFromPath(location.pathname);
+  const bellDemo = isDemoTickets();
+  useEffect(() => { runServiceTicketDay(); }, [allTickets, bellDemo]);
+  const bell = useBellItems(bellDemo, viewer);
+  const unread = bell.filter((b) => !viewer || !b.read_by.includes(viewer.id)).length + items.filter((n) => n.unread).length + tickets.filter(t => t.status === "NEW").length + chAlerts.filter((a) => !a.read).length;
 
   return (
     <Popover>
@@ -91,6 +100,12 @@ export function NotificationCenter() {
               <Link className={cn("block rounded px-2 py-1.5 text-xs hover:bg-muted/60", !a.read && "bg-primary/[0.04] font-medium")}
                 to="/ps" search={{ tab: "ps", ch: QUICK_OF[a.kind], chq: a.hotel_name ?? undefined, demo: demo ? 1 : undefined }}
                 onClick={() => markAlertRead(demo, a.key)}>{chText(a)}</Link>
+            </li>)}</ul>
+          </div>}
+          {bell.length > 0 && viewer && <div className="border-b px-4 py-3" data-testid="bell-ticket-alerts">
+            <p className="mb-2 text-xs font-medium text-muted-foreground">แจ้งเตือน Ticket</p>
+            <ul className="space-y-1">{bell.map((b) => <li key={b.id}>
+              <button type="button" onClick={() => markBellRead(bellDemo, b.id, viewer.id)} className={cn("w-full rounded px-2 py-1.5 text-left text-xs hover:bg-muted", !b.read_by.includes(viewer.id) && "font-medium")}>{b.text}</button>
             </li>)}</ul>
           </div>}
           {tickets.length > 0 && <div className="border-b px-4 py-3">

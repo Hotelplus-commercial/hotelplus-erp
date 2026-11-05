@@ -30,6 +30,8 @@ import { ShutoffDetailRows, ShutoffRowHint, useShutoffActor } from "@/components
 import { isPsShutoff } from "@/lib/partner-workspace";
 import type { TodoTypeGroup } from "@/lib/workspace-registry";
 import { CoachingGroup } from "@/components/workspace/coaching-group";
+import { setBellViewer } from "@/lib/bell-items";
+import { HEAD_OF, SVC_DEPTS, type SvcDept } from "@/lib/service-tickets";
 
 const fmt = (iso: string) => new Date(iso).toLocaleString("th-TH", { dateStyle: "medium", timeStyle: "short" });
 const RANGES: { key: DateRange; label: string }[] = [{ key: "today", label: "วันนี้" }, { key: "7d", label: "7 วัน" }, { key: "14d", label: "14 วัน" }];
@@ -80,6 +82,13 @@ export function WorkspaceShell({ config, demo, ticket, roleState, onGoBdm }: { c
   const [ownMember, setOwnMember] = useState<string>(WB_TEST_BDS[0].member_id);
   const [range, setRange] = useState<DateRange>("today");
   useEffect(() => { if (!roleState) setOwnRole(config.dept_key); }, [config.dept_key]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Service SLA Core v1.0 §7: the bell shows this Workspace's queue + its head's items for the role being played (testing simulation).
+  const bellRole = (roleState?.role ?? ownRole) === "BDM" ? "BD" : (roleState?.role ?? ownRole);
+  useEffect(() => {
+    const d = bellRole as SvcDept;
+    setBellViewer({ id: `ws:${bellRole}`, users: [], roles: SVC_DEPTS.includes(d) ? [HEAD_OF[d]] : bellRole === "PM" ? ["PM"] : [], depts: [bellRole] });
+    return () => setBellViewer(null);
+  }, [bellRole]);
   if (!ready) return null;
   const rs: WsRoleState = roleState ?? { role: ownRole, setRole: setOwnRole, bdMember: ownMember, setBdMember: setOwnMember };
   const { role, bdMember } = rs;
