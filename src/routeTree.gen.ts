@@ -89,6 +89,7 @@ import { Route as PsPropertyContentHotelIdRouteImport } from './routes/ps.proper
 import { Route as PsTemplatesIndexRouteImport } from './routes/ps.templates.index'
 import { Route as PsTemplatesTemplateIdRouteImport } from './routes/ps.templates.$templateId'
 import { Route as PsTemplatesAutoFieldsRouteImport } from './routes/ps.templates.auto-fields'
+import { Route as WorkspacePsPartnersRouteImport } from './routes/workspace.ps.partners'
 import { Route as PsContractWizardRenewContractIdRouteImport } from './routes/ps.contract-wizard.renew.$contractId'
 import { Route as PsTemplatesBlockGroupsGroupIdRouteImport } from './routes/ps.templates.block-groups.$groupId'
 import { Route as PsTemplatesPreviewTemplateIdRouteImport } from './routes/ps.templates.preview.$templateId'
@@ -495,6 +496,11 @@ const PsTemplatesAutoFieldsRoute = PsTemplatesAutoFieldsRouteImport.update({
   path: '/templates/auto-fields',
   getParentRoute: () => PsRoute,
 } as any)
+const WorkspacePsPartnersRoute = WorkspacePsPartnersRouteImport.update({
+  id: '/workspace/ps/partners',
+  path: '/workspace/ps/partners',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PsContractWizardRenewContractIdRoute =
   PsContractWizardRenewContractIdRouteImport.update({
     id: '/renew/$contractId',
@@ -588,6 +594,7 @@ export interface FileRoutesByFullPath {
   '/ps/property-content/$hotelId': typeof PsPropertyContentHotelIdRoute
   '/ps/templates/$templateId': typeof PsTemplatesTemplateIdRoute
   '/ps/templates/auto-fields': typeof PsTemplatesAutoFieldsRoute
+  '/workspace/ps/partners': typeof WorkspacePsPartnersRoute
   '/bd/quotations/': typeof BdQuotationsIndexRoute
   '/bd/quotes/': typeof BdQuotesIndexRoute
   '/orm/action-a/': typeof OrmActionAIndexRoute
@@ -663,6 +670,7 @@ export interface FileRoutesByTo {
   '/ps/property-content/$hotelId': typeof PsPropertyContentHotelIdRoute
   '/ps/templates/$templateId': typeof PsTemplatesTemplateIdRoute
   '/ps/templates/auto-fields': typeof PsTemplatesAutoFieldsRoute
+  '/workspace/ps/partners': typeof WorkspacePsPartnersRoute
   '/bd/quotations': typeof BdQuotationsIndexRoute
   '/bd/quotes': typeof BdQuotesIndexRoute
   '/orm/action-a': typeof OrmActionAIndexRoute
@@ -749,6 +757,7 @@ export interface FileRoutesById {
   '/ps/property-content/$hotelId': typeof PsPropertyContentHotelIdRoute
   '/ps/templates/$templateId': typeof PsTemplatesTemplateIdRoute
   '/ps/templates/auto-fields': typeof PsTemplatesAutoFieldsRoute
+  '/workspace/ps/partners': typeof WorkspacePsPartnersRoute
   '/bd/quotations/': typeof BdQuotationsIndexRoute
   '/bd/quotes/': typeof BdQuotesIndexRoute
   '/orm/action-a/': typeof OrmActionAIndexRoute
@@ -836,6 +845,7 @@ export interface FileRouteTypes {
     | '/ps/property-content/$hotelId'
     | '/ps/templates/$templateId'
     | '/ps/templates/auto-fields'
+    | '/workspace/ps/partners'
     | '/bd/quotations/'
     | '/bd/quotes/'
     | '/orm/action-a/'
@@ -911,6 +921,7 @@ export interface FileRouteTypes {
     | '/ps/property-content/$hotelId'
     | '/ps/templates/$templateId'
     | '/ps/templates/auto-fields'
+    | '/workspace/ps/partners'
     | '/bd/quotations'
     | '/bd/quotes'
     | '/orm/action-a'
@@ -996,6 +1007,7 @@ export interface FileRouteTypes {
     | '/ps/property-content/$hotelId'
     | '/ps/templates/$templateId'
     | '/ps/templates/auto-fields'
+    | '/workspace/ps/partners'
     | '/bd/quotations/'
     | '/bd/quotes/'
     | '/orm/action-a/'
@@ -1027,6 +1039,7 @@ export interface RootRouteChildren {
   WorkspaceDeptRoute: typeof WorkspaceDeptRoute
   ApiPublicAcBillingDailyRoute: typeof ApiPublicAcBillingDailyRoute
   LRenewRequestIdRoute: typeof LRenewRequestIdRoute
+  WorkspacePsPartnersRoute: typeof WorkspacePsPartnersRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1591,6 +1604,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PsTemplatesAutoFieldsRouteImport
       parentRoute: typeof PsRoute
     }
+    '/workspace/ps/partners': {
+      id: '/workspace/ps/partners'
+      path: '/workspace/ps/partners'
+      fullPath: '/workspace/ps/partners'
+      preLoaderRoute: typeof WorkspacePsPartnersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/ps/contract-wizard/renew/$contractId': {
       id: '/ps/contract-wizard/renew/$contractId'
       path: '/renew/$contractId'
@@ -1882,6 +1902,7 @@ const rootRouteChildren: RootRouteChildren = {
   WorkspaceDeptRoute: WorkspaceDeptRoute,
   ApiPublicAcBillingDailyRoute: ApiPublicAcBillingDailyRoute,
   LRenewRequestIdRoute: LRenewRequestIdRoute,
+  WorkspacePsPartnersRoute: WorkspacePsPartnersRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
