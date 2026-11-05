@@ -1,5 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { setPartnerDemo } from "@/lib/debt-partner-store";
+import { partnerDemoHotel } from "@/components/ps/partner-system-ui";
 import { toast } from "sonner";
 
 import { Chip } from "@/components/crm/crm-ui";
@@ -11,7 +13,8 @@ import { PropertySystemBlock } from "@/components/ps/partner-system-ui";
 import { IDENTITY_FIELDS, MARCOM_VIEWERS, SERVICE_LABEL, STATUS_LABEL, canSeeRestricted, serviceForVariant, useWs2, type Ws2Service } from "@/lib/ws2-store";
 
 export const Route = createFileRoute("/ps/property-content/$hotelId")({
-  validateSearch: (s: Record<string, unknown>): { card?: string; viewer?: string } => ({
+  validateSearch: (s: Record<string, unknown>): { card?: string; viewer?: string; demo?: 1 } => ({
+    ...(s["demo"] === "1" || s["demo"] === 1 ? { demo: 1 as const } : {}),
     ...(typeof s["card"] === "string" ? { card: s["card"] } : {}),
     ...(typeof s["viewer"] === "string" ? { viewer: s["viewer"] } : {}),
   }),
@@ -34,7 +37,10 @@ const show = (v: unknown) => (Array.isArray(v) ? v.join(", ") : String(v));
 
 function PropertyInfoInternal() {
   const { hotelId } = Route.useParams();
-  const { card: cardParam, viewer } = Route.useSearch();
+  const { card: cardParam, viewer, demo } = Route.useSearch();
+  // v1.1 PW21: ?demo=1 → the ORM block reads the DEMO Partner store; #orm scrolls to it.
+  useEffect(() => { if (demo) setPartnerDemo(true); }, [demo]);
+  useEffect(() => { if (window.location.hash === "#orm") setTimeout(() => document.getElementById("orm")?.scrollIntoView({ block: "start" }), 50); }, []);
   const w = useWs2();
   const s = useServicing();
   const property = w.properties.find((p) => p.hotel_id === hotelId);
@@ -43,6 +49,16 @@ function PropertyInfoInternal() {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<Record<string, string>>({});
   const [showL3, setShowL3] = useState(false);
+  const demoHotel = demo ? partnerDemoHotel(hotelId) : null;
+  if (!property && demoHotel) return (
+    <div className="flex flex-col gap-4" data-testid="hp-demo-hotel">
+      <PageHeader eyebrow="PS App · ข้อมูลโรงแรม · Property Info (ทีม) · ข้อมูลสาธิต" title={demoHotel}
+        description={`Hotel ID: ${hotelId} · โรงแรมตัวอย่างของข้อมูล Partner (DEMO) · ไม่บันทึก`}
+        actions={<Button asChild variant="outline" size="sm"><Link to="/ps/property-content" search={{ demo: 1 }}>← ข้อมูลโรงแรม</Link></Button>} />
+      <Button size="sm" variant="default" className="w-fit">ORM</Button>
+      <PropertySystemBlock propertyId={hotelId} isPm={s.role === "pm"} />
+    </div>
+  );
   if (!property) return <p className="py-16 text-center text-sm text-muted-foreground">ไม่พบโรงแรมนี้</p>;
   const service = tab ?? profiles[0]?.service ?? null;
   const profile = profiles.find((p) => p.service === service);
@@ -77,7 +93,7 @@ function PropertyInfoInternal() {
       <PageHeader eyebrow="PS App · ข้อมูลโรงแรม · Property Info (ทีม)" title={property.hotel_name_th}
         description={`Hotel ID: ${property.hotel_id} · Start year: ${property.start_year ?? "—"} · Owner AE: ${property.owner_ae ?? "—"}`}
         actions={<div className="flex gap-2">
-          <Button asChild variant="outline" size="sm"><Link to="/ps/property-content">← ข้อมูลโรงแรม</Link></Button>
+          <Button asChild variant="outline" size="sm"><Link to="/ps/property-content" search={demo ? { demo: 1 } : {}}>← ข้อมูลโรงแรม</Link></Button>
           {cardId && <Button asChild variant="outline" size="sm"><Link to="/ps/onboarding-process" hash={`servicing-card-${cardId}`}>↩ Back to card</Link></Button>}
         </div>} />
       <div className="flex flex-wrap gap-2">

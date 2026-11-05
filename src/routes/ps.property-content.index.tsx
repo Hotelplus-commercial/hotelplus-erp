@@ -7,11 +7,13 @@ import { Ws2GenerateNewProperty } from "@/components/ps/ws2-panel";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { PartnerDemoHotelList } from "@/components/ps/partner-system-ui";
 import { PC_VIEWERS, SERVICE_LABEL, useWs2, type ServiceProfile } from "@/lib/ws2-store";
 
 const description = "Property Content: คลังข้อมูลโรงแรมทั้งพอร์ต ค้นหา เรียง และกรอง My Hotel พร้อมสร้างฟอร์มให้โรงแรมใหม่";
 
 export const Route = createFileRoute("/ps/property-content/")({
+  validateSearch: (s: Record<string, unknown>): { demo?: 1 } => (s["demo"] === "1" || s["demo"] === 1 ? { demo: 1 as const } : {}),
   head: () => ({
     meta: [
       { title: "ข้อมูลโรงแรม — PS App | Meridia Hotel ERP" },
@@ -31,6 +33,7 @@ export const rollup = (ps: ServiceProfile[]) =>
     : ps.some((p) => p.form_completion_status !== "not_sent") ? { icon: "◐", label: "partial" } : { icon: "○", label: "not sent" };
 
 function PropertyContentPage() {
+  const { demo } = Route.useSearch();
   const w = useWs2();
   const [q, setQ] = useState("");
   const [mine, setMine] = useState(false);
