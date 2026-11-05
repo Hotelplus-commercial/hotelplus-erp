@@ -171,6 +171,7 @@ export function rateCardRows(data: PartnerData, contracts: PartnerContract[], da
     const negotiating = deals.some((d) => d.status === 'NEGOTIATING');
     return {
       card, partner: data.partners.find((p) => p.id === card.partner_id)?.name ?? card.partner_id, contracts: costs.length,
+      hotels: new Set(data.property_partner_system.map((r) => r.property_id).filter((pid) => { const s = propertySystemOn(data, pid, date); return s?.partner_id === card.partner_id && s.system_name === card.system_name; })).size,
       base, net, active, negotiating, fallback: costs.filter((x) => x.cost!.fallback_tier).map((x) => x.c.contract_id),
       toThb: (v: number) => (card.currency === 'THB' ? v : card.est_fx_to_thb ? v * card.est_fx_to_thb : null),
     };
