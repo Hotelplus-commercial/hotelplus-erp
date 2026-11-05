@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/erp-ui";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useServicing } from "@/lib/ps-servicing";
+import { PropertySystemBlock } from "@/components/ps/partner-system-ui";
 import { IDENTITY_FIELDS, MARCOM_VIEWERS, SERVICE_LABEL, STATUS_LABEL, canSeeRestricted, serviceForVariant, useWs2, type Ws2Service } from "@/lib/ws2-store";
 
 export const Route = createFileRoute("/ps/property-content/$hotelId")({
@@ -88,6 +89,7 @@ function PropertyInfoInternal() {
         {!profiles.length && <p className="text-sm text-muted-foreground">ยังไม่มีโปรไฟล์บริการ</p>}
       </div>
 
+      {service === "ORM" && <PropertySystemBlock propertyId={hotelId} isPm={s.role === "pm"} />}
       {service && tpl && (
         <section className="space-y-3 rounded-lg border p-4" aria-label="Form data">
           <div className="flex flex-wrap items-center justify-between gap-2">
