@@ -118,7 +118,7 @@ function ShutoffDrawer({ t, all, currentUser, item, onClose }: { t: L0Ticket; al
   const shut = t.type === "SYSTEM_SHUTOFF";
   const go = () => {
     if (!next) return;
-    if (!transition(t.ticket_id, t.revision, next.to, "PS")) return toast.error("อัปเดตไม่สำเร็จ · ลองใหม่");
+    if (!transition(t.ticket_id, t.revision, next.to, "PS")) { toast.error("อัปเดตไม่สำเร็จ · ลองใหม่"); return; }
     toast.success(`${next.label} · ${t.subject_ref.hotel_name}`);
     if (next.to === "DONE") onClose();
   };
