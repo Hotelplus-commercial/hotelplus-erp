@@ -73,8 +73,8 @@ export function offerContextFor(a: OfferArgs): OfferContext {
     const seen = new Set(a.tickets.map((t) => t.ticket_id)); tickets = [...seed.filter((t) => !seen.has(t.ticket_id)), ...a.tickets];
     const base = v14 ? v14DemoBase() : tabR1Demo().base;
     if (!v14) { rowToday = TAB_R1_DEMO_NOW; } else snaps = v14DemoSnapshots();
-    // One health engine: same survey inputs (surveySignalsFor via surveyContext + open survey flags) as card ⑦.
-    row = buildRows(base.filter((b) => b.contract_id === a.contract_id), { today: rowToday, labels: hs.labels, snaps, tickets, survey: surveyContext(getMeetingSurveyData(true), true) })[0] ?? null;
+    // One health engine (card ⑦ contracts; v1.4 offer-demo contracts are not in card ⑦): same survey inputs (surveySignalsFor via surveyContext + open survey flags) as card ⑦.
+    row = buildRows(base.filter((b) => b.contract_id === a.contract_id), { today: rowToday, labels: hs.labels, snaps, tickets, ...(v14 ? {} : { survey: surveyContext(getMeetingSurveyData(true), true) }) })[0] ?? null;
   }
   const aeLabels = hs.labels.filter((l) => l.contract_id === a.contract_id);
   let health: OfferContext['health'] = null;
