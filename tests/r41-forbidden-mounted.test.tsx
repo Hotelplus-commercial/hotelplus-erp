@@ -58,6 +58,7 @@ describe('R4.1 forbidden strings after every card mounts (demo)', () => {
   }, 20000);
   test('card ⑦ after survey labels draw: chips + hover text', async () => {
     const { act } = await import('react');
+    const ds = await import('../src/lib/demo-session'); ds.setPsDemoSession(true);
     const div = await mount('ps');
     const health = () => div.querySelector('#contract-health');
     await until(() => !!health()?.textContent?.includes('คะแนนเซอร์เวย์ต่ำ') && !!health()?.textContent?.includes('ลูกค้าไม่ให้คะแนน'));
@@ -75,6 +76,7 @@ describe('R4.1 forbidden strings after every card mounts (demo)', () => {
     expect(domHits(div)).toEqual(['SURVEY_LOW_SCORE']);
     label.textContent = old;
     expect(domHits(div)).toEqual([]);
+    ds.setPsDemoSession(false);
   }, 30000);
   test('On-board / Off-board incl. queue table', async () => {
     const div = await mount('servicing');
