@@ -40,11 +40,11 @@ export const isCustomerNoScore = (s: SurveyRecord | null) => !!s && isNoScore(s)
 export const isScoredSurvey = (s: SurveyRecord | null) => !!s && isScored(s);
 
 /* ---------- caretaker (month-aware as far as the records carry it; never guessed) ---------- */
-type Ws2Profile = { property_id: string; service: string; orm_team?: string | null; assigned_to?: string | null };
-function ws2Profiles(): Ws2Profile[] {
+export type Ws2Profile = { property_id: string; service: string; orm_team?: string | null; assigned_to?: string | null };
+export function ws2Profiles(): Ws2Profile[] {
   try { if (typeof localStorage === 'undefined') return []; const p = JSON.parse(localStorage.getItem('ps-ws2-v1') ?? 'null'); return Array.isArray(p?.profiles) ? p.profiles : []; } catch { return []; }
 }
-function caretakerOf(m: MeetingRecord & { caretaker_team?: string | null; caretaker_person?: string | null }, profiles: Ws2Profile[], demo: boolean): { name: string; source: CaretakerSource } {
+export function caretakerOf(m: MeetingRecord & { caretaker_team?: string | null; caretaker_person?: string | null }, profiles: Ws2Profile[], demo: boolean): { name: string; source: CaretakerSource } {
   const own = m.service === 'ORM' ? m.caretaker_team : m.caretaker_person;
   if (own) return { name: own, source: 'record' };
   if (demo) { const d = m.hotel_id ? DEMO_CARETAKER[`${m.service}:${m.hotel_id}`] : undefined; if (d) return { name: d, source: 'role' }; }
