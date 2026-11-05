@@ -66,6 +66,8 @@ let demoState: { tickets: Ticket[]; activity: Activity[] } = { tickets: [], acti
 let demoVersion = 0;
 const listeners = new Set<() => void>();
 const emit = () => { demoVersion++; listeners.forEach(l => l()); };
+/** Service Ticket Receiver v1.0 §8: add-only DEMO case (in memory; skipped when the id exists). */
+export function addDemoCase(t: Ticket) { if (demoState.tickets.some(x => x.id === t.id)) return; demoState = { tickets: [...demoState.tickets, t], activity: [...demoState.activity, { id: `${t.id}-c`, ticket_id: t.id, actor_id: t.created_by, type: 'CREATE', body: t.case_no, at: t.created_at }] }; emit(); }
 export function resetDemoTickets() {
   const { cases: tickets, activity } = taskDemo(SEED_CATEGORIES, demoCareHotels());
   demoState = { tickets, activity }; emit();

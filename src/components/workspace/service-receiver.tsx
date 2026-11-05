@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { addDemoTickets, isDemoTickets, useTickets, STATUS_TH, TYPE_TH, type L0Ticket } from "@/lib/tickets-l0";
 /** Never show a raw type key as the subject (file 1 falls back to the type when there is no note). */
 const subjectTh = (r: ServiceTicketRow) => (r.type && r.subject === r.type ? TYPE_TH[r.type] : r.subject);
-import { ticketApi, resetDemoTickets, useDemoVersion, type Ticket as PsCase } from "@/lib/task-tickets";
+import { addDemoCase, ticketApi, resetDemoTickets, useDemoVersion, type Ticket as PsCase } from "@/lib/task-tickets";
 import { slaDemoTickets, ensureSlaDemoFollowups } from "@/lib/service-tickets-demo";
 import { stabDemoTickets } from "@/lib/service-ticket-tab-demo";
 import {
@@ -47,8 +47,7 @@ export function useReceiverRows(demo: boolean) {
     // §8 DEMO add-only: one ORM PS case created on the DEMO date, so a PS case can be accepted inside its 10-day window.
     void ticketApi.list(true).then(async (c) => {
       if (!c.length) resetDemoTickets();
-      const all = await ticketApi.list(true);
-      if (!all.some((x) => x.title === RECV_DEMO_CASE_TITLE)) await ticketApi.create(true, { hotel_id: "HTL0612", hotel_name: "โรงแรม 612", title: RECV_DEMO_CASE_TITLE, description: "ข้อมูลสาธิต", category: "ORM-RESV", actor: "PM (Alex)", routed_team: "ORM" } as Parameters<typeof ticketApi.create>[1]);
+      addDemoCase({ id: "recv-demo-case-1", case_no: "Case-009001", hotel_id: "HTL0612", hotel_name: "โรงแรม 612", title: RECV_DEMO_CASE_TITLE, description: "ข้อมูลสาธิต", category_id: "ORM-RESV", routed_team: "ORM", status: "open", waiting_reason: null, created_by: "PM (Alex)", created_at: "2026-10-26T10:00:00+07:00", updated_at: "2026-10-26T10:00:00+07:00", resolved_at: null, revision: 0 } as PsCase);
     }).catch(() => {});
   }, [demo, l0.length]);
   // PS cases: same reader as the PS Dashboard (ticketApi.list); plain effect so the lane needs no query provider (BD tests mount the shell bare).
