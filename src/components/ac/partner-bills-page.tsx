@@ -9,7 +9,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { psDemoOn, onDemoSessionChange, DEMO_DAY, pageDateLabel } from "@/lib/demo-session";
+import { psDemoOn, onDemoSessionChange, setPsDemoSession, DEMO_DAY, pageDateLabel } from "@/lib/demo-session";
 import { billFileName, billFileRef, markBillPaid, recordCashbackReceipt, removeCashbackReceipt, isUiReceipt, saveBill, setPartnerDemo, storeBillFile, usePartnerData, voidBill } from "@/lib/debt-partner-store";
 import type { PartnerBill, PartnerData } from "@/lib/debt-partner-types";
 import { partnerContracts } from "@/lib/partner-contracts";
@@ -37,7 +37,9 @@ const VIEW_TONE: Record<BillView, string> = { PENDING: "bg-warning/15 text-warni
 function usePageDemo() {
   const [demo, setDemo] = useState<boolean | null>(null);
   useEffect(() => {
-    const read = () => setDemo(new URLSearchParams(window.location.search).get("demo") === "1" || psDemoOn());
+    const q = new URLSearchParams(window.location.search).get("demo");
+    if (q === "1") setPsDemoSession(true); else if (q === "0") setPsDemoSession(false); // one shared DEMO state
+    const read = () => setDemo(q === "1" || (q !== "0" && psDemoOn()));
     read(); return onDemoSessionChange(read);
   }, []);
   useEffect(() => {

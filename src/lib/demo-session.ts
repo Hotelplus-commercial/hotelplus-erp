@@ -8,7 +8,7 @@ import { HEADER_DEMO_NOW } from './ps-header-r2-demo';
 
 export const DEMO_WB_KEY = 'meridia.demo.welcomeBack.v1';
 export const DEMO_WB_SEQ0 = 1000;
-export type DemoSession = { ps_demo: boolean; seq: number; items: L0Ticket[] };
+export type DemoSession = { ps_demo: boolean; seq: number; items: L0Ticket[]; /** DEMO Layer 0 ticket store (all non-Welcome-Back DEMO tickets), same session key */ l0?: { seq: number; items: L0Ticket[] } };
 
 const ss = (): Storage | null => { try { return typeof sessionStorage === 'undefined' ? null : sessionStorage; } catch { return null; } };
 export function readDemoSession(): DemoSession | null {
@@ -16,7 +16,7 @@ export function readDemoSession(): DemoSession | null {
   try {
     const v = JSON.parse(s.getItem(DEMO_WB_KEY) ?? 'null') as Partial<DemoSession> | null;
     if (!v || typeof v !== 'object') return null;
-    return { ps_demo: v.ps_demo === true, seq: typeof v.seq === 'number' ? v.seq : DEMO_WB_SEQ0, items: Array.isArray(v.items) ? v.items : [] };
+    return { ps_demo: v.ps_demo === true, seq: typeof v.seq === 'number' ? v.seq : DEMO_WB_SEQ0, items: Array.isArray(v.items) ? v.items : [], ...(v.l0 && Array.isArray(v.l0.items) ? { l0: v.l0 } : {}) };
   } catch { return null; }
 }
 function write(v: DemoSession) { try { ss()?.setItem(DEMO_WB_KEY, JSON.stringify(v)); } catch { /* quota */ } }
@@ -28,15 +28,19 @@ export const onDemoSessionChange = (l: () => void) => { modeListeners.add(l); re
 /** PS Dashboard DEMO switch: on → mark (keeps DEMO tickets); off → remove the key (DEMO tickets cleared). */
 export function setPsDemoSession(on: boolean) {
   const cur = readDemoSession();
-  if (on) { if (!cur?.ps_demo) write({ ps_demo: true, seq: cur?.seq ?? DEMO_WB_SEQ0, items: cur?.items ?? [] }); }
+  if (on) { if (!cur?.ps_demo) write({ ps_demo: true, seq: cur?.seq ?? DEMO_WB_SEQ0, items: cur?.items ?? [], ...(cur?.l0 ? { l0: cur.l0 } : {}) }); }
   else if (cur) { try { ss()?.removeItem(DEMO_WB_KEY); } catch { /* storage optional */ } }
   else return;
   modeListeners.forEach((l) => l());
 }
 /** Save the DEMO Welcome Back tickets (keeps the current ps_demo flag). */
 export function saveDemoTickets(seq: number, items: L0Ticket[]) {
-  write({ ps_demo: psDemoOn(), seq, items });
+  const cur = readDemoSession();
+  write({ ps_demo: psDemoOn(), seq, items, ...(cur?.l0 ? { l0: cur.l0 } : {}) });
 }
+/** DEMO Layer 0 ticket store for this session (only while the shared DEMO state is on; never the real store). */
+export function readDemoL0(): { seq: number; items: L0Ticket[] } | null { const c = readDemoSession(); return c?.ps_demo && c.l0 ? c.l0 : null; }
+export function saveDemoL0(l0: { seq: number; items: L0Ticket[] }) { const c = readDemoSession(); if (c?.ps_demo) write({ ...c, l0 }); }
 
 /** DEMO clock shared by PS Dashboard card ④ and BD App › Workspace (Header R2 / Tab R1 demo today). */
 export const DEMO_DAY = HEADER_DEMO_NOW;

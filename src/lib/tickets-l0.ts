@@ -4,6 +4,7 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { stageCloudDoc } from './cloud-sync';
 import { DEMO_NOW } from './ps-demo-fixture';
+import { readDemoL0, saveDemoL0 } from './demo-session';
 
 export type TicketType = 'UPSELL_PITCH' | 'RENEWAL_DUE' | 'GRADE_RISK' | 'SURVEY_LOW' | 'CONTRACT_FOLLOWUP' | 'SERVICING_STALL' | 'CUSTOMER_ENTITY_CHANGE' | 'CONTRACT_SIGNAL' | 'WELCOME_BACK' | 'HANDOVER_FIX' | 'SYSTEM_SHUTOFF' | 'PARTNER_DEAL_NOTICE' | 'SYSTEM_CREDIT_NOTICE' | 'SYSTEM_REACTIVATE';
 /** Tab R3 §6.1 WELCOME_BACK snapshot (read-only for BD). */
@@ -18,6 +19,8 @@ export const SYSTEM_CREATOR = 'SYSTEM:THE_OFFICE' as const;
 export type Creator = Role | typeof SYSTEM_CREATOR;
 export type Severity = 'high' | 'medium' | 'low';
 export type BotPayload = {
+  /** DEMO only: the demo deal / credit ac_ticket_id this seeded notice stands for (PS Dashboard / PM Workspace status). */
+  demo_ref?: string;
   severity?: Severity; event_key?: string;
   signal_detail?: { grade?: string; renewal_due_date?: string; days_left?: number; survey_id?: string; score?: number };
   assigned_ae?: { member_id: string; nickname: string } | null;
@@ -95,7 +98,7 @@ function liveState(): State {
 }
 const cur = () => (demoOn ? demo : liveState());
 function commit(s: State) {
-  if (demoOn) demo = s;
+  if (demoOn) { demo = s; saveDemoL0(s); }
   else { live = s; try { localStorage.setItem(KEY, JSON.stringify(s)); } catch { /* quota */ } stageCloudDoc('tickets', { items: s.items }); }
   version++; listeners.forEach((l) => l());
 }
@@ -104,7 +107,7 @@ const now = () => (demoOn ? DEMO_NOW : new Date().toISOString());
 /** Switch store mode; turning demo on starts from an empty bundle (preview-safe). */
 export function setTicketDemo(on: boolean) {
   if (on === demoOn) return;
-  demoOn = on; if (on) demo = { seq: 0, items: [] };
+  demoOn = on; if (on) demo = readDemoL0() ?? { seq: 0, items: [] }; // shared DEMO session → same DEMO tickets on every page
   version++; listeners.forEach((l) => l());
 }
 

@@ -123,5 +123,5 @@
 - AX13: tab Cashback rows = getCashbackExpected eligibility; tick → one receipt (amount, currency, received_at); untick deletes only rows made by this UI (id CBR-).
 - AX14: AC payment confirm writes invoice status + paid_at in the same action (confirmPayment); PS Dashboard ① shows อัปเดตจาก AC App = latest payment-confirm / paid_at time of the period.
 - AX15: only AC writes on this page (testing role switcher, simulation); PS / PM read via PS Dashboard and PM Workspace; Partner management stays in PM Workspace.
-- DEMO: one shared state (src/lib/demo-session.ts) for PS Dashboard and every Workspace (DemoSwitch link ?demo=1 / ?demo=0 works before load). Bills DEMO overlay in debt-partner-demo.ts withBillsDemo(); tickets via seedAcBillsDemo() (in-memory only).
+- DEMO: one shared state (src/lib/demo-session.ts) for PS Dashboard and every Workspace (DemoSwitch link ?demo=1 / ?demo=0 works before load). Bills DEMO overlay in debt-partner-demo.ts withBillsDemo(); tickets via seedAcBillsDemo(). DEMO Layer 0 tickets persist for the browser session inside the existing DEMO session key (field l0, cleared with DEMO off) so every page reads one DEMO ticket store; seeded notices carry payload.demo_ref = the demo deal / credit ac_ticket_id.
 - Open: AC-G1 Guarantee minimum in AC billing — not built.

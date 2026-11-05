@@ -99,10 +99,10 @@ export function seedAcBillsDemo() {
   onReactivated([AC_DEMO.reactivated.contract_id], AC_DEMO.suspended_at, AC_DEMO.reactivated_at);
   createTask({ type: 'PARTNER_DEAL_NOTICE', target_dept: 'AC', created_by: 'PM',
     subject_ref: { hotel_id: 'PARTNER:PTN-HG', hotel_name: 'Hotelier.guru', gap_service: 'PARTNER', deal_id: 'DEAL-01' },
-    payload: { readiness_tier: '', chips: ['ส่วนลดค่าระบบ', 'สำเร็จ'], note: 'ลดค่าระบบ RMS Pro 30%',
+    payload: { demo_ref: 'TKT-DP-01', readiness_tier: '', chips: ['ส่วนลดค่าระบบ', 'สำเร็จ'], note: 'ลดค่าระบบ RMS Pro 30%',
       deal_notice: { partner: 'Hotelier.guru', kind: 'ส่วนลดค่าระบบ', benefit: '−30%', period: '1 Oct 26 – ไม่มีกำหนด', status: 'สำเร็จ', attachment_url: '' } } });
   createTask({ type: 'SYSTEM_CREDIT_NOTICE', target_dept: 'AC', created_by: 'PM',
     subject_ref: { hotel_id: 'CONTRACT:DP-LANNA', hotel_name: 'Lanna View', gap_service: 'PARTNER', deal_id: 'CR:CR-LANNA', contract_id: 'DP-LANNA' },
-    payload: { readiness_tier: '', chips: ['Partner ปฏิเสธ'], note: '', contract_id: 'DP-LANNA',
+    payload: { demo_ref: 'TKT-DP-CR-LANNA', readiness_tier: '', chips: ['Partner ปฏิเสธ'], note: '', contract_id: 'DP-LANNA',
       credit_notice: { contract: 'DP-LANNA', partner: 'Hotelier.guru', result: 'REJECTED', approved_amount: null, currency: 'THB', credit_expires_at: null } } });
 }
