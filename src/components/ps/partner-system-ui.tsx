@@ -1,10 +1,14 @@
 /* PM Workspace Partner v1.0 §1 — "ระบบที่ใช้ (ORM)" + Allotment (DP-O1) for the AE Assign modal and the Hotel Profile ORM block.
  * Reads/writes only through debt-partner-store (setPropertySystem); resolution from debt-partner-calc. */
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Link } from "@tanstack/react-router";
+import { PARTNER_DEMO_CONTRACTS, PARTNER_DEMO_EXTRA_HOTELS } from "@/lib/debt-partner-demo";
+import { setPartnerDemo } from "@/lib/debt-partner-store";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { setPropertySystem, usePartnerData } from "@/lib/debt-partner-store";
+import { isPartnerDemo, setPropertySystem, usePartnerData } from "@/lib/debt-partner-store";
+import { DEMO_DAY } from "@/lib/demo-session";
 import { NO_ALLOTMENT_TH, propertySystemHistory, propertySystemOn } from "@/lib/debt-partner-calc";
 import type { PartnerData } from "@/lib/debt-partner-types";
 
@@ -18,7 +22,9 @@ export function systemOptions(d: PartnerData) {
     .map((r) => ({ key: sysKey(r.partner_id, r.system_name), label: `${d.partners.find((p) => p.id === r.partner_id)?.name ?? r.partner_id} · ${r.system_name}` }));
 }
 export const partnerName = (d: PartnerData, id: string) => d.partners.find((p) => p.id === id)?.name ?? id;
-const today = () => new Date().toISOString().slice(0, 10);
+/* v1.1 PW21: DEMO reads the shared DEMO-state date. */
+const today = () => (isPartnerDemo() ? DEMO_DAY : new Date().toISOString().slice(0, 10));
+const dmy = (iso: string) => new Date(`${iso.slice(0, 10)}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "2-digit", timeZone: "UTC" });
 const Amber = ({ children, testid }: { children: React.ReactNode; testid?: string }) => <span className="text-xs font-medium text-warning-foreground" data-testid={testid}>{children}</span>;
 
 /** Assign modal (AE role, ORM hotels): system select + allotment. Values are lifted to the modal's one Save. */
@@ -74,7 +80,7 @@ export function PropertySystemBlock({ propertyId, isPm }: { propertyId: string; 
     toast.success("บันทึกระบบที่ใช้แล้ว"); setOpen(false); setSys(""); setAllot(""); setNote("");
   };
   return (
-    <section className="space-y-2 rounded-lg border p-4" aria-label="ระบบที่ใช้ (ORM)" data-testid="hp-orm-system">
+    <section id="orm" className="scroll-mt-4 space-y-2 rounded-lg border p-4" aria-label="ระบบที่ใช้ (ORM)" data-testid="hp-orm-system">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="font-semibold">ระบบที่ใช้ (ORM)</h2>
         {isPm && <Button size="sm" variant="outline" onClick={() => { setOpen(!open); setSys(cur ? sysKey(cur.partner_id, cur.system_name) : ""); setAllot(cur?.allotment != null ? String(cur.allotment) : ""); }}>เปลี่ยนระบบ</Button>}
@@ -99,10 +105,36 @@ export function PropertySystemBlock({ propertyId, isPm }: { propertyId: string; 
       <div>
         <p className="text-xs font-medium text-muted-foreground">ประวัติ</p>
         <ul className="text-xs" data-testid="hp-system-history">
-          {hist.map((h) => <li key={h.id}>{h.effective_from} · {partnerName(d, h.partner_id)} · {h.system_name} · allotment {h.allotment ?? "—"} · โดย {h.set_by}{h.note ? ` · ${h.note}` : ""}</li>)}
+          {hist.map((h) => <li key={h.id} data-testid="hp-history-row">{h.effective_from.slice(0, 10) > today() && <span className="mr-1 rounded-full bg-warning/15 px-2 py-0.5 font-medium text-warning-foreground" data-testid="hp-pending-tag">{partnerName(d, h.partner_id)} · รอมีผล {dmy(h.effective_from)}</span>}{h.effective_from} · {partnerName(d, h.partner_id)} · {h.system_name} · allotment {h.allotment ?? "—"} · โดย {h.set_by}{h.note ? ` · ${h.note}` : ""}</li>)}
           {!hist.length && <li className="text-muted-foreground">ยังไม่มีประวัติ</li>}
         </ul>
       </div>
+    </section>
+  );
+}
+
+/* v1.1 PW21 — DEMO hotels of the Partner demo (not in the WS-2 hotel list; never written to real storage). */
+export function partnerDemoHotels(): { property_id: string; hotel: string }[] {
+  const out = new Map<string, string>();
+  for (const h of PARTNER_DEMO_EXTRA_HOTELS) out.set(h.property_id, h.hotel);
+  for (const c of PARTNER_DEMO_CONTRACTS) if (c.property_id && !out.has(c.property_id)) out.set(c.property_id, c.hotel);
+  return [...out].map(([property_id, hotel]) => ({ property_id, hotel }));
+}
+export const partnerDemoHotel = (property_id: string): string | null => partnerDemoHotels().find((h) => h.property_id === property_id)?.hotel ?? null;
+
+/** Hotel list (DEMO only): demo Partner hotels open the Hotel Profile ORM block with DEMO data. */
+export function PartnerDemoHotelList() {
+  useEffect(() => { setPartnerDemo(true); }, []);
+  const [q, setQ] = useState("");
+  const all = partnerDemoHotels();
+  const rows = all.filter((h) => !q.trim() || h.hotel.toLowerCase().includes(q.trim().toLowerCase()));
+  return (
+    <section className="space-y-2 rounded-lg border p-4" data-testid="pc-demo-partner-hotels">
+      <h2 className="font-semibold">โรงแรมตัวอย่าง Partner (ข้อมูลสาธิต) · {all.length} โรงแรม</h2>
+      <Input aria-label="ค้นหาโรงแรมตัวอย่าง" className="h-9 max-w-sm" placeholder="🔍 เช่น Mae Ping" value={q} onChange={(e) => setQ(e.target.value)} />
+      <ul className="grid max-h-80 gap-1 overflow-y-auto text-sm sm:grid-cols-3">
+        {rows.map((h) => <li key={h.property_id}><Link to="/ps/property-content/$hotelId" params={{ hotelId: h.property_id }} search={{ demo: 1 }} hash="orm" className="text-primary hover:underline">📁 {h.hotel}</Link></li>)}
+      </ul>
     </section>
   );
 }

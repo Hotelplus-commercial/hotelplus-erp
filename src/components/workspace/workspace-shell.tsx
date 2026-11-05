@@ -83,13 +83,20 @@ export function WorkspaceShell({ config, demo, ticket, roleState, onGoBdm }: { c
   return (
     <div className="space-y-4">
       {/* R3.3 WB20: BD App › Workspace uses the PS Dashboard DEMO date; other workspaces keep theirs. */}
-      {demo && <div className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs" data-testid="ws-demo-bar">ข้อมูลสาธิต · {config.dept_key === "BD" ? pageDateLabel(true) : "30 กันยายน 2569"} · ไม่บันทึก</div>}
+      {demo && <div className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs" data-testid="ws-demo-bar">ข้อมูลสาธิต · {/* v1.1 PW22: every workspace banner reads the shared DEMO-state helper */}{pageDateLabel(true)} · ไม่บันทึก</div>}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-xl font-semibold">{config.label}</h2>
         <div className="flex flex-wrap items-center gap-3">
-          {config.dept_key === "PS" && deptRole === "PM" && (
-            <Button asChild size="sm" variant="outline" data-testid="pm-partner-btn"><Link to="/workspace/ps/partners" search={{ demo: demo ? 1 : undefined }}>🤝 จัดการ Partner</Link></Button>
-          )}
+          {/* v1.1 PW15: always visible on PM Workspace; PM → enabled · testing mode not PM → disabled + switch link · real use not PM → hidden */}
+          {config.dept_key === "PS" && (deptRole === "PM" ? (
+            <Button asChild size="sm" variant="outline" data-testid="pm-partner-btn"><Link to="/workspace/ps/partners" hash="partner" search={{ demo: demo ? 1 : undefined }}>🤝 จัดการ Partner</Link></Button>
+          ) : isRenewalTestMode() ? (
+            <span className="flex items-center gap-2 text-xs text-muted-foreground" data-testid="pm-partner-locked">
+              <Button size="sm" variant="outline" disabled data-testid="pm-partner-btn">🤝 จัดการ Partner</Button>
+              <span>เฉพาะ PM</span>
+              <button type="button" className="text-primary underline" onClick={() => rs.setRole("PM")} data-testid="pm-partner-switch">สลับเป็น PM เพื่อทดสอบ</button>
+            </span>
+          ) : null)}
           {!roleState && <RoleSwitcher dept={config.dept_key} state={rs} />}
           <div role="group" aria-label="ช่วงวันที่" className="flex rounded-md border p-0.5">
             {RANGES.map((r) => (
