@@ -132,6 +132,21 @@ export const R1_INOUT = {
   showAll: "▾ ดูทั้ง 12 เดือน", hideOld: "▴ ซ่อน 11 เดือนก่อนหน้า",
   worst: (m: string, n: number, a: number, b: number) => `เดือนที่หลุดมากสุด ${m} · ${n} สัญญา (ORM ${a} · Marcom ${b})`,
   noWorst: "12 เดือนนี้ยังไม่มีสัญญาหลุด",
+  /* v1.4.1 RN48 (Q58) */
+  lapsedLine: (h: string) => `▼ ขาดอายุ รอผล · ${h} · ยังไม่นับ churn`,
+  lapsedSum: (n: number) => `ขาดอายุ รอผล ${n}`,
+  lapsedTip: "ขาดอายุ รอผล (ยังไม่นับ churn)",
+  legend: ["เข้า", "หลุด", "ขาดอายุ รอผล (ยังไม่นับ churn)"] as const,
+} as const;
+/** v1.4.1 RN47 / RN49 / RN41 / RN51 (decision Q58) — header sub-lines, Tab R2 past-due banner, AC Billing notices. */
+export const Q58 = {
+  lapsed: "ขาดอายุ รอผล",
+  headerLine: (n: number) => `ขาดอายุ รอผล ${n}`,
+  headerTip: "เลยวันสิ้นสุดสัญญา · ยังไม่บันทึกผลต่อ / ไม่ต่อ · ไม่นับเป็นใช้งาน · ยังไม่นับ churn",
+  unmatched: (n: number) => `ตรวจวันสิ้นสุดไม่ได้ ${n} สัญญา (ไม่มีในคลังสัญญาหลัก)`,
+  pastDueBanner: (n: number) => `เลยกำหนด ${n} วัน · ขาดอายุ ไม่นับเป็นใช้งาน · AC หยุดวางบิล · ยังไม่นับ churn จนกว่าจะบันทึกผล`,
+  guaranteeNotice: (x: string) => `Commission + Guarantee · Guarantee fee ฿${x} / เดือน · ระบบยังไม่คิดขั้นต่ำให้ · AC ตรวจยอดก่อนวางบิล`,
+  lateManual: (start: string, signed: string, n: number, months: string) => `ต่อสัญญาล่าช้า · สัญญาเริ่ม ${start} · เซ็น ${signed} · ตรวจวางบิลย้อนหลัง ${n} รอบ (${months})`,
 } as const;
 export const R1_HEALTH = {
   question: "สัญญาไหนแดง / เหลือง / เขียว เพราะอะไร",
