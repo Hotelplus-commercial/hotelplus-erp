@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach } from 'vitest';
+import { describe, expect, it, beforeEach } from 'bun:test';
 import { partnerDemoData, PARTNER_DEMO_CONTRACTS } from '@/lib/debt-partner-demo';
 import { creditRows, creditTiles, getCashbackExpected, getContractSystemCost, getDealState, monthsOver, rateCardRows } from '@/lib/debt-partner-calc';
 import { DEMO_DAY } from '@/lib/demo-session';
