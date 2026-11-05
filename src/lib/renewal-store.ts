@@ -2,7 +2,9 @@
  * Live = localStorage; demo (?demo=1) = in-memory, seeded per §8, reset when demo toggles. */
 import { useSyncExternalStore } from 'react';
 import { EXPANSION_DEMO, repricingRow, type RepriceInput } from './expansion';
-import { DEMO_NOW } from './ps-demo-fixture';
+import { DEMO_DAY } from './demo-session';
+/** v1.4.1 RN43: the renewal module's one DEMO clock = R3.3 shared DEMO day (28 ต.ค. 2569). */
+const DEMO_NOW = `${DEMO_DAY}T00:00:00.000Z`;
 import { addAttachment, createTask, setTicketDemo, ticketById, ticketSnapshot } from './tickets-l0';
 import {
   DEFAULT_RENEWAL_CONFIG, OPEN_REQUEST, approve, cancel, decline, defaultNewTerms, editTerms, evaluate, mainStoreInitialRows, recommend,
@@ -325,9 +327,9 @@ function seedV14Requests(s: State) {
     return withOfferFields({ ...r, ...e, new_terms: next, ...p });
   };
   const cm = mk('RN-V14-CM');
-  s.requests.push(terms(cm, { billing_model: 'FIXED_PLUS_COMMISSION', fixed_fee: 7800, commission_pct: 8, guarantee_fee: null }, { reason_code: 'ผลงานยังไม่ถึงเป้า', reason_text: 'รายได้ลดลง 6 เดือนติด', status: 'LINK_SENT', submitted_at: '2026-10-27T03:00:00.000Z', approved_by: 'PM001-Alex', approver_role: 'PM', approved_at: '2026-10-28T03:00:00.000Z', link_sent_at: '2026-10-29T04:00:00.000Z' }));
+  s.requests.push(terms(cm, { billing_model: 'FIXED_PLUS_COMMISSION', fixed_fee: 7800, commission_pct: 8, guarantee_fee: null }, { reason_code: 'ผลงานยังไม่ถึงเป้า', reason_text: 'รายได้ลดลง 6 เดือนติด', status: 'LINK_SENT', submitted_at: '2026-10-22T03:00:00.000Z', approved_by: 'PM001-Alex', approver_role: 'PM', approved_at: '2026-10-23T03:00:00.000Z', link_sent_at: '2026-10-24T04:00:00.000Z' }));
   const bs = mk('RN-V14-BS');
-  s.requests.push(terms(bs, { billing_model: 'FIXED_PLUS_COMMISSION', fixed_fee: 8500, commission_pct: 5.5, guarantee_fee: null }, { reason_code: 'ลูกค้าต่อรอง', reason_text: 'ลูกค้าขอเปลี่ยนเป็นคิดตามผลงาน', status: 'PENDING_APPROVAL', submitted_at: '2026-11-01T03:00:00.000Z' }));
+  s.requests.push(terms(bs, { billing_model: 'FIXED_PLUS_COMMISSION', fixed_fee: 8500, commission_pct: 5.5, guarantee_fee: null }, { reason_code: 'ลูกค้าต่อรอง', reason_text: 'ลูกค้าขอเปลี่ยนเป็นคิดตามผลงาน', status: 'PENDING_APPROVAL', submitted_at: '2026-10-27T03:00:00.000Z' }));
   const hh = mk('RN-V14-HH');
   s.requests.push(terms(hh, { billing_model: 'COMMISSION_GUARANTEE', fixed_fee: null, commission_pct: 14, guarantee_fee: 8000 }, {}));
 }

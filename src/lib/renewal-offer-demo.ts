@@ -1,5 +1,5 @@
 /* Contract Renewal v1.4 §9 — DEMO additions only (used only while DEMO is on; nothing here is ever stored).
- * DEMO date for the Renewal Offer numbers = 2 พ.ย. 2569. Adds six renewal cards + contracts + billed months + signal inputs +
+ * DEMO date = the shared R3.3 DEMO day 28 ต.ค. 2569 (v1.4.1 RN43; timestamps shifted −5 days). Adds six renewal cards + contracts + billed months + signal inputs +
  * tier history + tickets, and billed months for the existing bundled demo contracts (flat fee each month) so their
  * recommendation can be computed. No existing demo entry is edited. Values follow render r5 (illustrative). */
 import type { BillingModel } from './renewalOffer';
@@ -106,10 +106,10 @@ const tk = (id: string, d: V14Demo, dept: L0Ticket['target_dept'], display: stri
 export function v14DemoTickets(): L0Ticket[] {
   const by = (id: string) => V14_DEMO.find((d) => d.card_id === id)!;
   return [
-    tk('TKT-001401', by('RN-V14-CM'), 'ORM', 'ORM ทีม A', ['REV_MISS'], 'IN_PROGRESS', '2026-10-21T03:00:00.000Z'),
-    tk('TKT-001402', by('RN-V14-CM'), 'ORM', 'ORM ทีม A', ['MEETING_IRREGULAR'], 'NEW', '2026-10-29T03:00:00.000Z'),
-    tk('TKT-001403', by('RN-V14-BS'), 'ORM', 'ORM ทีม A', ['REPORT_WRONG'], 'NEW', '2026-10-30T03:00:00.000Z'),
-    tk('TKT-001404', by('RN-V14-AJ'), 'MARCOM', 'Marcom · แนน', ['CAMPAIGN_MISS'], 'IN_PROGRESS', '2026-10-25T03:00:00.000Z'),
-    tk('TKT-001405', by('RN-V14-MK'), 'AC', 'AC', ['OVERDUE'], 'NEW', '2026-10-28T03:00:00.000Z'),
+    tk('TKT-001401', by('RN-V14-CM'), 'ORM', 'ORM ทีม A', ['REV_MISS'], 'IN_PROGRESS', '2026-10-16T03:00:00.000Z'),
+    tk('TKT-001402', by('RN-V14-CM'), 'ORM', 'ORM ทีม A', ['MEETING_IRREGULAR'], 'NEW', '2026-10-24T03:00:00.000Z'),
+    tk('TKT-001403', by('RN-V14-BS'), 'ORM', 'ORM ทีม A', ['REPORT_WRONG'], 'NEW', '2026-10-25T03:00:00.000Z'),
+    tk('TKT-001404', by('RN-V14-AJ'), 'MARCOM', 'Marcom · แนน', ['CAMPAIGN_MISS'], 'IN_PROGRESS', '2026-10-20T03:00:00.000Z'),
+    tk('TKT-001405', by('RN-V14-MK'), 'AC', 'AC', ['OVERDUE'], 'NEW', '2026-10-23T03:00:00.000Z'),
   ];
 }
