@@ -80,7 +80,7 @@ function useDebtModel(demo: boolean, today: string, tick: number): Model {
 const SvcPill = ({ s }: { s: Svc }) => <span className={cn("ac-pill", s === "ORM" ? "ac-pill-svc-orm" : "ac-pill-svc-marcom")}>{s}</span>;
 const GradeBadge = ({ g }: { g: Grade | null }) => g ? <span className={cn("dp-grade", GRADE_META[g]!.pill)}>{g}</span> : <span className="text-muted-foreground">–</span>;
 const AeCell = ({ ae }: { ae: string | null }) => ae ? <span>{ae}</span> : <span className="text-dash-watch">ยังไม่ระบุ AE</span>;
-const NameCell = ({ hotel, id, lapsed }: { hotel: string; id: string; lapsed?: boolean }) => (
+const NameCell = ({ hotel, id, lapsed }: { hotel: string; id: string; lapsed?: boolean | undefined }) => (
   <td><div>{hotel}</div><div className="text-xs text-muted-foreground">{id}{lapsed && <span className="ml-1 ac-pill ac-pill-neutral" data-testid="dp-lapsed">ขาดอายุ รอผล</span>}</div></td>
 );
 
