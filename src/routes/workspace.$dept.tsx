@@ -6,7 +6,7 @@ import { workspaceBySlug } from "@/lib/workspace-registry";
 import { WorkspaceViewSwitch } from "@/components/ps/workspace-view-switch";
 
 export const Route = createFileRoute("/workspace/$dept")({
-  validateSearch: (s: Record<string, unknown>) => ({ demo: s["demo"] === "1" || s["demo"] === 1 ? 1 as const : s["demo"] === "0" || s["demo"] === 0 ? 0 as const : undefined, ticket: typeof s["ticket"] === "string" ? s["ticket"] : undefined }),
+  validateSearch: (s: Record<string, unknown>) => ({ demo: s["demo"] === "1" || s["demo"] === 1 ? 1 : s["demo"] === "0" || s["demo"] === 0 ? 0 : undefined, ticket: typeof s["ticket"] === "string" ? s["ticket"] : undefined }),
   loader: ({ params }) => {
     const ws = workspaceBySlug(params.dept);
     if (!ws) throw notFound();
@@ -38,7 +38,7 @@ function WorkspacePage() {
 
 /** AC App Partner Bills v1.0 add-on: one DEMO state for the whole app. ?demo=1 / ?demo=0 (the switch link) writes the shared
  *  DEMO-state helper; without the param the page follows it (PS Dashboard turned DEMO on → every Workspace is in DEMO). */
-function useSharedDemo(param: 1 | 0 | undefined): boolean {
+function useSharedDemo(param: number | undefined): boolean {
   const [session, setSession] = useState(false);
   useEffect(() => {
     if (param === 1) setPsDemoSession(true); else if (param === 0) setPsDemoSession(false);
