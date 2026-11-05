@@ -11,7 +11,11 @@ export type DealScope = 'ALL' | 'SELECTED';
 export type CreditRequestStatus = 'REQUESTED' | 'APPROVED' | 'REJECTED';
 
 /** partners — PM manages; unique name. */
-export type Partner = { id: string; name: string; created_at: string };
+/** PM Workspace Partner v1.1 §3.2 (PW19): optional supporting documents (links; Drive not connected). Missing = none. */
+export const PARTNER_ATTACHMENT_KINDS = ['สัญญา Partner', 'ใบเสนอราคา / Rate Card', 'อีเมล / หนังสือ', 'อื่น ๆ'] as const;
+export type PartnerAttachmentKind = (typeof PARTNER_ATTACHMENT_KINDS)[number];
+export type PartnerAttachment = { id: string; name: string; kind: PartnerAttachmentKind; url: string; note?: string; added_by: string; added_at: string };
+export type Partner = { id: string; name: string; created_at: string; attachments?: PartnerAttachment[] };
 
 /** partner_rate_cards — price change = new row; previous row gets superseded_at. Current = superseded_at null. */
 export type PartnerRateCard = {

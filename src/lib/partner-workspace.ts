@@ -6,14 +6,17 @@ import type { L0Status, L0Ticket, Role } from './tickets-l0';
 import type { DateRange, TodoItem } from './workspace-registry';
 
 export const PARTNER_PAGE = '/workspace/ps/partners';
-export const PARTNER_TABS = ['rate', 'deals', 'credit'] as const;
+export const PARTNER_TABS = ['partner', 'rate', 'deals', 'credit'] as const;
 export type PartnerTab = (typeof PARTNER_TABS)[number];
 /** URL hash → tab (credit-pending / credit-waiting deep-link into the credit tab). */
 export const tabOfHash = (hash: string): PartnerTab => {
   const h = hash.replace(/^#/, '');
   if (h.startsWith('credit')) return 'credit';
+  if (h === 'ratecard') return 'rate';
   return (PARTNER_TABS as readonly string[]).includes(h) ? (h as PartnerTab) : 'rate';
 };
+/** v1.1 PW16: tab → URL hash (#partner · #ratecard · #deals · #credit). */
+export const hashOfTab = (t: PartnerTab): string => (t === 'rate' ? 'ratecard' : t);
 export const REMIND = { DEAL_END_DAYS: 30, CREDIT_WAIT_DAYS: 7, NEGOTIATING_STALE_DAYS: 14, CLOSED_WINDOW_DAYS: 180 } as const;
 
 const d10 = (s: string) => s.slice(0, 10);

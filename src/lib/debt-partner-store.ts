@@ -7,7 +7,7 @@
 import { useSyncExternalStore } from 'react';
 import { stageCloudDoc } from './cloud-sync';
 import { createTask } from './tickets-l0';
-import { PARTNER_COLLECTIONS, emptyPartnerData, type PartnerCollection, type PartnerData, type PartnerDeal, type PartnerRateCard, type PartnerRateCardTier, type PropertyPartnerSystem, type SystemCreditRequest } from './debt-partner-types';
+import { PARTNER_COLLECTIONS, emptyPartnerData, PARTNER_ATTACHMENT_KINDS, type PartnerAttachment, type PartnerCollection, type PartnerData, type PartnerDeal, type PartnerRateCard, type PartnerRateCardTier, type PropertyPartnerSystem, type SystemCreditRequest } from './debt-partner-types';
 import { partnerDemoData } from './debt-partner-demo';
 
 export const PARTNER_STORAGE_KEY = (c: PartnerCollection) => `meridia.${c}.v1`;
@@ -69,6 +69,40 @@ export function addPartner(name: string, by: string): { ok: true; id: string } |
   write('partners', [...d.partners, { id, name: n, created_at: nowIso() }]);
   return { ok: true, id };
 }
+
+/* ---------------- PM Workspace Partner v1.1 §3.2 — attachments on partners (same collection, Cloud mirror follows) ---------------- */
+export type PartnerAttachmentInput = { name: string; kind: string; url: string; note?: string };
+export function partnerAttachmentError(i: PartnerAttachmentInput): string | null {
+  if (!i.name.trim()) return 'ใส่ชื่อเอกสาร';
+  if (!(PARTNER_ATTACHMENT_KINDS as readonly string[]).includes(i.kind)) return 'เลือกประเภทเอกสาร';
+  if (!/^https:\/\/\S+$/.test(i.url.trim())) return 'ลิงก์ไฟล์ต้องขึ้นต้นด้วย https://';
+  return null;
+}
+type AttRes = { ok: true; id: string } | { ok: false; error: string };
+function editAttachments(partnerId: string, fn: (a: PartnerAttachment[]) => PartnerAttachment[] | null): boolean {
+  const d = getPartnerData(); const p = d.partners.find((x) => x.id === partnerId); if (!p) return false;
+  const next = fn(p.attachments ?? []); if (!next) return false;
+  write('partners', d.partners.map((x) => (x.id === partnerId ? { ...x, attachments: next } : x)));
+  return true;
+}
+const clean = (i: PartnerAttachmentInput) => ({ name: i.name.trim(), kind: i.kind as PartnerAttachment['kind'], url: i.url.trim(), ...(i.note?.trim() ? { note: i.note.trim() } : {}) });
+export function addPartnerAttachment(partnerId: string, i: PartnerAttachmentInput, by: string): AttRes {
+  const e = partnerAttachmentError(i); if (e) return { ok: false, error: e };
+  const id = uid('ATT');
+  return editAttachments(partnerId, (a) => [...a, { id, ...clean(i), added_by: by, added_at: nowIso() }]) ? { ok: true, id } : { ok: false, error: 'ไม่พบ Partner' };
+}
+export function updatePartnerAttachment(partnerId: string, attachmentId: string, i: PartnerAttachmentInput): AttRes {
+  const e = partnerAttachmentError(i); if (e) return { ok: false, error: e };
+  return editAttachments(partnerId, (a) => (a.some((x) => x.id === attachmentId) ? a.map((x) => { if (x.id !== attachmentId) return x; const { note: _n, ...rest } = x; void _n; return { ...rest, ...clean(i) }; }) : null))
+    ? { ok: true, id: attachmentId } : { ok: false, error: 'ไม่พบเอกสาร' };
+}
+export function removePartnerAttachment(partnerId: string, attachmentId: string): AttRes {
+  return editAttachments(partnerId, (a) => (a.some((x) => x.id === attachmentId) ? a.filter((x) => x.id !== attachmentId) : null))
+    ? { ok: true, id: attachmentId } : { ok: false, error: 'ไม่พบเอกสาร' };
+}
+/** Newest first. */
+export const partnerAttachments = (d: PartnerData, partnerId: string): PartnerAttachment[] =>
+  [...(d.partners.find((p) => p.id === partnerId)?.attachments ?? [])].sort((a, b) => b.added_at.localeCompare(a.added_at));
 
 export type RateCardInput = Omit<PartnerRateCard, 'id' | 'superseded_at' | 'created_at'> & { tiers: Omit<PartnerRateCardTier, 'id' | 'rate_card_id'>[] };
 /** Save = new version; the current version of the same partner + system gets superseded_at = new effective_from. */
