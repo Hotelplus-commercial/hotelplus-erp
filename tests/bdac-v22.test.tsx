@@ -141,9 +141,8 @@ describe('F5 mounted cards show the AC tab numbers', () => {
     const answers = (html: string) => [...html.matchAll(/class="dash-answer(?: [^"]*)?">([^<]+)</g)].map((m) => m[1]);
     const ac = answers(await render(h(DashboardGlobal.Provider, { value }, h(AcTab, { views: demoAcViews(), loading: false, error: false, service: 'ALL', compare: false, demo: true, periodA: period, periodB: null }))));
     const fin = answers(await render(h(DashboardGlobal.Provider, { value }, h(BdacFinanceSection))));
-    // AC tab order: debtor, grade, ORM fee mock, cost · BD-AC order: ⑥ ⑦ ⑧, ⑨ grade, ⑩ mock, ⑪ debtor
-    expect(fin[3]).toBe(ac[1]);
-    expect(fin[4]).toBe(ac[2]);
-    expect(fin[5]).toBe(ac[0]);
+    // Debt Partner R1: AC tab order = grade, debtor (ORM fee mock + cost unmounted) · BD-AC order: ⑥ ⑦ ⑧, ⑨ grade, ⑩ mock, ⑪ debtor
+    expect(fin[3]).toBe(ac[0]);
+    expect(fin[5]).toBe(ac[1]);
   });
 });

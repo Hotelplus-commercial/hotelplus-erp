@@ -40,7 +40,7 @@ beforeEach(() => resetKpiVersions());
 
 describe('§1 tabs and card removal', () => {
   test('1 · tab bar shows สัญญา & ราคา and On-board / Off-board; keys unchanged', () => {
-    expect(DASHBOARD_TABS.map(([, l]) => l)).toEqual(['สัญญา & ราคา', 'ลูกหนี้ & ค่าใช้จ่ายรายสัญญา', 'Meeting & Survey', 'ติดตามงานผู้ให้บริการ', 'On-board / Off-board']);
+    expect(DASHBOARD_TABS.map(([, l]) => l)).toEqual(['สัญญา & ราคา', 'ลูกหนี้ & ส่วนลด Partner', 'Meeting & Survey', 'ติดตามงานผู้ให้บริการ', 'On-board / Off-board']);
     expect(DASHBOARD_TABS.map(([k]) => k)).toEqual(['ps', 'ac', 'meeting', 'task', 'servicing']);
   });
   test('2 · สัญญาณจากสัญญา no longer renders in tab สัญญา & ราคา; card ⑤ + ⑥ do', async () => {

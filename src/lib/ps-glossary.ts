@@ -31,7 +31,7 @@ export const SOURCE_LABEL = { PS_CASE: "PS เปิดเอง", MEETING: "จ
 /** R1.2 §1 — PS Dashboard detail tabs, left → right. Keys are the stored tab keys (never renamed). */
 export const DASHBOARD_TABS: readonly (readonly [string, string])[] = [
   ["ps", "สัญญา & ราคา"], // Tab R4 §1 (was ต่อสัญญา & ราคา) — label only, key unchanged
-  ["ac", "ลูกหนี้ & ค่าใช้จ่ายรายสัญญา"],
+  ["ac", "ลูกหนี้ & ส่วนลด Partner"], // Debt Partner R1 DP1 — label only, key unchanged
   ["meeting", "Meeting & Survey"],
   ["task", "ติดตามงานผู้ให้บริการ"],
   ["servicing", "On-board / Off-board"], // Tab R4 §1 (was On-board) — label only, key unchanged
@@ -709,4 +709,12 @@ export const RO = {
   live: (x: string, d: string, w: string) => `ค่าบริการเฉลี่ยที่คาด ${x} · Δ ${d} จากค่าเฉลี่ยปัจจุบัน ${w}`,
   pkgLabel: "Package", fixedFee: "Monthly fee", commission: "Commission %", guaranteeFee: "Guarantee fee",
   approval: { pkg: "Package", values: "ค่าบริการ", reco: "คำแนะนำ (ตามค่า)", avg: "ค่าเฉลี่ยที่คาด" },
+} as const;
+
+/** Debt Partner R1 §10 — ?วิธีใช้ text for the new Partner cards (②–⑤ are ณ วันนี้; only PM edits). */
+export const DP_HELP = {
+  rate: "ตอบว่าแต่ละระบบ H+ จ่าย Partner เท่าไร ก่อนและหลังส่วนลด · ข้อมูลจาก Rate Card ที่ PM บันทึก · ณ วันนี้ ไม่มีการเทียบ · แก้ไขได้เฉพาะ PM",
+  deals: "ตอบว่ามีส่วนลด / สิทธิพิเศษอะไรจาก Partner และ AC รับทราบแล้วหรือยัง · ข้อมูลจาก PM (งาน Partner) และ ticket ถึง AC · ณ วันนี้ · บันทึกได้เฉพาะ PM",
+  credit: "ตอบว่ามีค่าระบบจ่ายล่วงหน้าเกินวันสิ้นสุดสัญญาที่ต้องขอเก็บเป็นเครดิตไหม · ข้อมูลจากบิล Partner ที่ AC บันทึกและคำขอของ PM · ณ วันนี้ · การ์ดนี้อ่านอย่างเดียว",
+  tour: "ส่วนลด Partner: ③ ต้นทุนค่าระบบ ④ ข้อตกลงกับ Partner ⑤ เครดิตค่าระบบ · PM บันทึก AC รับทราบ",
 } as const;
