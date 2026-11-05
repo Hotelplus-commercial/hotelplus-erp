@@ -148,6 +148,13 @@ function SurveyCatalogue({ can }: { can: boolean }) {
   const by = ROLE_DISPLAY[s.role] ?? s.role;
   return (
     <Panel title="Survey Templates" subtitle="Monthly meeting แก้ได้เฉพาะข้อความ · สเกล 1–10 / จำนวนข้อ / โครงสร้างล็อก · แบบประเมินที่เข้าคิวแล้วคงเวอร์ชันเดิม">
+      <div className="mb-3 rounded-md border p-3 text-sm" data-testid="survey-version-setting">
+        <p className="font-medium">ชุดคำถาม Survey ที่ใช้งาน</p>
+        <div className="mt-2 flex flex-wrap gap-2" role="radiogroup" aria-label="ชุดคำถาม Survey ที่ใช้งาน">
+          {([1, 2] as const).map((v) => <Button key={v} size="sm" role="radio" aria-checked={tm.surveyVersion === v} variant={tm.surveyVersion === v ? "default" : "outline"} className="h-8" disabled={!can} onClick={() => tm.setSurveyVersion(v)}>{v === 1 ? "ชุดที่ 1 (ปัจจุบัน)" : "ชุดที่ 2 (แบบเลือกป้าย)"}</Button>)}
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground">เปลี่ยนเป็นชุดที่ 2 เมื่อ MD อนุมัติ · มีผลกับ Survey ที่สร้างหลังเปลี่ยน</p>
+      </div>
       <ul className="divide-y text-sm">
         {LOCKED_SURVEYS.map((x) => <li key={x.name} className="flex flex-wrap items-center gap-2 py-2"><span className="flex-1 font-medium">{x.name}</span><Chip tone="info">Survey</Chip><Chip tone="muted">ดูอย่างเดียว</Chip><span className="text-xs text-muted-foreground">v1 · {x.where}</span></li>)}
         {tm.surveys.map((d) => { const v = activeSurvey(d); const cur: SurveyText = d.draft ?? { section_label: v.section_label, overall_label: v.overall_label, comment_placeholder: v.comment_placeholder, open_placeholder: v.open_placeholder, help: v.help, q: v.q };

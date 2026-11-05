@@ -66,7 +66,7 @@ const SEED: EmailTemplate[] = [
 export const fillPlaceholders = (text: string, vars: Record<string, string>) => text.replace(/\{(\w+)\}/g, (m, k: string) => vars[k] ?? m);
 export const activeEmail = (t: EmailTemplate) => t.versions[t.versions.length - 1]!;
 
-type State = { templates: EmailTemplate[]; sent: EmailSent[]; checklist: ChecklistMeta; surveys: SurveyDef[]; surveyStamps: Record<string, number>; riskRules: RiskRules; riskUpdated?: { by: string; at: string } };
+type State = { templates: EmailTemplate[]; sent: EmailSent[]; checklist: ChecklistMeta; surveys: SurveyDef[]; surveyStamps: Record<string, number>; riskRules: RiskRules; riskUpdated?: { by: string; at: string }; /** Survey v2 patch §1.4 `survey_active_template_version` (missing = 1). */ surveyActiveVersion?: number };
 const KEY = "meridia.ps.templates.v1";
 const initial = (): State => ({ templates: SEED, sent: [], checklist: { version: 1, published_at: SEED_AT, published_by: "System" }, surveys: SURVEY_SEED, surveyStamps: {}, riskRules: DEFAULT_RISK_RULES });
 
@@ -84,6 +84,9 @@ type Ctx = State & {
   /** Freeze at queue-creation: stamps unseen queue entries with the current version. */
   stampSurveys: (ids: { id: string; key: SurveyKey }[]) => void;
   surveyFor: (id: string, key: SurveyKey) => SurveyVersion;
+  /** Survey v2 patch §1.4 — active survey template version (1 or 2). */
+  surveyVersion: number;
+  setSurveyVersion: (v: 1 | 2) => void;
 };
 const C = createContext<Ctx | null>(null);
 
@@ -140,6 +143,8 @@ export function TemplateMgmtProvider({ children }: { children: ReactNode }) {
       setState((s) => { const st = { ...s.surveyStamps }; missing.forEach((i) => { if (st[i.id] === undefined) st[i.id] = activeSurvey(s.surveys.find((d) => d.key === i.key)!).version; }); return { ...s, surveyStamps: st }; });
     },
     surveyFor: (id, key) => { const d = state.surveys.find((x) => x.key === key)!; const v = state.surveyStamps[id]; return d.versions.find((x) => x.version === v) ?? activeSurvey(d); },
+    surveyVersion: state.surveyActiveVersion ?? 1,
+    setSurveyVersion: (v) => setState((s) => ({ ...s, surveyActiveVersion: v })),
     bumpChecklist: (by) => {
       const next = state.checklist.version + 1;
       setState((s) => ({ ...s, checklist: { version: s.checklist.version + 1, published_at: new Date().toISOString(), published_by: by } }));

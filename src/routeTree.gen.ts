@@ -69,6 +69,7 @@ import { Route as BdQuotesIndexRouteImport } from './routes/bd.quotes.index'
 import { Route as BdQuotesQuoteIdRouteImport } from './routes/bd.quotes.$quoteId'
 import { Route as BdQuotesLifecycleRouteImport } from './routes/bd.quotes.lifecycle'
 import { Route as LRenewRequestIdRouteImport } from './routes/l.renew.$requestId'
+import { Route as LSurveyTokenRouteImport } from './routes/l.survey.$token'
 import { Route as OrmActionAIndexRouteImport } from './routes/orm.action-a.index'
 import { Route as OrmActionAAnalysisRouteImport } from './routes/orm.action-a.analysis'
 import { Route as OrmActionAReportRouteImport } from './routes/orm.action-a.report'
@@ -396,6 +397,11 @@ const LRenewRequestIdRoute = LRenewRequestIdRouteImport.update({
   path: '/l/renew/$requestId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LSurveyTokenRoute = LSurveyTokenRouteImport.update({
+  id: '/l/survey/$token',
+  path: '/l/survey/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OrmActionAIndexRoute = OrmActionAIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -591,6 +597,7 @@ export interface FileRoutesByFullPath {
   '/bd/quotes/$quoteId': typeof BdQuotesQuoteIdRoute
   '/bd/quotes/lifecycle': typeof BdQuotesLifecycleRoute
   '/l/renew/$requestId': typeof LRenewRequestIdRoute
+  '/l/survey/$token': typeof LSurveyTokenRoute
   '/orm/action-a/analysis': typeof OrmActionAAnalysisRoute
   '/orm/action-a/report': typeof OrmActionAReportRoute
   '/orm/action-a/review': typeof OrmActionAReviewRoute
@@ -669,6 +676,7 @@ export interface FileRoutesByTo {
   '/bd/quotes/$quoteId': typeof BdQuotesQuoteIdRoute
   '/bd/quotes/lifecycle': typeof BdQuotesLifecycleRoute
   '/l/renew/$requestId': typeof LRenewRequestIdRoute
+  '/l/survey/$token': typeof LSurveyTokenRoute
   '/orm/action-a/analysis': typeof OrmActionAAnalysisRoute
   '/orm/action-a/report': typeof OrmActionAReportRoute
   '/orm/action-a/review': typeof OrmActionAReviewRoute
@@ -758,6 +766,7 @@ export interface FileRoutesById {
   '/bd/quotes/$quoteId': typeof BdQuotesQuoteIdRoute
   '/bd/quotes/lifecycle': typeof BdQuotesLifecycleRoute
   '/l/renew/$requestId': typeof LRenewRequestIdRoute
+  '/l/survey/$token': typeof LSurveyTokenRoute
   '/orm/action-a/analysis': typeof OrmActionAAnalysisRoute
   '/orm/action-a/report': typeof OrmActionAReportRoute
   '/orm/action-a/review': typeof OrmActionAReviewRoute
@@ -848,6 +857,7 @@ export interface FileRouteTypes {
     | '/bd/quotes/$quoteId'
     | '/bd/quotes/lifecycle'
     | '/l/renew/$requestId'
+    | '/l/survey/$token'
     | '/orm/action-a/analysis'
     | '/orm/action-a/report'
     | '/orm/action-a/review'
@@ -926,6 +936,7 @@ export interface FileRouteTypes {
     | '/bd/quotes/$quoteId'
     | '/bd/quotes/lifecycle'
     | '/l/renew/$requestId'
+    | '/l/survey/$token'
     | '/orm/action-a/analysis'
     | '/orm/action-a/report'
     | '/orm/action-a/review'
@@ -1014,6 +1025,7 @@ export interface FileRouteTypes {
     | '/bd/quotes/$quoteId'
     | '/bd/quotes/lifecycle'
     | '/l/renew/$requestId'
+    | '/l/survey/$token'
     | '/orm/action-a/analysis'
     | '/orm/action-a/report'
     | '/orm/action-a/review'
@@ -1064,6 +1076,7 @@ export interface RootRouteChildren {
   WorkspaceAeRoute: typeof WorkspaceAeRoute
   ApiPublicAcBillingDailyRoute: typeof ApiPublicAcBillingDailyRoute
   LRenewRequestIdRoute: typeof LRenewRequestIdRoute
+  LSurveyTokenRoute: typeof LSurveyTokenRoute
   WorkspacePsPartnersRoute: typeof WorkspacePsPartnersRoute
 }
 
@@ -1487,6 +1500,13 @@ declare module '@tanstack/react-router' {
       path: '/l/renew/$requestId'
       fullPath: '/l/renew/$requestId'
       preLoaderRoute: typeof LRenewRequestIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/l/survey/$token': {
+      id: '/l/survey/$token'
+      path: '/l/survey/$token'
+      fullPath: '/l/survey/$token'
+      preLoaderRoute: typeof LSurveyTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/orm/action-a/': {
@@ -1944,6 +1964,7 @@ const rootRouteChildren: RootRouteChildren = {
   WorkspaceAeRoute: WorkspaceAeRoute,
   ApiPublicAcBillingDailyRoute: ApiPublicAcBillingDailyRoute,
   LRenewRequestIdRoute: LRenewRequestIdRoute,
+  LSurveyTokenRoute: LSurveyTokenRoute,
   WorkspacePsPartnersRoute: WorkspacePsPartnersRoute,
 }
 export const routeTree = rootRouteImport
