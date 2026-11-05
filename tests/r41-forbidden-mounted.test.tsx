@@ -75,7 +75,7 @@ describe('R4.1 forbidden strings after every card mounts (demo)', () => {
     const label = chips.find((c) => c.textContent?.includes('คะแนนเซอร์เวย์ต่ำ'))!;
     const old = label.textContent!;
     label.textContent = `${old} SURVEY_LOW_SCORE`;
-    expect(noStar(domHits(div))).toEqual(['SURVEY_LOW_SCORE']);
+    expect(noStar(domHits(div))).toEqual(['SURVEY_LOW', 'SURVEY_LOW_SCORE']);
     label.textContent = old;
     expect(noStar(domHits(div))).toEqual([]);
     ds.setPsDemoSession(false);
