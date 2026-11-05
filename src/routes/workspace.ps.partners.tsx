@@ -11,7 +11,10 @@ import { creditAnswerError, recordCreditAnswer, recordCreditRequest, saveDeal, s
 import { getDealState, rateCardRows, tiersOf, propertySystemOn, type DealState } from "@/lib/debt-partner-calc";
 import { partnerContracts } from "@/lib/partner-contracts";
 import { PARTNER_DEMO_EXTRA_HOTELS } from "@/lib/debt-partner-demo";
-import { creditSections, isStaleNegotiation, tabOfHash, type PartnerTab } from "@/lib/partner-workspace";
+import { creditSections, hashOfTab, isStaleNegotiation, tabOfHash, type PartnerTab } from "@/lib/partner-workspace";
+import { PartnerAttachmentsPanel } from "@/components/ps/partner-attachments";
+import { addPartner, partnerAttachments } from "@/lib/debt-partner-store";
+import { resolveSystem } from "@/lib/debt-partner-calc";
 import { DEMO_DAY } from "@/lib/demo-session";
 import { setTicketDemo, useTickets } from "@/lib/tickets-l0";
 import type { PartnerData, PartnerDeal } from "@/lib/debt-partner-types";
@@ -30,7 +33,7 @@ export const Route = createFileRoute("/workspace/ps/partners")({
 const thb = (n: number, cur = "THB") => (cur === "THB" ? `฿${Math.round(n).toLocaleString("en-US")}` : `${cur} ${Math.round(n).toLocaleString("en-US")}`);
 const CYCLE: Record<string, string> = { MONTHLY: "รายเดือน", ADVANCE_3M: "ล่วงหน้า 3 เดือน", ADVANCE_6M: "ล่วงหน้า 6 เดือน", ANNUAL: "รายปี" };
 const STATE_TH: Record<DealState, string> = { ACTIVE: "สำเร็จ · มีผลอยู่", UPCOMING: "สำเร็จ · รอเริ่ม", NEGOTIATING: "กำลังต่อรอง", EXPIRED: "หมดอายุ", FAILED: "ไม่สำเร็จ" };
-const TABS: { key: PartnerTab; label: string }[] = [{ key: "rate", label: "Rate Card" }, { key: "deals", label: "ข้อเสนอ" }, { key: "credit", label: "คำขอเครดิต" }];
+const TABS: { key: PartnerTab; label: string }[] = [{ key: "partner", label: "Partner" }, { key: "rate", label: "Rate Card" }, { key: "deals", label: "ข้อเสนอ" }, { key: "credit", label: "คำขอเครดิต" }];
 const PM = "PM001-Alex";
 
 function PartnerPage() {
@@ -42,7 +45,7 @@ function PartnerPage() {
     const sync = () => setTab(tabOfHash(window.location.hash));
     sync(); window.addEventListener("hashchange", sync); return () => window.removeEventListener("hashchange", sync);
   }, []);
-  const go = (k: PartnerTab) => { setTab(k); window.history.replaceState(null, "", `#${k}`); };
+  const go = (k: PartnerTab) => { setTab(k); window.history.replaceState(null, "", `#${hashOfTab(k)}`); };
   const [role, setRole] = useState<"PM" | "OTHER">("PM");
   const [help, setHelp] = useState(false);
   useTickets();
@@ -59,6 +62,7 @@ function PartnerPage() {
         <div>
           <Link to="/workspace/$dept" params={{ dept: "ps" }} search={{ demo, ticket: undefined }} className="text-xs text-muted-foreground hover:underline">← PM Workspace</Link>
           <h2 className="text-xl font-semibold">🤝 จัดการ Partner</h2>
+          <p className="text-xs text-muted-foreground" data-testid="pm-partner-source">ข้อมูลชุดนี้แสดงใน PS Dashboard › ลูกหนี้ & ส่วนลด Partner (ดูอย่างเดียว) · <a href={`/ps?${demo ? "demo=1&" : ""}tab=ac`} className="text-primary hover:underline">เปิดใน PS Dashboard ↗</a></p>
         </div>
         <div className="flex items-center gap-3">
           <Button size="sm" variant="ghost" onClick={() => setHelp(!help)}>?วิธีใช้</Button>
@@ -82,6 +86,7 @@ function PartnerPage() {
         {TABS.map((t) => <button key={t.key} role="tab" type="button" aria-selected={tab === t.key} data-testid={`pm-tab-${t.key}`} onClick={() => go(t.key)}
           className={cn("rounded px-3 py-1 text-sm", tab === t.key ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted")}>{t.label}</button>)}
       </div>
+      {tab === "partner" && <PartnerTabView d={d} contracts={contracts} today={today} isPm={isPm} onForm={setForm} />}
       {tab === "rate" && <RateTab d={d} contracts={contracts} today={today} isPm={isPm} demo={!!demo} onForm={setForm} />}
       {tab === "deals" && <DealsTab d={d} today={today} isPm={isPm} demo={!!demo} onForm={setForm} />}
       {tab === "credit" && <CreditTab d={d} contracts={contracts} today={today} isPm={isPm} demo={!!demo} />}
@@ -109,6 +114,7 @@ function RateTab({ d, contracts, today, isPm, demo, onForm }: { d: PartnerData; 
               </span>
             </div>
             <p className="text-xs text-muted-foreground">{r.card.currency} · {CYCLE[r.card.billing_cycle]} · มีผลตั้งแต่ {dDMY(r.card.effective_from)} · {r.hotels} โรงแรม · {r.contracts} สัญญา ORM</p>
+            <CardHotels d={d} contracts={contracts} today={today} demo={demo} partnerId={r.card.partner_id} system={r.card.system_name} />
             {isPm ? (
               <table className="w-full max-w-md text-sm"><thead className="text-left text-xs text-muted-foreground"><tr><th>allotment</th><th className="text-right">ราคา / สัญญา / เดือน</th></tr></thead>
                 <tbody>{tiersOf(d, r.card.id).map((t) => <tr key={t.id} className="border-t"><td>{t.allotment_min}–{t.allotment_max ?? "ขึ้นไป"}</td><td className="text-right tabular-nums">{thb(t.price_per_contract_month, r.card.currency)}</td></tr>)}</tbody></table>
@@ -118,6 +124,7 @@ function RateTab({ d, contracts, today, isPm, demo, onForm }: { d: PartnerData; 
         );
       })}
       {!rows.length && <p className="text-sm text-muted-foreground">ยังไม่มี Rate Card</p>}
+      <UpcomingChanges d={d} contracts={contracts} today={today} demo={demo} />
       {demo && (
         <section className="rounded-xl border p-3 text-sm" data-testid="pm-demo-hotels">
           <h3 className="mb-1 font-medium">ระบบที่ใช้ของโรงแรม ORM (ตัวอย่าง)</h3>
@@ -255,6 +262,112 @@ function CreditTab({ d, contracts, today, isPm, demo }: { d: PartnerData; contra
           ))}{!closed.length && <tr><td colSpan={7} className="text-muted-foreground">ยังไม่มี</td></tr>}</tbody>
         </table></div>
       </section>
+    </div>
+  );
+}
+
+/* ---------------- PM Workspace Partner v1.1 (PW18 · PW20) ---------------- */
+type Contracts = ReturnType<typeof partnerContracts>;
+/** property_id → hotel name (Partner contracts, then the DEMO extra hotels). */
+function hotelNameOf(contracts: Contracts, pid: string) {
+  return contracts.find((c) => c.property_id === pid)?.hotel ?? PARTNER_DEMO_EXTRA_HOTELS.find((h) => h.property_id === pid)?.hotel ?? pid;
+}
+function HotelLink({ pid, name, demo }: { pid: string; name: string; demo: boolean }) {
+  return <Link to="/ps/property-content/$hotelId" params={{ hotelId: pid }} search={{ ...(demo ? { demo: 1 as const } : {}) }} hash="orm" className="text-primary hover:underline">{name}</Link>;
+}
+
+function CardHotels({ d, contracts, today, demo, partnerId, system }: { d: PartnerData; contracts: Contracts; today: string; demo: boolean; partnerId: string; system: string }) {
+  const [open, setOpen] = useState(false);
+  const rows = useMemo(() => {
+    const out = new Map<string, { pid: string; name: string; allot: number | null; from: string | null; n: number }>();
+    for (const c of contracts) {
+      if (c.service !== "ORM" || !c.property_id) continue;
+      const s = resolveSystem(d, c, today);
+      if (!s || s.partner_id !== partnerId || s.system_name !== system) continue;
+      const prev = out.get(c.property_id);
+      if (prev) { prev.n++; continue; }
+      out.set(c.property_id, { pid: c.property_id, name: c.hotel, allot: s.allotment, from: propertySystemOn(d, c.property_id, today)?.effective_from ?? c.start, n: 1 });
+    }
+    return [...out.values()].sort((a, b) => a.name.localeCompare(b.name));
+  }, [d, contracts, today, partnerId, system]);
+  const n = rows.reduce((s, r) => s + r.n, 0);
+  return (
+    <div className="text-xs" data-testid={`pm-card-hotels-${partnerId}`}>
+      <button type="button" className="text-primary underline" onClick={() => setOpen(!open)} aria-expanded={open}>{open ? "▾" : "▸"} โรงแรม / สัญญา ORM ที่ใช้ระบบนี้ ({n})</button>
+      {open && (
+        <ul className="mt-1 max-h-64 overflow-y-auto rounded-md border p-2" data-testid="pm-card-hotel-list">
+          {rows.map((r) => <li key={r.pid}><HotelLink pid={r.pid} name={r.name} demo={demo} /> · allotment {r.allot != null ? <b className="tabular-nums">{r.allot}</b> : <span className="font-medium text-warning-foreground">ยังไม่ระบุ</span>}{r.from ? ` · ตั้งแต่ ${dDMY(r.from)}` : ""}</li>)}
+          {!rows.length && <li className="text-muted-foreground">ยังไม่มีโรงแรมที่ใช้ระบบนี้</li>}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function UpcomingChanges({ d, contracts, today, demo }: { d: PartnerData; contracts: Contracts; today: string; demo: boolean }) {
+  const pName = (id: string) => d.partners.find((p) => p.id === id)?.name ?? id;
+  const rows = d.property_partner_system.filter((x) => x.effective_from.slice(0, 10) > today).sort((a, b) => a.effective_from.localeCompare(b.effective_from));
+  return (
+    <section className="rounded-xl border p-3 text-sm" data-testid="pm-upcoming-changes">
+      <h3 className="mb-1 font-medium">การเปลี่ยนระบบที่กำลังจะมีผล</h3>
+      <ul className="text-xs">
+        {rows.map((x) => { const old = propertySystemOn(d, x.property_id, today);
+          return <li key={x.id} data-testid="pm-upcoming-row"><HotelLink pid={x.property_id} name={hotelNameOf(contracts, x.property_id)} demo={demo} /> · {old ? pName(old.partner_id) : "ยังไม่ระบุระบบ"} → {pName(x.partner_id)} · มีผล {dDMY(x.effective_from)}</li>; })}
+        {!rows.length && <li className="text-muted-foreground">ไม่มีการเปลี่ยนระบบที่รอมีผล</li>}
+      </ul>
+    </section>
+  );
+}
+
+function PartnerTabView({ d, contracts, today, isPm, onForm }: { d: PartnerData; contracts: Contracts; today: string; isPm: boolean; onForm: (m: PartnerFormMode) => void }) {
+  const rows = rateCardRows(d, contracts, today);
+  const [name, setName] = useState("");
+  const [adding, setAdding] = useState(false);
+  const [docs, setDocs] = useState<string | null>(null);
+  const add = () => { const r = addPartner(name, PM); if (!r.ok) { toast.error(r.error); return; } toast.success("เพิ่ม Partner แล้ว"); setName(""); setAdding(false); };
+  return (
+    <div className="space-y-3" data-testid="pm-partner-tab">
+      {isPm && (
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {adding && <><Input aria-label="ชื่อ Partner" className="h-9 w-56" value={name} onChange={(e) => setName(e.target.value)} placeholder="ชื่อ Partner" /><Button size="sm" onClick={add}>บันทึก</Button><Button size="sm" variant="ghost" onClick={() => setAdding(false)}>ยกเลิก</Button></>}
+          {!adding && <Button size="sm" onClick={() => setAdding(true)} data-testid="pm-add-partner">+ เพิ่ม Partner</Button>}
+        </div>
+      )}
+      <div className="overflow-x-auto rounded-md border">
+        <table className="ac-table w-full text-sm">
+          <thead><tr><th>Partner</th><th>ระบบ</th><th>สกุลเงิน</th><th>โรงแรม / สัญญา ORM</th><th>ข้อเสนอที่มีผล</th><th>เอกสาร</th><th>อัปเดตล่าสุด</th><th /></tr></thead>
+          <tbody>
+            {d.partners.map((p) => {
+              const mine = rows.filter((r) => r.card.partner_id === p.id);
+              const deals = d.partner_deals.filter((x) => x.partner_id === p.id);
+              const att = partnerAttachments(d, p.id);
+              const last = [p.created_at, ...d.partner_rate_cards.filter((x) => x.partner_id === p.id).map((x) => x.created_at), ...deals.map((x) => x.updated_at), ...att.map((a) => a.added_at)].sort().pop() ?? p.created_at;
+              return (
+                <tr key={p.id} data-testid={`pm-partner-row-${p.name}`}>
+                  <td className="font-medium">{p.name}</td>
+                  <td>{mine.map((r) => r.card.system_name).join(", ") || "–"}</td>
+                  <td>{[...new Set(mine.map((r) => r.card.currency))].join(", ") || "–"}</td>
+                  <td className="tabular-nums">{mine.reduce((s, r) => s + r.hotels, 0)} / {mine.reduce((s, r) => s + r.contracts, 0)}</td>
+                  <td className="tabular-nums">{deals.filter((x) => getDealState(x, today) === "ACTIVE").length}</td>
+                  <td data-testid="pm-partner-att-count">📎 {att.length}</td>
+                  <td className="whitespace-nowrap">{dDMY(last)}</td>
+                  <td className="whitespace-nowrap">
+                    {isPm && mine[0] && <button type="button" className="ac-link mr-2" onClick={() => onForm({ kind: "rate", card: mine[0]!.card })}>แก้ไข</button>}
+                    <button type="button" className="ac-link" onClick={() => setDocs(docs === p.id ? null : p.id)} data-testid={`pm-partner-docs-${p.name}`}>เอกสาร</button>
+                  </td>
+                </tr>
+              );
+            })}
+            {!d.partners.length && <tr><td colSpan={8} className="text-muted-foreground">ยังไม่มี Partner</td></tr>}
+          </tbody>
+        </table>
+      </div>
+      {docs && (
+        <section className="space-y-2 rounded-xl border p-3" data-testid="pm-partner-docs">
+          <h3 className="font-medium">เอกสารประกอบ · {d.partners.find((p) => p.id === docs)?.name}</h3>
+          <PartnerAttachmentsPanel partnerId={docs} by={PM} isPm={isPm} />
+        </section>
+      )}
     </div>
   );
 }
