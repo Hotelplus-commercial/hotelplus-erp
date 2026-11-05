@@ -178,8 +178,8 @@ export type Token = { kind: 'word'; v: string } | { kind: 'assignee' | 'opener';
 export function parseSearch(q: string): Token[] {
   return q.trim().split(/\s+/).filter(Boolean).map((t): Token => {
     const age = /^อายุ(>=|<=|>|<|=)(\d+)$/.exec(t); if (age) return { kind: 'age', op: age[1] as '>', n: Number(age[2]) };
-    if (t.startsWith('ผู้รับ:')) return { kind: 'assignee', v: t.slice(6).toLowerCase() };
-    if (t.startsWith('เปิดโดย:')) return { kind: 'opener', v: t.slice(8).toLowerCase() };
+    if (t.startsWith('ผู้รับ:')) return { kind: 'assignee', v: t.slice('ผู้รับ:'.length).toLowerCase() };
+    if (t.startsWith('เปิดโดย:')) return { kind: 'opener', v: t.slice('เปิดโดย:'.length).toLowerCase() };
     return { kind: 'word', v: t.toLowerCase() };
   });
 }
