@@ -8,7 +8,7 @@ const AE_NAME = 'Nont Wilson';
 const at = (day: number, h = 10) => `2026-10-${String(day).padStart(2, '0')}T${String(h).padStart(2, '0')}:00:00.000Z`;
 const dt = (day: number) => `2026-10-${String(day).padStart(2, '0')}`;
 
-function mtg(code: string, service: 'ORM' | 'MARCOM', tier: 'A' | 'B' | 'C' | '—', day: number, channel: MeetingRecord['channel'], status = 'Completed'): MeetingRecord {
+function mtg(code: string, service: 'ORM' | 'MARCOM', tier: 'A' | 'B' | 'C' | '—', day: number, channel: NonNullable<MeetingRecord['channel']>, status = 'Completed'): MeetingRecord {
   return { id: `DM-${code}`, hotel: `โรงแรม ${code}`, hotel_id: `HTL${code.padStart(4, '0')}`, service, tier, tier_at_booking: tier, ae: AE, ae_display: AE_NAME, contact: 'คุณลูกค้า', contact_email: `gm${code}@example.com`, date: dt(day), status, channel, origin: 'demo', created_at: at(day - 3) };
 }
 
@@ -39,7 +39,7 @@ export function meetingSurveyDemoData(): MeetingSurveyData {
         const choice = (n + t.key.length) % 7 === 0 ? 'BAD' : (n + t.key.length) % 5 === 0 && t.unsure ? 'UNSURE' : 'GOOD';
         answers.push({ id: `DA-${++seq}`, survey_id: s.id, topic_key: t.key, choice, label_key: choice === 'UNSURE' ? null : choice === 'GOOD' ? (t.goodNoLabel ? null : t.good!) : t.bad!, created_at: s.submitted_at! });
       }
-      if ((s.scores.RECOMMEND ?? 0) >= 9) answers.push({ id: `DA-${++seq}`, survey_id: s.id, topic_key: 'RECOMMEND', choice: 'GOOD', label_key: 'ลูกค้าพร้อมแนะนำต่อ', created_at: s.submitted_at! });
+      if ((s.scores['RECOMMEND'] ?? 0) >= 9) answers.push({ id: `DA-${++seq}`, survey_id: s.id, topic_key: 'RECOMMEND', choice: 'GOOD', label_key: 'ลูกค้าพร้อมแนะนำต่อ', created_at: s.submitted_at! });
       if (n % 4 === 0) answers.push({ id: `DA-${++seq}`, survey_id: s.id, topic_key: 'OPPORTUNITY', choice: 'GOOD', label_key: OPPORTUNITY_LABELS[n % 2], created_at: s.submitted_at! });
     }
   };

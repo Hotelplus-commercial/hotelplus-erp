@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import type { LabelChoice, MeetingService } from "@/lib/meeting-survey-types";
 import { OPPORTUNITY_LABELS, OPPORTUNITY_NONE, UNSURE_TH, chipOrder, chipText, topicsFor, type V2Answers } from "@/lib/survey-v2";
 
-function Chip({ on, children, onClick, disabled, testId }: { on: boolean; children: React.ReactNode; onClick: () => void; disabled?: boolean; testId?: string }) {
+function Chip({ on, children, onClick, disabled, testId }: { on: boolean; children: React.ReactNode; onClick: () => void; disabled?: boolean | undefined; testId?: string | undefined }) {
   return (
     <button type="button" disabled={disabled} data-testid={testId} aria-pressed={on} onClick={onClick}
       className={cn("rounded-full border px-3 py-1.5 text-sm transition-colors disabled:opacity-60", on ? "border-primary bg-primary text-primary-foreground" : "hover:bg-muted")}>
@@ -15,7 +15,7 @@ function Chip({ on, children, onClick, disabled, testId }: { on: boolean; childr
   );
 }
 
-function ScoreRow({ value, onChange, unsure, disabled, name }: { value: number | "UNSURE" | null; onChange: (v: number | "UNSURE") => void; unsure?: boolean; disabled?: boolean; name: string }) {
+function ScoreRow({ value, onChange, unsure, disabled, name }: { value: number | "UNSURE" | null; onChange: (v: number | "UNSURE") => void; unsure?: boolean | undefined; disabled?: boolean | undefined; name: string }) {
   return (
     <div className="mt-2 flex flex-wrap items-center gap-1" aria-label={name}>
       {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
@@ -27,7 +27,7 @@ function ScoreRow({ value, onChange, unsure, disabled, name }: { value: number |
   );
 }
 
-export function SurveyV2Form({ service, value, onChange, disabled }: { service: MeetingService; value: V2Answers; onChange: (v: V2Answers) => void; disabled?: boolean }) {
+export function SurveyV2Form({ service, value, onChange, disabled }: { service: MeetingService; value: V2Answers; onChange: (v: V2Answers) => void; disabled?: boolean | undefined }) {
   const topics = topicsFor(service);
   const [order] = useState<Record<string, LabelChoice[]>>(() => Object.fromEntries(topics.filter((t) => t.kind === "pair").map((t) => [t.key, chipOrder(t)])));
   const set = (patch: Partial<V2Answers>) => onChange({ ...value, ...patch });
@@ -39,7 +39,7 @@ export function SurveyV2Form({ service, value, onChange, disabled }: { service: 
           <p className="text-sm">{t.script}</p>
           {t.kind === "pair" && (
             <div className="mt-2 flex flex-wrap gap-2">
-              {order[t.key].map((c) => (
+              {(order[t.key] ?? []).map((c) => (
                 <Chip key={c} testId={`chip-${t.key}-${c.toLowerCase()}`} on={value.choices[t.key] === c} disabled={disabled} onClick={() => set({ choices: { ...value.choices, [t.key]: c } })}>{chipText(t, c)}</Chip>
               ))}
             </div>
