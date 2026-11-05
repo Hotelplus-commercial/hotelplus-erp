@@ -220,11 +220,11 @@ function Card3({ rows, today }: { rows: ServiceTicketRow[]; today: string }) {
         </svg>
         <p className="stab-sub">median วัน Solve (วันสร้าง → Solve)</p>
         <svg viewBox={`0 0 ${W} ${S}`} aria-label="median วัน Solve" data-testid="stab-median">
-          <line x1={20} x2={W - 10} y1={ys(10)} y2={ys(10)} className="stab-ceil" /><text x={W - 10} y={ys(10) - 3} className="stab-end text-destructive">เพดาน 10 วัน</text>
+          <line x1={20} x2={W - 10} y1={ys(10)} y2={ys(10)} className="stab-ceil" /><text x={W - 10} y={ys(10) - 3} className="stab-end text-destructive">เกณฑ์ 10 วัน</text>
           {idx != null && <line x1={x(idx)} x2={x(idx)} y1={0} y2={S} className="stab-cross" />}
           {pts.map((pt, i) => pt.median == null ? null : <g key={i}><circle cx={x(i)} cy={ys(pt.median)} r={idx === i ? 5 : 3.5} className={pt.median > 10 ? 'stab-dot-cumOverdue' : 'stab-dot-cumSolved'} data-testid="stab-median-dot" />{n <= 14 && <text x={x(i)} y={S - 1} className="stab-x">{pt.median}</text>}</g>)}
         </svg>
-        {p && <div className="stab-tip" role="status" data-testid="stab-tip"><b>{p.label}</b><span>ช่วงนี้: สร้าง {p.created} · Solve {p.solved}</span><span>median SLA {p.median ?? '—'} วัน{p.median != null && p.median > 10 ? ' (เกินเพดาน)' : ''}</span><small>สะสม: สร้าง {p.cumCreated} · Solve {p.cumSolved} · {p.cumCreated - p.cumSolved >= 0 ? `ค้างเพิ่ม ${p.cumCreated - p.cumSolved}` : `ค้างลด ${p.cumSolved - p.cumCreated}`} · เลยกำหนด {p.cumOverdue}</small></div>}
+        {p && <div className="stab-tip" role="status" data-testid="stab-tip"><b>{p.label}</b><span>ช่วงนี้: สร้าง {p.created} · Solve {p.solved}</span><span>median SLA {p.median ?? '—'} วัน{p.median != null && p.median > 10 ? ' (เกินเกณฑ์)' : ''}</span><small>สะสม: สร้าง {p.cumCreated} · Solve {p.cumSolved} · {p.cumCreated - p.cumSolved >= 0 ? `ค้างเพิ่ม ${p.cumCreated - p.cumSolved}` : `ค้างลด ${p.cumSolved - p.cumCreated}`} · เลยกำหนด {p.cumOverdue}</small></div>}
         <p className="stab-legend"><i className="stab-l-created-k" />สร้างสะสม <i className="stab-l-solved-k" />Solve สะสม <i className="stab-l-overdue-k" />เลยกำหนดสะสม <i className="stab-gap-k" />ค้างเพิ่ม {bs.some((b) => b.current) && <small>* ช่วงปัจจุบันยังไม่จบ (ถึง {thDay(today)})</small>}</p>
       </div>
       <aside className="stab-side"><strong>{Math.abs(gap)}</strong><span>{gap >= 0 ? 'ค้างเพิ่ม' : 'ค้างลด'} ในช่วงนี้</span><small>สร้าง {tot.c} · Solve {tot.s} · เลยกำหนด {last?.cumOverdue ?? 0}</small><small>median วัน Solve ทั้งช่วง {med ?? '—'} วัน</small></aside>
