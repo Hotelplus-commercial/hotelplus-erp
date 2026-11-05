@@ -121,6 +121,8 @@ export const SIGNAL_CATALOG: CatalogEntry[] = [
   E('SURVEY_SILENT_2M', 5, 'bad', 'S', 'เงียบ ≥2 เดือน', 'มีธงแดง เงียบ ≥2 เดือน ที่ยังเปิดอยู่'),
   E('MEETING_REJECTED', 5, 'bad', 'S', 'ปฏิเสธนัด', 'มีธงแดง ปฏิเสธนัด ที่ยังเปิดอยู่'),
 ];
+/** Good / bad pairs (one result per pair). */
+export const SIGNAL_PAIRS: string[][] = [['VALUE_UNSEEN', 'VALUE_SEEN'], ['REV_MISS', 'REV_HIT'], ['OTA_FLAT', 'OTA_UP'], ['CAMPAIGN_MISS', 'CAMPAIGN_HIT'], ['OWNER_CHURN', 'OWNER_STEADY'], ['PAGE_FLAT', 'PAGE_UP'], ['CONTENT_OFF', 'CONTENT_ON']];
 /** CH7 legend text for source S. */
 export const SRC_S_LEGEND = 'S = จากเซอร์เวย์ / การประชุม (เสียงลูกค้า)';
 export const catalogByKey = new Map(SIGNAL_CATALOG.map((e) => [e.key, e]));
@@ -175,7 +177,7 @@ export function evaluateSignals(svc: Svc, x: SignalInputs) {
   const notes = new Map<string, string[]>(); const sMeta = new Map<string, { tip: string; amber?: boolean | undefined }>();
   for (const ss of x.survey_signals ?? []) {
     const e = catalogByKey.get(ss.key); if (!e) continue;
-    const pair = SIGNAL_CATALOG.filter((o) => o.group === e.group && o.rule === e.rule && o.src === e.src).map((o) => o.key);
+    const pair = SIGNAL_PAIRS.find((p) => p.includes(ss.key)) ?? [ss.key];
     if (autoEval.has(ss.key)) { const owner = fired.find((k) => pair.includes(k) || k === ss.key); if (owner) notes.set(owner, [...(notes.get(owner) ?? []), `${e.label} · ${ss.tip}`]); continue; }
     evaluated.add(ss.key);
     if (!fired.includes(ss.key)) { fired.push(ss.key); sMeta.set(ss.key, { tip: ss.tip, amber: ss.amber }); }
