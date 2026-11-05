@@ -47,7 +47,7 @@ describe('v1.3 §4 · store wiring', () => {
     const ini = S.renewalHistory().filter((h) => h.source === 'INITIAL');
     expect(new Set(ini.map((h) => h.contract_id))).toEqual(new Set(main.map((x) => x.contract_id)));
     expect(ini.length).toBe(main.length);
-    expect(S.renewalHistory().filter((h) => h.source === 'RENEWAL')).toHaveLength(1);
+    expect(S.renewalHistory().filter((h) => h.source === 'RENEWAL')).toHaveLength(3); // RN-D7 + v1.4.1 RN52 late renewal + Commission + Guarantee
     const flat = ini.find((h) => h.contract_id === 'CT-HTL0042')!;
     expect(flat.fee_amount).toBe(30000); expect(flat.commission_pct).toBeNull();
     const comm = ini.find((h) => h.contract_id === 'CT-HTL0102')!;
