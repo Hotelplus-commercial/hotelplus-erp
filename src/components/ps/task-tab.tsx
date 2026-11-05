@@ -179,7 +179,7 @@ export function TaskTab() {
   const selected=d.tickets.find(t=>t.id===openId)??null;
   return <div className="task-v2" data-testid="task-tab">
     {!d.demo&&<LiveTicketReader onChange={setLiveL0}/>}
-    {d.demo&&<p className="task-demo-watermark">ข้อมูลสาธิต · 17 ตุลาคม 2569 · ไม่บันทึก</p>}
+    {LEGACY_TASK_TAB&&d.demo&&<p className="task-demo-watermark">ข้อมูลสาธิต · 17 ตุลาคม 2569 · ไม่บันทึก</p>}
     {/* Tab R1 (ST24): old KPI strip / ค้างจากระบบ / ticket ทั้งหมด / worklist / CaseDrawer unmounted here — code kept. */}
     {LEGACY_TASK_TAB ? <>    <header className="task-section-header"><h2>ticket ค้างวันนี้</h2><span className="task-current-pill">{cmpOn?'ค่าสิ้นช่วง A เทียบ B':'สถานะปัจจุบัน'}</span><span className="dash-card-period">{kKpi.control}</span></header>
     <div className="task-kpis">{kpis.map((k,i)=>{const h=kpiHist[i]!,loading=i<2&&(d.ticketsError||d.ticketsLoading),big=cmpOn?h.a:k.value;const momD=h.today!=null&&h.prev!=null?h.today-h.prev:null;return <ChartHint key={k.label} header={k.header} lines={[k.lines[0]??'',h.monthLine,i===3?'ประวัติเห็นเฉพาะรอบล่าสุดของ ticket ที่เคยเปิดซ้ำ':h.statLine]}><Button variant="ghost" className={`task-kpi task-kpi-${k.tone}`}><span>{k.label}</span><strong data-testid={`task-k${i+1}`} className={k.tone==='action'?'text-dash-action':k.tone==='watch'&&k.value?'text-dash-watch':''}>{loading?'—':big??'—'} <small>{k.unit}</small></strong>{cmpOn?<span className={h.a!=null&&h.b!=null?deltaTone(h.a-h.b,i):'task-delta-zero'}>{h.b==null?`A ${h.a??'—'} · B — (ยังไม่มี snapshot)`:`A ${h.a??'—'} · B ${h.b} · Δ ${h.a!=null?(h.a-h.b>0?'+':'')+(h.a-h.b):'—'}`}</span>:<span className={i===4&&soon.length?'text-dash-watch':momD!=null?deltaTone(momD,i):''}>{i===4&&soon.length?`ใกล้ครบใน ${TASK_CONFIG.renewal_buckets[1]} วัน อีก ${soon.length}`:momD==null?'—':`${momD>0?'▲ +':momD<0?'▼ ':'= '}${momD} จากสิ้นเดือนก่อน`}</span>}<small>{k.caption}</small><Sparkline values={h.vals} tone={k.tone} bRef={cmpOn?h.b:null}/><small className="task-spark-cap">{h.caption}</small></Button></ChartHint>;})}</div>
@@ -199,23 +199,38 @@ export function TaskTab() {
 }
 
 const NONE = '__none__';
+/** Tab R1 §10.4 — active (never hidden) categories of the chosen target department; "อื่น ๆ" always available. */
+export function serviceCategoryOptions(demo: boolean, dept: SvcDept | null) {
+  if (!dept) return [];
+  const cats = getCategories(demo).filter(c => c.dept === dept && !c.hidden).sort((a, b) => a.sort_order - b.sort_order);
+  return cats.some(c => c.key === 'other') ? cats : [...cats, { id: `other:${dept}`, key: 'other', name_th: 'อื่น ๆ', dept, keywords: [], is_system: true, hidden: false, sort_order: 99, created_by: 'SYSTEM', created_at: '' }];
+}
+/** PS cases have no category column (database) → category_id goes to the approved browser side collection ticket_sla. */
+export function saveCaseCategory(demo: boolean, caseId: string, category_id: string) {
+  const rows = ticketSla.all(demo); const cur = rows.find(r => r.case_id === caseId);
+  ticketSla.save(demo, cur ? rows.map(r => (r.case_id === caseId ? { ...r, category_id } : r)) : [...rows, { case_id: caseId, category_id }]);
+}
 /** Tab R1: old layout kept behind a constant (unmounted, not deleted). */
 const LEGACY_TASK_TAB = false;
 function CreateCase({ open, onClose, hotels, categories, actor, demo, contracts, meetings, now, onDone }: { open: boolean; onClose: () => void; hotels: HotelCare[]; categories: Category[]; actor: string; demo: boolean; contracts: ServiceContractRef[]; meetings: MeetingRef[]; now: Date; onDone: (t: Ticket) => void }) {
-  const [hq, setHq] = useState(''); const [hotel, setHotel] = useState<HotelCare | null>(null); const [cat, setCat] = useState(''); const [title, setTitle] = useState(''); const [desc, setDesc] = useState(''); const [dept, setDept] = useState<Team | null>(null); const [busy, setBusy] = useState(false);
+  const [hq, setHq] = useState(''); const [hotel, setHotel] = useState<HotelCare | null>(null); const [cat, setCat] = useState(''); const [title, setTitle] = useState(''); const [desc, setDesc] = useState(''); const [dept, setDept] = useState<Team | null>(null); const [busy, setBusy] = useState(false); const [svcCat, setSvcCat] = useState('');
   const [contractId, setContractId] = useState<string>(NONE); const [meetingId, setMeetingId] = useState<string>(NONE); const [contractTouched, setContractTouched] = useState(false);
-  useEffect(() => { if (open) { setHq(''); setHotel(null); setCat(''); setTitle(''); setDesc(''); setDept(null); setContractId(NONE); setMeetingId(NONE); setContractTouched(false); } }, [open]);
+  useEffect(() => { if (open) { setHq(''); setHotel(null); setCat(''); setTitle(''); setDesc(''); setDept(null); setContractId(NONE); setMeetingId(NONE); setContractTouched(false); setSvcCat(''); } }, [open]);
   const team = dept ?? categories.find(c => c.code === cat)?.domain ?? null;
   const hotelContracts = hotel ? activeContracts(contracts, hotel.hotel_id, team) : [];
   const hotelMeetings = hotel ? recentMeetings(meetings, hotel.hotel_id, now) : [];
   // §5.1: pre-fill when exactly one active contract matches the ticket's service; otherwise the creator picks (optional).
   useEffect(() => { if (!contractTouched) setContractId(hotel ? prefillContract(contracts, hotel.hotel_id, team) ?? NONE : NONE); }, [hotel?.hotel_id, team, contracts, contractTouched]); // eslint-disable-line react-hooks/exhaustive-deps
+  const svcDept = team && (SVC_DEPTS as string[]).includes(team) ? team as SvcDept : null;
+  const svcCats = serviceCategoryOptions(demo, svcDept);
+  useEffect(() => { if (svcCat && !svcCats.some(c => c.id === svcCat)) setSvcCat(''); }, [svcDept]); // eslint-disable-line react-hooks/exhaustive-deps
   const pickCat = (v: string) => { setCat(v); setDept(categories.find(c => c.code === v)?.domain ?? null); };
   const matches = hotels.filter(h => `${h.hotel_name} ${h.hotel_id}`.toLowerCase().includes(hq.trim().toLowerCase())).slice(0, 8);
   const save = async () => {
     if (!hotel || !cat || !title.trim()) { toast.error('กรุณาเลือกโรงแรม หมวดย่อย และใส่หัวข้อ'); return; }
+    if (svcDept && !svcCat) { toast.error('กรุณาเลือกหมวด'); return; }
     setBusy(true);
-    try { const t = await ticketApi.create(demo, { hotel_id: hotel.hotel_id, hotel_name: hotel.hotel_name, category: cat, ...(team ? { routed_team: team } : {}), title, description: desc, actor, ...(team ? stampOf(team, hotel) : {}), contract_id: contractId === NONE ? null : contractId, meeting_id: meetingId === NONE ? null : meetingId }); onDone(t); onClose(); }
+    try { const t = await ticketApi.create(demo, { hotel_id: hotel.hotel_id, hotel_name: hotel.hotel_name, category: cat, ...(team ? { routed_team: team } : {}), title, description: desc, actor, ...(team ? stampOf(team, hotel) : {}), contract_id: contractId === NONE ? null : contractId, meeting_id: meetingId === NONE ? null : meetingId }); if (svcDept && svcCat) saveCaseCategory(demo, t.id, svcCat); onDone(t); onClose(); }
     catch (e) { toast.error(e instanceof Error ? e.message : 'สร้าง ticket ไม่สำเร็จ'); } finally { setBusy(false); }
   };
   return <Dialog open={open} onOpenChange={o => !o && onClose()}><DialogContent className="max-w-lg"><DialogHeader><DialogTitle>สร้าง ticket</DialogTitle></DialogHeader>
@@ -223,6 +238,7 @@ function CreateCase({ open, onClose, hotels, categories, actor, demo, contracts,
       <div><label className="text-xs font-medium">โรงแรม *</label>{hotel ? <div className="mt-1 flex items-center justify-between rounded-md border px-3 py-2"><span>{hotel.hotel_name}</span><Button variant="ghost" size="sm" onClick={() => setHotel(null)}>เปลี่ยน</Button></div> : <><Input aria-label="ค้นหาโรงแรม" className="mt-1" placeholder="พิมพ์ชื่อหรือรหัสโรงแรม" value={hq} onChange={e => setHq(e.target.value)} /><div className="mt-1 max-h-40 overflow-y-auto rounded-md border">{matches.length ? matches.map(h => <button key={h.hotel_id} type="button" className="block w-full px-3 py-1.5 text-left hover:bg-muted" onClick={() => setHotel(h)}>{h.hotel_name} <span className="text-xs text-muted-foreground">{h.hotel_id}</span></button>) : <p className="px-3 py-2 text-muted-foreground">ไม่พบโรงแรม</p>}</div></>}</div>
       <div><label className="text-xs font-medium">หมวดย่อย *</label><CategoryPicker categories={categories} value={cat} onChange={pickCat} /></div>
       <div><label className="text-xs font-medium">แผนกรับผิดชอบ *</label><DeptPicker value={team} onChange={setDept} disabled={!cat} /><p className="mt-1 text-xs text-muted-foreground">ค่าเริ่มต้นตามหมวดย่อย · เปลี่ยนได้ · 1 ticket = 1 แผนก</p></div>
+      <div><label className="text-xs font-medium">หมวด *</label><Select value={svcCat} onValueChange={setSvcCat} disabled={!svcDept}><SelectTrigger aria-label="หมวด"><SelectValue placeholder={team ? (svcDept ? 'เลือกหมวด' : 'ไม่ใช้หมวดบริการ') : 'เลือกแผนกก่อน'} /></SelectTrigger><SelectContent>{svcCats.map(c => <SelectItem key={c.id} value={c.id}>{c.name_th}</SelectItem>)}</SelectContent></Select>{!team && <p className="mt-1 text-xs text-muted-foreground">เลือกแผนกก่อน</p>}</div>
       {hotel && <div className="grid gap-2 sm:grid-cols-2">
         <div><label className="text-xs font-medium">สัญญาบริการ (ไม่บังคับ)</label><Select value={contractId} onValueChange={v => { setContractTouched(true); setContractId(v); }}><SelectTrigger aria-label="สัญญาบริการ"><SelectValue /></SelectTrigger><SelectContent><SelectItem value={NONE}>— ไม่ระบุสัญญา</SelectItem>{hotelContracts.map(c => <SelectItem key={`${c.contract_id}-${c.service}`} value={c.contract_id}>{c.contract_id} · {c.service}</SelectItem>)}</SelectContent></Select>{!hotelContracts.length && <p className="mt-1 text-xs text-muted-foreground">ไม่พบสัญญาที่ใช้งานของโรงแรมนี้</p>}</div>
         <div><label className="text-xs font-medium">มาจากการประชุม (ไม่บังคับ)</label><Select value={meetingId} onValueChange={setMeetingId}><SelectTrigger aria-label="การประชุม"><SelectValue /></SelectTrigger><SelectContent><SelectItem value={NONE}>— ไม่ได้มาจากการประชุม</SelectItem>{hotelMeetings.map(m => <SelectItem key={m.meeting_id} value={m.meeting_id}>{new Date(`${m.date}T00:00:00Z`).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', timeZone: 'UTC' })} · {m.service === 'ORM' ? 'ORM-Snapshot Meeting' : 'Marcom-Sync up Meeting'}</SelectItem>)}</SelectContent></Select><p className="mt-1 text-xs text-muted-foreground">การประชุมของโรงแรมนี้ใน 60 วันล่าสุด</p></div>
