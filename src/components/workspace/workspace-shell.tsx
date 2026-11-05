@@ -88,7 +88,6 @@ export function WorkspaceShell({ config, demo, ticket, roleState, onGoBdm }: { c
     <div className="space-y-4">
       {/* R3.3 WB20: BD App › Workspace uses the PS Dashboard DEMO date; other workspaces keep theirs. */}
       {demo && <div className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs" data-testid="ws-demo-bar">ข้อมูลสาธิต · {/* v1.1 PW22: every workspace banner reads the shared DEMO-state helper */}{pageDateLabel(true)} · ไม่บันทึก</div>}
-      <DemoSwitch demo={demo} />
       {/* Partner v1.2 §2.5: testing mode, PM Workspace opened as a non-PM role (switcher default unchanged) */}
       {config.dept_key === "PS" && deptRole !== "PM" && isRenewalTestMode() && (
         <div className="flex flex-wrap items-center gap-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs" data-testid="pm-partner-banner">
@@ -333,7 +332,7 @@ function NoticeRows({ t }: { t: L0Ticket }) {
 
 /** AC App Partner Bills v1.0 add-on: the one DEMO switch on every Workspace banner (shared DEMO-state helper = PS Dashboard).
  *  Plain link first (works before the page finishes loading: ?demo=1 / ?demo=0 is read on load); after load it switches in place. */
-function DemoSwitch({ demo }: { demo: boolean }) {
+export function DemoSwitch({ demo }: { demo: boolean }) {
   const navigate = useNavigate();
   return (
     <div className="flex justify-end">

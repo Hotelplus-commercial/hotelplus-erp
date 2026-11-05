@@ -1,10 +1,12 @@
+import { useEffect, useState } from "react";
 import { createFileRoute, notFound } from "@tanstack/react-router";
-import { WorkspaceShell } from "@/components/workspace/workspace-shell";
+import { DemoSwitch, WorkspaceShell } from "@/components/workspace/workspace-shell";
+import { onDemoSessionChange, psDemoOn, setPsDemoSession } from "@/lib/demo-session";
 import { workspaceBySlug } from "@/lib/workspace-registry";
 import { WorkspaceViewSwitch } from "@/components/ps/workspace-view-switch";
 
 export const Route = createFileRoute("/workspace/$dept")({
-  validateSearch: (s: Record<string, unknown>) => ({ demo: s["demo"] === "1" || s["demo"] === 1 ? 1 : undefined, ticket: typeof s["ticket"] === "string" ? s["ticket"] : undefined }),
+  validateSearch: (s: Record<string, unknown>) => ({ demo: s["demo"] === "1" || s["demo"] === 1 ? 1 : s["demo"] === "0" || s["demo"] === 0 ? 0 as const : undefined, ticket: typeof s["ticket"] === "string" ? s["ticket"] : undefined }),
   loader: ({ params }) => {
     const ws = workspaceBySlug(params.dept);
     if (!ws) throw notFound();
@@ -30,5 +32,18 @@ function WorkspacePage() {
   const { dept } = Route.useParams();
   const { demo, ticket } = Route.useSearch();
   const ws = workspaceBySlug(dept)!;
-  return <div className="mx-auto w-full max-w-[100rem]">{dept === "ps" && <div className="mb-3"><WorkspaceViewSwitch current="pm" /></div>}<WorkspaceShell config={ws} demo={!!demo} ticket={ticket} /></div>;
+  const on = useSharedDemo(demo);
+  return <div className="mx-auto w-full max-w-[100rem]">{dept === "ps" && <div className="mb-3"><WorkspaceViewSwitch current="pm" /></div>}<div className="mb-2"><DemoSwitch demo={on} /></div><WorkspaceShell config={ws} demo={on} ticket={ticket} /></div>;
+}
+
+/** AC App Partner Bills v1.0 add-on: one DEMO state for the whole app. ?demo=1 / ?demo=0 (the switch link) writes the shared
+ *  DEMO-state helper; without the param the page follows it (PS Dashboard turned DEMO on → every Workspace is in DEMO). */
+function useSharedDemo(param: 1 | 0 | undefined): boolean {
+  const [session, setSession] = useState(false);
+  useEffect(() => {
+    if (param === 1) setPsDemoSession(true); else if (param === 0) setPsDemoSession(false);
+    const read = () => setSession(psDemoOn()); read();
+    return onDemoSessionChange(read);
+  }, [param]);
+  return param === 1 || (param !== 0 && session);
 }
