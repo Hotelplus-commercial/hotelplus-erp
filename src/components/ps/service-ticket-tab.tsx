@@ -76,9 +76,9 @@ function useStabMeetings(demo: boolean): StabMeetingInput[] {
 }
 
 /* ---------- small UI ---------- */
-const Card = ({ id, n, title, q, right, info, children, now }: { id?: string; n: string; title: string; q: string; right?: ReactNode; info?: string[]; children: ReactNode; now?: boolean }) => (
+const Card = ({ id, n, title, q, right, info, children, now }: { id?: string; n: string; title: string; q: string; right?: ReactNode; info?: readonly string[]; children: ReactNode; now?: boolean }) => (
   <section id={id} className="stab-card" data-testid={`stab-card-${n}`}>
-    <header className="stab-card-head"><div><h3><span className="stab-n">{n}</span> {title}{info && <ChartHint header={title} lines={info}><button type="button" className="stab-info" aria-label={`ⓘ ${title}`}>ⓘ</button></ChartHint>}</h3><p className="stab-q">{q}</p></div><div className="stab-card-right">{now && <span className="stab-now">ณ วันนี้</span>}{right}</div></header>
+    <header className="stab-card-head"><div><h3><span className="stab-n">{n}</span> {title}{info && <ChartHint header={title} lines={[...info]}><button type="button" className="stab-info" aria-label={`ⓘ ${title}`}>ⓘ</button></ChartHint>}</h3><p className="stab-q">{q}</p></div><div className="stab-card-right">{now && <span className="stab-now">ณ วันนี้</span>}{right}</div></header>
     {children}
   </section>
 );
