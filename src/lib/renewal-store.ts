@@ -278,7 +278,8 @@ export function withOfferFields(r: RenewalRequest): RenewalRequest {
 /** v1.4 reco_snapshot: the existing keys (type · band · reasons · inputs · computed_at) + the engine keys. */
 function snapshotOf(o: RenewalOffer, fee: FeeAverage, row: PsReportRow | null): RecoSnapshot {
   const fixedBand = o.model === 'FLAT' || o.model === 'FIXED_PLUS_COMMISSION';
-  return { type: o.type, band_min_pct: fixedBand && o.type === 'RAISE' ? Number(row?.['band_min_pct'] ?? null) : null, band_max_pct: fixedBand && o.type === 'RAISE' ? Number(row?.['band_max_pct'] ?? null) : null,
+  const band = (k: string) => (fixedBand && o.type === 'RAISE' && row?.[k] != null ? Number(row[k]) : null);
+  return { type: o.type, band_min_pct: band('band_min_pct'), band_max_pct: band('band_max_pct'),
     reasons: o.reasons.map((x) => x.text), inputs: { revenue_profile: row?.['revenue_profile'] ?? null, cadence: row?.['cadence_path'] ?? null, months_since_increase: row?.['months_since_increase'] ?? null, fee, missing: o.missing, bad_count: o.bad_count },
     computed_at: o.computed_at, model: o.model, values: o.values, factors: o.factors, overdue: o.overdue, avg_before: o.avg_before, expected_avg: o.expected_avg, alternatives: o.alternatives };
 }
