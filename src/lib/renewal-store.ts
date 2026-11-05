@@ -49,6 +49,11 @@ const DEMO_CONTRACTS: SourceContract[] = [
 /** v1.4 §9 DEMO additions: the six Renewal Offer contracts (billing model / guarantee live in renewal-offer-demo.ts). */
 const V14_CONTRACTS: SourceContract[] = V14_DEMO.map((d) => ({ contract_id: d.contract_id, hotel_id: d.hotel_id, customer_id: `CUS-${d.hotel_id.slice(3)}`, legal_entity: d.legal, signatory: d.signatory, kyc_docs: ['หนังสือรับรองบริษัท.pdf'], service: d.service,
   terms: { fee_amount: d.fixed_fee ?? 0, commission_pct: d.commission_pct ?? 0, term_months: d.term_months, package: d.package, start_date: d.start, end_date: d.end } }));
+/** v1.4.1 RN52 DEMO additions (memory only): a late renewal source (ended 30 ก.ย. 69) and a commission source renewed as Commission + Guarantee. */
+const V141_CONTRACTS: SourceContract[] = [
+  { contract_id: 'CT-HTL0421', hotel_id: 'HTL0421', customer_id: 'CUS-0421', legal_entity: 'บริษัท ภูเก็ต โอลด์ทาวน์ อินน์ จำกัด', signatory: 'คุณสุรชัย เมืองเก่า', kyc_docs: ['หนังสือรับรองบริษัท.pdf'], service: 'ORM', terms: { fee_amount: 15000, commission_pct: 0, term_months: 12, package: 'ORM Full', start_date: '2025-10-01', end_date: '2026-09-30' } },
+  { contract_id: 'CT-HTL0422', hotel_id: 'HTL0422', customer_id: 'CUS-0422', legal_entity: 'บริษัท ระยอง ซีไซด์ จำกัด', signatory: 'คุณมาลี ริมหาด', kyc_docs: ['หนังสือรับรองบริษัท.pdf'], service: 'ORM', terms: { fee_amount: 0, commission_pct: 12, term_months: 12, package: 'ORM Full', start_date: '2025-11-01', end_date: '2026-10-31' } },
+];
 const contact = (name: string) => ({ name, phone: '08x-xxx-xxxx', email: '—', line: '—' });
 /** Demo-only renewal cards (§8 cases 4–7). Cases 1–3 reuse the bundled cards HTL0055 / HTL0042 / HTL0071. */
 export const DEMO_EXTRA_CARDS: RenewalCard[] = [
@@ -111,7 +116,7 @@ export function setRenewalDemo(on: boolean) {
   if (on === demoOn) return;
   demoOn = on; demoExtra = []; demoMisses = []; setTicketDemo(on);
   /* v1.3 §2: one demo contract state — the renewal sample contracts are seed data written into it (memory only). */
-  setMainContractDemo(on, on ? [...SAMPLE_CONTRACTS, ...DEMO_CONTRACTS, ...V14_CONTRACTS].map((c) => contractFromSource(c, DEMO_NOW)) : []);
+  setMainContractDemo(on, on ? [...SAMPLE_CONTRACTS, ...DEMO_CONTRACTS, ...V14_CONTRACTS, ...V141_CONTRACTS].map((c) => contractFromSource(c, DEMO_NOW)) : []);
   /* Tab R3 addendum: all R1-/R2- demo contracts join the demo state now (not on first open), so the v1.3 §4 backfill in seedDemo() covers every demo contract. */
   if (on) for (const id of demoBackfillIds()) materialiseDemo(id, false);
   demo = on ? seedDemo() : null;
@@ -315,6 +320,7 @@ function seedDemo(): State {
   const signed7 = { ...r7, ...e7, new_terms: t7, status: 'SIGNED' as const, submitted_at: '2026-09-22T03:00:00.000Z', approved_by: 'PM001-Alex', approver_role: 'PM' as const, approved_at: '2026-09-23T03:00:00.000Z', link_sent_at: '2026-09-24T03:00:00.000Z', signed_at: '2026-09-28T07:15:00.000Z', new_contract_id: `${r7.source_contract_id}-R${r7.id.slice(-4)}` };
   s.requests.push(signed7); s.history.push(renewalHistoryRow(signed7, 1));
   seedV14Requests(s);
+  seedV141Requests(s);
   return s;
 }
 /** v1.4 §9 — added demo requests: Chiang Mai (link sent, offer = match) · Baan Suan (switch package, pending PM 1 day) · Hua Hin (draft 14% = match). */
@@ -333,6 +339,20 @@ function seedV14Requests(s: State) {
   s.requests.push(terms(bs, { billing_model: 'FIXED_PLUS_COMMISSION', fixed_fee: 8500, commission_pct: 5.5, guarantee_fee: null }, { reason_code: 'ลูกค้าต่อรอง', reason_text: 'ลูกค้าขอเปลี่ยนเป็นคิดตามผลงาน', status: 'PENDING_APPROVAL', submitted_at: '2026-10-27T03:00:00.000Z' }));
   const hh = mk('RN-V14-HH');
   s.requests.push(terms(hh, { billing_model: 'COMMISSION_GUARANTEE', fixed_fee: null, commission_pct: 14, guarantee_fee: 8000 }, {}));
+}
+
+/** v1.4.1 RN52: two SIGNED renewals (demo only) — a late renewal (signed 20 ต.ค. 69, starts 1 ต.ค. 69) and Commission 15% + Guarantee ฿22,500. */
+function seedV141Requests(s: State) {
+  const one = (card: string, srcId: string, hotel: string, o: OfferTerms, at: { sub: string; app: string; link: string; signed: string }) => {
+    const src = V141_CONTRACTS.find((c) => c.contract_id === srcId)!;
+    s.seq++; const r = newRequest({ id: card, hotelId: src.hotel_id, hotel, owner: 'AE001-Nont' }, src, s.seq, `${at.sub}T02:00:00.000Z`, s.history);
+    const next = { ...applyOfferTerms(r.new_terms, o), ...rollDates(src.terms.end_date, 12), term_months: 12 };
+    const signed: RenewalRequest = { ...r, new_terms: next, status: 'SIGNED', submitted_at: `${at.sub}T03:00:00.000Z`, approved_by: 'PM001-Alex', approver_role: 'PM', approved_at: `${at.app}T03:00:00.000Z`,
+      link_sent_at: `${at.link}T03:00:00.000Z`, signed_at: `${at.signed}T03:00:00.000Z`, new_contract_id: `${srcId}-R${r.id.slice(-4)}`, updated_at: `${at.signed}T03:00:00.000Z` };
+    s.requests.push(signed); s.history.push(renewalHistoryRow(signed, 1));
+  };
+  one('RN-V141-LATE', 'CT-HTL0421', 'Phuket Old Town Inn', { billing_model: 'FLAT', fixed_fee: 16000, commission_pct: null, guarantee_fee: null }, { sub: '2026-10-14', app: '2026-10-15', link: '2026-10-16', signed: '2026-10-20' });
+  one('RN-V141-CG', 'CT-HTL0422', 'Rayong Seaside', { billing_model: 'COMMISSION_GUARANTEE', fixed_fee: null, commission_pct: 15, guarantee_fee: 22500 }, { sub: '2026-10-20', app: '2026-10-21', link: '2026-10-22', signed: '2026-10-24' });
 }
 
 /* ---------- reads ---------- */
