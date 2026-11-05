@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { setTicketDemo, STATUS_TH, useTickets } from "@/lib/tickets-l0";
 import { workspaceByDept } from "@/lib/workspace-registry";
 import { Bell, AlertTriangle, Info, CircleAlert, Check } from "lucide-react";
