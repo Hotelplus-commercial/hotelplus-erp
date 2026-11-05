@@ -9,7 +9,7 @@ import { InfoButton } from "./dash-card";
 import { GuidedTour, type TourStep } from "./guided-tour";
 import { RenewalReasonPicker } from "./renewal-reason-picker";
 import { usePsRenewalCards, type RenewalCard } from "@/lib/ps-renewal";
-import { useRenewalStore } from "@/lib/renewal-store";
+import { setRenewalDemo, useRenewalStore } from "@/lib/renewal-store";
 import type { RenewalRequest } from "@/lib/renewal-rules";
 import { editReason, reasonFor, recordReason, setReasonsDemo, useRenewalReasons, type RenewalReason } from "@/lib/renewal-reasons";
 import { cardIdFor, dayDiff, scanDateOf, toIsoDate, writeEarlyHandoff, EARLY_PARAM } from "@/lib/renewal-scan";
@@ -136,6 +136,8 @@ export function RenewalCardR2({ data }: { data: TabR1Data | undefined }) {
   const cards = usePsRenewalCards();
   const store = useRenewalStore();
   useEffect(() => { setReasonsDemo(demo, renewalR2DemoReasons); }, [demo]);
+  // Tab R5: the board reads the same shared DEMO renewal store as the AE Workspace (v1.4 demo requests / snapshots); memory only.
+  useEffect(() => { setRenewalDemo(demo); }, [demo]);
   const stored = useRenewalReasons();
   const [sim, setSim] = useState(false);
   const simData = useMemo(() => (demo && sim ? renewalR2Sim(120, today) : null), [demo, sim, today]);
