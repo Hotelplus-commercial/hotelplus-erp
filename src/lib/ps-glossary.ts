@@ -71,6 +71,9 @@ export function aeNameTh(id: unknown): string {
 }
 export const GRADE_D_LABEL = "ลูกค้าเกรด D";
 
+/** Task tab · card ③ Survey stream rule line (display only; the stored survey status stays PENDING). */
+export const TASK_SURVEY_RULE_TH = "รอตอบ เกิน 5 วัน";
+
 /** Contract Renewal v1.0 — display labels (internal codes never render). */
 export const RENEWAL_REQ_STATUS_TH: Record<string, string> = {
   DRAFT: "ร่าง", PENDING_APPROVAL: "รอ PM อนุมัติ", APPROVED: "อนุมัติแล้ว", RETURNED: "ส่งกลับ", READY_TO_SEND: "พร้อมส่ง",
