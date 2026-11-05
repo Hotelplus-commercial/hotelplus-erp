@@ -150,9 +150,9 @@ function runTodo(c: Common, t: PartnerTodo) {
   }
 }
 
-function useHotelCoverage(d: PartnerData, contracts: Contracts, today: string) {
+function useHotelCoverage(d: PartnerData, contracts: Contracts, today: string, demo: boolean) {
   return useMemo(() => {
-    const pids = new Set<string>([...d.property_partner_system.map((r) => r.property_id), ...contracts.filter((c) => c.service === "ORM" && c.property_id && (!c.end || c.end >= today)).map((c) => c.property_id!)]);
+    const pids = new Set<string>([...(demo ? PARTNER_DEMO_EXTRA_HOTELS.map((h) => h.property_id) : []), ...d.property_partner_system.map((r) => r.property_id), ...contracts.filter((c) => c.service === "ORM" && c.property_id && (!c.end || c.end >= today)).map((c) => c.property_id!)]);
     const noSystem: string[] = [], noAllot: string[] = []; let set = 0;
     for (const pid of pids) {
       const cur = propertySystemOn(d, pid, today);
@@ -162,7 +162,7 @@ function useHotelCoverage(d: PartnerData, contracts: Contracts, today: string) {
       if (cur && cur.allotment == null) noAllot.push(pid);
     }
     return { set, noSystem, noAllot };
-  }, [d, contracts, today]);
+  }, [d, contracts, today, demo]);
 }
 
 function Overview(c: Common) {
@@ -171,7 +171,7 @@ function Overview(c: Common) {
   const netThb = rows.reduce((s, r) => s + (r.toThb(r.net) ?? 0), 0), baseThb = rows.reduce((s, r) => s + (r.toThb(r.base) ?? 0), 0);
   const anyEst = rows.some((r) => r.card.currency !== "THB");
   const activeP = d.partners.filter((p) => rows.some((r) => r.card.partner_id === p.id && r.contracts > 0));
-  const cov = useHotelCoverage(d, contracts, today);
+  const cov = useHotelCoverage(d, contracts, today, demo);
   const credit = creditTiles(d);
   const todos = partnerTodoItems(d, contracts, today, "today", "PM");
   const [q, setQ] = useState("");
