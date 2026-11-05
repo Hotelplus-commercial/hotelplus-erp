@@ -57,12 +57,24 @@ export type PartnerDeal = {
 };
 
 /** partner_cashback_receipts — AC-owned (AC App UI later). */
-export type PartnerCashbackReceipt = { id: string; deal_id: string; contract_id: string; received_at: string; recorded_by: string };
+export type PartnerCashbackReceipt = { id: string; deal_id: string; contract_id: string; received_at: string; recorded_by: string;
+  /** AC App Partner Bills v1.0 §3 (optional, additive): actual amount received. Missing = deal value. */
+  amount?: number | null; currency?: Currency | null };
 
 /** partner_bill_lines — AC-owned. "จ่ายล่วงหน้าถึง" = max period_end where paid_at not null. */
 export type PartnerBillLine = {
   id: string; partner_id: string; contract_id: string; period_start: string; period_end: string;
   amount: number; currency: Currency; paid_at: string | null; recorded_by: string;
+  /** AC App Partner Bills v1.0 §2.2 (optional, additive): the bill this line belongs to. */
+  bill_id?: string | null;
+};
+
+/** partner_bills — AC App Partner Bills v1.0 §2.1 (AC-owned). Unique (partner_id, bill_no). */
+export type PartnerBillStatus = 'PENDING' | 'PAID' | 'VOID';
+export type PartnerBill = {
+  id: string; partner_id: string; bill_no: string; bill_date: string; due_date: string; period_start: string; period_end: string;
+  total: number; currency: Currency; expected_total: number; status: PartnerBillStatus; paid_at: string | null;
+  attachment_url: string; note: string; created_by: string; created_at: string; updated_at: string;
 };
 
 /** system_credit_requests — created by PM Workspace later. "รอ PM ส่งคำขอ" is derived, never stored. */
@@ -75,7 +87,9 @@ export type SystemCreditRequest = {
 };
 
 /** system_credit_usage — AC-owned. */
-export type SystemCreditUsage = { id: string; credit_request_id: string; partner_bill_ref: string; amount: number; used_at: string; recorded_by: string };
+export type SystemCreditUsage = { id: string; credit_request_id: string; partner_bill_ref: string; amount: number; used_at: string; recorded_by: string;
+  /** AC App Partner Bills v1.0 §2.2 (optional, additive). */
+  bill_id?: string | null };
 
 export type PartnerData = {
   partners: Partner[];
@@ -88,13 +102,14 @@ export type PartnerData = {
   system_credit_requests: SystemCreditRequest[];
   system_credit_usage: SystemCreditUsage[];
   property_partner_system: PropertyPartnerSystem[];
+  partner_bills: PartnerBill[];
 };
 export type PartnerCollection = keyof PartnerData;
 export const PARTNER_COLLECTIONS = [
   'partners', 'partner_rate_cards', 'partner_rate_card_tiers', 'contract_partner_system', 'partner_deals',
   'partner_cashback_receipts', 'partner_bill_lines', 'system_credit_requests', 'system_credit_usage',
-  'property_partner_system',
+  'property_partner_system', 'partner_bills',
 ] as const satisfies readonly PartnerCollection[];
-/** AC-owned: read only in this pass (write UI comes with the AC App prompt). */
-export const AC_OWNED: readonly PartnerCollection[] = ['partner_cashback_receipts', 'partner_bill_lines', 'system_credit_usage'];
+/** AC-owned: written only from AC App › บิล Partner (AC role in the testing switcher). */
+export const AC_OWNED: readonly PartnerCollection[] = ['partner_cashback_receipts', 'partner_bill_lines', 'system_credit_usage', 'partner_bills'];
 export const emptyPartnerData = (): PartnerData => Object.fromEntries(PARTNER_COLLECTIONS.map((c) => [c, []])) as unknown as PartnerData;
