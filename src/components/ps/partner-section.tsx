@@ -10,7 +10,7 @@ import { setPartnerDemo, usePartnerData } from "@/lib/debt-partner-store";
 import { creditAmountOf, creditRows, creditTiles, getCashbackExpected, getDealState, rateCardRows, type DealState, type PartnerContract } from "@/lib/debt-partner-calc";
 import { PARTNER_DEMO_TICKET_STATUS } from "@/lib/debt-partner-demo";
 import { DEMO_DAY } from "@/lib/demo-session";
-import { ticketById, useTickets, type L0Status } from "@/lib/tickets-l0";
+import { ticketById, ticketSnapshot, useTickets, type L0Status } from "@/lib/tickets-l0";
 import type { PartnerData, PartnerDeal } from "@/lib/debt-partner-types";
 import { DP_HELP } from "@/lib/ps-glossary";
 import { cn } from "@/lib/utils";
@@ -27,7 +27,7 @@ export { partnerContracts };
 /** AC notice status of a ticket id (real ticket store; DEMO fallback map). */
 export function noticeStatus(id: string | null, demo: boolean): L0Status | null {
   if (!id) return null;
-  return ticketById(id)?.status ?? (demo ? PARTNER_DEMO_TICKET_STATUS[id] ?? null : null);
+  return ticketById(id)?.status ?? (demo ? ticketSnapshot().find((t) => t.payload.demo_ref === id)?.status ?? PARTNER_DEMO_TICKET_STATUS[id] ?? null : null);
 }
 export function AcNotice({ id, demo }: { id: string | null; demo: boolean }) {
   const s = noticeStatus(id, demo);

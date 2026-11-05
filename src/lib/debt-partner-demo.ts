@@ -43,7 +43,7 @@ export const PARTNER_DEMO_EXTRA_HOTELS = [
 
 /** DEMO status of the AC notice tickets referenced by demo deals / credit requests (no real tickets are written). */
 export const PARTNER_DEMO_TICKET_STATUS: Record<string, L0Status> = {
-  'TKT-DP-01': 'NEW', 'TKT-DP-02': 'ACK', 'TKT-DP-03': 'ACK', 'TKT-DP-04': 'ACK', 'TKT-DP-CR-KRABI': 'ACK', 'TKT-DP-CR-NAN': 'NEW',
+  'TKT-DP-01': 'NEW', 'TKT-DP-02': 'ACK', 'TKT-DP-03': 'ACK', 'TKT-DP-04': 'ACK', 'TKT-DP-CR-KRABI': 'ACK', 'TKT-DP-CR-NAN': 'NEW', 'TKT-DP-CR-LANNA': 'NEW',
 };
 
 const deal = (d: Partial<PartnerDeal> & Pick<PartnerDeal, 'id' | 'partner_id' | 'kind' | 'status' | 'title' | 'benefit_type'>): PartnerDeal => ({
@@ -94,7 +94,7 @@ function partnerDemoBase(): PartnerData {
     system_credit_requests: [
       { id: 'CR-NAN', contract_id: 'DP-NAN', partner_id: P.HG, contract_end_date: '2026-10-26', prepaid_until: '2026-12-31', months_over: 2, amount: 2380, currency: 'THB', status: 'REQUESTED', requested_at: '2026-10-19', decided_at: null, credit_expires_at: null, ac_ticket_id: 'TKT-DP-CR-NAN', created_by: 'PM001-Alex' },
       { id: 'CR-KRABI', contract_id: 'DP-KRABI', partner_id: P.HG, contract_end_date: '2026-10-14', prepaid_until: '2026-12-31', months_over: 2, amount: 3400, currency: 'THB', status: 'APPROVED', requested_at: '2026-10-15', decided_at: '2026-10-20', credit_expires_at: '2027-12-31', ac_ticket_id: 'TKT-DP-CR-KRABI', created_by: 'PM001-Alex', approved_amount: 3400 },
-      { id: 'CR-LANNA', contract_id: 'DP-LANNA', partner_id: P.HG, contract_end_date: '2026-08-05', prepaid_until: '2026-09-30', months_over: 1, amount: 1700, currency: 'THB', status: 'REJECTED', requested_at: '2026-08-06', decided_at: '2026-08-20', credit_expires_at: null, ac_ticket_id: null, created_by: 'PM001-Alex' },
+      { id: 'CR-LANNA', contract_id: 'DP-LANNA', partner_id: P.HG, contract_end_date: '2026-08-05', prepaid_until: '2026-09-30', months_over: 1, amount: 1700, currency: 'THB', status: 'REJECTED', requested_at: '2026-08-06', decided_at: '2026-08-20', credit_expires_at: null, ac_ticket_id: 'TKT-DP-CR-LANNA', created_by: 'PM001-Alex' },
       { id: 'CR-SEEFAH', contract_id: 'DP-SEEFAH', partner_id: P.HG, contract_end_date: '2026-02-28', prepaid_until: '2026-05-31', months_over: 3, amount: 3740, currency: 'THB', status: 'APPROVED', requested_at: '2026-03-02', decided_at: '2026-03-10', credit_expires_at: '2027-03-31', ac_ticket_id: null, created_by: 'PM001-Alex' },
       { id: 'CR-BTALAY', contract_id: 'DP-BTALAY', partner_id: P.HG, contract_end_date: '2026-04-30', prepaid_until: '2026-06-30', months_over: 2, amount: 3400, currency: 'THB', status: 'APPROVED', requested_at: '2026-05-02', decided_at: '2026-05-12', credit_expires_at: '2027-06-30', ac_ticket_id: null, created_by: 'PM001-Alex' },
     ],
