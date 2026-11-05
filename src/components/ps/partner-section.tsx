@@ -6,7 +6,7 @@ import { NowChip } from "./compare-control";
 import { PartnerFormDrawer, type PartnerFormMode } from "./partner-form-drawer";
 import { setPartnerDemo, usePartnerData } from "@/lib/debt-partner-store";
 import { creditAmountOf, creditRows, creditTiles, getCashbackExpected, getDealState, rateCardRows, type DealState, type PartnerContract } from "@/lib/debt-partner-calc";
-import { PARTNER_DEMO_CONTRACTS, PARTNER_DEMO_TICKET_STATUS } from "@/lib/debt-partner-demo";
+import { PARTNER_DEMO_TICKET_STATUS } from "@/lib/debt-partner-demo";
 import { DEMO_DAY } from "@/lib/demo-session";
 import { ticketById, useTickets, type L0Status } from "@/lib/tickets-l0";
 import type { PartnerData, PartnerDeal } from "@/lib/debt-partner-types";
@@ -20,7 +20,8 @@ const CYCLE: Record<string, string> = { MONTHLY: "รายเดือน", ADV
 const STATE_TH: Record<DealState, string> = { ACTIVE: "สำเร็จ · มีผลอยู่", UPCOMING: "สำเร็จ · รอเริ่ม", NEGOTIATING: "กำลังต่อรอง", EXPIRED: "หมดอายุ", FAILED: "ไม่สำเร็จ" };
 const pill = "inline-flex items-center rounded-full px-2 py-0.5 text-xs whitespace-nowrap";
 
-export { partnerContracts } from "@/lib/partner-contracts";
+import { partnerContracts } from "@/lib/partner-contracts";
+export { partnerContracts };
 /** AC notice status of a ticket id (real ticket store; DEMO fallback map). */
 export function noticeStatus(id: string | null, demo: boolean): L0Status | null {
   if (!id) return null;
