@@ -137,11 +137,11 @@ describe('§3 Q58 (RN45–RN49)', () => {
     expect(CS.contractStateOn({ contract_id: 'B', start: '2026-10-16', term_end: '2027-10-15' }, '2026-10-16', ren)).toBe('ACTIVE');
   });
   test('8 · header ใช้งาน excludes lapsed; lapsed list feeds the sub-line; หลุด unchanged', () => {
-    const active = D1.tabR1HeaderActive().map((a) => a.hotel_name);
     const lapsed = D1.tabR1DemoLapsed();
     expect(lapsed.map((l) => l.contract_id).sort()).toEqual(['R1-M5', 'R1-O5', 'R1-O6']);
-    for (const l of lapsed) expect(active).not.toContain(l.hotel_name === 'สยาม ลอฟท์' ? '__' : l.hotel_name);
-    expect(D1.tabR1HeaderChurn().some((c) => c.out > 0 && ['R1-M5', 'R1-O5', 'R1-O6'].some((id) => c.hotel_id.includes(id)))).toBe(false);
+    const hit = (r: { hotel_id?: string; service: string }) => lapsed.some((l) => l.hotel_id === r.hotel_id && l.service === r.service);
+    expect(D1.tabR1HeaderActive().some(hit)).toBe(false);
+    expect(D1.tabR1HeaderChurn().some((c) => c.out > 0 && hit(c))).toBe(false);
     expect(G.Q58.headerLine(2)).toBe('ขาดอายุ รอผล 2');
     expect(G.Q58.unmatched(3)).toBe('ตรวจวันสิ้นสุดไม่ได้ 3 สัญญา (ไม่มีในคลังสัญญาหลัก)');
   });
