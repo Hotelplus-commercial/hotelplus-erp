@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { DashCard } from "@/components/ps/dash-card";
 import { NowChip } from "./compare-control";
 import { PartnerFormDrawer, type PartnerFormMode } from "./partner-form-drawer";
+import { AttachmentCountPopover } from "./partner-attachments";
+import { Link } from "@tanstack/react-router";
 import { setPartnerDemo, usePartnerData } from "@/lib/debt-partner-store";
 import { creditAmountOf, creditRows, creditTiles, getCashbackExpected, getDealState, rateCardRows, type DealState, type PartnerContract } from "@/lib/debt-partner-calc";
 import { PARTNER_DEMO_TICKET_STATUS } from "@/lib/debt-partner-demo";
@@ -35,6 +37,13 @@ export function AcNotice({ id, demo }: { id: string | null; demo: boolean }) {
 }
 const discountText = (d: PartnerDeal) => (d.benefit_type === "PERCENT" ? `−${d.benefit_value}%` : d.benefit_type === "AMOUNT_PER_CONTRACT" ? `−${money(d.benefit_value ?? 0, d.benefit_currency ?? "THB")} / สัญญา` : d.title);
 
+export const PARTNER_READONLY_INFO = "PM บันทึกใน PM Workspace › จัดการ Partner · หน้านี้ดูอย่างเดียว";
+function ManageLink({ isPm, demo, hash }: { isPm: boolean; demo: boolean; hash: string }) {
+  return isPm
+    ? <Link to="/workspace/ps/partners" hash={hash} search={{ demo: demo ? 1 : undefined }} className="rn5-toggle" data-testid={`dp-manage-${hash}`}>จัดการใน PM Workspace ↗</Link>
+    : <span className="text-xs text-muted-foreground" data-testid={`dp-source-${hash}`}>ที่มา PM Workspace › จัดการ Partner</span>;
+}
+
 export function PartnerSection({ demo }: { demo: boolean }) {
   useEffect(() => { setPartnerDemo(demo); }, [demo]);
   useTickets();
@@ -48,22 +57,24 @@ export function PartnerSection({ demo }: { demo: boolean }) {
     <section className="flex flex-col gap-5" data-testid="dp-partner-section">
       <header className="ac-section-head">
         <h2>ส่วนลด Partner</h2>
-        <p>ต้นทุนค่าระบบที่ H+ จ่าย Partner · ส่วนลดและสิทธิพิเศษที่ต่อรองได้ · เครดิตค่าระบบ · PM บันทึก AC รับทราบ</p>
+        <p>ต้นทุนค่าระบบที่ H+ จ่าย Partner · ส่วนลดและสิทธิพิเศษที่ต่อรองได้ · เครดิตค่าระบบ · PM บันทึกใน PM Workspace › จัดการ Partner · AC รับทราบ · หน้านี้ดูอย่างเดียว</p>
         <label className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">สวมบท (ทดสอบ)
           <select className="rounded border border-input bg-background px-1" value={role} onChange={(e) => setRole(e.target.value as "PM" | "OTHER")} aria-label="สวมบท Partner">
             <option value="OTHER">ทีมอื่น · อ่านอย่างเดียว</option><option value="PM">PM</option>
           </select>
         </label>
       </header>
-      <RateCardCard d={d} contracts={contracts} today={today} isPm={isPm} onForm={setForm} />
-      <DealsCard d={d} contracts={contracts} today={today} isPm={isPm} demo={demo} onForm={setForm} />
-      <CreditCard d={d} contracts={contracts} today={today} demo={demo} />
-      {isPm && <PartnerFormDrawer mode={form} onClose={() => setForm(null)} />}
+      {/* PM Workspace Partner v1.1 PW17: read-only for every role — edit controls and the shared form are not rendered here
+          (isPm={false} below; components kept). PM sees a deep link to PM Workspace › จัดการ Partner, others the source tag. */}
+      <RateCardCard d={d} contracts={contracts} today={today} isPm={false} onForm={setForm} manage={<ManageLink isPm={isPm} demo={demo} hash="ratecard" />} />
+      <DealsCard d={d} contracts={contracts} today={today} isPm={false} demo={demo} onForm={setForm} manage={<ManageLink isPm={isPm} demo={demo} hash="deals" />} />
+      <CreditCard d={d} contracts={contracts} today={today} demo={demo} manage={<ManageLink isPm={isPm} demo={demo} hash="credit" />} />
+      {false && <PartnerFormDrawer mode={form} onClose={() => setForm(null)} />}
     </section>
   );
 }
 
-function RateCardCard({ d, contracts, today, isPm, onForm }: { d: PartnerData; contracts: PartnerContract[]; today: string; isPm: boolean; onForm: (m: PartnerFormMode) => void }) {
+function RateCardCard({ d, contracts, today, isPm, onForm, manage }: { d: PartnerData; contracts: PartnerContract[]; today: string; isPm: boolean; onForm: (m: PartnerFormMode) => void; manage?: React.ReactNode }) {
   const rows = rateCardRows(d, contracts, today);
   const anyEst = rows.some((r) => r.card.currency !== "THB");
   const netThb = rows.reduce((s, r) => s + (r.toThb(r.net) ?? 0), 0), baseThb = rows.reduce((s, r) => s + (r.toThb(r.base) ?? 0), 0);
@@ -71,10 +82,10 @@ function RateCardCard({ d, contracts, today, isPm, onForm }: { d: PartnerData; c
   return (
     <DashCard noteKey="dp-rate" noteLines={[`ต้นทุนรวมหลังส่วนลด ${anyEst ? "≈ " : ""}${thb(netThb)} / เดือน`, `ประหยัดจากส่วนลด ${thb(baseThb - netThb)} / เดือน`]} howToRead={DP_HELP.rate}
       period={<NowChip />} title={<span data-testid="dp-card-3">③ Rate Card ค่าระบบ Partner</span>} question="แต่ละระบบ H+ จ่ายเท่าไร และหลังส่วนลดเหลือเท่าไร?"
-      info={{ source: "PM บันทึก Rate Card เป็นราคาขั้นบันไดตาม allotment ของสัญญา ในสกุลเงินที่ Partner เรียกเก็บ · ระบบคำนวณค่าระบบรวมและยอดหลังหักส่วนลดที่สำเร็จและอยู่ในช่วงมีผล · ต้นทุนรายสัญญาไปแสดงในข้อมูลประกอบการต่อสัญญา" }}
+      info={{ source: "ที่มา PM Workspace › จัดการ Partner · " + PARTNER_READONLY_INFO + " · Rate Card เป็นราคาขั้นบันไดตาม allotment ของสัญญา ในสกุลเงินที่ Partner เรียกเก็บ · ระบบคำนวณค่าระบบรวมและยอดหลังหักส่วนลดที่สำเร็จและอยู่ในช่วงมีผล · ต้นทุนรายสัญญาไปแสดงในข้อมูลประกอบการต่อสัญญา" }}
       answer={<span data-testid="dp-rate-headline">{anyEst ? "≈ " : ""}{thb(netThb)} / เดือน</span>}
       answerSub={`ต้นทุนค่าระบบรวมหลังหักส่วนลด${anyEst ? " · estimate THB" : ""} · ก่อนส่วนลด ${anyEst ? "≈ " : ""}${thb(baseThb)}`}
-      right={isPm ? <button type="button" className="rn5-toggle" onClick={() => onForm({ kind: "rate" })} data-testid="dp-add-rate">+ เพิ่ม Rate Card</button> : undefined}>
+      right={isPm ? <button type="button" className="rn5-toggle" onClick={() => onForm({ kind: "rate" })} data-testid="dp-add-rate">+ เพิ่ม Rate Card</button> : manage}>
       <div className="grid grid-cols-2 gap-2 text-sm md:grid-cols-4">
         <div className="dash-tile">Partner ที่ใช้อยู่ <b>{new Set(rows.filter((r) => r.contracts).map((r) => r.card.partner_id)).size} ราย</b> · {rows.reduce((s, r) => s + r.contracts, 0)} สัญญา ORM</div>
         <div className="dash-tile">ประหยัดจากส่วนลด <b>{thb(baseThb - netThb)} / เดือน</b></div>
@@ -90,7 +101,7 @@ function RateCardCard({ d, contracts, today, isPm, onForm }: { d: PartnerData; c
               const a = r.active[0];
               return (
                 <tr key={r.card.id} data-testid={`dp-rate-${r.partner}`}>
-                  <td>{r.partner}</td><td>{r.card.system_name}</td><td className="tabular-nums">{r.contracts}</td>
+                  <td>{r.partner}<AttachmentCountPopover partnerId={r.card.partner_id} /></td><td>{r.card.system_name}</td><td className="tabular-nums">{r.contracts}</td>
                   <td>{r.active.length ? r.active.map((x) => <span key={x.id} className={cn(pill, "bg-dash-good/15 text-dash-good")}>{discountText(x)}</span>) : r.negotiating ? <span className={cn(pill, "bg-dash-watch/15 text-dash-watch")}>กำลังต่อรอง</span> : "–"}</td>
                   <td>{a ? `${dDMY(a.start_date)} – ${a.end_date ? dDMY(a.end_date) : "until further notice"}` : "–"}</td>
                   <td className="tabular-nums" data-testid="dp-base">{money(r.base, r.card.currency)}{est(r.base)}</td>
@@ -114,7 +125,7 @@ export function dealChipCounts(d: PartnerData, today: string) {
   const st = d.partner_deals.map((x) => getDealState(x, today));
   return { LIVE: st.filter((s) => s === "ACTIVE" || s === "UPCOMING").length, NEG: st.filter((s) => s === "NEGOTIATING").length, DONE: st.filter((s) => s === "EXPIRED" || s === "FAILED").length, ALL: st.length };
 }
-function DealsCard({ d, contracts, today, isPm, demo, onForm }: { d: PartnerData; contracts: PartnerContract[]; today: string; isPm: boolean; demo: boolean; onForm: (m: PartnerFormMode) => void }) {
+function DealsCard({ d, contracts, today, isPm, demo, onForm, manage }: { d: PartnerData; contracts: PartnerContract[]; today: string; isPm: boolean; demo: boolean; onForm: (m: PartnerFormMode) => void; manage?: React.ReactNode }) {
   const [chip, setChip] = useState<Chip>("LIVE");
   const [tl, setTl] = useState(false);
   const [tlPartner, setTlPartner] = useState<string>("");
@@ -142,9 +153,9 @@ function DealsCard({ d, contracts, today, isPm, demo, onForm }: { d: PartnerData
   return (
     <DashCard noteKey="dp-deals" noteLines={[`มีผลอยู่ ${counts.LIVE} ข้อเสนอ · กำลังต่อรอง ${counts.NEG}`, `AC ยังไม่รับทราบ ${notAck}`]} howToRead={DP_HELP.deals}
       period={<NowChip />} title={<span data-testid="dp-card-4">④ ส่วนลดและสิทธิพิเศษจาก Partner</span>} question="ตอนนี้ได้ส่วนลดหรือสิทธิพิเศษอะไรจาก Partner บ้าง และบัญชีรับทราบแล้วหรือยัง?"
-      info={{ source: "ที่มา PM Workspace › งาน Partner · PM บันทึกใน PM Workspace (งาน Partner) และแสดงที่นี่ · บันทึกแล้วระบบเปิด ticket ถึง AC ให้กดรับทราบ · ส่วนลดที่สำเร็จและอยู่ในช่วงที่มีผลจะลดต้นทุนค่าระบบอัตโนมัติ" }}
+      info={{ source: "ที่มา PM Workspace › จัดการ Partner · " + PARTNER_READONLY_INFO + " · บันทึกแล้วระบบเปิด ticket ถึง AC ให้กดรับทราบ · ส่วนลดที่สำเร็จและอยู่ในช่วงที่มีผลจะลดต้นทุนค่าระบบอัตโนมัติ" }}
       answer={`${counts.LIVE} ข้อเสนอที่มีผล`} answerSub={`กำลังต่อรอง ${counts.NEG} · AC ยังไม่รับทราบ ${notAck}`}
-      right={<span className="flex gap-2"><button type="button" className="rn5-toggle" onClick={() => setTl(!tl)} data-testid="dp-tl-toggle">{tl ? "ซ่อน Timeline" : "ดู Timeline ย้อนหลัง"}</button>{isPm && <button type="button" className="rn5-toggle" onClick={() => onForm({ kind: "deal" })} data-testid="dp-add-deal">+ บันทึกข้อตกลง</button>}</span>}>
+      right={<span className="flex gap-2"><button type="button" className="rn5-toggle" onClick={() => setTl(!tl)} data-testid="dp-tl-toggle">{tl ? "ซ่อน Timeline" : "ดู Timeline ย้อนหลัง"}</button>{isPm && <button type="button" className="rn5-toggle" onClick={() => onForm({ kind: "deal" })} data-testid="dp-add-deal">+ บันทึกข้อตกลง</button>}{manage}</span>}>
       <div className="flex flex-wrap gap-2" role="group" aria-label="กรองข้อเสนอ">
         {chips.map(([k, l]) => <button key={k} type="button" className={cn("ac-chip", chip === k && "is-on")} aria-pressed={chip === k} onClick={() => setChip(k)} data-testid={`dp-chip-${k}`}>{l}</button>)}
       </div>
@@ -188,7 +199,7 @@ function DealsCard({ d, contracts, today, isPm, demo, onForm }: { d: PartnerData
   );
 }
 
-function CreditCard({ d, contracts, today, demo }: { d: PartnerData; contracts: PartnerContract[]; today: string; demo: boolean }) {
+function CreditCard({ d, contracts, today, demo, manage }: { d: PartnerData; contracts: PartnerContract[]; today: string; demo: boolean; manage?: React.ReactNode }) {
   const rows = creditRows(d, contracts, today);
   const t = creditTiles(d);
   const derived = rows.filter((r) => r.kind === "DERIVED");
@@ -198,7 +209,8 @@ function CreditCard({ d, contracts, today, demo }: { d: PartnerData; contracts: 
   return (
     <DashCard noteKey="dp-credit" noteLines={[`เครดิตคงเหลือ ${thb(t.balance)}`, `รอ PM ส่งคำขอ ${derived.length} สัญญา`]} howToRead={DP_HELP.credit}
       period={<NowChip />} title={<span data-testid="dp-card-5">⑤ เครดิตค่าระบบ (Keep credit)</span>} question="มีค่าระบบที่จ่ายล่วงหน้าไว้แล้วต้องขอเก็บเป็นเครดิตไหม และเหลือเครดิตเท่าไร?"
-      info={{ source: "ขั้นตอน: AE ปิดงานไม่ต่อ / ยกเลิก › ระบบเช็คว่าจ่ายค่าระบบล่วงหน้าถึงวันไหน (AC บันทึกการจ่ายบิล Partner) › แจ้ง PM Workspace › PM ขอ Partner › Partner อนุมัติ / ปฏิเสธ › AC รับทราบ · ลูกค้าไม่ได้จ่ายค่าระบบ เครดิตเป็นของ H+ · การใช้เครดิตกับรอบบิลไหน AC App บันทึกเอง" }}
+      right={manage}
+      info={{ source: "ที่มา PM Workspace › จัดการ Partner · " + PARTNER_READONLY_INFO + " · ขั้นตอน: AE ปิดงานไม่ต่อ / ยกเลิก › ระบบเช็คว่าจ่ายค่าระบบล่วงหน้าถึงวันไหน (AC บันทึกการจ่ายบิล Partner) › แจ้ง PM Workspace › PM ขอ Partner › Partner อนุมัติ / ปฏิเสธ › AC รับทราบ · ลูกค้าไม่ได้จ่ายค่าระบบ เครดิตเป็นของ H+ · การใช้เครดิตกับรอบบิลไหน AC App บันทึกเอง" }}
       answer={<span data-testid="dp-credit-balance">{thb(t.balance)}</span>} answerSub={`เครดิตคงเหลือรวม · ${pNames || "–"} · รอ PM ส่งคำขอ ${derived.length} สัญญา · ${thb(derived.reduce((s, r) => s + (r.kind === "DERIVED" ? r.amount : 0), 0))}`}>
       <div className="overflow-x-auto">
         <table className="ac-table w-full text-sm" data-testid="dp-credit-table">
