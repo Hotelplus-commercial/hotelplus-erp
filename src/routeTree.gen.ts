@@ -59,6 +59,7 @@ import { Route as TheOfficeAppIndexRouteImport } from './routes/the-office-app.i
 import { Route as TheOfficeAppBdAcRouteImport } from './routes/the-office-app.bd-ac'
 import { Route as TheOfficeAppOrmBonusRouteImport } from './routes/the-office-app.orm-bonus'
 import { Route as WorkspaceDeptRouteImport } from './routes/workspace.$dept'
+import { Route as WorkspaceAeRouteImport } from './routes/workspace.ae'
 import { Route as ApiPublicAcBillingDailyRouteImport } from './routes/api/public/ac-billing-daily'
 import { Route as BdCalculatorMarcomRouteImport } from './routes/bd.calculator.marcom'
 import { Route as BdCalculatorOrmRouteImport } from './routes/bd.calculator.orm'
@@ -345,6 +346,11 @@ const WorkspaceDeptRoute = WorkspaceDeptRouteImport.update({
   path: '/workspace/$dept',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WorkspaceAeRoute = WorkspaceAeRouteImport.update({
+  id: '/workspace/ae',
+  path: '/workspace/ae',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicAcBillingDailyRoute = ApiPublicAcBillingDailyRouteImport.update({
   id: '/api/public/ac-billing-daily',
   path: '/api/public/ac-billing-daily',
@@ -572,6 +578,7 @@ export interface FileRoutesByFullPath {
   '/the-office-app/bd-ac': typeof TheOfficeAppBdAcRoute
   '/the-office-app/orm-bonus': typeof TheOfficeAppOrmBonusRoute
   '/workspace/$dept': typeof WorkspaceDeptRoute
+  '/workspace/ae': typeof WorkspaceAeRoute
   '/ac/': typeof AcIndexRoute
   '/bd/': typeof BdIndexRoute
   '/hr/': typeof HrIndexRoute
@@ -649,6 +656,7 @@ export interface FileRoutesByTo {
   '/the-office-app/bd-ac': typeof TheOfficeAppBdAcRoute
   '/the-office-app/orm-bonus': typeof TheOfficeAppOrmBonusRoute
   '/workspace/$dept': typeof WorkspaceDeptRoute
+  '/workspace/ae': typeof WorkspaceAeRoute
   '/ac': typeof AcIndexRoute
   '/bd': typeof BdIndexRoute
   '/hr': typeof HrIndexRoute
@@ -737,6 +745,7 @@ export interface FileRoutesById {
   '/the-office-app/bd-ac': typeof TheOfficeAppBdAcRoute
   '/the-office-app/orm-bonus': typeof TheOfficeAppOrmBonusRoute
   '/workspace/$dept': typeof WorkspaceDeptRoute
+  '/workspace/ae': typeof WorkspaceAeRoute
   '/ac/': typeof AcIndexRoute
   '/bd/': typeof BdIndexRoute
   '/hr/': typeof HrIndexRoute
@@ -826,6 +835,7 @@ export interface FileRouteTypes {
     | '/the-office-app/bd-ac'
     | '/the-office-app/orm-bonus'
     | '/workspace/$dept'
+    | '/workspace/ae'
     | '/ac/'
     | '/bd/'
     | '/hr/'
@@ -903,6 +913,7 @@ export interface FileRouteTypes {
     | '/the-office-app/bd-ac'
     | '/the-office-app/orm-bonus'
     | '/workspace/$dept'
+    | '/workspace/ae'
     | '/ac'
     | '/bd'
     | '/hr'
@@ -990,6 +1001,7 @@ export interface FileRouteTypes {
     | '/the-office-app/bd-ac'
     | '/the-office-app/orm-bonus'
     | '/workspace/$dept'
+    | '/workspace/ae'
     | '/ac/'
     | '/bd/'
     | '/hr/'
@@ -1049,6 +1061,7 @@ export interface RootRouteChildren {
   LTokenRoute: typeof LTokenRoute
   OfficeBdAcRoute: typeof OfficeBdAcRoute
   WorkspaceDeptRoute: typeof WorkspaceDeptRoute
+  WorkspaceAeRoute: typeof WorkspaceAeRoute
   ApiPublicAcBillingDailyRoute: typeof ApiPublicAcBillingDailyRoute
   LRenewRequestIdRoute: typeof LRenewRequestIdRoute
   WorkspacePsPartnersRoute: typeof WorkspacePsPartnersRoute
@@ -1404,6 +1417,13 @@ declare module '@tanstack/react-router' {
       path: '/workspace/$dept'
       fullPath: '/workspace/$dept'
       preLoaderRoute: typeof WorkspaceDeptRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/workspace/ae': {
+      id: '/workspace/ae'
+      path: '/workspace/ae'
+      fullPath: '/workspace/ae'
+      preLoaderRoute: typeof WorkspaceAeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/ac-billing-daily': {
@@ -1921,6 +1941,7 @@ const rootRouteChildren: RootRouteChildren = {
   LTokenRoute: LTokenRoute,
   OfficeBdAcRoute: OfficeBdAcRoute,
   WorkspaceDeptRoute: WorkspaceDeptRoute,
+  WorkspaceAeRoute: WorkspaceAeRoute,
   ApiPublicAcBillingDailyRoute: ApiPublicAcBillingDailyRoute,
   LRenewRequestIdRoute: LRenewRequestIdRoute,
   WorkspacePsPartnersRoute: WorkspacePsPartnersRoute,
