@@ -21,7 +21,7 @@ let n = 0;
 function liveTicket(created: string, target: L0.Dept = 'ORM') {
   const r = L0.createTask({ type: 'HANDOVER_FIX', target_dept: target, subject_ref: { hotel_id: `HX${++n}`, hotel_name: 'Demo Hotel', gap_service: `g${n}` }, payload: { readiness_tier: '', chips: [], note: 'x' }, created_by: 'PS' });
   L0.patchServiceTicket(r.ticket_id, (t) => ({ ...t, created_at: `${created}T09:00:00+07:00` }), { by: 'PS', note: 'test setup' });
-  return () => view(L0.ticketSnapshot()).find((x) => x.ticket_id === r.ticket_id)!;
+  return () => view(L0.ticketSnapshot(), { followups: S.ticketFollowups.all(false) }).find((x) => x.ticket_id === r.ticket_id)!;
 }
 beforeEach(() => { localStorage.clear(); });
 
