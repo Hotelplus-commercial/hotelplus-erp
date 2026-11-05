@@ -1,6 +1,6 @@
 /* Debt Partner R1 §6–§8 — section "ส่วนลด Partner": cards ③ Rate Card ④ deals ⑤ system credit + the shared PM form.
  * Read-only for everyone except PM (testing role switcher, simulation only). Numbers come only from src/lib/debt-partner-calc.ts. */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { DashCard } from "@/components/ps/dash-card";
 import { NowChip } from "./compare-control";
 import { PartnerFormDrawer, type PartnerFormMode } from "./partner-form-drawer";
@@ -74,7 +74,7 @@ export function PartnerSection({ demo }: { demo: boolean }) {
   );
 }
 
-function RateCardCard({ d, contracts, today, isPm, onForm, manage }: { d: PartnerData; contracts: PartnerContract[]; today: string; isPm: boolean; onForm: (m: PartnerFormMode) => void; manage?: React.ReactNode }) {
+function RateCardCard({ d, contracts, today, isPm, onForm, manage }: { d: PartnerData; contracts: PartnerContract[]; today: string; isPm: boolean; onForm: (m: PartnerFormMode) => void; manage?: ReactNode }) {
   const rows = rateCardRows(d, contracts, today);
   const anyEst = rows.some((r) => r.card.currency !== "THB");
   const netThb = rows.reduce((s, r) => s + (r.toThb(r.net) ?? 0), 0), baseThb = rows.reduce((s, r) => s + (r.toThb(r.base) ?? 0), 0);
@@ -125,7 +125,7 @@ export function dealChipCounts(d: PartnerData, today: string) {
   const st = d.partner_deals.map((x) => getDealState(x, today));
   return { LIVE: st.filter((s) => s === "ACTIVE" || s === "UPCOMING").length, NEG: st.filter((s) => s === "NEGOTIATING").length, DONE: st.filter((s) => s === "EXPIRED" || s === "FAILED").length, ALL: st.length };
 }
-function DealsCard({ d, contracts, today, isPm, demo, onForm, manage }: { d: PartnerData; contracts: PartnerContract[]; today: string; isPm: boolean; demo: boolean; onForm: (m: PartnerFormMode) => void; manage?: React.ReactNode }) {
+function DealsCard({ d, contracts, today, isPm, demo, onForm, manage }: { d: PartnerData; contracts: PartnerContract[]; today: string; isPm: boolean; demo: boolean; onForm: (m: PartnerFormMode) => void; manage?: ReactNode }) {
   const [chip, setChip] = useState<Chip>("LIVE");
   const [tl, setTl] = useState(false);
   const [tlPartner, setTlPartner] = useState<string>("");
@@ -199,7 +199,7 @@ function DealsCard({ d, contracts, today, isPm, demo, onForm, manage }: { d: Par
   );
 }
 
-function CreditCard({ d, contracts, today, demo, manage }: { d: PartnerData; contracts: PartnerContract[]; today: string; demo: boolean; manage?: React.ReactNode }) {
+function CreditCard({ d, contracts, today, demo, manage }: { d: PartnerData; contracts: PartnerContract[]; today: string; demo: boolean; manage?: ReactNode }) {
   const rows = creditRows(d, contracts, today);
   const t = creditTiles(d);
   const derived = rows.filter((r) => r.kind === "DERIVED");
