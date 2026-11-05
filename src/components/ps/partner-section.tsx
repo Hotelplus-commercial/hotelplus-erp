@@ -35,7 +35,7 @@ export function AcNotice({ id, demo }: { id: string | null; demo: boolean }) {
   if (s === "NEW") return <span data-ac="new"><i className="mr-1 inline-block size-2 rounded-full bg-dash-watch" />ส่งบัญชีแล้ว · รอ AC รับทราบ</span>;
   return <span data-ac="ack"><i className="mr-1 inline-block size-2 rounded-full bg-dash-good" />AC รับทราบ</span>;
 }
-const discountText = (d: PartnerDeal) => (d.benefit_type === "PERCENT" ? `−${d.benefit_value}%` : d.benefit_type === "AMOUNT_PER_CONTRACT" ? `−${money(d.benefit_value ?? 0, d.benefit_currency ?? "THB")} / สัญญา` : d.title);
+export const discountText = (d: PartnerDeal) => (d.benefit_type === "PERCENT" ? `−${d.benefit_value}%` : d.benefit_type === "AMOUNT_PER_CONTRACT" ? `−${money(d.benefit_value ?? 0, d.benefit_currency ?? "THB")} / สัญญา` : d.title);
 
 export const PARTNER_READONLY_INFO = "PM บันทึกใน PM Workspace › จัดการ Partner · หน้านี้ดูอย่างเดียว";
 function ManageLink({ isPm, demo, hash }: { isPm: boolean; demo: boolean; hash: string }) {
