@@ -40,9 +40,9 @@ export function MemberPicker({ scope, value, onChange }: { scope: Scope; value: 
   );
 }
 
-export function CoachingGroup({ scope, demo, onlyRule }: { scope: Scope; demo: boolean; onlyRule?: CoachingTask["rule"] }) {
+export function CoachingGroup({ scope, demo, onlyRule, defaultViewer }: { scope: Scope; demo: boolean; onlyRule?: CoachingTask["rule"]; defaultViewer?: string }) {
   const tasks = useCoachingTasks(demo);
-  const [viewer, setViewer] = useState(DEFAULT_VIEWER[scope]);
+  const [viewer, setViewer] = useState(defaultViewer ?? DEFAULT_VIEWER[scope]);
   const [filter, setFilter] = useState<FilterKey | null>(null);
   const roster = rosterFor(demo);
   const me = demo ? roster.find((m) => m.id === viewer) : undefined;

@@ -296,7 +296,7 @@ function CoachingTab() {
       </Dialog>
 
       <NewCoachingPanel demo={demoOn} />
-      <CoachingGroup scope="AE" demo={demoOn} />
+      <CoachingGroup scope="AE" demo={demoOn} defaultViewer="pm-alex" />
       <TeamCoachingTabs />
     </div>
   );
