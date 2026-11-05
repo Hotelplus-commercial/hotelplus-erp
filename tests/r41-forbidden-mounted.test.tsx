@@ -5,7 +5,7 @@ import { GlobalRegistrator } from '@happy-dom/global-registrator';
 import { domHits, hits } from './forbidden-words';
 
 mock.module('../src/lib/cloud-sync', () => ({ stageCloudDoc: () => {} }));
-beforeAll(() => { GlobalRegistrator.register({ url: 'http://localhost:8080/ps?demo=1' }); (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+beforeAll(() => { if (!GlobalRegistrator.isRegistered) GlobalRegistrator.register({ url: 'http://localhost:8080/ps?demo=1' }); (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   // another test file stubs canvas without measureText; give charts a minimal 2D context
   Object.assign(HTMLCanvasElement.prototype, { getContext: () => ({ measureText: (t: string) => ({ width: t.length * 7 }), font: '' }) });
 });
