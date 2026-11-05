@@ -402,7 +402,7 @@ function SurveyCard({ svc, rows, tab, mA, mB, control }: { svc: Svc; rows: TabMe
         <div className="ms-signals" data-testid={`ms-signals-${svc}`}>
           <span>ส่งเป็นป้ายสัญญาณไปที่สุขภาพสัญญา + งาน Coaching (Workspace หัวหน้า + ผู้ดูแล):</span>
           <span className="r1-chip is-bad"><SignalMark dir="bad" />ธงแดง · คะแนนต่ำ ≤6 (ข้อใดข้อหนึ่ง) {sig.low} โรงแรม</span>
-          <span className="r1-chip is-warn"><SignalMark dir="bad" />ธงเหลือง · ลูกค้าไม่ให้คะแนน {sig.no_score} โรงแรม</span>
+          <span className="r1-chip is-amber"><SignalMark dir="bad" />ธงเหลือง · ลูกค้าไม่ให้คะแนน {sig.no_score} โรงแรม</span>
           <span className="r1-chip is-bad"><SignalMark dir="bad" />ธงแดง · เงียบ ≥2 เดือน {sig.silent} โรงแรม</span>
         </div>
         <details open className="ms-exp"><summary>Meeting Completed ที่ไม่มีคะแนน · {silent.length} ประชุม</summary>

@@ -21,7 +21,7 @@ type CardSpec = {
   ae: string;
   team?: string | undefined;
   person?: string | undefined;
-  survey?: string | undefined; // CONFIRMED | PENDING | COMMENTED | undefined (AE ยังไม่ส่ง)
+  survey?: string | undefined; // CONFIRMED | PENDING | COMMENTED | undefined (รอทำ Survey)
 };
 
 const ORM_CARDS: CardSpec[] = [
