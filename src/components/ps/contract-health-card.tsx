@@ -4,6 +4,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ChartHint, InfoButton } from "./dash-card";
+import { SignalMark } from "./signal-mark";
 import { NowChip } from "./compare-control";
 import { GuidedTour } from "./guided-tour";
 import { ContractSignalDialog } from "./contract-signal-dialog";
@@ -237,7 +238,7 @@ function HealthRowView({ r, q, today, first, canCreate, onCreate, onOpen, onOpen
   const stop = (e: { stopPropagation: () => void }) => e.stopPropagation();
   const chip = (key: string, label: string, dir: string, tip: string[], ae?: boolean, extra?: string) => (
     <ChartHint key={`${ae ? "ae" : "s"}-${key}`} header={label} lines={tip}>
-      <span tabIndex={0} className={cn("r1-chip", `is-${dir}`, ae && "is-ae", extra)} onClick={stop}>{dir === "bad" ? "▼" : dir === "good" ? "▲" : "★"} {label}</span>
+      <span tabIndex={0} className={cn("r1-chip", `is-${dir}`, ae && "is-ae", extra)} onClick={stop}><SignalMark dir={dir} />{label}</span>
     </ChartHint>
   );
   return (
