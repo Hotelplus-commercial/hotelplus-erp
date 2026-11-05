@@ -91,7 +91,7 @@ export const AC_DEMO = {
 };
 export function seedAcBillsDemo() {
   const all = ticketSnapshot();
-  if (all.some((t) => t.subject_ref.deal_id === 'ACDEMO:SEEDED')) return;
+  if (all.some((t) => t.type === 'PARTNER_DEAL_NOTICE' && t.subject_ref.deal_id === 'DEAL-01')) return; // already seeded in this DEMO store
   const ch = requestShutoff(AC_DEMO.chaba);
   if (ch.ok) { transition(ch.team, 1, 'IN_PROGRESS', 'ORM'); transition(ch.ps, 1, 'IN_PROGRESS', 'PS'); const t = ticketSnapshot().find((x) => x.ticket_id === ch.ps); if (t) transition(t.ticket_id, t.revision, 'DONE', 'PS'); }
   const ra = requestShutoff(AC_DEMO.reactivated);
@@ -105,6 +105,4 @@ export function seedAcBillsDemo() {
     subject_ref: { hotel_id: 'CONTRACT:DP-LANNA', hotel_name: 'Lanna View', gap_service: 'PARTNER', deal_id: 'CR:CR-LANNA', contract_id: 'DP-LANNA' },
     payload: { readiness_tier: '', chips: ['Partner ปฏิเสธ'], note: '', contract_id: 'DP-LANNA',
       credit_notice: { contract: 'DP-LANNA', partner: 'Hotelier.guru', result: 'REJECTED', approved_amount: null, currency: 'THB', credit_expires_at: null } } });
-  createTask({ type: 'HANDOVER_FIX', target_dept: 'AUTO', created_by: 'AC', subject_ref: { hotel_id: 'ACDEMO', hotel_name: '', gap_service: '', deal_id: 'ACDEMO:SEEDED' }, payload: { readiness_tier: '', chips: [], note: '' } });
-  const m = ticketSnapshot().find((t) => t.subject_ref.deal_id === 'ACDEMO:SEEDED'); if (m) systemCancel(m.ticket_id, 'seed marker');
 }
