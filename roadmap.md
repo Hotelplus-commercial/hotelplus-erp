@@ -337,3 +337,6 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [x] Flag rules CH1–CH6, catalog 52 + source S, survey S labels, tooltips, DEMO §6, rules, tests.
 - [ ] MEETING_REJECTED has no live write path (no meeting status change exists); DEMO only.
 - [x] Workspace Coaching patch v1.0 (WC1–WC14) — open items: Marcom sub-role field, GRM person, live rejected-meeting write path (await decisions)
+
+- [x] PS Dashboard Tab ติดตามงานผู้ให้บริการ R1 (cards ①–⑥, view-only drawer + Follow up, หมวด on create)
+- [ ] Live Contract Health for ⑤ outside DEMO — waits on a per-contract health source readable outside PS Dashboard projections
