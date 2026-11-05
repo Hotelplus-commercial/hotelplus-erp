@@ -1,9 +1,10 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { stageCloudDoc } from './cloud-sync';
 import { CRM_COLLECTIONS } from './cloud-sync-keys';
 import { bangkokDate, confirmPayment, recomputeAccounting, runDailyBilling, type GradeRecord, type CollectionEvent, manualCollection } from './ac-v2-engine';
 import { resolveContractHotel, stampInvoiceHotel } from './ac-attribution';
 import { registerMainContractWriter } from './main-contract-store';
+import { newReactivations, onReactivated } from './partner-shutoff-ac';
 
 import {
   lastPeriod,
@@ -170,6 +171,19 @@ export function CrmStoreProvider({ children }: { children: React.ReactNode }) {
     }
     CRM_COLLECTIONS.forEach((c) => stageCloudDoc(`crm:${c}`, { items: data[c] ?? [] }));
   }, [data, hydrated]);
+
+  /* AC App Partner Bills v1.0 §4.2: listen to the existing automatic SUSPENDED → REACTIVATED event (never changes it). */
+  const seenEvents = useRef<CollectionEvent[] | null>(null);
+  useEffect(() => {
+    if (!hydrated) return;
+    const next = data.collectionEvents ?? [];
+    const prev = seenEvents.current; seenEvents.current = next;
+    if (!prev) return; // first read after load: history only
+    for (const r of newReactivations(prev, next)) {
+      const ids = data.contracts.filter((c) => c.customer_snapshot.customer_id === r.customer_id).map((c) => c.contract_id);
+      onReactivated(ids, r.suspended_at, r.reactivated_at);
+    }
+  }, [data.collectionEvents, hydrated]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* Renewal v1.3 §3: a signed renewal adds its new contract here (add-only, idempotent by id). */
   useEffect(() => registerMainContractWriter((c) => {
