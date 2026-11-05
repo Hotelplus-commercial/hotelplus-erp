@@ -138,7 +138,7 @@ const EVENT_TH: Record<string, string> = {
   SURVEY_PENDING: "รอทำ Survey", CUSTOMER_NO_SCORE: "ลูกค้าไม่ให้คะแนน ⚑ ธงเหลือง", SUBSTITUTE_B: "นัดแทนด้วย Tier B", SUBSTITUTE_C: "นัดแทนด้วย Tier C", TIER_A_BOOKED: "Tier A นัดได้", OVER_QUOTA: "เกินโควตา",
 };
 function Group({ title, items, sub }: { title: string; items?: DetailRow[]; sub?: ReactNode }) {
-  if ((!items || !items.length) && !sub) return null;
+  if (items && !items.length && !sub) return null;
   return (
     <div className="ms-tip-group">
       <b>{title}</b>
