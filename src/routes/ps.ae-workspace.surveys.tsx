@@ -66,7 +66,7 @@ export const Route = createFileRoute("/ps/ae-workspace/surveys")({
   component: SurveysTab,
 });
 
-type QueueCard = SurveyZoneCard & { meeting: MeetingRecord; survey?: SurveyRecord };
+type QueueCard = SurveyZoneCard & { meeting: MeetingRecord; survey?: SurveyRecord | undefined };
 type FormTarget = { card: QueueCard; preview: boolean };
 
 /** Meeting record → the existing zone card shape (sample rows keep their original card). */

@@ -28,8 +28,8 @@ function sampleData(): MeetingSurveyData {
   if (samples) return samples;
   const meetings: MeetingRecord[] = [
     ...allMeetings.map((m): MeetingRecord => ({ id: m.id, hotel: m.hotel, service: meetingTypeOf(m.id), tier: m.tier, ae: m.ae, contact_email: m.email, date: m.date, status: m.status, channel: null, origin: 'meetings', raw: m })),
-    ...surveyPending.map((c): MeetingRecord => ({ id: c.id, hotel: c.hotel, hotel_id: c.hotelId, service: c.type, tier: c.tier, ae: c.attendees.split(',')[0].trim(), contact: c.contact, date: '', date_label: c.date, status: 'Completed', channel: null, origin: 'survey-queue', raw: c })),
-    ...surveyUpcoming.map((c): MeetingRecord => ({ id: c.id, hotel: c.hotel, hotel_id: c.hotelId, service: c.type, tier: c.tier, ae: c.attendees.split(',')[0].trim(), contact: c.contact, date: '', date_label: c.date, status: 'Confirmed', channel: null, origin: 'survey-queue', raw: c })),
+    ...surveyPending.map((c): MeetingRecord => ({ id: c.id, hotel: c.hotel, hotel_id: c.hotelId, service: c.type, tier: c.tier, ae: (c.attendees.split(',')[0] ?? '').trim(), contact: c.contact, date: '', date_label: c.date, status: 'Completed', channel: null, origin: 'survey-queue', raw: c })),
+    ...surveyUpcoming.map((c): MeetingRecord => ({ id: c.id, hotel: c.hotel, hotel_id: c.hotelId, service: c.type, tier: c.tier, ae: (c.attendees.split(',')[0] ?? '').trim(), contact: c.contact, date: '', date_label: c.date, status: 'Confirmed', channel: null, origin: 'survey-queue', raw: c })),
     ...v4CalendarCards.map((c): MeetingRecord => ({ id: c.id, hotel: c.hotel, hotel_id: c.hotelId, service: c.type, tier: c.tier, ae: c.owner, date: '', status: c.status, channel: null, origin: 'calendar', raw: c })),
   ];
   const surveys: SurveyRecord[] = surveySubmitted.map((s) => ({ id: s.id, meeting_id: s.id, hotel: s.hotel, service: s.type, tier: s.tier, meeting_date: s.meetingDate, submitted_at: s.submitted, overall: s.overall, customer_response_status: s.subStatus, flags: s.flags, raw: s }));
@@ -119,7 +119,7 @@ function guardNoSurvey(m: MeetingRecord): string | null { return surveyForMeetin
 export function saveSurveyV1(m: MeetingRecord, scores: Record<string, number>, comment: string): MsResult {
   const e = guardNoSurvey(m); if (e) return { ok: false, error: e };
   const low = Object.values(scores).filter((n) => n <= 5).length;
-  const s: SurveyRecord = { ...baseSurvey(m, 1), submitted_at: msNow(), scores, overall: scores.Q7 ?? null, free_comment: comment || null, flags: low, customer_response_status: low > 0 ? 'Flagged' : 'Waiting Customer' };
+  const s: SurveyRecord = { ...baseSurvey(m, 1), submitted_at: msNow(), scores, overall: scores['Q7'] ?? null, free_comment: comment || null, flags: low, customer_response_status: low > 0 ? 'Flagged' : 'Waiting Customer' };
   write((d) => ({ ...d, surveys: [...d.surveys, s] }));
   return { ok: true, survey: s };
 }
@@ -175,7 +175,7 @@ export function answerByLink(token: string, payload: { v1?: { scores: Record<str
   let s: SurveyRecord = { ...f.survey, submitted_at: now, link_closed_at: now };
   let rows: SurveyLabelAnswer[] = [];
   if (payload.v2) { const r = v2Survey(s, payload.v2); s = r.survey; rows = r.rows; }
-  else if (payload.v1) { const low = Object.values(payload.v1.scores).filter((n) => n <= 5).length; s = { ...s, scores: payload.v1.scores, overall: payload.v1.scores.Q7 ?? null, free_comment: payload.v1.comment || null, flags: low }; }
+  else if (payload.v1) { const low = Object.values(payload.v1.scores).filter((n) => n <= 5).length; s = { ...s, scores: payload.v1.scores, overall: payload.v1.scores['Q7'] ?? null, free_comment: payload.v1.comment || null, flags: low }; }
   if (!isNoScore(s)) s = { ...s, customer_response_status: 'Confirmed' };
   write((d) => ({ ...d, surveys: upsert(d.surveys, s), answers: [...d.answers, ...rows] }), f.demo);
   return { ok: true, survey: s };

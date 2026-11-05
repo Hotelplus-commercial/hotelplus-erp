@@ -79,8 +79,8 @@ export const topicsFor = (service: MeetingService) => V2_TOPICS.filter((t) => t.
 
 /** Chip order for one form: GOOD / BAD randomised, UNSURE always in the middle. */
 export function chipOrder(t: V2Topic, rand: () => number = Math.random): LabelChoice[] {
-  const pair: LabelChoice[] = rand() < 0.5 ? ['GOOD', 'BAD'] : ['BAD', 'GOOD'];
-  return t.unsure ? [pair[0], 'UNSURE', pair[1]] : pair;
+  const [a, b]: [LabelChoice, LabelChoice] = rand() < 0.5 ? ['GOOD', 'BAD'] : ['BAD', 'GOOD'];
+  return t.unsure ? [a, 'UNSURE', b] : [a, b];
 }
 export const chipText = (t: V2Topic, c: LabelChoice) => (c === 'UNSURE' ? UNSURE_TH : c === 'GOOD' ? t.good! : t.bad!);
 export const labelKeyFor = (t: V2Topic, c: LabelChoice): string | null => (c === 'UNSURE' ? null : c === 'GOOD' ? (t.goodNoLabel ? null : t.good!) : t.bad!);
@@ -102,7 +102,7 @@ export function v2AllUnsure(service: MeetingService, a: V2Answers): boolean {
 export function v2Rows(service: MeetingService, a: V2Answers): { topic_key: string; choice: LabelChoice; label_key: string | null }[] {
   const rows: { topic_key: string; choice: LabelChoice; label_key: string | null }[] = [];
   if (a.overall === 'UNSURE') rows.push({ topic_key: 'OVERALL', choice: 'UNSURE', label_key: null });
-  for (const t of topicsFor(service)) if (t.kind === 'pair' && a.choices[t.key]) rows.push({ topic_key: t.key, choice: a.choices[t.key], label_key: labelKeyFor(t, a.choices[t.key]) });
+  for (const t of topicsFor(service)) { const c = a.choices[t.key]; if (t.kind === 'pair' && c) rows.push({ topic_key: t.key, choice: c, label_key: labelKeyFor(t, c) }); }
   if (a.recommend !== null && a.recommend >= 9) rows.push({ topic_key: 'RECOMMEND', choice: 'GOOD', label_key: RECOMMEND_LABEL });
   for (const o of a.opportunity) if (o !== OPPORTUNITY_NONE) rows.push({ topic_key: 'OPPORTUNITY', choice: 'GOOD', label_key: o });
   return rows;

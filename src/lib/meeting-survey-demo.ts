@@ -40,12 +40,12 @@ export function meetingSurveyDemoData(): MeetingSurveyData {
         answers.push({ id: `DA-${++seq}`, survey_id: s.id, topic_key: t.key, choice, label_key: choice === 'UNSURE' ? null : choice === 'GOOD' ? (t.goodNoLabel ? null : t.good!) : t.bad!, created_at: s.submitted_at! });
       }
       if ((s.scores['RECOMMEND'] ?? 0) >= 9) answers.push({ id: `DA-${++seq}`, survey_id: s.id, topic_key: 'RECOMMEND', choice: 'GOOD', label_key: 'ลูกค้าพร้อมแนะนำต่อ', created_at: s.submitted_at! });
-      if (n % 4 === 0) answers.push({ id: `DA-${++seq}`, survey_id: s.id, topic_key: 'OPPORTUNITY', choice: 'GOOD', label_key: OPPORTUNITY_LABELS[n % 2], created_at: s.submitted_at! });
+      if (n % 4 === 0) answers.push({ id: `DA-${++seq}`, survey_id: s.id, topic_key: 'OPPORTUNITY', choice: 'GOOD', label_key: OPPORTUNITY_LABELS[n % 2] ?? null, created_at: s.submitted_at! });
     }
   };
 
   /* Template 2 · ORM 13 answered (2 by customer link) + 1 no-score (214). */
-  for (let i = 0; i < 13; i++) add(String(401 + i), 'ORM', (['A', 'B', 'C'] as const)[i % 3], 2 + i, { answered: true, ...(i < 2 ? { respondent: 'CUSTOMER_LINK', link_token: `demo-link-orm-${i}`, link_expires_at: at(16 + i), link_closed_at: at(2 + i, 12) } : {}) });
+  for (let i = 0; i < 13; i++) add(String(401 + i), 'ORM', (['A', 'B', 'C'] as const)[i % 3] ?? 'A', 2 + i, { answered: true, ...(i < 2 ? { respondent: 'CUSTOMER_LINK', link_token: `demo-link-orm-${i}`, link_expires_at: at(16 + i), link_closed_at: at(2 + i, 12) } : {}) });
   add('214', 'ORM', 'B', 15, { no_score_reason: 'CUSTOMER_DECLINED' });
   /* Template 2 · Marcom 30 answered (5 by customer link) + 4 no-score (0331 · 0298 · 0177 declined, 0420 expired link). */
   for (let i = 0; i < 30; i++) add(`0${501 + i}`, 'MARCOM', '—', 1 + (i % 27), { answered: true, ...(i < 5 ? { respondent: 'CUSTOMER_LINK', link_token: `demo-link-mc-${i}`, link_expires_at: at(15 + i), link_closed_at: at(1 + i, 12) } : {}) });
