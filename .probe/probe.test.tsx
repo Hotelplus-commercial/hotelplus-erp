@@ -7,6 +7,7 @@ beforeAll(() => { GlobalRegistrator.register({ url: 'http://localhost:8080/ps?de
 afterAll(async () => { await GlobalRegistrator.unregister(); });
 const until = async (f: () => boolean, ms = 15000) => { const t0 = Date.now(); while (!f()) { if (Date.now() - t0 > ms) throw new Error('timeout'); await new Promise((r) => setTimeout(r, 20)); } };
 test('locate star', async () => {
+  const ds = await import('../src/lib/demo-session'); ds.setPsDemoSession(true);
   const { act, createElement: h } = await import('react');
   const { createRoot } = await import('react-dom/client');
   const { createMemoryHistory, createRootRoute, createRouter, RouterProvider } = await import('@tanstack/react-router');
@@ -24,6 +25,7 @@ test('locate star', async () => {
   const root = createRoot(div);
   await act(async () => { await router.load(); root.render(h(QueryClientProvider, { client: new QueryClient() }, h(RouterProvider, { router } as never))); });
   await until(() => !!div.querySelector('#contract-health')?.textContent?.includes('คะแนนเซอร์เวย์ต่ำ'));
+  console.log('CARD7 LEN:', (div.querySelector('#contract-health')?.textContent ?? '').length);
   const walk = (n: Element, path: string): any[] => {
     const out: any[] = [];
     for (const c of Array.from(n.children)) {
