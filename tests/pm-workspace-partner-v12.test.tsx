@@ -19,8 +19,11 @@ const DAY = '2026-10-28';
 async function mountPage(hash: string) {
   const { act, createElement: h } = await import('react');
   const { createRoot } = await import('react-dom/client');
-  const { createMemoryHistory, createRouter, RouterProvider } = await import('@tanstack/react-router');
-  const { routeTree } = await import('../src/routeTree.gen');
+  const { createMemoryHistory, createRootRoute, createRouter, Outlet, RouterProvider } = await import('@tanstack/react-router');
+  const { Route } = await import('../src/routes/workspace.ps.partners');
+  const root = createRootRoute({ component: () => h(Outlet) });
+  Route.update({ id: '/workspace/ps/partners', path: '/workspace/ps/partners', getParentRoute: () => root } as never);
+  const routeTree = root.addChildren([Route as never]);
   window.history.replaceState(null, '', `/workspace/ps/partners?demo=1${hash}`);
   const router = createRouter({ routeTree, history: createMemoryHistory({ initialEntries: [`/workspace/ps/partners?demo=1${hash}`] }) });
   document.body.innerHTML = ''; const div = document.createElement('div'); document.body.appendChild(div);
