@@ -398,8 +398,8 @@ export function OgmCategoryGroup({ demo }: { demo: boolean }) {
         <ul className="divide-y rounded-md border text-xs">
           {pending.map((r) => (
             <li key={r.id} className="space-y-1 p-2" data-testid="ogm-req-row">
-              <p><Badge variant="outline" className="mr-1 text-[10px]">{DEPT_TH[r.dept]}</Badge><span className="font-medium">{r.proposed_name}</span> · ขอโดย {r.requested_by} · {thDate(r.requested_at)}</p>
-              {r.conflict_category_ids.length > 0 && <p className="flex flex-wrap gap-1">ทับซ้อน: {r.conflict_category_ids.map((c) => <Badge key={c} variant="outline" className="text-[10px]">{nameOf(c)}</Badge>)}</p>}
+              <div><Badge variant="outline" className="mr-1 text-[10px]">{DEPT_TH[r.dept]}</Badge><span className="font-medium">{r.proposed_name}</span> · ขอโดย {r.requested_by} · {thDate(r.requested_at)}</div>
+              {r.conflict_category_ids.length > 0 && <div className="flex flex-wrap gap-1">ทับซ้อน: {r.conflict_category_ids.map((c) => <Badge key={c} variant="outline" className="text-[10px]">{nameOf(c)}</Badge>)}</div>}
               {r.proposed_note && <p className="text-muted-foreground">“{r.proposed_note}”</p>}
               <div className="flex flex-wrap gap-2">
                 <Button size="sm" className="h-6 px-2 text-xs" onClick={() => decide(r.id, true)} data-testid="ogm-approve">อนุมัติ</Button>
