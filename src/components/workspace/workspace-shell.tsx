@@ -332,13 +332,13 @@ function NoticeRows({ t }: { t: L0Ticket }) {
 
 /** AC App Partner Bills v1.0 add-on: the one DEMO switch on every Workspace banner (shared DEMO-state helper = PS Dashboard).
  *  Plain link first (works before the page finishes loading: ?demo=1 / ?demo=0 is read on load); after load it switches in place. */
-export function DemoSwitch({ demo }: { demo: boolean }) {
+export function DemoSwitch({ demo, onToggle }: { demo: boolean; onToggle?: (on: boolean) => void }) {
   const navigate = useNavigate();
   return (
     <div className="flex justify-end">
       <a href={`?demo=${demo ? 0 : 1}`} data-testid="ws-demo-switch" role="switch" aria-checked={demo}
         className={cn("rounded-full border px-3 py-1 text-xs", demo ? "border-warning/50 bg-warning/15 text-warning-foreground" : "text-muted-foreground hover:bg-muted")}
-        onClick={(e) => { e.preventDefault(); const next = !demo; setPsDemoSession(next); void navigate({ to: ".", search: ((s: Record<string, unknown>) => ({ ...s, demo: next ? 1 : 0 })) as never, replace: true }); }}>
+        onClick={(e) => { e.preventDefault(); const next = !demo; if (onToggle) { onToggle(next); return; } setPsDemoSession(next); void navigate({ to: ".", search: ((s: Record<string, unknown>) => ({ ...s, demo: next ? 1 : 0 })) as never, replace: true }); }}>
         DEMO {demo ? "เปิด" : "ปิด"}
       </a>
     </div>
