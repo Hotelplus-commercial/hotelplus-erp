@@ -84,6 +84,13 @@ export function WorkspaceShell({ config, demo, ticket, roleState, onGoBdm }: { c
     <div className="space-y-4">
       {/* R3.3 WB20: BD App › Workspace uses the PS Dashboard DEMO date; other workspaces keep theirs. */}
       {demo && <div className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs" data-testid="ws-demo-bar">ข้อมูลสาธิต · {/* v1.1 PW22: every workspace banner reads the shared DEMO-state helper */}{pageDateLabel(true)} · ไม่บันทึก</div>}
+      {/* Partner v1.2 §2.5: testing mode, PM Workspace opened as a non-PM role (switcher default unchanged) */}
+      {config.dept_key === "PS" && deptRole !== "PM" && isRenewalTestMode() && (
+        <div className="flex flex-wrap items-center gap-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs" data-testid="pm-partner-banner">
+          หน้าจัดการ Partner ใช้ได้เฉพาะ PM ·
+          <button type="button" className="font-medium text-primary underline" onClick={() => rs.setRole("PM")} data-testid="pm-partner-banner-switch">สลับเป็น PM</button>
+        </div>
+      )}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-xl font-semibold">{config.label}</h2>
         <div className="flex flex-wrap items-center gap-3">

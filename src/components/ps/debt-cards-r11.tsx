@@ -235,7 +235,7 @@ export function DebtorCardR11({ demo }: { demo: boolean }) {
               })}</tbody>
             </table>
           </div>
-          <p className="ac-footnote">เรียง ส่งฟ้อง → ปิดระบบ → ค้างชำระ → ตัดสูญ แล้วตามยอดค้าง · ticket ปิดระบบ = ticket SYSTEM_SHUTOFF ของสัญญา แยกทีมบริการ (ORM / Marcom) และ PS / AE (ยกเลิกไม่นับ) · ticket งานอื่น = ticket ประเภทอื่นของสัญญาที่ยังเปิด</p>
+          <p className="ac-footnote">เรียง ส่งฟ้อง → ปิดระบบ → ค้างชำระ → ตัดสูญ แล้วตามยอดค้าง · ticket ปิดระบบ = ticket ขอปิดระบบของสัญญา (จาก AC App) แยกทีมบริการ (ORM / Marcom) และ PS / AE (ยกเลิกไม่นับ) · ticket งานอื่น = ticket ประเภทอื่นของสัญญาที่ยังเปิด</p>
         </div>
       )}
     </DashCard>
