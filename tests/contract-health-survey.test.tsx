@@ -120,3 +120,22 @@ describe('Contract Health · Survey signals', () => {
     ds.setPsDemoSession(false);
   });
 });
+
+describe('One health engine: renewal card = card ⑦', () => {
+  it('R2-O2 / R2-M1 / R2-M4 — same level and same system labels', async () => {
+    const { st, ds, R, D } = await load();
+    ds.setPsDemoSession(true);
+    const { offerContextFor } = await import('../src/lib/renewal-offer-source');
+    const { DEFAULT_RENEWAL_CONFIG } = await import('../src/lib/renewal-rules');
+    const d = D.tabR1Demo();
+    const rows = R.buildRows(d.base, { today: d.today, labels: [], snaps: [], tickets: d.seedTickets, survey: st.surveyContext(st.getMeetingSurveyData(true), true) });
+    const want = { 'R2-O2': 'R', 'R2-M1': 'R', 'R2-M4': 'A' } as const;
+    for (const [id, tier] of Object.entries(want)) {
+      const row = rows.find((r) => r.contract_id === id)!; const b = d.base.find((x) => x.contract_id === id)!;
+      const ctx = offerContextFor({ contract_id: id, hotel_id: b.hotel_id, service: b.service, package: 'x', demo: true, history: [], repricing: null, tickets: d.seedTickets, cfg: DEFAULT_RENEWAL_CONFIG });
+      expect(row.tier).toBe(tier); expect(ctx.health?.tier).toBe(tier);
+      expect(ctx.chips.filter((c) => !c.ae).map((c) => c.label)).toEqual(row.signals.map((s) => s.label));
+    }
+    ds.setPsDemoSession(false);
+  });
+});
