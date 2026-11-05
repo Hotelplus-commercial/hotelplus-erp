@@ -19,6 +19,8 @@ import { partnerDataFor } from "@/lib/debt-partner-store";
 import { getContractSystemCost, getPrepaidUntil, monthsOver, type SystemCost } from "@/lib/debt-partner-calc";
 import { PARTNER_DEMO_CONTRACTS } from "@/lib/debt-partner-demo";
 import { DEMO_DAY } from "@/lib/demo-session";
+import { mainContractById } from "@/lib/main-contract-store";
+import { NO_ALLOTMENT_TH } from "@/lib/debt-partner-calc";
 
 /** Debt Partner R1 §9 — the two Partner rows of the block (numbers from debt-partner-calc only). */
 export type SysRow = { marcom: boolean; cost: SystemCost | null; prepaid: string | null; beyond: number };
@@ -26,7 +28,7 @@ export function sysRowFor(i: Pick<RenewalItem, "contract_id" | "service" | "end"
   if (i.service !== "ORM") return { marcom: true, cost: null, prepaid: null, beyond: 0 };
   const d = partnerDataFor(demo);
   const c = (demo ? PARTNER_DEMO_CONTRACTS.find((x) => x.contract_id === i.contract_id) : undefined)
-    ?? { contract_id: i.contract_id, hotel: "", service: "ORM" as const, allotment: null, start: null, end: i.end ?? null, end_reason: null };
+    ?? { contract_id: i.contract_id, hotel: "", service: "ORM" as const, allotment: null, start: null, end: i.end ?? null, end_reason: null, property_id: mainContractById(i.contract_id)?.hotel_id ?? null };
   const cost = getContractSystemCost(d, c, demo ? DEMO_DAY : new Date().toISOString().slice(0, 10));
   const prepaid = getPrepaidUntil(d, i.contract_id);
   const end = c.end ?? i.end ?? null;
@@ -125,7 +127,7 @@ export function OfferBlock({ info, open, onToggle }: { info: OfferInfo; open: bo
             <>
               <Row label="ต้นทุนค่าระบบ">
                 <span data-testid="rn5-sys-cost">{info.sys.marcom ? "ไม่มี" : !info.sys.cost ? <span className="text-dash-watch">ยังไม่ระบุระบบ</span> : (
-                  <span className="tabular-nums">{info.sys.cost.currency === "THB" ? sysThb(info.sys.cost.net) : `${info.sys.cost.currency} ${info.sys.cost.net}`} / เดือน · {info.sys.cost.partner}{info.sys.cost.net < info.sys.cost.base && <s className="rn5-grey"> {info.sys.cost.currency === "THB" ? sysThb(info.sys.cost.base) : `${info.sys.cost.currency} ${info.sys.cost.base}`}</s>}</span>
+                  <span className="tabular-nums">{info.sys.cost.currency === "THB" ? sysThb(info.sys.cost.net) : `${info.sys.cost.currency} ${info.sys.cost.net}`} / เดือน · {info.sys.cost.partner}{info.sys.cost.fallback_tier && <span className="text-dash-watch" data-testid="rn5-sys-noallot"> · {NO_ALLOTMENT_TH}</span>}{info.sys.cost.net < info.sys.cost.base && <s className="rn5-grey"> {info.sys.cost.currency === "THB" ? sysThb(info.sys.cost.base) : `${info.sys.cost.currency} ${info.sys.cost.base}`}</s>}</span>
                 )}</span>
               </Row>
               <Row label="จ่ายล่วงหน้าถึง">
