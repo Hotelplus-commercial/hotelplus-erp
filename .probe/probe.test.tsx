@@ -1,7 +1,7 @@
 /* probe: where does ★ appear in the mounted PS demo DOM? */
 import { afterAll, beforeAll, expect, mock, test } from 'bun:test';
 import { GlobalRegistrator } from '@happy-dom/global-registrator';
-mock.module('./src/lib/cloud-sync', () => ({ stageCloudDoc: () => {} }));
+mock.module('../src/lib/cloud-sync', () => ({ stageCloudDoc: () => {} }));
 beforeAll(() => { GlobalRegistrator.register({ url: 'http://localhost:8080/ps?demo=1' }); (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
   Object.assign(HTMLCanvasElement.prototype, { getContext: () => ({ measureText: (t: string) => ({ width: t.length * 7 }), font: '' }) }); });
 afterAll(async () => { await GlobalRegistrator.unregister(); });
@@ -11,10 +11,10 @@ test('locate star', async () => {
   const { createRoot } = await import('react-dom/client');
   const { createMemoryHistory, createRootRoute, createRouter, RouterProvider } = await import('@tanstack/react-router');
   const { QueryClient, QueryClientProvider } = await import('@tanstack/react-query');
-  const { DashboardGlobal, defaultGlobalFilter, selectedPeriod } = await import('./src/lib/ps-dashboard-global');
-  const { buildDemoReport, DEMO_NOW } = await import('./src/lib/ps-demo-fixture');
-  const { PsReportTab } = await import('./src/components/ps/ps-report-tab');
-  const { Account360Provider } = await import('./src/components/ps/account-360');
+  const { DashboardGlobal, defaultGlobalFilter, selectedPeriod } = await import('../src/lib/ps-dashboard-global');
+  const { buildDemoReport, DEMO_NOW } = await import('../src/lib/ps-demo-fixture');
+  const { PsReportTab } = await import('../src/components/ps/ps-report-tab');
+  const { Account360Provider } = await import('../src/components/ps/account-360');
   const value = { filter: defaultGlobalFilter, demo: true, now: DEMO_NOW };
   const report = buildDemoReport(defaultGlobalFilter);
   const el = h(DashboardGlobal.Provider, { value }, h(Account360Provider, { report, children: h(PsReportTab, { report, filter: { ...defaultGlobalFilter, period: selectedPeriod(defaultGlobalFilter, new Date(DEMO_NOW)) }, loading: false, error: false }) }));
