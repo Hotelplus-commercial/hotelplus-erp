@@ -13,6 +13,7 @@ export const tabOfHash = (hash: string): PartnerTab => {
   const h = hash.replace(/^#/, '');
   if (h.startsWith('credit')) return 'credit';
   if (h === 'ratecard') return 'rate';
+  if (h.startsWith('deals')) return 'deals'; // v1.2: #deals/{partner_id} deep link
   return (PARTNER_TABS as readonly string[]).includes(h) ? (h as PartnerTab) : 'rate';
 };
 /** v1.1 PW16: tab → URL hash (#partner · #ratecard · #deals · #credit). */
@@ -67,10 +68,10 @@ export function partnerTodoItems(data: PartnerData, contracts: PartnerContract[]
   }
   for (const d of data.partner_deals) {
     if (d.status === 'SUCCESS' && d.end_date && d10(today) <= d10(d.end_date)) {
-      out.push({ kind: 'C', id: `C-${d.id}`, trigger: addDays(d.end_date, -REMIND.DEAL_END_DAYS), title: `ข้อเสนอใกล้หมดอายุ · ${pName(d.partner_id)}`, sub: `${d.title} · หมด ${d10(d.end_date)}`, due_relative: '', route_target: `${PARTNER_PAGE}#deals` });
+      out.push({ kind: 'C', id: `C-${d.id}`, trigger: addDays(d.end_date, -REMIND.DEAL_END_DAYS), title: `ข้อเสนอใกล้หมดอายุ · ${pName(d.partner_id)}`, sub: `${d.title} · หมด ${d10(d.end_date)}`, due_relative: '', route_target: `${PARTNER_PAGE}#deals/${d.partner_id}` });
     }
     if (d.status === 'NEGOTIATING') {
-      out.push({ kind: 'D', id: `D-${d.id}`, trigger: addDays(d.updated_at, REMIND.NEGOTIATING_STALE_DAYS), title: `ข้อเสนอไม่มีความคืบหน้า · ${pName(d.partner_id)}`, sub: `ไม่อัปเดต ${Math.max(0, daysBetween(d.updated_at, today))} วัน`, due_relative: '', route_target: `${PARTNER_PAGE}#deals` });
+      out.push({ kind: 'D', id: `D-${d.id}`, trigger: addDays(d.updated_at, REMIND.NEGOTIATING_STALE_DAYS), title: `ข้อเสนอไม่มีความคืบหน้า · ${pName(d.partner_id)}`, sub: `ไม่อัปเดต ${Math.max(0, daysBetween(d.updated_at, today))} วัน`, due_relative: '', route_target: `${PARTNER_PAGE}#deals/${d.partner_id}` });
     }
   }
   return out.filter((x) => x.trigger <= end).map((x) => ({ ...x, due_relative: dueRelative(x.trigger, today) })).sort((a, b) => a.trigger.localeCompare(b.trigger));
