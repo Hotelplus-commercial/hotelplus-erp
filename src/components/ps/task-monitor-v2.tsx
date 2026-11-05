@@ -3,6 +3,7 @@ import type { MonitorRow } from '@/lib/task-tickets';
 import { TASK_CONFIG, ageBucket } from '@/lib/task-worklist';
 import { Button } from '@/components/ui/button';
 import { NowChip } from './compare-control';
+import { TASK_SURVEY_RULE_TH } from '@/lib/ps-glossary';
 import { ChartHint, ChartSkeleton, DashCard } from './dash-card';
 export const CurrentNote=({compare}:{compare:boolean})=>compare?<p className="task-current-note">การ์ดนี้เป็นสถานะปัจจุบัน ไม่มีการเทียบ A/B</p>:null;
 export function TaskBars({rows,labels,tones,legend=true}:{rows:{label:string;counts:number[];detail?:string;lines:string[]}[];labels:string[];tones:string[];legend?:boolean}) {
