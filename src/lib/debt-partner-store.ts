@@ -3,11 +3,12 @@
  * through the existing Cloud Sync engine (push-only, debounced, revision guard).
  * DEMO: one in-memory bundle (src/lib/debt-partner-demo.ts), never written to real storage, never mirrored.
  * Shared helpers for PM Workspace / AC App / AE Workspace: usePartnerData(), getPartnerData(), and the PM writers below.
- * AC-owned collections have no writer in this pass. "PM only" = testing role switcher (simulation, not security). */
+ * AC-owned collections: AC writers at the end of this file (AC App › บิล Partner). "PM only" = testing role switcher (simulation, not security). */
 import { useSyncExternalStore } from 'react';
 import { stageCloudDoc } from './cloud-sync';
 import { createTask } from './tickets-l0';
-import { PARTNER_COLLECTIONS, emptyPartnerData, PARTNER_ATTACHMENT_KINDS, type PartnerAttachment, type PartnerCollection, type PartnerData, type PartnerDeal, type PartnerRateCard, type PartnerRateCardTier, type PropertyPartnerSystem, type SystemCreditRequest } from './debt-partner-types';
+import { PARTNER_COLLECTIONS, emptyPartnerData, PARTNER_ATTACHMENT_KINDS, type PartnerAttachment, type PartnerCollection, type PartnerData, type PartnerDeal, type PartnerRateCard, type PartnerRateCardTier, type PropertyPartnerSystem, type SystemCreditRequest, type PartnerBill, type PartnerBillLine, type SystemCreditUsage } from './debt-partner-types';
+import { creditUseError } from './partner-bills';
 import { partnerDemoData } from './debt-partner-demo';
 import { deletePartnerFile, getPartnerFile, partnerFileError, putPartnerFile, setPartnerFilesMemoryOnly } from './partner-files';
 
@@ -286,4 +287,96 @@ export function recordCreditAnswer(i: CreditAnswerInput): { ok: true; ticket_id:
     answer_attachment_url: i.answer_attachment_url?.trim() || null, note: i.note?.trim() || r.note || null, ac_ticket_id: t.ticket_id };
   write('system_credit_requests', d.system_credit_requests.map((x) => (x.id === r.id ? row : x)));
   return { ok: true, ticket_id: t.ticket_id };
+}
+
+/* ---------------- AC App Partner Bills v1.0 — AC writers (partner_bills, partner_bill_lines, system_credit_usage, partner_cashback_receipts) ----------------
+ * "AC only" = the testing role switcher on AC App › บิล Partner (simulation, not security). Partners / rate cards / deals stay PM-only. */
+export type BillLineInput = { contract_id: string; amount: number };
+export type BillInput = Pick<PartnerBill, 'partner_id' | 'bill_no' | 'bill_date' | 'due_date' | 'period_start' | 'period_end' | 'total' | 'currency' | 'expected_total' | 'attachment_url' | 'note'> & {
+  id?: string; lines: BillLineInput[]; credits: { credit_request_id: string; amount: number }[]; by: string;
+};
+export function billError(i: BillInput): string | null {
+  if (!i.partner_id) return 'เลือก Partner';
+  if (!i.bill_no.trim()) return 'ใส่เลขบิล';
+  for (const [v, l] of [[i.bill_date, 'วันที่บิล'], [i.period_start, 'วันเริ่มงวด'], [i.period_end, 'วันสิ้นสุดงวด'], [i.due_date, 'วันครบกำหนดจ่าย']] as const) if (!/^\d{4}-\d{2}-\d{2}/.test(v)) return `ใส่${l}`;
+  if (i.period_end < i.period_start) return 'วันสิ้นสุดงวดต้องไม่ก่อนวันเริ่ม';
+  if (!(i.total >= 0) || Number.isNaN(i.total)) return 'ใส่ยอดรวมตามบิล';
+  if (i.attachment_url && !/^(https?:\/\/|file:)/i.test(i.attachment_url)) return 'ลิงก์ไฟล์แนบต้องขึ้นต้นด้วย https://';
+  const d = getPartnerData();
+  if (d.partner_bills.some((b) => b.partner_id === i.partner_id && b.bill_no.trim() === i.bill_no.trim() && b.id !== i.id)) return 'เลขบิลนี้ของ Partner นี้บันทึกแล้ว';
+  if (i.id && d.partner_bills.find((b) => b.id === i.id)?.status !== 'PENDING') return 'แก้ได้เฉพาะบิลที่รอจ่าย';
+  return creditUseError(d, i.partner_id, i.bill_date, i.total, i.credits, i.id);
+}
+/** บันทึก — PENDING bill + its lines (paid_at null) + credit usage rows (used_at = bill_date). Editing replaces this bill's own lines / usage. */
+export function saveBill(i: BillInput): { ok: true; id: string } | { ok: false; error: string } {
+  const err = billError(i); if (err) return { ok: false, error: err };
+  const d = getPartnerData(); const at = nowIso();
+  const prev = i.id ? d.partner_bills.find((b) => b.id === i.id) : undefined;
+  const id = prev?.id ?? uid('BILL');
+  const bill: PartnerBill = { id, partner_id: i.partner_id, bill_no: i.bill_no.trim(), bill_date: i.bill_date, due_date: i.due_date, period_start: i.period_start, period_end: i.period_end,
+    total: i.total, currency: i.currency, expected_total: i.expected_total, status: 'PENDING', paid_at: null, attachment_url: i.attachment_url.trim(), note: i.note.trim(),
+    created_by: prev?.created_by ?? i.by, created_at: prev?.created_at ?? at, updated_at: at };
+  const lines: PartnerBillLine[] = i.lines.map((l) => ({ id: uid('BL'), partner_id: i.partner_id, contract_id: l.contract_id, period_start: i.period_start, period_end: i.period_end, amount: l.amount, currency: i.currency, paid_at: null, recorded_by: i.by, bill_id: id }));
+  const usage: SystemCreditUsage[] = i.credits.map((u) => ({ id: uid('CU'), credit_request_id: u.credit_request_id, partner_bill_ref: bill.bill_no, amount: u.amount, used_at: i.bill_date, recorded_by: i.by, bill_id: id }));
+  write('partner_bills', prev ? d.partner_bills.map((b) => (b.id === id ? bill : b)) : [...d.partner_bills, bill]);
+  write('partner_bill_lines', [...getPartnerData().partner_bill_lines.filter((l) => l.bill_id !== id || l.paid_at), ...lines]);
+  write('system_credit_usage', [...getPartnerData().system_credit_usage.filter((u) => u.bill_id !== id), ...usage]);
+  return { ok: true, id };
+}
+/** บันทึกว่าจ่ายแล้ว (AX8) — bill PAID + paid_at; every line of the bill gets paid_at (already-paid lines keep theirs). */
+export function markBillPaid(id: string, paidAt: string): { ok: true } | { ok: false; error: string } {
+  if (!/^\d{4}-\d{2}-\d{2}/.test(paidAt)) return { ok: false, error: 'ใส่วันที่จ่าย' };
+  const d = getPartnerData(); const b = d.partner_bills.find((x) => x.id === id);
+  if (!b) return { ok: false, error: 'ไม่พบบิล' };
+  if (b.status !== 'PENDING') return { ok: false, error: 'บิลนี้ไม่ได้อยู่ในสถานะรอจ่าย' };
+  const p = paidAt.slice(0, 10);
+  write('partner_bills', d.partner_bills.map((x) => (x.id === id ? { ...x, status: 'PAID' as const, paid_at: p, updated_at: nowIso() } : x)));
+  write('partner_bill_lines', getPartnerData().partner_bill_lines.map((l) => (l.bill_id === id && !l.paid_at ? { ...l, paid_at: p } : l)));
+  return { ok: true };
+}
+/** ยกเลิกบิล — VOID; lines keep paid_at null; its credit usage is ignored in balances. */
+export function voidBill(id: string): { ok: true } | { ok: false; error: string } {
+  const d = getPartnerData(); const b = d.partner_bills.find((x) => x.id === id);
+  if (!b) return { ok: false, error: 'ไม่พบบิล' };
+  if (b.status !== 'PENDING') return { ok: false, error: 'ยกเลิกได้เฉพาะบิลที่รอจ่าย' };
+  write('partner_bills', d.partner_bills.map((x) => (x.id === id ? { ...x, status: 'VOID' as const, updated_at: nowIso() } : x)));
+  return { ok: true };
+}
+/** Bill attachment upload: the same on-device Partner file store as v1.2 (never Cloud). attachment_url = `file:<ref>`. */
+export async function storeBillFile(f: File): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
+  const e = partnerFileError(f); if (e) return { ok: false, error: e };
+  const ref = uid('FILE'); await putPartnerFile(ref, f);
+  return { ok: true, url: `file:${ref}#${encodeURIComponent(f.name)}` };
+}
+export const billFileRef = (url: string) => (url.startsWith('file:') ? url.slice(5).split('#')[0]! : null);
+export const billFileName = (url: string) => (url.startsWith('file:') ? decodeURIComponent(url.split('#')[1] ?? 'ไฟล์แนบ') : url);
+/** The one delivery step for bill files (Google Drive not connected → NOT_CONNECTED; same contract as deliverPartnerFile). */
+export async function deliverBillFile(billId: string, connector: PartnerDriveConnector | null = null): Promise<{ ok: true; stored_url: string } | { ok: false; reason: 'NOT_CONNECTED' | 'NO_FOLDER' | 'NOT_FOUND' }> {
+  if (!connector) return { ok: false, reason: 'NOT_CONNECTED' };
+  const d = getPartnerData(); const b = d.partner_bills.find((x) => x.id === billId); const ref = b ? billFileRef(b.attachment_url) : null;
+  const p = b ? d.partners.find((x) => x.id === b.partner_id) : undefined;
+  if (!b || !ref) return { ok: false, reason: 'NOT_FOUND' };
+  if (!p?.doc_folder_url) return { ok: false, reason: 'NO_FOLDER' };
+  const blob = await getPartnerFile(ref); if (!blob) return { ok: false, reason: 'NOT_FOUND' };
+  const stored_url = await connector(p.doc_folder_url, blob, billFileName(b.attachment_url));
+  write('partner_bills', d.partner_bills.map((x) => (x.id === billId ? { ...x, attachment_url: stored_url, updated_at: nowIso() } : x)));
+  return { ok: true, stored_url };
+}
+
+/** Cashback (AX13): tick ได้รับแล้ว → one receipt row. Ids from this UI start with `CBR-`; unticking deletes only those. */
+export function recordCashbackReceipt(i: { deal_id: string; contract_id: string; received_at: string; amount: number; currency: string; by: string }): { ok: true; id: string } | { ok: false; error: string } {
+  if (!/^\d{4}-\d{2}-\d{2}/.test(i.received_at)) return { ok: false, error: 'ใส่วันที่ได้รับ' };
+  if (!(i.amount > 0)) return { ok: false, error: 'ใส่ยอดที่ได้จริง' };
+  const d = getPartnerData();
+  if (d.partner_cashback_receipts.some((r) => r.deal_id === i.deal_id && r.contract_id === i.contract_id)) return { ok: false, error: 'สัญญานี้บันทึกว่าได้รับแล้ว' };
+  const id = uid('CBR');
+  write('partner_cashback_receipts', [...d.partner_cashback_receipts, { id, deal_id: i.deal_id, contract_id: i.contract_id, received_at: i.received_at.slice(0, 10), recorded_by: i.by, amount: i.amount, currency: i.currency }]);
+  return { ok: true, id };
+}
+export const isUiReceipt = (id: string) => id.startsWith('CBR-');
+export function removeCashbackReceipt(id: string): boolean {
+  if (!isUiReceipt(id)) return false;
+  const d = getPartnerData(); if (!d.partner_cashback_receipts.some((r) => r.id === id)) return false;
+  write('partner_cashback_receipts', d.partner_cashback_receipts.filter((r) => r.id !== id));
+  return true;
 }
