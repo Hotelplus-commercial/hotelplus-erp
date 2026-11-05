@@ -1,7 +1,9 @@
 /* MD Review R1.1 §4 forbidden display strings — shared by the SSR and the mounted (after-load) checks.
  * R4.1: stand-alone P1 / P2 / P3 are allowed ONLY inside card ⑤ (data-testid="sd-card") and the
- * queue table "สัญญาในคิว และเวลาแต่ละเฟส" (data-testid="sd-queue"), decision RP98–RP126. */
-export const FORBIDDEN = ['RENEWAL_TERMS_APPROVAL', 'CUSTOMER_ENTITY_CHANGE', 'SOFT_FORCE', 'ADVISORY', 'SERVICING_STALL', 'CONTRACT_FOLLOWUP', 'UPSELL_PITCH', 'RENEWAL_DUE', 'GRADE_RISK', 'SURVEY_LOW', 'ASSIGNMENT_PENDING', 'RENEWED', 'NOT_RENEWED', 'IN_PROGRESS', 'LOST', 'NPS', 'row-1', '★', 'เพดาน', 'เคส PS', 'Ticket ระบบ', 'HTL-', 'รอ BOT', 'customer_segment', 'EXISTING'];
+ * queue table "สัญญาในคิว และเวลาแต่ละเฟส" (data-testid="sd-queue"), decision RP98–RP126.
+ * Partner v1.2 §7.2: the allowed sd-queue scope is the WHOLE section (queue table, its phase chips `อยู่ P1 n …`, column headers). */
+export const FORBIDDEN = ['RENEWAL_TERMS_APPROVAL', 'CUSTOMER_ENTITY_CHANGE', 'SOFT_FORCE', 'ADVISORY', 'SERVICING_STALL', 'CONTRACT_FOLLOWUP', 'UPSELL_PITCH', 'RENEWAL_DUE', 'GRADE_RISK', 'SURVEY_LOW', 'ASSIGNMENT_PENDING', 'RENEWED', 'NOT_RENEWED', 'IN_PROGRESS', 'LOST', 'NPS', 'row-1', '★', 'เพดาน', 'เคส PS', 'Ticket ระบบ', 'HTL-', 'รอ BOT', 'customer_segment', 'EXISTING',
+  /* Partner v1.2 §7.2 (PW33): raw keys never shown */ 'WELCOME_BACK', 'SYSTEM_SHUTOFF', 'PARTNER_DEAL_NOTICE', 'SYSTEM_CREDIT_NOTICE', 'SYSTEM_REACTIVATE', 'LAPSED_PENDING', 'FIXED_PLUS_COMMISSION', 'COMMISSION_GUARANTEE', 'PENDING', 'STORED'];
 export const visibleText = (html: string) => html.replace(/<[^>]*>/g, ' ').replace(/&quot;/g, '"').replace(/&amp;/g, '&');
 export function hits(text: string, opts: { allowPhase?: boolean } = {}) {
   const found = FORBIDDEN.filter((w) => text.includes(w));
