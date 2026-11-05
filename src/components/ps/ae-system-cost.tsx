@@ -12,7 +12,8 @@ import { isPartnerDemo, setPartnerDemo, usePartnerData } from "@/lib/debt-partne
 import { partnerContracts } from "@/lib/partner-contracts";
 import { partnerToday, seedShutoffDemo } from "@/lib/partner-todo";
 import { seedAcBillsDemo } from "@/lib/partner-shutoff-ac";
-import { psDemoOn } from "@/lib/demo-session";
+import { onDemoSessionChange, psDemoOn, setPsDemoSession } from "@/lib/demo-session";
+import { isRenewalTestMode } from "@/lib/renewal-test-actor";
 import { STATUS_TH, TYPE_TH, setTicketDemo, transition, useTickets, type L0Ticket } from "@/lib/tickets-l0";
 import { shutoffAe, shutoffTwin } from "@/lib/partner-workspace";
 import { thDate } from "@/lib/contract-age";
@@ -23,13 +24,21 @@ const money = (cur: string, n: number) => (cur === "THB" ? `฿${Math.round(n).t
 const Amber = ({ children, testId }: { children: React.ReactNode; testId?: string }) => <span className="text-xs font-medium text-warning-foreground" data-testid={testId}>{children}</span>;
 
 /** DEMO follows the shared DEMO state (one ticket list: the AC / PM seeds are idempotent, never a second copy). */
-function useSharedDemo() {
+export function useSharedDemo(): boolean {
+  const [on, setOn] = useState(false);
   useEffect(() => {
-    const q = new URLSearchParams(window.location.search).get("demo");
-    const on = q === "1" || (q !== "0" && psDemoOn());
-    setPartnerDemo(on); setTicketDemo(on);
-    if (on) { seedShutoffDemo(); seedAcBillsDemo(); }
+    const apply = () => {
+      const q = new URLSearchParams(window.location.search).get("demo");
+      if (q === "1") setPsDemoSession(true); else if (q === "0") setPsDemoSession(false);
+      const v = q === "1" || (q !== "0" && psDemoOn());
+      setPartnerDemo(v); setTicketDemo(v);
+      if (v) { seedShutoffDemo(); seedAcBillsDemo(); }
+      setOn(v);
+    };
+    apply();
+    return onDemoSessionChange(apply);
   }, []);
+  return on;
 }
 
 function useCardContract(card: RenewalCard) {
@@ -87,6 +96,7 @@ export function AeShutoffGroup({ currentUser }: { currentUser: string }) {
   return (
     <div data-testid="aw-shutoff-group">
       <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"><span>🔌</span> {AW_TH.group} ({items.length})</p>
+      {isRenewalTestMode() && <p className="text-[11px] text-muted-foreground" data-testid="aw-shutoff-who">แสดงงานของ AE {currentUser.split("-").pop()}</p>}
       <ul className="mt-1 flex flex-col gap-1">
         {items.map((it) => (
           <li key={it.t.ticket_id}>
