@@ -84,7 +84,7 @@ describe('Survey v2 patch', () => {
     expect(v.v2AllUnsure('ORM', a)).toBe(true);
     const m = st.getMeetings().find((x) => x.origin === 'survey-queue' && x.status === 'Completed')!;
     const r = st.saveSurveyV2(m, a); expect(r.ok && r.survey.no_score_reason).toBe('CUSTOMER_DECLINED');
-    const form = readFileSync('src/components/ps/survey-v2-form.tsx', 'utf8'); expect(form).not.toMatch(/previous|lastMonth/i);
+    const form = readFileSync('src/components/ps/survey-v2-form.tsx', 'utf8'); expect(form).not.toContain('meeting-survey-store'); // the form never reads stored answers
   });
 
   it('8 referral Q8 hidden + not required; Q9 comment kept', async () => {
