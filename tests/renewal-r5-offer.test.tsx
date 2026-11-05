@@ -33,8 +33,6 @@ describe('§1 old card unmounted', () => {
 
 describe('§2 undecided block', () => {
   STORE.setRenewalDemo(true);
-  const v14 = UI.v14BoardItems(STORE.useRenewalStore.length >= 0 ? (STORE as unknown as { latestRequestFor: (id: string) => unknown }) && [] : []);
-  void v14;
   const cm = () => UI.v14BoardItems([STORE.latestRequestFor('RN-V14-CM')!, STORE.latestRequestFor('RN-V14-BS')!].filter(Boolean));
   const infoOf = (cid: string) => { const i = cm().concat(UI.v14BoardItems([])).find((x) => x.contract_id === cid)!; return UI.offerInfoFor(i, i.card_id ? STORE.latestRequestFor(i.card_id) : null, true); };
 
