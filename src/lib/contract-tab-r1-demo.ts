@@ -105,8 +105,8 @@ export function tabR1DemoBase(): BaseContract[] { return demoBase(false); }
 /** v1.4.1: active + ขาดอายุ รอผล contracts (Tab R2 keeps showing past-due cards). */
 export function tabR1DemoRenewalBase(): BaseContract[] { return demoBase(true); }
 /** v1.4.1 RN47: DEMO contracts in ขาดอายุ รอผล today (header sub-line). */
-export function tabR1DemoLapsed(): { contract_id: string; hotel_id: string; hotel_name: string; service: Svc; term_end: string }[] {
-  return ADDED.filter((a) => addState(a) === 'LAPSED_PENDING').map((a) => ({ contract_id: a.id, hotel_id: hid(a), hotel_name: a.th, service: a.svc, term_end: termOf(a)! }));
+export function tabR1DemoLapsed(): { contract_id: string; hotel_id: string; hotel_name: string; service: Svc; term_end: string; ae: string; orm: string | null; marcom: string | null }[] {
+  return ADDED.filter((a) => addState(a) === 'LAPSED_PENDING').map((a) => ({ contract_id: a.id, hotel_id: hid(a), hotel_name: a.th, service: a.svc, term_end: termOf(a)!, ae: a.ae, orm: a.orm, marcom: a.marcom }));
 }
 function demoBase(withLapsed: boolean): BaseContract[] {
   const r2 = headerDemoPortfolio().contracts.filter((c) => activeOn(c.start, c.end, TAB_R1_DEMO_NOW) && (withLapsed || r2Active(c))).map((c): BaseContract => ({

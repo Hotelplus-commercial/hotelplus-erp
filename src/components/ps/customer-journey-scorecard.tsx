@@ -70,6 +70,8 @@ export function CustomerJourneyScorecard({ input, sel, aliases }: { input: Journ
   const score = useCardCompare("header", "score", input.today);
   const sc = journeyScorecard(input, sel, { golive, churn, score }, aliases);
   const [hover, setHover] = useState<number | null>(null);
+  const lapsedOf = (svc: string) => (input.lapsed ?? []).filter((x) => x.service === svc && rowMatches(x, sel, aliases)).length;
+  const unmatchedOf = (svc: string) => (input.unmatched ?? []).filter((x) => x.service === svc && rowMatches(x, sel, aliases)).length;
   const filtered = sel.kind !== "ALL";
   const slot = (c: Col): ReactNode =>
     c.key === "c2b" ? golive.control : c.key === "c4" ? churn.control : c.key === "c5" ? score.control
@@ -85,7 +87,12 @@ export function CustomerJourneyScorecard({ input, sel, aliases }: { input: Journ
       case "c1": return main(fmt(r.upcoming), "สัญญา");
       case "c2a": return <>{main(fmt(r.queue.n), "สัญญา")}<p className="r2-sub">{r.queue.wait ? `รอ ${fmt(r.queue.wait.value)} วัน · ${r.queue.wait.k} จาก ${r.queue.wait.n}` : "ไม่มีงานในคิว"}</p></>;
       case "c2b": return r.golive.mode ? <>{main(fmt(r.golive.mode.value), "วัน")}<p className="r2-sub">{r.golive.mode.k} จาก {r.golive.mode.n} สัญญา</p><DeltaPill d={r.golive.d} unit=" วัน" /></> : <>{main("—")}<p className="r2-sub">ยังไม่มีสัญญาที่ Go Live ในช่วงนี้</p></>;
-      case "c3": return main(fmt(r.active), "สัญญา");
+      case "c3": {
+        const n = lapsedOf(r.service), u = unmatchedOf(r.service);
+        return <>{main(fmt(r.active), "สัญญา")}
+          {n > 0 && <a href="/ps?tab=renewal&tile=pastDue#renewal-card" className="r2-sub r2-lapsed" data-testid={`q58-lapsed-${r.service}`} title={Q58.headerTip}>{Q58.headerLine(n)}</a>}
+          {u > 0 && isRenewalTestMode() && <p className="r2-sub r2-unmatched" data-testid={`q58-unmatched-${r.service}`}>{Q58.unmatched(u)}</p>}</>;
+      }
       case "c4": return <>{main(fmt(r.churn.out), "สัญญา")}<p className="r2-sub">{r.churn.pct == null ? "ยังไม่มีฐานสัญญา" : `${fmt(r.churn.pct, 1)}% ของฐาน`}</p><DeltaPill d={r.churn.d} /></>;
       case "c5": return r.score?.mode ? <>{main(fmt(r.score.mode.value), "คะแนน")}<p className="r2-sub">{r.score.mode.k} จาก {r.score.mode.n} ราย</p><div className="r2-pills"><DeltaPill d={r.score.d} />{r.score.low > 0 && <span className="r2-low">ต่ำ {r.score.low}</span>}</div></> : <>{main("—")}<p className="r2-sub">รอข้อมูล</p></>;
       default: return <><div className="r2-grade-lines"><span><b className="r2-grade-c-text">Grade C</b> {fmt(r.grades.c.length)}</span><span><b className="r2-grade-d-text">Grade D</b> {fmt(r.grades.d.length)}</span></div><GradeList rows={[...r.grades.c, ...r.grades.d]} up={r.service === "Marcom"} /></>;

@@ -14,7 +14,9 @@ import { aeNameTh } from "@/lib/ps-glossary";
 import type { PsReport, PsReportRow } from "@/lib/ps-dashboard-types";
 import type { GradeRow, HRow, JourneyInput, PortfolioContract, PriceRow, Svc } from "@/lib/ps-header-r2";
 import { headerDemoInput, headerDemoMarcom, headerDemoPortfolio, HEADER_DEMO_NOW } from "@/lib/ps-header-r2-demo";
-import { tabR1HeaderActive, tabR1HeaderChurn, tabR1HeaderPortfolio } from "@/lib/contract-tab-r1-demo";
+import { tabR1DemoLapsed, tabR1HeaderActive, tabR1HeaderChurn, tabR1HeaderPortfolio } from "@/lib/contract-tab-r1-demo";
+import { contractStateOn, contractTermEnd } from "@/lib/contract-state";
+import type { Contract } from "@/lib/crm-types";
 import type { MarcomRecord } from "@/lib/marcom-app-source";
 import type { ServicingReport } from "@/lib/servicing-dashboard-types";
 import { useAcViews } from "./use-ac-views";
@@ -45,7 +47,8 @@ export function useHeaderR2(demo: boolean, report: PsReport | undefined): Header
     if (demo) {
       // Tab R1 §11: demo additions also feed the header so header ใช้งาน / หลุด and cards ① / ⑦ agree (fixture itself unchanged).
       const j = headerDemoInput(), p = headerDemoPortfolio(), ap = tabR1HeaderPortfolio();
-      return { today: HEADER_DEMO_NOW, journey: { ...j, active: [...j.active, ...tabR1HeaderActive()], churn: [...j.churn, ...tabR1HeaderChurn()] }, portfolio: { contracts: [...p.contracts, ...ap.contracts], prices: [...p.prices, ...ap.prices] }, marcom: headerDemoMarcom(), loading: false };
+      const lapsed = tabR1DemoLapsed().map((l) => ({ service: l.service, hotel_id: l.hotel_id, hotel_name: l.hotel_name, ae: l.ae, orm: l.orm, marcom: l.marcom }));
+      return { today: HEADER_DEMO_NOW, journey: { ...j, active: [...j.active, ...tabR1HeaderActive()], lapsed, unmatched: [], churn: [...j.churn, ...tabR1HeaderChurn()] }, portfolio: { contracts: [...p.contracts, ...ap.contracts], prices: [...p.prices, ...ap.prices] }, marcom: headerDemoMarcom(), loading: false };
     }
     const today = new Date().toISOString().slice(0, 10);
     const views = report?.views;
@@ -53,11 +56,20 @@ export function useHeaderR2(demo: boolean, report: PsReport | undefined): Header
     const svRows = (sv.data as ServicingReport | undefined)?.rows ?? [];
     const onboard = svRows.flatMap((r) => { const s = svcOf(r.service_line); return s ? [{ service: s, hotel_id: r.hotel_id, hotel_name: r.hotel_name, ae: r.ae_owner_id, orm: r.orm_team, marcom: r.marcom_owner_id, created_at: r.created_at, go_live_at: r.go_live_at }] : []; });
     const seen = new Set<string>();
+    // v1.4.1 Q58 (normal mode): a row is checked only when its contract_id matches the main contract store (that contract's end date); never guessed.
+    const mainById = new Map<string, Contract>((crm?.contracts ?? []).map((c) => [c.contract_id, c]));
+    const renewLinks = (crm?.contracts ?? []).map((c) => ({ renewal_of: c.renewal_of ?? null, start: c.start_date }));
+    const lapsed: (HRow & { hotel_id: string })[] = [], unmatched: (HRow & { hotel_id: string })[] = [];
     const active = (views?.v_ps_account_health ?? []).flatMap((r) => {
       const s = svcOf(r.service_line); const id = str(r.hotel_id);
       if (!s || !id || r.status !== "ACTIVE" || seen.has(`${id}|${s}`)) return [];
       seen.add(`${id}|${s}`);
-      return [{ service: s, hotel_id: id, hotel_name: String(r.hotel_name ?? id), ...owners(r) }];
+      const row = { service: s, hotel_id: id, hotel_name: String(r.hotel_name ?? id), ...owners(r) };
+      const mc = mainById.get(str(r["contract_id"]) ?? "");
+      if (!mc) { unmatched.push(row); return [row]; }
+      const st = contractStateOn({ contract_id: mc.contract_id, start: mc.start_date, term_end: contractTermEnd(mc) }, today, renewLinks);
+      if (st === "LAPSED_PENDING") { lapsed.push(row); return []; }
+      return [row];
     });
     const churn = (views?.v_ps_churn_monthly ?? []).flatMap((r) => { const s = svcOf(r.service_line); return s && r.billing_period ? [{ service: s, hotel_id: str(r.hotel_id) ?? undefined, ...owners(r), month: String(r.billing_period).slice(0, 10), base: Number(r["active_at_start"] ?? 0) || 0, out: Number(r["out_count"] ?? 0) || 0 }] : []; });
     // AC grade dataset (same as the AC / debtor tab): grade per customer, shown on each of its service contracts.
@@ -98,7 +110,7 @@ export function useHeaderR2(demo: boolean, report: PsReport | undefined): Header
     const owned = contracts.filter((c) => activeKeys.has(`${c.hotel_id}|${c.service}`)).map((c) => ({ ...c, ae: active.find((a) => a.hotel_id === c.hotel_id && a.service === c.service)?.ae ?? null }));
     return {
       today,
-      journey: { today, upcoming, onboard, active, churn, scores: null, grades: { month: gm, rows: gradeRows } },
+      journey: { today, upcoming, onboard, active, lapsed, unmatched, churn, scores: null, grades: { month: gm, rows: gradeRows } },
       portfolio: { contracts: owned, prices },
       marcom: { posts: null, ads: null, kol: null },
       loading: sv.isLoading || ac.isLoading,
