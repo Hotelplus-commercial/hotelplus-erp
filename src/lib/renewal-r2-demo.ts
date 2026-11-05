@@ -2,7 +2,7 @@
  * Reads the Tab R1 demo active contracts as they are (planning rows, e.g. Q1 70) and ADDS renewal states, extra
  * service contracts (12+ months of history) and non-renewal reasons beside them. No existing demo entry is edited.
  * These additions are not fed to the header (“ใช้งาน” / “หลุด” stay as they are). */
-import { TAB_R1_DEMO_NOW, tabR1DemoBase } from './contract-tab-r1-demo';
+import { TAB_R1_DEMO_NOW, tabR1DemoRenewalBase } from './contract-tab-r1-demo';
 import { REASON_KEYS, type RenewalItem, type Stage, type SubStep } from './renewal-r2';
 import { editableUntil, type RenewalReason } from './renewal-reasons';
 import type { ScanContract } from './renewal-scan';
@@ -72,7 +72,7 @@ const fromAdd = (a: Add): RenewalItem => ({
 });
 
 export function renewalR2DemoItems(): RenewalItem[] {
-  const base = tabR1DemoBase().filter((b) => b.term_end).map((b): RenewalItem => ({
+  const base = tabR1DemoRenewalBase().filter((b) => b.term_end) // v1.4.1: past-due (ขาดอายุ รอผล) contracts stay on the renewal card.map((b): RenewalItem => ({
     contract_id: b.contract_id, hotel_id: b.hotel_id, hotel_name: b.hotel_name_th ?? b.hotel_name, hotel_name_th: b.hotel_name_th, hotel_name_en: b.hotel_name_en,
     service: b.service, ae: b.ae, team: b.service === 'ORM' ? b.orm_team : b.marcom, end: b.term_end!.slice(0, 10), stage: 'NOT_STARTED', sub: null, outcome: null,
     ...BASE_STATE[b.contract_id],
