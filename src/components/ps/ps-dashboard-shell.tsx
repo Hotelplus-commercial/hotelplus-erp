@@ -22,7 +22,7 @@ import { useAcTabInput, useAcViews } from "./use-ac-views";
 import { dealBookLines } from "@/lib/bdac-scope";
 import { bdacRedirectHref } from "@/lib/office-bdac";
 import { useRouter } from "@tanstack/react-router";
-import { setPsDemoSession } from "@/lib/demo-session";
+import { psDemoOn, setPsDemoSession } from "@/lib/demo-session";
 import { v_bdac_flow, v_bdac_deal_aging } from "@/lib/bdac-views";
 import { useContractLifecycle } from "@/lib/contract-lifecycle";
 import {
@@ -196,7 +196,8 @@ export function DashboardShell({
       return;
     }
     const sp = new URLSearchParams(window.location.search);
-    setDemo(sp.get("demo") === "1");
+    // AC App Partner Bills v1.0 add-on: one DEMO state for the whole app — no ?demo param → follow the shared DEMO-state helper.
+    setDemo(sp.get("demo") === "1" || (sp.get("demo") !== "0" && psDemoOn()));
     // R1.2 §1: tab keys are unchanged (labels/order only), so ?tab=<key> links keep opening the same tab.
     const t = sp.get("tab");
     if (t && DASHBOARD_TABS.some(([k]) => k === t)) setTab(t);

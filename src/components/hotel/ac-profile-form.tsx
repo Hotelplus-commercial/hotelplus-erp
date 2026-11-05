@@ -18,7 +18,8 @@ import { contractorTypes, emptyContact, statusMeta } from "@/lib/hotel-profile";
 import { hotelStatus, useHotelStore, type HotelProfile } from "@/lib/hotel-store";
 import { cn } from "@/lib/utils";
 import { crmUsers, useCrm } from '@/lib/crm-store';
-import { paymentSummary } from '@/lib/ac-v2-engine';
+import { outstandingOf, paymentSummary } from '@/lib/ac-v2-engine';
+import { ShutoffRequest } from '@/components/ac/shutoff-request';
 
 export function AcProfileForm() {
   const { selected: h, patch } = useHotelStore();
@@ -164,7 +165,7 @@ export function AcProfileForm() {
           บันทึก Hotel Profile
         </Button>
       </div>
-      {crm.contracts.filter(c=>c.customer_snapshot.customer_id===customerId).map(c=><div key={c.contract_id} className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t pt-3 text-sm"><span>{c.contract_id}</span><Select value={c.billing_status??'ACTIVE'} onValueChange={v=>{if(!['ACTIVE','PAUSED','TERMINATED'].includes(v))return;if(c.billing_status==='SUSPENDED' && v!=='TERMINATED'){toast.error('ต้องชำระยอดค้างครบก่อนคืนบริการ');return;}crm.patchContract(c.contract_id,{billing_status:v as 'ACTIVE'|'PAUSED'|'TERMINATED'});}}><SelectTrigger className="w-48" aria-label={'สถานะเรียกเก็บ '+c.contract_id}><SelectValue /></SelectTrigger><SelectContent>{['ACTIVE','PAUSED','SUSPENDED','TERMINATED'].map(v=><SelectItem key={v} value={v} disabled={v==='SUSPENDED'}>{v}</SelectItem>)}</SelectContent></Select></div>)}
+      {crm.contracts.filter(c=>c.customer_snapshot.customer_id===customerId).map(c=><div key={c.contract_id} className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t pt-3 text-sm"><span>{c.contract_id}</span><Select value={c.billing_status??'ACTIVE'} onValueChange={v=>{if(!['ACTIVE','PAUSED','TERMINATED'].includes(v))return;if(c.billing_status==='SUSPENDED' && v!=='TERMINATED'){toast.error('ต้องชำระยอดค้างครบก่อนคืนบริการ');return;}crm.patchContract(c.contract_id,{billing_status:v as 'ACTIVE'|'PAUSED'|'TERMINATED'});}}><SelectTrigger className="w-48" aria-label={'สถานะเรียกเก็บ '+c.contract_id}><SelectValue /></SelectTrigger><SelectContent>{['ACTIVE','PAUSED','SUSPENDED','TERMINATED'].map(v=><SelectItem key={v} value={v} disabled={v==='SUSPENDED'}>{v}</SelectItem>)}</SelectContent></Select>{/* AC App Partner Bills v1.0 §4.1 */}{c.billing_status==='SUSPENDED' && (()=>{const due=crm.invoices.filter(i=>i.contract_ids.includes(c.contract_id)&&outstandingOf(i)>0);return <ShutoffRequest canWrite input={{contract_id:c.contract_id,hotel_id:c.hotel_id??c.customer_snapshot.customer_id,hotel_name:c.customer_snapshot.hotel_name||c.customer_snapshot.legal_name,service_line:c.lines.some(l=>/^MARCOM/i.test(l.sku_snapshot))?'Marcom':'ORM',partner:null,system_name:null,assigned_ae:null,outstanding:due.reduce((a,i)=>a+outstandingOf(i),0),overdue_cycles:new Set(due.map(i=>i.billing_period_start.slice(0,7))).size}} />;})()}</div>)}
     </Section>
   );
 }

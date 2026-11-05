@@ -81,7 +81,8 @@ export const isStaleNegotiation = (d: { status: string; updated_at: string }, to
 export const dealStateOf = getDealState;
 
 /* ---------- §4 SYSTEM_SHUTOFF (PS side) ---------- */
-export const isPsShutoff = (t: Pick<L0Ticket, 'type' | 'target_dept'>) => t.type === 'SYSTEM_SHUTOFF' && t.target_dept === 'PS';
+/** AC App Partner Bills v1.0 §4.2: PS-side SYSTEM_REACTIVATE follows the same closer rule as SYSTEM_SHUTOFF (AE closes). */
+export const isPsShutoff = (t: Pick<L0Ticket, 'type' | 'target_dept'>) => (t.type === 'SYSTEM_SHUTOFF' || t.type === 'SYSTEM_REACTIVATE') && t.target_dept === 'PS';
 /** AE of the ticket: live property.assigned_ae_id first, else the ticket payload snapshot. */
 export function shutoffAe(t: L0Ticket, propertyAeId: string | null | undefined): { member_id: string | null; nickname: string | null } {
   if (propertyAeId) return { member_id: propertyAeId, nickname: null };
@@ -94,8 +95,10 @@ export function shutoffActions(next: L0Status[], role: Role, actorMember: string
 }
 /** Twin ticket (ORM / MARCOM) of the same contract / hotel. */
 export function shutoffTwin(all: L0Ticket[], t: L0Ticket): L0Ticket | null {
+  const linked = t.payload.shutoff?.twin_ticket_id; // AC App v1.0: explicit twin link
+  if (linked) { const x = all.find((y) => y.ticket_id === linked); if (x) return x; }
   const key = t.subject_ref.contract_id ?? t.payload.contract_id ?? null;
-  return all.find((x) => x.ticket_id !== t.ticket_id && x.type === 'SYSTEM_SHUTOFF' && (x.target_dept === 'ORM' || x.target_dept === 'MARCOM')
+  return all.find((x) => x.ticket_id !== t.ticket_id && x.type === t.type && (x.target_dept === 'ORM' || x.target_dept === 'MARCOM')
     && (key ? (x.subject_ref.contract_id ?? x.payload.contract_id) === key : x.subject_ref.hotel_id === t.subject_ref.hotel_id)) ?? null;
 }
 

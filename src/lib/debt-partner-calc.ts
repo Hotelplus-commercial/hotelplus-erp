@@ -97,9 +97,12 @@ export function getCashbackExpected(data: PartnerData, deal: PartnerDeal, contra
   const on = new Set(data.contract_partner_system.filter((s) => s.partner_id === deal.partner_id).map((s) => s.contract_id));
   const eligible = contracts.filter((c) => c.service === 'ORM' && on.has(c.contract_id) && c.start && (!deal.start_date || d10(c.start) >= d10(deal.start_date)) && (!deal.end_date || d10(c.start) <= d10(deal.end_date)) && inScope(deal, c.contract_id));
   const ids = new Set(eligible.map((c) => c.contract_id));
-  const received = data.partner_cashback_receipts.filter((r) => r.deal_id === deal.id && ids.has(r.contract_id)).length;
+  const rec = data.partner_cashback_receipts.filter((r) => r.deal_id === deal.id && ids.has(r.contract_id));
+  const received = rec.length;
   const v = deal.benefit_value ?? 0;
-  return { eligible: eligible.length, value: v, expected: eligible.length * v, received, received_amount: received * v, currency: deal.benefit_currency ?? 'THB' };
+  // AC App Partner Bills v1.0 §3: actual amount when AC recorded it, else the deal value.
+  const received_amount = rec.reduce((s, r) => s + (r.amount ?? v), 0);
+  return { eligible: eligible.length, value: v, expected: eligible.length * v, received, received_amount, currency: deal.benefit_currency ?? 'THB' };
 }
 
 /** Full calendar months from `end` up to `until` (30 Nov → 31 Jan = 2). */
@@ -146,12 +149,16 @@ export function creditRows(data: PartnerData, contracts: PartnerContract[], toda
 export function creditTiles(data: PartnerData) {
   const approved = data.system_credit_requests.filter((r) => r.status === 'APPROVED');
   const gained = approved.reduce((s, r) => s + creditAmountOf(r), 0);
-  const usage = data.system_credit_usage.filter((u) => approved.some((r) => r.id === u.credit_request_id));
+  // AC App Partner Bills v1.0 §2.2: usage counts as used once its bill is paid (legacy rows without bill_id count); VOID ignored.
+  const usage = data.system_credit_usage.filter((u) => approved.some((r) => r.id === u.credit_request_id) && usageCounts(data, u.bill_id));
   const used = usage.reduce((s, u) => s + u.amount, 0);
   const latestBill = [...usage].sort((a, b) => b.used_at.localeCompare(a.used_at))[0]?.partner_bill_ref ?? null;
   const earliest = approved.map((r) => r.credit_expires_at).filter((x): x is string => !!x).sort()[0] ?? null;
   return { gained, gained_n: approved.length, used, latestBill, balance: gained - used, earliest, partners: [...new Set(approved.map((r) => r.partner_id))] };
 }
+
+/** Usage row of a bill: no bill → counts; PAID → counts; PENDING (reserved) / VOID → not used yet. */
+export const usageCounts = (data: PartnerData, bill_id: string | null | undefined) => !bill_id || (data.partner_bills ?? []).find((b) => b.id === bill_id)?.status === 'PAID';
 
 /** ⑤ / §2.3: approved rows show approved_amount (fallback amount). */
 export const creditAmountOf = (r: SystemCreditRequest) => (r.status === 'APPROVED' && r.approved_amount != null ? r.approved_amount : r.amount);

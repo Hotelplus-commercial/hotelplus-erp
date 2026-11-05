@@ -12,6 +12,8 @@ export const acTabs = [
   { label: "Product Catalog", to: "/ac/products" },
   { label: "Customer Master", to: "/ac/customers" },
   { label: "Invoice & ใบเสร็จ", to: "/ac/billing" },
+  /* AC App Partner Bills v1.0 §1: under the billing area (AC role) */
+  { label: "บิล Partner", to: "/ac/partner-bills" },
 ];
 
 export const Route = createFileRoute("/ac")({

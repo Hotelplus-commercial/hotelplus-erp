@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { PendingAssignList } from "@/components/ps/assignment-ui";
 import { READY_TH } from "@/lib/expansion";
 import {
-  DEPTS, OPEN_STATUSES, STATUS_TH, TYPE_TH, allowedNext, createTask, isWatcherOf, setTicketDemo, transition,
+  DEPTS, OPEN_STATUSES, STATUS_TH, TYPE_TH, allowedNext, createTask, isWatcherOf, setTicketDemo, transition, acknowledgeNotice, canAcknowledge, ACK_ONE_CLICK,
   useTicketReadBack, useTickets, SYSTEM_CREATOR, type Dept, type L0Ticket, type Role,
 } from "@/lib/tickets-l0";
 import { digestFor, runAlertBot, sortBotFirst, type BotRunResult } from "@/lib/alert-bot";
@@ -21,8 +21,9 @@ import { WelcomeBackSection } from "./welcome-back-section";
 import { WB_TEST_BDS, wbActorOf } from "@/lib/welcome-back-routing";
 import { isRenewalTestMode } from "@/lib/renewal-test-actor";
 import { WB } from "@/lib/ps-glossary";
-import { pageDateLabel } from "@/lib/demo-session";
-import { Link } from "@tanstack/react-router";
+import { pageDateLabel, setPsDemoSession } from "@/lib/demo-session";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { seedAcBillsDemo } from "@/lib/partner-shutoff-ac";
 import { setPartnerDemo, usePartnerData } from "@/lib/debt-partner-store";
 import { seedShutoffDemo } from "@/lib/partner-todo";
 import { ShutoffDetailRows, ShutoffRowHint, useShutoffActor } from "@/components/workspace/partner-shutoff";
@@ -68,6 +69,9 @@ export function WorkspaceShell({ config, demo, ticket, roleState, onGoBdm }: { c
     setRenewalDemo(demo); setTicketDemo(demo);
     // PM Workspace Partner v1.0: Partner data follows DEMO; §7 shut-off demo tickets live in the in-memory ticket store only.
     if (config.dept_key === "PS") { setPartnerDemo(demo); if (demo) seedShutoffDemo(); }
+    // AC App Partner Bills v1.0 §8: AC / ORM / Marcom / PS DEMO tickets (shut-off, reactivate, AC notices) — in-memory store only.
+    if (config.dept_key === "AC") setPartnerDemo(demo);
+    if (demo && ["AC", "ORM", "MARCOM", "PS"].includes(config.dept_key)) seedAcBillsDemo();
     setReady(true);
   }, [demo]); // eslint-disable-line react-hooks/exhaustive-deps
   // R3.1 WB2: BD Workspace adds สวมบท BDM and a BD member pick under สวมบท BD (testing mode only). Default role unchanged.
@@ -228,7 +232,7 @@ function TicketTable({ rows, dept, onOpen }: { rows: L0Ticket[]; dept: Dept; onO
                 {isWatcherOf(t, dept) && <Badge variant="outline" className="ml-1 text-[10px]">👁 FYI</Badge>}
               </td>
               <td className="p-2">{t.payload.severity && <span aria-label={`severity ${t.payload.severity}`} className="mr-1">{SEVERITY_DOT[t.payload.severity]}</span>}{TYPE_TH[t.type]}</td>
-              <td className="p-2">{isPsShutoff(t) ? <>ขอปิดระบบ · {t.subject_ref.hotel_name}<ShutoffRowHint t={t} /></> : <>{t.subject_ref.hotel_name} · {t.subject_ref.gap_service}</>}</td>
+              <td className="p-2">{isPsShutoff(t) ? <>{t.type === "SYSTEM_REACTIVATE" ? "ขอเปิดระบบคืน" : "ขอปิดระบบ"} · {t.subject_ref.hotel_name}<ShutoffRowHint t={t} /></> : <>{t.subject_ref.hotel_name} · {t.subject_ref.gap_service}</>}</td>
               <td className="p-2"><Badge variant="secondary">{STATUS_TH[t.status]}</Badge>{t.payload.condition_cleared_at && <Badge variant="outline" className="ml-1 border-warning/50 text-[10px] text-warning-foreground">รอปิด</Badge>}</td>
               <td className="whitespace-nowrap p-2 text-muted-foreground">{fmt(t.created_at)}</td>
             </tr>
@@ -245,7 +249,8 @@ function Detail({ t, role, dept, onClose }: { t: L0Ticket; role: Role; dept: Dep
   const shut = useShutoffActor(t);
   const base = watcher ? [] : allowedNext(t, role);
   // PM Workspace Partner v1.0 §4: PS-side SYSTEM_SHUTOFF moves only for the assigned AE; PM read-only.
-  const actions = isPsShutoff(t) ? shut.filter(base, role) : base;
+  const actions = isPsShutoff(t) ? shut.filter(base, role) : ACK_ONE_CLICK.includes(t.type) ? base.filter((x) => x === "CANCELLED") : base;
+  const ack = !watcher && canAcknowledge(t, role); // AC App v1.0 §5: one-click รับทราบ → DONE
   const isBot = t.created_by === SYSTEM_CREATOR;
   return (
     <div className="space-y-3 rounded-md border p-4">
@@ -286,7 +291,8 @@ function Detail({ t, role, dept, onClose }: { t: L0Ticket; role: Role; dept: Dep
         ))}
         {t.type === "CUSTOMER_ENTITY_CHANGE" && t.payload.entity_change && <><dt className="text-muted-foreground">สิ่งที่เปลี่ยน</dt><dd>{t.payload.entity_change.what} · {t.payload.entity_change.detail}</dd></>}
         {isPsShutoff(t) && <ShutoffDetailRows t={t} actor={shut} role={role} />}
-        <dt className="text-muted-foreground">ผู้สร้าง → แผนก</dt><dd>{isBot ? "The Office" : t.created_by} → {t.target_dept}</dd>
+        <NoticeRows t={t} />
+        <dt className="text-muted-foreground">ผู้สร้าง → แผนก</dt><dd>{isBot ? "The Office" : t.payload.shutoff?.auto ? "AC App (อัตโนมัติ)" : t.created_by} → {t.target_dept}</dd>
       </dl>
       {t.payload.condition_cleared_at && OPEN_STATUSES.includes(t.status) && (
         <div className="flex flex-wrap items-center gap-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs">
@@ -297,7 +303,8 @@ function Detail({ t, role, dept, onClose }: { t: L0Ticket; role: Role; dept: Dep
         </div>
       )}
       <div className="flex flex-wrap gap-2">
-        {actions.length === 0 && <span className="text-xs text-muted-foreground">บทบาทนี้เปลี่ยนสถานะไม่ได้</span>}
+        {ack && <Button size="sm" data-testid="ack-btn" onClick={() => setMsg(acknowledgeNotice(t.ticket_id, t.revision, role) ? null : "ข้อมูลเปลี่ยนไปแล้ว กรุณาลองใหม่")}>รับทราบ</Button>}
+        {actions.length === 0 && !ack && <span className="text-xs text-muted-foreground">บทบาทนี้เปลี่ยนสถานะไม่ได้</span>}
         {actions.map((s) => (
           <Button key={s} size="sm" variant={s === "CANCELLED" ? "outline" : "default"}
             onClick={() => setMsg(transition(t.ticket_id, t.revision, s, role) ? null : "ข้อมูลเปลี่ยนไปแล้ว กรุณาลองใหม่")}>
@@ -308,8 +315,32 @@ function Detail({ t, role, dept, onClose }: { t: L0Ticket; role: Role; dept: Dep
       {msg && <p role="alert" className="text-xs text-warning-foreground">{msg}</p>}
       <TicketAttachments t={t} by={role} readOnly={watcher} />
       <ol className="space-y-1 border-t pt-2 text-xs text-muted-foreground">
-        {t.audit.map((a, i) => <li key={i}>{fmt(a.at)} · {a.by === SYSTEM_CREATOR ? "The Office" : a.by} · {a.from_status ? (a.from_status === a.to_status ? "เงื่อนไขหายแล้ว" : STATUS_TH[a.from_status]) : "—"} → {STATUS_TH[a.to_status]}</li>)}
+        {t.audit.map((a, i) => <li key={i}>{fmt(a.at)} · {a.by === SYSTEM_CREATOR ? "The Office" : a.actor ?? a.by} · {a.from_status ? (a.from_status === a.to_status ? "เงื่อนไขหายแล้ว" : STATUS_TH[a.from_status]) : "—"} → {STATUS_TH[a.to_status]}{a.note ? ` · ${a.note}` : ""}</li>)}
       </ol>
+    </div>
+  );
+}
+
+/** AC App Partner Bills v1.0 §5: read-only payload of the two AC notice types. */
+function NoticeRows({ t }: { t: L0Ticket }) {
+  const dn = t.type === "PARTNER_DEAL_NOTICE" ? t.payload.deal_notice : undefined;
+  const cn_ = t.type === "SYSTEM_CREDIT_NOTICE" ? t.payload.credit_notice : undefined;
+  if (dn) return <><dt className="text-muted-foreground">ข้อตกลง</dt><dd data-testid="notice-deal">{dn.partner} · {dn.kind} · {dn.benefit} · {dn.period} · {dn.status}{dn.attachment_url ? <> · <a className="text-primary underline" href={dn.attachment_url} target="_blank" rel="noreferrer">ไฟล์แนบ</a></> : null}</dd></>;
+  if (cn_) return <><dt className="text-muted-foreground">ผลเครดิต</dt><dd data-testid="notice-credit">{cn_.contract} · {cn_.partner} · {cn_.result === "APPROVED" ? "อนุมัติ" : "ปฏิเสธ"}{cn_.approved_amount != null ? ` · ${cn_.currency === "THB" ? "฿" : cn_.currency + " "}${cn_.approved_amount.toLocaleString("en-US")}` : ""}{cn_.credit_expires_at ? ` · ใช้ได้ถึง ${cn_.credit_expires_at}` : ""}</dd></>;
+  return null;
+}
+
+/** AC App Partner Bills v1.0 add-on: the one DEMO switch on every Workspace banner (shared DEMO-state helper = PS Dashboard).
+ *  Plain link first (works before the page finishes loading: ?demo=1 / ?demo=0 is read on load); after load it switches in place. */
+export function DemoSwitch({ demo, onToggle }: { demo: boolean; onToggle?: (on: boolean) => void }) {
+  const navigate = useNavigate();
+  return (
+    <div className="flex justify-end">
+      <a href={`?demo=${demo ? 0 : 1}`} data-testid="ws-demo-switch" role="switch" aria-checked={demo}
+        className={cn("rounded-full border px-3 py-1 text-xs", demo ? "border-warning/50 bg-warning/15 text-warning-foreground" : "text-muted-foreground hover:bg-muted")}
+        onClick={(e) => { e.preventDefault(); const next = !demo; if (onToggle) { onToggle(next); return; } setPsDemoSession(next); void navigate({ to: ".", search: ((s: Record<string, unknown>) => ({ ...s, demo: next ? 1 : 0 })) as never, replace: true }); }}>
+        DEMO {demo ? "เปิด" : "ปิด"}
+      </a>
     </div>
   );
 }

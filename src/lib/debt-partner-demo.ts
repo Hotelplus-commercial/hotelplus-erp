@@ -105,6 +105,7 @@ function partnerDemoBase(): PartnerData {
       { id: 'PPS-MAEPING-2', property_id: 'HP-MAEPING', partner_id: P.SL, system_name: 'Channel Manager', effective_from: '2026-12-01', allotment: 35, set_by: 'PM001-Alex', set_at: '2026-10-20T09:00:00.000Z', note: 'ย้ายไป StayLink ตามสัญญาใหม่' },
     ],
     system_credit_usage: [{ id: 'CU-1', credit_request_id: 'CR-SEEFAH', partner_bill_ref: 'Oct 26', amount: 3400, used_at: '2026-10-10', recorded_by: 'AC001' }],
+    partner_bills: [],
   };
 }
 
@@ -115,8 +116,46 @@ export const PARTNER_DEMO_FOLDERS = {
   [P.SL]: 'https://drive.google.com/drive/folders/Partners/StayLink',
   [P.HG]: 'https://drive.google.com/drive/folders/Partners/Hotelier.guru',
 } as Record<string, string>;
+/* AC App Partner Bills v1.0 §8 (written for 2 Nov 26) — added in memory on top of the bundle; no existing row value changed
+ * (existing rows only gain the new optional bill_id / amount / currency fields). Shifts for DEMO day 28 Oct 26 (new entries only):
+ * - HG-2611 bill date 1 Nov 26 → 27 Oct 26 and SL-2611 bill date → 27 Oct 26 (so both are "ยอดงวดนี้" on 28 Oct); due dates kept.
+ * - Krabi Cliff credit use on HG-2611: used_at = bill date 27 Oct 26. */
+const lineSet = (bill: string, partner_id: string, ids: string[], start: string, end: string, amount: number, currency: string, paid_at: string | null) =>
+  ids.map((contract_id) => ({ id: `BL-${bill}-${contract_id}`, partner_id, contract_id, period_start: start, period_end: end, amount, currency, paid_at, recorded_by: 'AC001', bill_id: `BILL-${bill}` }));
+export const PARTNER_BILLS_DEMO_BILLS = ['HG-2611', 'HG-2608', 'SL-2610', 'SL-2611', 'OH-2610'] as const;
+function withBillsDemo(d: PartnerData): PartnerData {
+  const hgIds = PARTNER_DEMO_CONTRACTS.filter((c) => c.contract_id.startsWith('DP-HG-')).map((c) => c.contract_id);
+  const slIds = PARTNER_DEMO_CONTRACTS.filter((c) => c.contract_id.startsWith('DP-SL-')).map((c) => c.contract_id);
+  const ohIds = PARTNER_DEMO_CONTRACTS.filter((c) => c.contract_id.startsWith('DP-OH-')).map((c) => c.contract_id);
+  const b = (x: Pick<PartnerData['partner_bills'][number], 'partner_id' | 'bill_no' | 'bill_date' | 'due_date' | 'period_start' | 'period_end' | 'total' | 'currency' | 'expected_total' | 'status' | 'paid_at'>) =>
+    ({ ...x, id: `BILL-${x.bill_no}`, attachment_url: '', note: '', created_by: 'AC001', created_at: `${x.bill_date}T09:00:00.000Z`, updated_at: `${x.paid_at ?? x.bill_date}T09:00:00.000Z` });
+  const sl2611 = lineSet('SL-2611', P.SL, slIds, '2026-11-01', '2026-11-30', 800, 'THB', null).map((l, i) => (i === 0 ? { ...l, amount: 1300 } : l));
+  return {
+    ...d,
+    partner_bills: [
+      b({ partner_id: P.HG, bill_no: 'HG-2611', bill_date: '2026-10-27', due_date: '2026-11-15', period_start: '2026-11-01', period_end: '2027-01-31', total: 171360, currency: 'THB', expected_total: 171360, status: 'PENDING', paid_at: null }),
+      b({ partner_id: P.HG, bill_no: 'HG-2608', bill_date: '2026-08-01', due_date: '2026-08-15', period_start: '2026-08-01', period_end: '2026-10-31', total: 243780, currency: 'THB', expected_total: 243780, status: 'PAID', paid_at: '2026-08-10' }),
+      b({ partner_id: P.SL, bill_no: 'SL-2610', bill_date: '2026-10-01', due_date: '2026-10-10', period_start: '2026-10-01', period_end: '2026-10-31', total: 16000, currency: 'THB', expected_total: 16000, status: 'PAID', paid_at: '2026-10-08' }),
+      b({ partner_id: P.SL, bill_no: 'SL-2611', bill_date: '2026-10-27', due_date: '2026-11-10', period_start: '2026-11-01', period_end: '2026-11-30', total: 16500, currency: 'THB', expected_total: 16000, status: 'PENDING', paid_at: null }),
+      b({ partner_id: P.OH, bill_no: 'OH-2610', bill_date: '2026-10-01', due_date: '2026-10-25', period_start: '2026-10-01', period_end: '2026-10-31', total: 640, currency: 'USD', expected_total: 640, status: 'PENDING', paid_at: null }),
+    ],
+    partner_bill_lines: [
+      // Chaba Grand's existing lines join the two Hotelier.guru bills (paid to 31 Jan 27, unchanged).
+      ...d.partner_bill_lines.map((l) => ({ ...l, bill_id: l.id === 'BL-CHABA-1' ? 'BILL-HG-2608' : 'BILL-HG-2611' })),
+      ...lineSet('HG-2611', P.HG, hgIds, '2026-11-01', '2027-01-31', 3570, 'THB', null),
+      ...lineSet('HG-2608', P.HG, hgIds, '2026-08-01', '2026-10-31', 5100, 'THB', '2026-08-10'),
+      ...lineSet('SL-2610', P.SL, slIds, '2026-10-01', '2026-10-31', 800, 'THB', '2026-10-08'),
+      ...sl2611,
+      ...lineSet('OH-2610', P.OH, ohIds, '2026-10-01', '2026-10-31', 40, 'USD', null),
+    ],
+    system_credit_usage: [...d.system_credit_usage,
+      { id: 'CU-HG-2611', credit_request_id: 'CR-KRABI', partner_bill_ref: 'HG-2611', amount: 3400, used_at: '2026-10-27', recorded_by: 'AC001', bill_id: 'BILL-HG-2611' }],
+    partner_cashback_receipts: d.partner_cashback_receipts.map((r) => ({ ...r, amount: 100, currency: 'USD' })),
+  };
+}
+
 export function partnerDemoData(): PartnerData {
-  const d = partnerDemoBase();
+  const d = withBillsDemo(partnerDemoBase());
   return {
     ...d,
     partners: d.partners.map((p) => {

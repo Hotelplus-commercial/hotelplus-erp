@@ -26,6 +26,7 @@ import { Route as AcBillingRouteImport } from './routes/ac.billing'
 import { Route as AcCustomersRouteImport } from './routes/ac.customers'
 import { Route as AcHotelProfileRouteImport } from './routes/ac.hotel-profile'
 import { Route as AcOperationsRouteImport } from './routes/ac.operations'
+import { Route as AcPartnerBillsRouteImport } from './routes/ac.partner-bills'
 import { Route as AcProductsRouteImport } from './routes/ac.products'
 import { Route as AcSystemCostRouteImport } from './routes/ac.system-cost'
 import { Route as BdIndexRouteImport } from './routes/bd.index'
@@ -177,6 +178,11 @@ const AcHotelProfileRoute = AcHotelProfileRouteImport.update({
 const AcOperationsRoute = AcOperationsRouteImport.update({
   id: '/operations',
   path: '/operations',
+  getParentRoute: () => AcRoute,
+} as any)
+const AcPartnerBillsRoute = AcPartnerBillsRouteImport.update({
+  id: '/partner-bills',
+  path: '/partner-bills',
   getParentRoute: () => AcRoute,
 } as any)
 const AcProductsRoute = AcProductsRouteImport.update({
@@ -537,6 +543,7 @@ export interface FileRoutesByFullPath {
   '/ac/customers': typeof AcCustomersRoute
   '/ac/hotel-profile': typeof AcHotelProfileRoute
   '/ac/operations': typeof AcOperationsRoute
+  '/ac/partner-bills': typeof AcPartnerBillsRoute
   '/ac/products': typeof AcProductsRoute
   '/ac/system-cost': typeof AcSystemCostRoute
   '/bd/calculator': typeof BdCalculatorRouteWithChildren
@@ -618,6 +625,7 @@ export interface FileRoutesByTo {
   '/ac/customers': typeof AcCustomersRoute
   '/ac/hotel-profile': typeof AcHotelProfileRoute
   '/ac/operations': typeof AcOperationsRoute
+  '/ac/partner-bills': typeof AcPartnerBillsRoute
   '/ac/products': typeof AcProductsRoute
   '/ac/system-cost': typeof AcSystemCostRoute
   '/bd/calculator': typeof BdCalculatorRouteWithChildren
@@ -700,6 +708,7 @@ export interface FileRoutesById {
   '/ac/customers': typeof AcCustomersRoute
   '/ac/hotel-profile': typeof AcHotelProfileRoute
   '/ac/operations': typeof AcOperationsRoute
+  '/ac/partner-bills': typeof AcPartnerBillsRoute
   '/ac/products': typeof AcProductsRoute
   '/ac/system-cost': typeof AcSystemCostRoute
   '/bd/calculator': typeof BdCalculatorRouteWithChildren
@@ -788,6 +797,7 @@ export interface FileRouteTypes {
     | '/ac/customers'
     | '/ac/hotel-profile'
     | '/ac/operations'
+    | '/ac/partner-bills'
     | '/ac/products'
     | '/ac/system-cost'
     | '/bd/calculator'
@@ -869,6 +879,7 @@ export interface FileRouteTypes {
     | '/ac/customers'
     | '/ac/hotel-profile'
     | '/ac/operations'
+    | '/ac/partner-bills'
     | '/ac/products'
     | '/ac/system-cost'
     | '/bd/calculator'
@@ -950,6 +961,7 @@ export interface FileRouteTypes {
     | '/ac/customers'
     | '/ac/hotel-profile'
     | '/ac/operations'
+    | '/ac/partner-bills'
     | '/ac/products'
     | '/ac/system-cost'
     | '/bd/calculator'
@@ -1161,6 +1173,13 @@ declare module '@tanstack/react-router' {
       path: '/operations'
       fullPath: '/ac/operations'
       preLoaderRoute: typeof AcOperationsRouteImport
+      parentRoute: typeof AcRoute
+    }
+    '/ac/partner-bills': {
+      id: '/ac/partner-bills'
+      path: '/partner-bills'
+      fullPath: '/ac/partner-bills'
+      preLoaderRoute: typeof AcPartnerBillsRouteImport
       parentRoute: typeof AcRoute
     }
     '/ac/products': {
@@ -1640,6 +1659,7 @@ interface AcRouteChildren {
   AcCustomersRoute: typeof AcCustomersRoute
   AcHotelProfileRoute: typeof AcHotelProfileRoute
   AcOperationsRoute: typeof AcOperationsRoute
+  AcPartnerBillsRoute: typeof AcPartnerBillsRoute
   AcProductsRoute: typeof AcProductsRoute
   AcSystemCostRoute: typeof AcSystemCostRoute
   AcIndexRoute: typeof AcIndexRoute
@@ -1650,6 +1670,7 @@ const AcRouteChildren: AcRouteChildren = {
   AcCustomersRoute: AcCustomersRoute,
   AcHotelProfileRoute: AcHotelProfileRoute,
   AcOperationsRoute: AcOperationsRoute,
+  AcPartnerBillsRoute: AcPartnerBillsRoute,
   AcProductsRoute: AcProductsRoute,
   AcSystemCostRoute: AcSystemCostRoute,
   AcIndexRoute: AcIndexRoute,

@@ -84,6 +84,20 @@ const NameCell = ({ hotel, id, lapsed }: { hotel: string; id: string; lapsed?: b
   <td><div>{hotel}</div><div className="text-xs text-muted-foreground">{id}{lapsed && <span className="ml-1 ac-pill ac-pill-neutral" data-testid="dp-lapsed">ขาดอายุ รอผล</span>}</div></td>
 );
 
+/** AC App Partner Bills v1.0 §6 (AX14): "อัปเดตจาก AC App" = the latest paid / status-change time of the period
+ *  (the AC payment-confirm audit time; else the invoice paid_at) — not page-load time. */
+function useLastPaidChange(demo: boolean, inv: PaidInv[], period: string | null): Date | null {
+  const crm = useCrmOptional();
+  return useMemo(() => {
+    if (!period) return null;
+    const ids = demo || !crm ? null : new Set(crm.invoices.filter((i) => i.billing_period_start.slice(0, 7) === period).map((i) => i.invoice_id));
+    const audit = ids && crm ? crm.audit.filter((a) => a.action === "payment.confirm" && ids.has(a.target)).map((a) => a.at) : [];
+    const paid = inv.filter((i) => i.period === period && i.paid_at).map((i) => i.paid_at!.length <= 10 ? `${i.paid_at}T00:00:00+07:00` : i.paid_at!);
+    const all = [...audit, ...paid].map((x) => Date.parse(x)).filter((x) => Number.isFinite(x));
+    return all.length ? new Date(Math.max(...all)) : null;
+  }, [demo, crm, inv, period]);
+}
+
 /* ---------- ① ---------- */
 export function PaidGradeCard({ demo, initialOpen = false }: { demo: boolean; initialOpen?: boolean }) {
   const today = demo ? DEMO_DAY : new Date().toISOString().slice(0, 10);
@@ -100,6 +114,7 @@ export function PaidGradeCard({ demo, initialOpen = false }: { demo: boolean; in
   const tr = h ? trend(m.inv, m.gradeAt, h.period, aTo) : [];
   const pick = (x: Grade) => setG(g === x ? null : x);
   const lapsedN = m.grades.filter((r) => r.lapsed).length;
+  const upd = useLastPaidChange(demo, m.inv, h?.period ?? null);
   return (
     <DashCard
       period={k.control}
@@ -112,7 +127,7 @@ export function PaidGradeCard({ demo, initialOpen = false }: { demo: boolean; in
       question="สัญญาไหนจ่ายตรงเวลา และสัดส่วนดีขึ้นหรือแย่ลง?"
       answer={h ? `ชำระแล้ว ${h.now.paid} สัญญา` : "—"}
       answerTone="good"
-      answerSub={h ? `คิดเป็น ${pct1(h.now.paid, h.now.total)}% ของสัญญาทั้งหมด ${h.now.total} สัญญา · อัปเดตจาก AC App ${hhmm(focus.at)}` : undefined}
+      answerSub={h ? `คิดเป็น ${pct1(h.now.paid, h.now.total)}% ของสัญญาทั้งหมด ${h.now.total} สัญญา · อัปเดตจาก AC App ${upd ? hhmm(upd) : "–"}` : undefined}
       noteKey="dp-grade"
       noteNamespace="ac"
       noteLines={h ? [`งวด ${monYY(h.period)} ชำระแล้ว ${h.now.paid} / ${h.now.total} สัญญา`, `เกรด D ${counts.D} สัญญา · C ${counts.C} สัญญา${lapsedN ? ` · ขาดอายุ รอผล ${lapsedN}` : ""}`] : ["ยังไม่มีบิลงวดล่าสุด"]}

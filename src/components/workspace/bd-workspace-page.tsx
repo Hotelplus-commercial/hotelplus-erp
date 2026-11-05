@@ -10,7 +10,8 @@ import { workspaceByDept } from "@/lib/workspace-registry";
 import { WB_TEST_BDS, wbActorOf, wbPendingCount } from "@/lib/welcome-back-routing";
 import { WB } from "@/lib/ps-glossary";
 import { cn } from "@/lib/utils";
-import { RoleSwitcher, WorkspaceShell, type WsRoleState } from "./workspace-shell";
+import { DemoSwitch, RoleSwitcher, WorkspaceShell, type WsRoleState } from "./workspace-shell";
+import { setPsDemoSession } from "@/lib/demo-session";
 import { BdmWelcomeBackSection, refreshWelcomeBack, useWelcomeBackSource } from "./welcome-back-section";
 import { Button } from "@/components/ui/button";
 import { onDemoSessionChange, psDemoOn } from "@/lib/demo-session";
@@ -66,6 +67,7 @@ export function BdWorkspacePage({ demo: urlDemo, ticket, tab: urlTab, onTabChang
           <Button size="sm" variant="outline" className="h-7" onClick={matchPs}>{WB.modeFix}</Button>
         </div>
       )}
+      <DemoSwitch demo={demo} onToggle={(on) => { setPsDemoSession(on); if (!on) setForceNormal(true); onDemoChange?.(on); }} />
       <div className="flex flex-wrap items-center gap-3" data-testid="bd-ws-switcher">
         <RoleSwitcher dept="BD" state={state} />
         {testing && <Badge variant="outline" className="text-xs" data-testid="bd-ws-banner">{WB.banner(role, member)}</Badge>}
