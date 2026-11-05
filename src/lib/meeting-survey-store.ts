@@ -9,7 +9,7 @@ import { useSyncExternalStore } from 'react';
 import { stageCloudDoc } from './cloud-sync';
 import { DEMO_DAY, onDemoSessionChange, psDemoOn, readDemoMs, saveDemoMs } from './demo-session';
 import { MS_COLLECTIONS, type MeetingRecord, type MeetingSurveyData, type MsCollection, type SurveyFlag, type SurveyLabelAnswer, type SurveyRecord } from './meeting-survey-types';
-import { flagDeltaForSurvey, lowScoreTriggers, prevMonth, silentFlags } from './survey-flags';
+import { flagDeltaForSurvey, lowScoreTriggers, prevMonth, silentFlags, surveySignalsFor, type ContractRef } from './survey-flags';
 import { demoContractOf, surveyFlagsDemo } from './survey-flags-demo';
 import { meetingSurveyDemoData } from './meeting-survey-demo';
 import { allMeetings } from './orm-meeting';
@@ -221,6 +221,10 @@ export function runMonthClose(demo = isMsDemo()): number {
   const add = silentFlags(d, closed, d.flags ?? [], msNow(demo), { origins: demo ? ['demo', 'booked'] : ['booked'], contractOf: flagContractOf(demo) });
   if (add.length) write((x) => ({ ...x, flags: [...(x.flags ?? []), ...add] }), demo);
   return add.length;
+}
+/** Card ⑦ input: S signals per contract from getMeetings() / getSurveys() / getSurveyLabelAnswers() / getSurveyFlags(). */
+export function surveyContext(data: MeetingSurveyData, demo: boolean) {
+  return (b: ContractRef) => surveySignalsFor(b, data, data.flags ?? [], flagContractOf(demo));
 }
 /** Test hook: forget cached layers (tests reset storage between cases). */
 export function __resetMeetingSurveyStore() { live = null; demoBase = null; emit(); }

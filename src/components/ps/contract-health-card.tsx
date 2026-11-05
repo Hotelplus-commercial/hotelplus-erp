@@ -11,6 +11,7 @@ import { useAccount360 } from "./account-360";
 import { R1_HEALTH, R1_STATUS_TH, R1_TIER_TH, R1_TITLES, R1_TOUR } from "@/lib/ps-glossary";
 import { useTickets, type L0Ticket } from "@/lib/tickets-l0";
 import { recordDay, useContractHealthStore } from "@/lib/contract-health-store";
+import { runMonthClose, surveyContext, useMeetingSurveyData } from "@/lib/meeting-survey-store";
 import { tabR1SimBase } from "@/lib/contract-tab-r1-demo";
 import {
   EMPTY_FILTER, QUICK_KEYS, SIGNAL_GROUPS, ageDays, ageText, buildRows, catalogByKey, daysToEnd, evaluateAlerts, filterRows, highlightRange, isDueSoon,
@@ -55,7 +56,10 @@ export function ContractHealthCard({ data, onOpenTask, ages }: { data: TabR1Data
     const seen = new Set(storeTickets.map((t) => t.ticket_id));
     return [...(data?.seedTickets ?? []).filter((t) => !seen.has(t.ticket_id)), ...storeTickets];
   }, [data?.seedTickets, storeTickets]);
-  const realRows = useMemo(() => (data ? buildRows(data.base, { today, labels: store.labels, snaps: store.snapshots, tickets }) : []), [data, today, store.labels, store.snapshots, tickets]);
+  const ms = useMeetingSurveyData();
+  useEffect(() => { if (mounted) runMonthClose(ms.demo); }, [mounted, ms.demo]);
+  const survey = useMemo(() => (mounted && ms.demo === demo ? surveyContext(ms.data, demo) : undefined), [mounted, ms.data, ms.demo, demo]);
+  const realRows = useMemo(() => (data ? buildRows(data.base, { today, labels: store.labels, snaps: store.snapshots, tickets, survey }) : []), [data, today, store.labels, store.snapshots, tickets, survey]);
   const simRows = useMemo(() => (demo && sim ? buildRows(tabR1SimBase(), { today, labels: [], snaps: [], tickets: [] }) : []), [demo, sim, today]);
   const rows = useMemo(() => [...realRows, ...simRows], [realRows, simRows]);
 
@@ -228,6 +232,8 @@ function HealthRowView({ r, q, today, first, canCreate, onCreate, onOpen, onOpen
 }) {
   const mark = tierMark(r.tier, r.tier30);
   const due = isDueSoon(r, today) ? daysToEnd(r, today) : null;
+  const sKeys = new Set(r.signals.filter((s) => s.src === "S").map((s) => s.key));
+  const aeShown = r.ae_labels.filter((l) => !sKeys.has(l.label_key));
   const stop = (e: { stopPropagation: () => void }) => e.stopPropagation();
   const chip = (key: string, label: string, dir: string, tip: string[], ae?: boolean, extra?: string) => (
     <ChartHint key={`${ae ? "ae" : "s"}-${key}`} header={label} lines={tip}>
@@ -248,11 +254,16 @@ function HealthRowView({ r, q, today, first, canCreate, onCreate, onOpen, onOpen
       </td>
       <td data-label={R1_HEALTH.cols.signals} className="r1-sigcell">
         <div className="r1-zone"><span className="r1-zone-label">{R1_HEALTH.zoneSystem}</span><div className="r1-chips">
-          {r.signals.length ? r.signals.map((s) => chip(s.key, s.key === "OVERDUE_OTHER" ? R1_HEALTH.otherOverdue : s.label, s.dir, [`${s.group}. ${SIGNAL_GROUPS[s.group]}`, s.rule], false, s.key === "OVERDUE_OTHER" ? "is-amber" : undefined)) : <span className="r1-muted">{R1_HEALTH.notFound}</span>}
+          {r.signals.length ? r.signals.map((s) => {
+            // CH14: an AE ✎ label equal to an S label shows once here; the AE entry moves into the tooltip.
+            const aeSame = s.src === "S" ? r.ae_labels.filter((l) => l.label_key === s.key).map((l) => `AE ✎ · ${R1_HEALTH.savedBy(l.created_by.display, thDate(l.created_at))}`) : [];
+            const tip = s.src === "S" ? [...(s.tip ?? []), ...aeSame] : [`${s.group}. ${SIGNAL_GROUPS[s.group]}`, s.rule, ...(s.tip ?? [])];
+            return chip(s.key, s.key === "OVERDUE_OTHER" ? R1_HEALTH.otherOverdue : s.label, s.dir, tip, false, s.key === "OVERDUE_OTHER" || s.amber ? "is-amber" : undefined);
+          }) : <span className="r1-muted">{R1_HEALTH.notFound}</span>}
         </div></div>
-        {r.ae_labels.length > 0 && (
+        {aeShown.length > 0 && (
           <div className="r1-zone"><span className="r1-zone-label">{R1_HEALTH.zoneAe}</span><div className="r1-chips">
-            {r.ae_labels.map((l) => { const e = catalogByKey.get(l.label_key); if (!e) return null; return chip(l.label_key, e.label, e.dir, [`${e.group}. ${SIGNAL_GROUPS[e.group]}`, R1_HEALTH.savedBy(l.created_by.display, thDate(l.created_at))], true); })}
+            {aeShown.map((l) => { const e = catalogByKey.get(l.label_key); if (!e) return null; return chip(l.label_key, e.label, e.dir, [`${e.group}. ${SIGNAL_GROUPS[e.group]}`, R1_HEALTH.savedBy(l.created_by.display, thDate(l.created_at))], true); })}
           </div></div>
         )}
       </td>
