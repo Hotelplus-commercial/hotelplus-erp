@@ -36,7 +36,6 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  allMeetings,
   currentUserByRole,
   availableSlots,
   mmHotels,
@@ -45,6 +44,10 @@ import {
   type MeetingStatus,
 } from "@/lib/orm-meeting";
 import { cn } from "@/lib/utils";
+import type { Meeting } from "@/lib/orm-meeting";
+import type { MeetingChannel } from "@/lib/meeting-survey-types";
+import { bookMeeting, useMeetingSurveyData } from "@/lib/meeting-survey-store";
+import { CHANNEL_HINT, CHANNEL_LABEL, SURVEY_TODO, channelLabel, channelOptions, surveyRequired } from "@/lib/survey-v2";
 
 export const Route = createFileRoute("/ps/ae-workspace/meetings")({
   head: () => ({
@@ -95,24 +98,38 @@ function MeetingsTab() {
   const [note, setNote] = useState("");
   const [postponeFor, setPostponeFor] = useState<string | null>(null);
   const [scope, setScope] = useState<"my" | "team">("team");
+  const [service, setService] = useState<"ORM" | "MARCOM">("ORM");
+  const [channel, setChannel] = useState<MeetingChannel | null>(null);
   const me = currentUserByRole[role];
+  const { data } = useMeetingSurveyData();
+  /* One read path: sample meetings + booked + DEMO entries (survey-queue / calendar rows belong to other pages). */
+  const allMeetings = useMemo(() => data.meetings.filter((r) => r.origin === "meetings" || r.origin === "booked" || r.origin === "demo").map((r) => {
+    const base = (r.raw as Meeting | undefined) ?? ({ id: r.id, hotel: r.hotel, tier: (r.tier === "—" ? "C" : r.tier), orm: "—", ae: r.ae_display ?? r.ae, date: r.date, status: r.status, survey: data.surveys.some((x) => x.meeting_id === r.id) ? "Submitted" : "—", email: r.contact_email ?? "" } as Meeting);
+    return { ...base, channel: r.channel ?? null, service: r.service, origin: r.origin };
+  }), [data]);
 
   const rows = useMemo(
     () =>
       allMeetings.filter(
         (m) =>
           (status === "All" || m.status === status) &&
-          (mtype === "All" || meetingTypeOf(m.id) === (mtype === "ORM" ? "ORM" : "MARCOM")) &&
+          (mtype === "All" || (m.origin === "meetings" ? meetingTypeOf(m.id) : m.service) === (mtype === "ORM" ? "ORM" : "MARCOM")) &&
           (tier === "All" || m.tier === tier) &&
           (scope === "team" || m.ae === me) &&
           (search === "" ||
             m.hotel.toLowerCase().includes(search.toLowerCase()) ||
             (m.hotel2 ?? "").toLowerCase().includes(search.toLowerCase())),
       ),
-    [status, mtype, tier, search, scope, me],
+    [status, mtype, tier, search, scope, me, allMeetings],
   );
 
   const selected = mmHotels.find((h) => h.name === hotel);
+  const chOpt = channelOptions(service, selected?.tier ?? "A");
+  const chValue: MeetingChannel = channel && chOpt.options.includes(channel) ? channel : chOpt.def;
+  const book = (status: string) => {
+    if (!selected) return;
+    bookMeeting({ hotel: selected.name, service, tier: selected.tier, ae: me, contact_email: selected.email, date: "", date_label: slot || null, status, channel: chValue });
+  };
   const canSend = Boolean(hotel && slot && (!multi || hotel2));
 
   const reset = () => {
@@ -121,6 +138,8 @@ function MeetingsTab() {
     setHotel2("");
     setSlot("");
     setNote("");
+    setService("ORM");
+    setChannel(null);
   };
 
   return (
@@ -209,6 +228,7 @@ function MeetingsTab() {
                   <TableHead>Tier · %</TableHead>
                   <TableHead>ORM</TableHead>
                   <TableHead>Date</TableHead>
+                  <TableHead>ช่องทาง</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Survey</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -224,7 +244,7 @@ function MeetingsTab() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <TypeBadge type={meetingTypeOf(m.id)} />
+                      <TypeBadge type={m.origin === "meetings" ? meetingTypeOf(m.id) : m.service} />
                     </TableCell>
                     <TableCell>
                       <span className="text-sm">{m.ae}</span>
@@ -248,8 +268,9 @@ function MeetingsTab() {
                         </span>
                       )}
                     </TableCell>
+                    <TableCell className="whitespace-nowrap text-sm">{channelLabel(m.channel)}</TableCell>
                     <TableCell>
-                      <Chip tone={statusTone[m.status]}>{m.status}</Chip>
+                      <Chip tone={statusTone[m.status] ?? "muted"}>{m.status}</Chip>
                     </TableCell>
                     <TableCell>
                       <span
@@ -258,7 +279,7 @@ function MeetingsTab() {
                           m.survey === "—" && "text-muted-foreground",
                         )}
                       >
-                        {m.survey}
+                        {m.status === "Completed" && m.survey === "—" ? (surveyRequired(m.channel) ? SURVEY_TODO : "—") : m.survey}
                       </span>
                     </TableCell>
                     <TableCell className="text-right">
@@ -333,6 +354,24 @@ function MeetingsTab() {
                 </SelectContent>
               </Select>
             </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <Label className="text-xs">บริการ</Label>
+                <Select value={service} onValueChange={(v) => setService(v as "ORM" | "MARCOM")}>
+                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="ORM">ORM</SelectItem><SelectItem value="MARCOM">Marcom</SelectItem></SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs">ช่องทาง</Label>
+                <Select value={chValue} onValueChange={(v) => setChannel(v as MeetingChannel)} disabled={chOpt.readOnly}>
+                  <SelectTrigger className="mt-1" aria-label="ช่องทาง"><SelectValue /></SelectTrigger>
+                  <SelectContent>{chOpt.options.map((c) => <SelectItem key={c} value={c}>{CHANNEL_LABEL[c]}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            </div>
+            {!chOpt.readOnly && <p className="-mt-2 text-xs text-muted-foreground">{CHANNEL_HINT}</p>}
 
             <Label className="flex items-center gap-2 text-sm font-normal">
               <Checkbox checked={multi} onCheckedChange={(v) => setMulti(v === true)} />
@@ -415,6 +454,7 @@ function MeetingsTab() {
             <Button
               variant="outline"
               onClick={() => {
+                book("Draft");
                 toast.success("บันทึกเป็น Draft แล้ว");
                 setDraftOpen(false);
                 reset();
@@ -425,6 +465,7 @@ function MeetingsTab() {
             <Button
               disabled={!canSend}
               onClick={() => {
+                book("Sent");
                 toast.success(`ส่งอีเมลเชิญประชุมไปที่ ${selected?.email ?? "ลูกค้า"} แล้ว`);
                 setDraftOpen(false);
                 reset();
