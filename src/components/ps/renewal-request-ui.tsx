@@ -14,10 +14,12 @@ import {
   approveRequest, entityClosed, isRenewalDemo, liveLinkPathFor, latestRequestFor,
   renewalConfig, renewalNow, returnBack, sendRenewalLink, signRequest, signedAwaitingDone, startRenewal, useRenewalStore,
 } from "@/lib/renewal-store";
+import { AeOfferLine, RenewStartLine, deltaText, termsText, useRenewalOffer } from "@/components/ps/renewal-offer-section";
+import { RO } from "@/lib/ps-glossary";
 import { addAttachment, attachmentError, ticketById, useTickets, STATUS_TH, type L0Ticket } from "@/lib/tickets-l0";
 
 const thb = (n: number) => `฿${n.toLocaleString("th-TH")}`;
-export const recoLabel = (r: RecoSnapshot) => r.type === "RAISE" ? RENEWAL_RECO_TH.RAISE(r.band_min_pct ?? 0, r.band_max_pct ?? 0) : RENEWAL_RECO_TH[r.type];
+export const recoLabel = (r: RecoSnapshot) => r.type === "RAISE" ? RENEWAL_RECO_TH.RAISE(r.band_min_pct ?? 0, r.band_max_pct ?? 0) : r.type === "LOWER" ? RO.type.LOWER : RENEWAL_RECO_TH[r.type];
 const toneOf = (s: RenewalRequest["status"]) => s === "SIGNED" || s === "READY_TO_SEND" || s === "APPROVED" ? "success" : s === "RETURNED" || s === "PENDING_APPROVAL" ? "warn" : s === "DECLINED" ? "danger" : "muted";
 
 export function RecoBox({ reco, oldFee }: { reco: RecoSnapshot; oldFee?: number }) {
@@ -78,6 +80,7 @@ export function RenewalRequestPanel({ card, currentUser }: { card: RenewalCard; 
   const entityTicket = req?.entity_ticket_id ? ticketById(req.entity_ticket_id) : undefined;
   const st = req?.status;
   const liveHref = req ? liveLinkPathFor(req.id) : null;
+  const offerView = useRenewalOffer(card).view; // v1.4 §5 line under the button
 
   return (
     <section className="space-y-2 rounded-xl border p-3">
@@ -91,6 +94,7 @@ export function RenewalRequestPanel({ card, currentUser }: { card: RenewalCard; 
           {entityTicket && <span className="text-xs text-muted-foreground">#{entityTicket.ticket_id} · {STATUS_TH[entityTicket.status]}</span>}
         </div>
       )}
+      {req && st !== "CANCELLED" && <AeOfferLine req={req} />}
       {(st === "LINK_SENT" || st === "SIGNED") && req && (
         <div className="space-y-2 rounded-lg border bg-muted/30 p-2.5 text-sm">
           <div className="flex flex-wrap items-center gap-2">
@@ -117,6 +121,7 @@ export function RenewalRequestPanel({ card, currentUser }: { card: RenewalCard; 
           </>
         )}
       </div>
+      {owner && !done && (!req || st === "CANCELLED") && <RenewStartLine view={offerView} />}
       {miss && (
         <div role="alert" className="flex flex-wrap items-center gap-2 rounded-lg border border-destructive/40 bg-destructive/5 p-2.5 text-sm">
           <span className="min-w-0 flex-1">{miss.text}</span>
@@ -168,6 +173,7 @@ export function RenewalApprovalList({ scope }: { scope: "PM" | "OVERDUE" }) {
                 <dl className="grid grid-cols-[8rem_minmax(0,1fr)] gap-1 text-xs">
                   <dt className="text-muted-foreground">เงื่อนไข</dt><dd>{thb(r.old_terms.fee_amount)} → {thb(r.new_terms.fee_amount)} ({d >= 0 ? "+" : ""}{thb(d)} · {pct.toFixed(1)}%) · {r.changed_fields.map((f) => L.fields[f]).join(", ") || "—"}</dd>
                   <dt className="text-muted-foreground">คำแนะนำระบบ</dt><dd>{recoLabel(r.reco_snapshot)}</dd>
+                  {r.new_terms.billing_model && <V14ApprovalRows r={r} />}
                   <dt className="text-muted-foreground">เหตุผล AE</dt><dd>{r.reason_code ? `${r.reason_code}${r.reason_text ? ` · ${r.reason_text}` : ""}` : "—"}</dd>
                   <dt className="text-muted-foreground">ราคาล่าสุด</dt><dd>{last ? `รอบ ${last.cycle_no} · ${last.fee_amount == null ? "—" : thb(last.fee_amount)} · ${last.effective_from} – ${last.effective_to}` : "—"}</dd>
                   <dt className="text-muted-foreground">เปลี่ยนนิติบุคคล</dt><dd>{t ? `#${t.ticket_id} · ${STATUS_TH[t.status]}` : "ไม่มี"}</dd>
@@ -210,5 +216,20 @@ export function TicketAttachments({ t, by, readOnly }: { t: L0Ticket; by: string
       {!readOnly && list.length < 5 && <input aria-label="แนบไฟล์" type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => onFile(e.target.files?.[0])} />}
       {err && <p role="alert" className="text-warning-foreground">{err}</p>}
     </div>
+  );
+}
+
+/** v1.4 §8 — PM approval detail: package old → new, values old → new, recommendation by values, expected average. */
+function V14ApprovalRows({ r }: { r: RenewalRequest }) {
+  const o = r.old_terms.billing_model, n = r.new_terms.billing_model!;
+  const reco = r.reco_snapshot;
+  const recoText = reco.model ? `${RO.chip[reco.type] ?? RO.none} · ${(reco.values ?? []).map((v) => `${v.key === "commission_pct" ? "Commission" : v.key === "guarantee_fee" ? "Guarantee fee" : "Monthly fee"} ${v.min === v.max ? v.default : `${v.min}–${v.max}`}`).join(" · ") || "—"}` : RO.none;
+  return (
+    <>
+      <dt className="text-muted-foreground">{RO.approval.pkg}</dt><dd data-testid="ro-appr-pkg">{o ? RO.model[o] : "—"} → {RO.model[n]}{o && o !== n ? ` · ${RO.switchTag}` : ""}</dd>
+      <dt className="text-muted-foreground">{RO.approval.values}</dt><dd className="tabular-nums">{termsText(o, r.old_terms)} → {termsText(n, r.new_terms)}</dd>
+      <dt className="text-muted-foreground">{RO.approval.reco}</dt><dd>{recoText}{r.offer_match ? ` · ${RO.match[r.offer_match]}` : ""}</dd>
+      <dt className="text-muted-foreground">{RO.approval.avg}</dt><dd className="tabular-nums">{r.offer_expected_avg == null ? "—" : `฿${Math.round(r.offer_expected_avg).toLocaleString("th-TH")} · ${deltaText(reco.avg_before ?? null, r.offer_expected_avg)}`}</dd>
+    </>
   );
 }
