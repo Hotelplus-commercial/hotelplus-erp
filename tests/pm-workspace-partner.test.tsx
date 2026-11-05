@@ -3,6 +3,7 @@ import { PARTNER_DEMO_CONTRACTS } from '@/lib/debt-partner-demo';
 import { creditTiles, getContractSystemCost, propertySystemHistory, rateCardRows, type PartnerContract } from '@/lib/debt-partner-calc';
 import { DEMO_DAY } from '@/lib/demo-session';
 import { getPartnerData, recordCreditAnswer, recordCreditRequest, saveRateCard, setPartnerDemo, setPropertySystem } from '@/lib/debt-partner-store';
+import * as T from '@/lib/tickets-l0';
 import { setTicketDemo, useTickets, transition, type L0Ticket } from '@/lib/tickets-l0';
 import { CLOUD_DOC_KEYS } from '@/lib/cloud-sync-keys';
 import { creditSections, partnerTodoItems, shutoffActions, tabOfHash } from '@/lib/partner-workspace';
@@ -12,8 +13,6 @@ import { WORKSPACES } from '@/lib/workspace-registry';
 void useTickets;
 
 const reset = () => { setPartnerDemo(false); setPartnerDemo(true); setTicketDemo(false); setTicketDemo(true); };
-const tickets = (): L0Ticket[] => { let out: L0Ticket[] = []; const T = require('@/lib/tickets-l0'); out = T.ticketsSnapshot?.() ?? []; return out; };
-void tickets;
 const hotel = (pid: string, cid: string): PartnerContract => ({ contract_id: cid, hotel: 'Test Hotel', service: 'ORM', allotment: null, start: '2026-01-01', end: null, end_reason: null, property_id: pid });
 
 describe('PM Workspace Partner v1.0', () => {
@@ -100,8 +99,7 @@ describe('PM Workspace Partner v1.0', () => {
     const id = getPartnerData().system_credit_requests.find((r) => r.contract_id === 'C-REJ')!.id;
     const b = recordCreditAnswer({ id, result: 'REJECTED', approved_amount: null, credit_expires_at: null, hotel: 'Rej Hotel', by: 'PM' });
     expect(b.ok && a.ok && b.ticket_id !== a.ticket_id).toBe(true);
-    const T = require('@/lib/tickets-l0');
-    const notices = (T.ticketById ? [a, b].map((x) => x.ok && T.ticketById(x.ticket_id)) : []) as L0Ticket[];
+    const notices = [a, b].map((x) => (x.ok ? T.ticketById(x.ticket_id) : null)) as L0Ticket[];
     expect(notices.map((t) => [t.type, t.target_dept, t.payload.credit_notice?.result])).toEqual([['SYSTEM_CREDIT_NOTICE', 'AC', 'APPROVED'], ['SYSTEM_CREDIT_NOTICE', 'AC', 'REJECTED']]);
   });
 
@@ -121,7 +119,6 @@ describe('PM Workspace Partner v1.0', () => {
 
   it('T9 SYSTEM_SHUTOFF PS: only the assigned AE moves status; PM read-only; unassigned still listed', () => {
     const ids = seedShutoffDemo();
-    const T = require('@/lib/tickets-l0');
     const chaba = T.ticketById(ids.chaba) as L0Ticket; const sala = T.ticketById(ids.sala) as L0Ticket;
     expect([chaba.status, (T.ticketById(ids.twin) as L0Ticket).status, sala.payload.unassigned_owner]).toEqual(['IN_PROGRESS', 'IN_PROGRESS', true]);
     const next = T.allowedNext(chaba, 'PS');
