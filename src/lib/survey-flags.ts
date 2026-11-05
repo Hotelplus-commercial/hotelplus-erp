@@ -79,7 +79,7 @@ export function flagDeltaForSurvey(s: SurveyRecord, answers: SurveyLabelAnswer[]
 }
 
 /** CH3 — month close: per contract + service, completed meetings in each of the 2 last card months and no scored survey in either → SURVEY_SILENT_2M (card month = the month that just closed). */
-export function silentFlags(data: MeetingSurveyData, closedMonth: string, existing: SurveyFlag[], now: string, opts: { origins: string[]; contractOf?: (hotelId: string | null) => string | null }): SurveyFlag[] {
+export function silentFlags(data: MeetingSurveyData, closedMonth: string, existing: SurveyFlag[], now: string, opts: { origins: string[]; contractOf?: ((hotelId: string | null) => string | null) | undefined }): SurveyFlag[] {
   const months = [prevMonth(closedMonth), closedMonth];
   const have = new Set(existing.map(flagKey));
   const groups = new Map<string, MeetingRecord[]>();
