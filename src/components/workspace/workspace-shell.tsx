@@ -22,6 +22,12 @@ import { WB_TEST_BDS, wbActorOf } from "@/lib/welcome-back-routing";
 import { isRenewalTestMode } from "@/lib/renewal-test-actor";
 import { WB } from "@/lib/ps-glossary";
 import { pageDateLabel } from "@/lib/demo-session";
+import { Link } from "@tanstack/react-router";
+import { setPartnerDemo, usePartnerData } from "@/lib/debt-partner-store";
+import { seedShutoffDemo } from "@/lib/partner-todo";
+import { ShutoffDetailRows, ShutoffRowHint, useShutoffActor } from "@/components/workspace/partner-shutoff";
+import { isPsShutoff } from "@/lib/partner-workspace";
+import type { TodoTypeGroup } from "@/lib/workspace-registry";
 
 const fmt = (iso: string) => new Date(iso).toLocaleString("th-TH", { dateStyle: "medium", timeStyle: "short" });
 const RANGES: { key: DateRange; label: string }[] = [{ key: "today", label: "วันนี้" }, { key: "7d", label: "7 วัน" }, { key: "14d", label: "14 วัน" }];
@@ -58,7 +64,12 @@ export function RoleSwitcher({ dept, state }: { dept: Dept; state: WsRoleState }
 /** ONE generic shell (spec Layer 1 §2). Renders only from `config`. R3.2: `roleState` given → the page owns the switcher (not rendered here). */
 export function WorkspaceShell({ config, demo, ticket, roleState, onGoBdm }: { config: WorkspaceConfig; demo: boolean; ticket?: string | undefined; roleState?: WsRoleState; onGoBdm?: () => void }) {
   const [ready, setReady] = useState(false);
-  useEffect(() => { setRenewalDemo(demo); setTicketDemo(demo); setReady(true); }, [demo]);
+  useEffect(() => {
+    setRenewalDemo(demo); setTicketDemo(demo);
+    // PM Workspace Partner v1.0: Partner data follows DEMO; §7 shut-off demo tickets live in the in-memory ticket store only.
+    if (config.dept_key === "PS") { setPartnerDemo(demo); if (demo) seedShutoffDemo(); }
+    setReady(true);
+  }, [demo]); // eslint-disable-line react-hooks/exhaustive-deps
   // R3.1 WB2: BD Workspace adds สวมบท BDM and a BD member pick under สวมบท BD (testing mode only). Default role unchanged.
   const [ownRole, setOwnRole] = useState<Role | "BDM">(config.dept_key);
   const [ownMember, setOwnMember] = useState<string>(WB_TEST_BDS[0].member_id);
@@ -76,6 +87,9 @@ export function WorkspaceShell({ config, demo, ticket, roleState, onGoBdm }: { c
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-xl font-semibold">{config.label}</h2>
         <div className="flex flex-wrap items-center gap-3">
+          {config.dept_key === "PS" && deptRole === "PM" && (
+            <Button asChild size="sm" variant="outline" data-testid="pm-partner-btn"><Link to="/workspace/ps/partners" search={{ demo: demo ? 1 : undefined }}>🤝 จัดการ Partner</Link></Button>
+          )}
           {!roleState && <RoleSwitcher dept={config.dept_key} state={rs} />}
           <div role="group" aria-label="ช่วงวันที่" className="flex rounded-md border p-0.5">
             {RANGES.map((r) => (
@@ -97,7 +111,7 @@ export function WorkspaceShell({ config, demo, ticket, roleState, onGoBdm }: { c
         <Lane title="✅ งานที่ต้องทำ">
           {(config.dept_key === "PS" || config.dept_key === "OFFICE") && <RenewalApprovalList scope={config.dept_key === "PS" ? "PM" : "OVERDUE"} />}
           {config.lanes.todo.length === 0 && config.dept_key !== "PS" && config.dept_key !== "OFFICE" ? <Empty text="ไม่มีงานค้าง 🎉" /> : null}
-          {config.lanes.todo.map((group) => (
+          {config.lanes.todo.map((group) => group.adapter ? <AdapterTodoGroup key={group.key} group={group} person={deptRole} range={range} demo={demo} /> : (
             <div key={group.key} className="min-w-0 space-y-2">
               <h4 className="flex items-center gap-1.5 text-sm font-medium text-warning-foreground"><span aria-hidden="true">{group.icon}</span>{group.label_th}</h4>
               {group.assignment_scope && <PendingAssignList scope={group.assignment_scope} />}
@@ -119,6 +133,28 @@ function Lane({ title, focus, children }: { title: string; focus?: boolean; chil
       <h3 className="text-sm font-medium text-muted-foreground">{title}</h3>
       {children}
     </section>
+  );
+}
+/** L1 TodoTypeGroup with an adapter: hidden when empty. Re-reads on Partner data changes. */
+function AdapterTodoGroup({ group, person, range, demo }: { group: TodoTypeGroup; person: string; range: DateRange; demo: boolean }) {
+  usePartnerData(); useTickets();
+  const items = group.adapter ? (group.adapter({ person, range }) as (ReturnType<NonNullable<TodoTypeGroup["adapter"]>>[number] & { sub?: string })[]) : [];
+  if (!items.length) return null;
+  return (
+    <div className="min-w-0 space-y-2" data-testid={`todo-group-${group.key}`}>
+      <h4 className="flex items-center gap-1.5 text-sm font-medium text-warning-foreground"><span aria-hidden="true">{group.icon}</span>{group.label_th} ({items.length})</h4>
+      <ul className="divide-y rounded-lg border">
+        {items.map((it) => {
+          const [path, hash] = it.route_target.split("#");
+          return (
+            <li key={it.id} className="p-2 text-sm" data-testid="todo-item">
+              <Link to={path as "/workspace/ps/partners"} hash={hash} search={{ demo: demo ? 1 : undefined }} className="font-medium text-primary hover:underline">{it.title}</Link>
+              <div className="flex flex-wrap justify-between gap-2 text-xs text-muted-foreground"><span>{it.sub}</span><span className="tabular-nums">{it.due_relative}</span></div>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }
 const Empty = ({ text }: { text: string }) => <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">{text}</div>;
@@ -178,7 +214,7 @@ function TicketTable({ rows, dept, onOpen }: { rows: L0Ticket[]; dept: Dept; onO
                 {isWatcherOf(t, dept) && <Badge variant="outline" className="ml-1 text-[10px]">👁 FYI</Badge>}
               </td>
               <td className="p-2">{t.payload.severity && <span aria-label={`severity ${t.payload.severity}`} className="mr-1">{SEVERITY_DOT[t.payload.severity]}</span>}{TYPE_TH[t.type]}</td>
-              <td className="p-2">{t.subject_ref.hotel_name} · {t.subject_ref.gap_service}</td>
+              <td className="p-2">{isPsShutoff(t) ? <>ขอปิดระบบ · {t.subject_ref.hotel_name}<ShutoffRowHint t={t} /></> : <>{t.subject_ref.hotel_name} · {t.subject_ref.gap_service}</>}</td>
               <td className="p-2"><Badge variant="secondary">{STATUS_TH[t.status]}</Badge>{t.payload.condition_cleared_at && <Badge variant="outline" className="ml-1 border-warning/50 text-[10px] text-warning-foreground">รอปิด</Badge>}</td>
               <td className="whitespace-nowrap p-2 text-muted-foreground">{fmt(t.created_at)}</td>
             </tr>
@@ -192,7 +228,10 @@ function TicketTable({ rows, dept, onOpen }: { rows: L0Ticket[]; dept: Dept; onO
 function Detail({ t, role, dept, onClose }: { t: L0Ticket; role: Role; dept: Dept; onClose: () => void }) {
   const [msg, setMsg] = useState<string | null>(null);
   const watcher = isWatcherOf(t, dept); // FYI rows are read-only: no status actions.
-  const actions = watcher ? [] : allowedNext(t, role);
+  const shut = useShutoffActor(t);
+  const base = watcher ? [] : allowedNext(t, role);
+  // PM Workspace Partner v1.0 §4: PS-side SYSTEM_SHUTOFF moves only for the assigned AE; PM read-only.
+  const actions = isPsShutoff(t) ? shut.filter(base, role) : base;
   const isBot = t.created_by === SYSTEM_CREATOR;
   return (
     <div className="space-y-3 rounded-md border p-4">
@@ -232,6 +271,7 @@ function Detail({ t, role, dept, onClose }: { t: L0Ticket; role: Role; dept: Dep
           </>
         ))}
         {t.type === "CUSTOMER_ENTITY_CHANGE" && t.payload.entity_change && <><dt className="text-muted-foreground">สิ่งที่เปลี่ยน</dt><dd>{t.payload.entity_change.what} · {t.payload.entity_change.detail}</dd></>}
+        {isPsShutoff(t) && <ShutoffDetailRows t={t} actor={shut} role={role} />}
         <dt className="text-muted-foreground">ผู้สร้าง → แผนก</dt><dd>{isBot ? "The Office" : t.created_by} → {t.target_dept}</dd>
       </dl>
       {t.payload.condition_cleared_at && OPEN_STATUSES.includes(t.status) && (

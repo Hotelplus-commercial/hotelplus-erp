@@ -22,7 +22,7 @@ export function seedShutoffDemo() {
   const sala = mk('PS', 'HP-DP-SALATALAY', 'Sala Talay Resort', 'DP-SALATALAY', null);
   const chaba = mk('PS', 'HP-CT-ORM-Q-ORM-0410', 'Chaba Grand', 'CT-ORM-Q-ORM-0410', { member_id: 'hr-1', nickname: 'Nont' });
   const twin = mk('ORM', 'HP-CT-ORM-Q-ORM-0410', 'Chaba Grand', 'CT-ORM-Q-ORM-0410', null);
-  if (!chaba.deduped) transition(chaba.ticket_id, 1, 'IN_PROGRESS', 'PS');
-  if (!twin.deduped) transition(twin.ticket_id, 1, 'IN_PROGRESS', 'ORM');
+  if (!chaba.deduped) transition(chaba.ticket_id, 0, 'IN_PROGRESS', 'PS');
+  if (!twin.deduped) transition(twin.ticket_id, 0, 'IN_PROGRESS', 'ORM');
   return { sala: sala.ticket_id, chaba: chaba.ticket_id, twin: twin.ticket_id };
 }
