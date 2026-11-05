@@ -216,8 +216,10 @@ function TicketsLane({ dept, role, initialTicket, exclude }: { dept: Dept; role:
   const round = inbound.map((t) => t.payload.generated_round).filter((r): r is string => !!r).sort().pop() ?? new Date().toISOString().slice(0, 10);
   const digest = digestFor(inbound, round);
   const breakdown = (Object.entries(digest.byType) as [keyof typeof TYPE_TH, number][]).map(([k, n]) => `${TYPE_TH[k]} ${n}`).join(" · ");
+  if (exclude && listed.length === 0) return null;
   return (
     <div className="space-y-3">
+      {exclude && <h4 className="border-t pt-2 text-sm font-semibold" data-testid="fyi-lane">👁 แจ้งเพื่อทราบ / ticket อื่น</h4>}
       {(digest.fresh > 0 || digest.carried > 0 || digest.readyToClose > 0) && (
         <p className="rounded-md border bg-muted/40 px-3 py-2 text-xs">
           วันนี้: ใหม่ {digest.fresh}{breakdown ? ` (${breakdown})` : ""} · ค้าง {digest.carried} · รอปิด {digest.readyToClose}
