@@ -1781,7 +1781,7 @@ textarea.r1-input{height:auto;padding:6px 8px;resize:vertical;}
 .rn5-match.is-amber{background:color-mix(in srgb,var(--watch-line) 22%,var(--card));color:var(--watch-text);}
 .rn5-match.is-bad{background:color-mix(in srgb,var(--grade-action) 14%,var(--card));color:var(--action-text);}
 .r1-chip.rn5-ae{border-style:dashed;border-color:currentColor;}
-.r1-chip.rn5-g1{background:color-mix(in srgb,var(--watch-line) 16%,var(--card));color:var(--watch-text);border:1px solid var(--watch-line);}
+.r1-chip.rn5-g1{--rn5-orange:color-mix(in srgb,var(--grade-action) 50%,var(--watch-line));background:color-mix(in srgb,var(--rn5-orange) 14%,var(--card));color:color-mix(in srgb,var(--action-text) 50%,var(--watch-text));border:1px solid var(--rn5-orange);}
 .rn5-chips{display:inline-flex;flex-wrap:wrap;align-items:center;gap:4px;}
 .rn5-chips-label{display:inline-flex;align-items:center;font-size:12px;color:var(--text-secondary);}
 .rn5-chip{font-size:11.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--border-subtle);color:var(--text-secondary);background:var(--bg-card);}
