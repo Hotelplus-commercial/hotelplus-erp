@@ -25,7 +25,8 @@ const Amber = ({ children, testId }: { children: React.ReactNode; testId?: strin
 /** DEMO follows the shared DEMO state (one ticket list: the AC / PM seeds are idempotent, never a second copy). */
 function useSharedDemo() {
   useEffect(() => {
-    const on = psDemoOn();
+    const q = new URLSearchParams(window.location.search).get("demo");
+    const on = q === "1" || (q !== "0" && psDemoOn());
     setPartnerDemo(on); setTicketDemo(on);
     if (on) { seedShutoffDemo(); seedAcBillsDemo(); }
   }, []);
