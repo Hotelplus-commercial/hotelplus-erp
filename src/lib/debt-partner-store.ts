@@ -9,6 +9,7 @@ import { stageCloudDoc } from './cloud-sync';
 import { createTask } from './tickets-l0';
 import { PARTNER_COLLECTIONS, emptyPartnerData, PARTNER_ATTACHMENT_KINDS, type PartnerAttachment, type PartnerCollection, type PartnerData, type PartnerDeal, type PartnerRateCard, type PartnerRateCardTier, type PropertyPartnerSystem, type SystemCreditRequest } from './debt-partner-types';
 import { partnerDemoData } from './debt-partner-demo';
+import { deletePartnerFile, getPartnerFile, partnerFileError, putPartnerFile, setPartnerFilesMemoryOnly } from './partner-files';
 
 export const PARTNER_STORAGE_KEY = (c: PartnerCollection) => `meridia.${c}.v1`;
 export const PARTNER_DOC_KEY = (c: PartnerCollection) => `partner:${c}`;
@@ -39,6 +40,8 @@ export const partnerDataFor = (isDemo: boolean): PartnerData => (isDemo ? demo :
 export function setPartnerDemo(on: boolean) {
   if (on === demoOn) return;
   demoOn = on; if (on) demo = partnerDemoData();
+  setPartnerFilesMemoryOnly(on); // v1.2: DEMO uploads stay in memory
+
   emit();
 }
 
@@ -92,14 +95,76 @@ export function addPartnerAttachment(partnerId: string, i: PartnerAttachmentInpu
   return editAttachments(partnerId, (a) => [...a, { id, ...clean(i), added_by: by, added_at: nowIso() }]) ? { ok: true, id } : { ok: false, error: 'ไม่พบ Partner' };
 }
 export function updatePartnerAttachment(partnerId: string, attachmentId: string, i: PartnerAttachmentInput): AttRes {
+  /* v1.2: uploaded files have no link — edit keeps url / file fields, changes name, kind, note only. */
+  const ex = getPartnerData().partners.find((p) => p.id === partnerId)?.attachments?.find((a) => a.id === attachmentId);
+  if (ex?.source === 'UPLOAD') {
+    const e = partnerAttachmentError({ ...i, url: 'https://x' }); if (e) return { ok: false, error: e };
+    return editAttachments(partnerId, (a) => a.map((x) => { if (x.id !== attachmentId) return x; const { note: _n, ...rest } = x; void _n; return { ...rest, name: i.name.trim(), kind: i.kind as PartnerAttachment['kind'], ...(i.note?.trim() ? { note: i.note.trim() } : {}) }; }))
+      ? { ok: true, id: attachmentId } : { ok: false, error: 'ไม่พบเอกสาร' };
+  }
   const e = partnerAttachmentError(i); if (e) return { ok: false, error: e };
   return editAttachments(partnerId, (a) => (a.some((x) => x.id === attachmentId) ? a.map((x) => { if (x.id !== attachmentId) return x; const { note: _n, ...rest } = x; void _n; return { ...rest, ...clean(i) }; }) : null))
     ? { ok: true, id: attachmentId } : { ok: false, error: 'ไม่พบเอกสาร' };
 }
 export function removePartnerAttachment(partnerId: string, attachmentId: string): AttRes {
+  /* v1.2 §4.5: deleting an uploaded item also deletes its local bytes. */
+  const ref = getPartnerData().partners.find((p) => p.id === partnerId)?.attachments?.find((a) => a.id === attachmentId)?.file_ref;
+  if (ref) void deletePartnerFile(ref);
   return editAttachments(partnerId, (a) => (a.some((x) => x.id === attachmentId) ? a.filter((x) => x.id !== attachmentId) : null))
     ? { ok: true, id: attachmentId } : { ok: false, error: 'ไม่พบเอกสาร' };
 }
+/* ---------------- PM Workspace Partner v1.2 — edit Partner, uploads, delivery to the storage location ---------------- */
+export type PartnerInfoInput = { name: string; contact_name?: string; contact_email?: string; contact_phone?: string; doc_folder_url?: string; note?: string };
+export function partnerInfoError(id: string, i: PartnerInfoInput): string | null {
+  const n = i.name.trim(); if (!n) return 'ใส่ชื่อ Partner';
+  if (getPartnerData().partners.some((p) => p.id !== id && p.name.toLowerCase() === n.toLowerCase())) return 'มี Partner ชื่อนี้แล้ว';
+  if (i.doc_folder_url?.trim() && !/^https:\/\/\S+$/.test(i.doc_folder_url.trim())) return 'ที่เก็บเอกสารต้องขึ้นต้นด้วย https://';
+  if (i.contact_email?.trim() && !/^\S+@\S+\.\S+$/.test(i.contact_email.trim())) return 'อีเมลไม่ถูกต้อง';
+  return null;
+}
+/** Edit Partner (name / contact / storage location / note). Empty optional field = removed. */
+export function updatePartner(id: string, i: PartnerInfoInput): AttRes {
+  const err = partnerInfoError(id, i); if (err) return { ok: false, error: err };
+  const d = getPartnerData(); if (!d.partners.some((p) => p.id === id)) return { ok: false, error: 'ไม่พบ Partner' };
+  const keys = ['contact_name', 'contact_email', 'contact_phone', 'doc_folder_url', 'note'] as const;
+  write('partners', d.partners.map((p) => {
+    if (p.id !== id) return p;
+    const next = { ...p, name: i.name.trim() } as Record<string, unknown>;
+    for (const k of keys) { const v = i[k]?.trim(); if (v) next[k] = v; else delete next[k]; }
+    return next as unknown as typeof p;
+  }));
+  return { ok: true, id };
+}
+/** Uploads: bytes go to the local file store; metadata (PENDING) goes to the partners collection. */
+export async function addPartnerUploads(partnerId: string, files: File[], kind: string, by: string): Promise<{ added: string[]; errors: string[] }> {
+  if (!(PARTNER_ATTACHMENT_KINDS as readonly string[]).includes(kind)) return { added: [], errors: ['เลือกประเภทเอกสาร'] };
+  const errors: string[] = []; const items: PartnerAttachment[] = [];
+  for (const f of files) {
+    const e = partnerFileError(f); if (e) { errors.push(e); continue; }
+    const id = uid('ATT'); const file_ref = uid('FILE');
+    await putPartnerFile(file_ref, f);
+    items.push({ id, name: f.name, kind: kind as PartnerAttachment['kind'], url: '', added_by: by, added_at: nowIso(), source: 'UPLOAD', file_ref, size: f.size, mime: f.type || 'application/octet-stream', storage_status: 'PENDING' });
+  }
+  if (items.length && !editAttachments(partnerId, (a) => [...a, ...items])) return { added: [], errors: [...errors, 'ไม่พบ Partner'] };
+  return { added: items.map((x) => x.id), errors };
+}
+/** Status of an item (v1.1 link items = LINK + STORED). */
+export const attachmentStatus = (a: PartnerAttachment): 'STORED' | 'PENDING' | 'LINK' =>
+  a.source === 'UPLOAD' ? (a.storage_status === 'STORED' ? 'STORED' : 'PENDING') : 'LINK';
+/** The one delivery function (§4.4). Google Drive not connected → leaves PENDING. When a Drive connector exists,
+ *  only this function changes: upload the bytes to the Partner's doc_folder_url, then mark STORED + stored_url. */
+export type PartnerDriveConnector = (folderUrl: string, file: Blob, name: string) => Promise<string>;
+export async function deliverPartnerFile(partnerId: string, attachmentId: string, connector: PartnerDriveConnector | null = null): Promise<{ ok: true; stored_url: string } | { ok: false; reason: 'NOT_CONNECTED' | 'NO_FOLDER' | 'NOT_FOUND' }> {
+  if (!connector) return { ok: false, reason: 'NOT_CONNECTED' };
+  const p = getPartnerData().partners.find((x) => x.id === partnerId); const a = p?.attachments?.find((x) => x.id === attachmentId);
+  if (!p || !a?.file_ref) return { ok: false, reason: 'NOT_FOUND' };
+  if (!p.doc_folder_url) return { ok: false, reason: 'NO_FOLDER' };
+  const blob = await getPartnerFile(a.file_ref); if (!blob) return { ok: false, reason: 'NOT_FOUND' };
+  const stored_url = await connector(p.doc_folder_url, blob, a.name);
+  editAttachments(partnerId, (all) => all.map((x) => (x.id === attachmentId ? { ...x, storage_status: 'STORED', stored_url } : x)));
+  return { ok: true, stored_url };
+}
+
 /** Newest first. */
 export const partnerAttachments = (d: PartnerData, partnerId: string): PartnerAttachment[] =>
   [...(d.partners.find((p) => p.id === partnerId)?.attachments ?? [])].sort((a, b) => b.added_at.localeCompare(a.added_at));

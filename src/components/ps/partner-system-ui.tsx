@@ -105,7 +105,7 @@ export function PropertySystemBlock({ propertyId, isPm }: { propertyId: string; 
       <div>
         <p className="text-xs font-medium text-muted-foreground">ประวัติ</p>
         <ul className="text-xs" data-testid="hp-system-history">
-          {hist.map((h) => <li key={h.id} data-testid="hp-history-row">{h.effective_from.slice(0, 10) > today() && <span className="mr-1 rounded-full bg-warning/15 px-2 py-0.5 font-medium text-warning-foreground" data-testid="hp-pending-tag">{partnerName(d, h.partner_id)} · รอมีผล {dmy(h.effective_from)}</span>}{h.effective_from} · {partnerName(d, h.partner_id)} · {h.system_name} · allotment {h.allotment ?? "—"} · โดย {h.set_by}{h.note ? ` · ${h.note}` : ""}</li>)}
+          {hist.map((h) => <li key={h.id} data-testid="hp-history-row">{h.effective_from.slice(0, 10) > today() && <span className="mr-1 rounded-full bg-warning/15 px-2 py-0.5 font-medium text-warning-foreground" data-testid="hp-pending-tag">{partnerName(d, h.partner_id)} · รอมีผล {dmy(h.effective_from)}</span>}{dmy(h.effective_from) /* v1.2 §5.3: app date style */} · {partnerName(d, h.partner_id)} · {h.system_name} · allotment {h.allotment ?? "—"} · โดย {h.set_by}{h.note ? ` · ${h.note}` : ""}</li>)}
           {!hist.length && <li className="text-muted-foreground">ยังไม่มีประวัติ</li>}
         </ul>
       </div>

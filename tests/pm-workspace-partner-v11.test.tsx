@@ -67,16 +67,18 @@ describe('PM Workspace Partner v1.1', () => {
     expect(addPartnerAttachment(pid, { name: '', kind: 'สัญญา Partner', url: 'https://x' }, 'PM').ok).toBe(false);
     expect(addPartnerAttachment(pid, { name: 'A', kind: 'ผิด', url: 'https://x' }, 'PM').ok).toBe(false);
     expect(addPartnerAttachment(pid, { name: 'A', kind: 'สัญญา Partner', url: 'http://x' }, 'PM').ok).toBe(false);
+    const before = partnerAttachments(getPartnerData(), pid).length; // v1.2 §8: DEMO Hotelier.guru now has 1 link document
     const a = addPartnerAttachment(pid, { name: 'สัญญา 2026', kind: 'สัญญา Partner', url: 'https://drive.google.com/a' }, 'PM');
     expect(a.ok).toBe(true);
-    expect(partnerAttachments(getPartnerData(), pid).length).toBe(1);
+    expect(partnerAttachments(getPartnerData(), pid).length).toBe(before + 1);
     if (!a.ok) return;
     expect(updatePartnerAttachment(pid, a.id, { name: 'สัญญา 2027', kind: 'อื่น ๆ', url: 'https://drive.google.com/b' }).ok).toBe(true);
     expect(partnerAttachments(getPartnerData(), pid)[0]!.name).toBe('สัญญา 2027');
     expect(removePartnerAttachment(pid, a.id).ok).toBe(true);
-    expect(partnerAttachments(getPartnerData(), pid).length).toBe(0);
+    expect(partnerAttachments(getPartnerData(), pid).length).toBe(before);
+    // v1.2 §4.3–4.4 supersedes the disabled upload button: uploads are allowed and wait as "รอส่งเข้าที่เก็บ · ยังไม่ได้เชื่อม Google Drive"
     const ui = src('src/components/ps/partner-attachments.tsx');
-    expect(ui).toContain('disabled title="ยังไม่ได้เชื่อม Google Drive"');
+    expect(ui).toContain('ยังไม่ได้เชื่อม Google Drive');
   });
 
   it('8/9 Mae Ping: current OTA Hub, future StayLink 1 Dec 26 on top of history; demo hotel resolvable', () => {

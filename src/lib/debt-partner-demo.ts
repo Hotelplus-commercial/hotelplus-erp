@@ -51,7 +51,7 @@ const deal = (d: Partial<PartnerDeal> & Pick<PartnerDeal, 'id' | 'partner_id' | 
   ac_ticket_id: null, created_by: 'PM001-Alex', created_at: at, updated_at: at, ...d,
 });
 
-export function partnerDemoData(): PartnerData {
+function partnerDemoBase(): PartnerData {
   const hg = PARTNER_DEMO_CONTRACTS.filter((c) => c.contract_id === 'CT-ORM-Q-ORM-0410' || c.contract_id.startsWith('DP-HG-'));
   const sl = PARTNER_DEMO_CONTRACTS.filter((c) => c.contract_id.startsWith('DP-SL-'));
   const oh = PARTNER_DEMO_CONTRACTS.filter((c) => c.contract_id.startsWith('DP-OH-'));
@@ -105,5 +105,28 @@ export function partnerDemoData(): PartnerData {
       { id: 'PPS-MAEPING-2', property_id: 'HP-MAEPING', partner_id: P.SL, system_name: 'Channel Manager', effective_from: '2026-12-01', allotment: 35, set_by: 'PM001-Alex', set_at: '2026-10-20T09:00:00.000Z', note: 'ย้ายไป StayLink ตามสัญญาใหม่' },
     ],
     system_credit_usage: [{ id: 'CU-1', credit_request_id: 'CR-SEEFAH', partner_bill_ref: 'Oct 26', amount: 3400, used_at: '2026-10-10', recorded_by: 'AC001' }],
+  };
+}
+
+/* PM Workspace Partner v1.2 §8 (PW34) — added in memory on top of the base bundle (no existing row values changed):
+ * StayLink storage location + one PENDING upload · Hotelier.guru storage location + one link document ·
+ * OTA Hub without a storage location. Unknown contact details stay placeholders. */
+export const PARTNER_DEMO_FOLDERS = {
+  [P.SL]: 'https://drive.google.com/drive/folders/Partners/StayLink',
+  [P.HG]: 'https://drive.google.com/drive/folders/Partners/Hotelier.guru',
+} as Record<string, string>;
+export function partnerDemoData(): PartnerData {
+  const d = partnerDemoBase();
+  return {
+    ...d,
+    partners: d.partners.map((p) => {
+      if (p.id === P.SL) return { ...p, doc_folder_url: PARTNER_DEMO_FOLDERS[P.SL]!, contact_name: '[ชื่อผู้ติดต่อ]', contact_email: '[อีเมล]',
+        attachments: [{ id: 'ATT-DEMO-SL-1', name: '[ชื่อไฟล์สัญญา StayLink].pdf', kind: 'สัญญา Partner' as const, url: '', added_by: 'PM001-Alex', added_at: '2026-10-27T09:00:00.000Z',
+          source: 'UPLOAD' as const, file_ref: 'DEMO-FILE-SL-1', size: 245760, mime: 'application/pdf', storage_status: 'PENDING' as const }] };
+      if (p.id === P.HG) return { ...p, doc_folder_url: PARTNER_DEMO_FOLDERS[P.HG]!, contact_name: '[ชื่อผู้ติดต่อ]', contact_email: '[อีเมล]',
+        attachments: [{ id: 'ATT-DEMO-HG-1', name: '[ใบเสนอราคา Hotelier.guru 2026]', kind: 'ใบเสนอราคา / Rate Card' as const, url: 'https://drive.google.com/file/d/demo-hotelier-rate-card', added_by: 'PM001-Alex', added_at: '2026-06-20T09:00:00.000Z',
+          source: 'LINK' as const, storage_status: 'STORED' as const }] };
+      return p;
+    }),
   };
 }
