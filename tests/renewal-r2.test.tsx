@@ -209,7 +209,7 @@ describe('§8 / §19', () => {
     expect(RN2.tour[3]!.text).toContain('ตัวเลขด้านบนไม่เปลี่ยน');
   });
   test('19 · header demo “ใช้งาน” / “หลุด” unchanged by the renewal additions; demo shows the §11 cases', () => {
-    expect(tabR1HeaderActive()).toHaveLength(3);
+    expect(tabR1HeaderActive()).toHaveLength(4); // v1.4.1 RN52: + late renewal R1-O8 (Q58 additions; lapsed ones are not ใช้งาน)
     expect(tabR1HeaderChurn().filter((r) => r.out).length).toBe(4);
     expect(item('CT-MAR-Q-MAR-0388').stage).toBe('LOST_OR_DECLINED');
     expect(item('CT-ORM-Q-ORM-0402').outcome).toBe('LOST');

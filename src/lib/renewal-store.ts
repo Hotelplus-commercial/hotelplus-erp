@@ -208,7 +208,8 @@ function demoSourceFor(cid: string): { sc: SourceContract; row: Contract | null 
     demo_fallback: true, empty_fields: flow ? [...empty, 'inactive'] : empty,
   };
   const main = contractFromSource(sc, DEMO_NOW);
-  const row = flow ? { ...main, billing_status: 'TERMINATED' as const, inactivated_at: `${end}T00:00:00.000Z`, ...(flow.renewal_of ? { renewal_of: flow.renewal_of } : {}) } : main;
+  const renewOf = tabR1DemoFlow().find((f) => f.contract_id === cid)?.renewal_of; // v1.4.1: an active demo renewal (R1-O8) also points to its source
+  const row = flow ? { ...main, billing_status: 'TERMINATED' as const, inactivated_at: `${end}T00:00:00.000Z`, ...(flow.renewal_of ? { renewal_of: flow.renewal_of } : {}) } : renewOf ? { ...main, renewal_of: renewOf } : main;
   return { sc, row: start ? row : null };
 }
 function materialiseDemo(cid: string, sync = true): SourceContract | null {
