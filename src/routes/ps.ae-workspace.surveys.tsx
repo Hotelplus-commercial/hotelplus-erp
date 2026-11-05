@@ -351,9 +351,13 @@ function SurveyForm({ target, onClose }: { target: FormTarget; onClose: () => vo
   const { card, preview } = target;
   const sectionKey = card.type === "ORM" ? "ORM" : "MARCOM";
   const tm = useTemplateMgmt();
+  /** A survey keeps the version it was created with; a new survey uses the active setting at the time it opens. */
+  const [version] = useState(() => card.survey?.template_version ?? tm.surveyVersion);
   const def = tm.surveyFor(card.id, sectionKey === "ORM" ? "ORM_MONTHLY" : "MARCOM_MONTHLY");
   const questions = v4SurveyQuestions
     .filter((q) => q.section === sectionKey || q.section === "OVERALL")
+    /* §6 AS19 — referral question Q8 hidden and not required (column and old data kept). */
+    .filter((q) => q.key !== "Q8")
     .map((q) => ({ ...q, text: def.q[q.key] ?? q.text, open: q.key === SURVEY_OPEN_KEY ? true : q.open }));
   const scored = questions.filter((q) => !q.open);
 
@@ -361,14 +365,35 @@ function SurveyForm({ target, onClose }: { target: FormTarget; onClose: () => vo
   const [comments, setComments] = useState<Record<string, string>>({});
   const [open9, setOpen9] = useState("");
   const [notes, setNotes] = useState("");
+  const [v2, setV2] = useState<V2Answers>(emptyV2);
+  const [confirmNoScore, setConfirmNoScore] = useState(false);
 
-  const complete = scored.every((q) => scores[q.key] !== undefined);
+  const complete = version === 2 ? v2Complete(card.type, v2) || v2AllUnsure(card.type, v2) : scored.every((q) => scores[q.key] !== undefined);
   const lowCount = scored.filter((q) => (scores[q.key] ?? 10) <= 5).length;
 
   const sectionBg = (s: string) =>
     s === "ORM" ? v4Color.ormTint : s === "MARCOM" ? v4Color.marcomTint : "#F1F5F9";
 
   const groups: ("ORM" | "MARCOM" | "OVERALL")[] = [sectionKey as "ORM" | "MARCOM", "OVERALL"];
+
+  const submit = () => {
+    if (version === 2) {
+      const r = saveSurveyV2(card.meeting, v2);
+      if (!r.ok) { toast.error(r.error); return; }
+      toast.success(isNoScore(r.survey) ? `บันทึกแล้ว · ${NO_SCORE_TH}` : "✅ Survey submitted, customer notified");
+    } else {
+      const r = saveSurveyV1(card.meeting, scores, open9);
+      if (!r.ok) { toast.error(r.error); return; }
+      toast.success(lowCount > 0 ? `✅ Survey submitted, customer notified · สร้าง ${lowCount} flag` : "✅ Survey submitted, customer notified");
+    }
+    onClose();
+  };
+  const noScore = () => {
+    const r = saveNoScore(card.meeting, version === 2 ? v2.comment : open9, version);
+    if (!r.ok) { toast.error(r.error); return; }
+    toast.success(`บันทึกแล้ว · ${NO_SCORE_TH} · ไม่ส่งอีเมลคะแนนให้ลูกค้า`);
+    setConfirmNoScore(false); onClose();
+  };
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
@@ -380,10 +405,13 @@ function SurveyForm({ target, onClose }: { target: FormTarget; onClose: () => vo
           <DialogDescription>
             Meeting Type: {card.type === "ORM" ? "🟦 ORM" : "🟪 Marcom"} · Attendees: {card.attendees},
             Customer (Contact: {card.contact})
-            <span className="block text-[11px]">แม่แบบ v{def.version}{def.help ? ` · ${def.help}` : ""}</span>
+            <span className="block text-[11px]">{version === 2 ? "ชุดที่ 2 (แบบเลือกป้าย)" : <>แม่แบบ v{def.version}{def.help ? ` · ${def.help}` : ""}</>}</span>
           </DialogDescription>
         </DialogHeader>
 
+        {version === 2 ? (
+          <SurveyV2Form service={card.type} value={v2} onChange={setV2} disabled={preview} />
+        ) : (
         <div className="flex flex-col gap-4">
           {groups.map((g) => (
             <div key={g} className="overflow-hidden rounded-xl border">
@@ -434,6 +462,8 @@ function SurveyForm({ target, onClose }: { target: FormTarget; onClose: () => vo
               </div>
             </div>
           ))}
+        </div>
+        )}
 
           <div className="rounded-xl border p-3">
             <p className="text-sm font-semibold">【 Take Notes 】 (AE internal)</p>
@@ -448,27 +478,19 @@ function SurveyForm({ target, onClose }: { target: FormTarget; onClose: () => vo
               This is for your internal reference only. Not shared with customer.
             </p>
           </div>
-        </div>
 
-        <DialogFooter>
+        <DialogFooter className="flex-wrap gap-2">
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
+          {!preview && (
+            <Button variant="secondary" onClick={() => setConfirmNoScore(true)}>{NO_SCORE_TH}</Button>
+          )}
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
                 <span>
-                  <Button
-                    disabled={preview || !complete}
-                    onClick={() => {
-                      toast.success(
-                        lowCount > 0
-                          ? `✅ Survey submitted, customer notified · สร้าง ${lowCount} flag`
-                          : "✅ Survey submitted, customer notified",
-                      );
-                      onClose();
-                    }}
-                  >
+                  <Button disabled={preview || !complete} onClick={submit}>
                     Submit Survey
                   </Button>
                 </span>
@@ -482,6 +504,37 @@ function SurveyForm({ target, onClose }: { target: FormTarget; onClose: () => vo
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
+        </DialogFooter>
+        {confirmNoScore && (
+          <div className="rounded-xl border border-destructive/40 bg-muted p-3 text-sm" role="alertdialog" aria-label={NO_SCORE_TH}>
+            <p>{NO_SCORE_CONFIRM}</p>
+            <div className="mt-2 flex gap-2">
+              <Button size="sm" variant="outline" onClick={() => setConfirmNoScore(false)}>ยกเลิก</Button>
+              <Button size="sm" onClick={noScore}>ยืนยัน</Button>
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function LinkDialog({ survey, onClose }: { survey: SurveyRecord; onClose: () => void }) {
+  const { data } = useMeetingSurveyData();
+  const meeting = data.meetings.find((m) => m.id === survey.meeting_id);
+  const url = typeof window !== "undefined" ? `${window.location.origin}/l/survey/${survey.link_token}` : `/l/survey/${survey.link_token}`;
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>ลิงก์ให้ลูกค้าตอบเอง — {survey.hotel}</DialogTitle>
+          <DialogDescription>1 ลิงก์ต่อ 1 ประชุม · ส่งซ้ำไม่ได้ · {survey.link_expires_at ? linkSentTag(survey.link_expires_at) : ""}</DialogDescription>
+        </DialogHeader>
+        <Input readOnly value={url} aria-label="ลิงก์ Survey" onFocus={(e) => e.target.select()} />
+        <DialogFooter className="flex-wrap gap-2">
+          <Button variant="outline" onClick={() => { void navigator.clipboard?.writeText(url).catch(() => undefined); toast.success("คัดลอกลิงก์แล้ว"); }}>Copy</Button>
+          <Button variant="outline" onClick={() => toast.success(`ส่งลิงก์ทางอีเมลไปที่ ${meeting?.contact_email ?? "ผู้ติดต่อของโรงแรม"} แล้ว`)}>ส่งทางอีเมล</Button>
+          <Button asChild><a href={url}>เปิดลิงก์</a></Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
