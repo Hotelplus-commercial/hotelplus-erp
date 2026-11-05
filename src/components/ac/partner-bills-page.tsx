@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { InfoTip } from "@/components/ps/info-tip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { psDemoOn, onDemoSessionChange, DEMO_DAY, pageDateLabel } from "@/lib/demo-session";
 import { billFileName, billFileRef, markBillPaid, recordCashbackReceipt, removeCashbackReceipt, isUiReceipt, saveBill, setPartnerDemo, storeBillFile, usePartnerData, voidBill } from "@/lib/debt-partner-store";
@@ -91,7 +91,7 @@ function CostCard({ d, contracts, today }: { d: PartnerData; contracts: PartnerC
   const other = byCurrency(t.total).filter(([c]) => c !== "THB");
   return (
     <section className="space-y-3 rounded-xl border bg-card p-4" data-testid="pb-card">
-      <div className="flex items-center gap-2"><h2 className="text-lg font-semibold">{PB.title}</h2><InfoTip text={PB.tip} /></div>
+      <div className="flex items-center gap-2"><h2 className="text-lg font-semibold">{PB.title}</h2><Popover><PopoverTrigger className="text-muted-foreground" aria-label="คำอธิบาย">ⓘ</PopoverTrigger><PopoverContent className="text-xs">{PB.tip}</PopoverContent></Popover></div>
       <p className="text-sm text-muted-foreground">{PB.question}</p>
       <div className="grid gap-3 sm:grid-cols-4">
         {([["ยอดงวดนี้", t.total, ""], ["จ่ายแล้ว", t.paid, ""], ["รอจ่าย", t.pending, ""], ["เลยกำหนด", t.overdue, "text-destructive"]] as const).map(([l, m, tone]) => (
