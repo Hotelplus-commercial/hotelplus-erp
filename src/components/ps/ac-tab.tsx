@@ -34,6 +34,10 @@ import { OPEN_STATUSES, STATUS_TH, SYSTEM_CREATOR, useTickets } from "@/lib/tick
 import type { PsReportRow } from "@/lib/ps-dashboard-types";
 import { cn } from "@/lib/utils";
 import { NowChip, useCardCompare } from "./compare-control";
+import { PartnerSection } from "./partner-section";
+
+/** Debt Partner R1 §1: ค่าระบบ ORM and ค่าใช้จ่ายรายสัญญา are unmounted from this tab (components kept). */
+const DP_LEGACY = false;
 
 const num = (v: unknown) => Number(v ?? 0) || 0;
 const pct = (n: number, d: number) => (d ? Math.round((n / d) * 100) : 0);
@@ -108,7 +112,7 @@ export function AcTab({ views, loading, error, service, compare, demo, periodA, 
   return (
     <div className="flex min-w-0 flex-col gap-5" data-testid="ac-tab" data-demo={demo || undefined}>
       <DefinitionStrip />
-      <SectionHead title="ลูกหนี้ & การเก็บเงิน" desc="ค้างเท่าไร · อยู่ขั้นไหน · ใครจ่ายช้า · ต้องตามใคร" />
+      <SectionHead title="ลูกหนี้ & การเก็บเงิน" desc="ใครจ่ายตรงเวลา · ค้างเท่าไร อยู่ขั้นไหน · ต้องตามใคร" />
       <DebtorCard initialOpen={openLists} views={views} svc={svc} debtors={debtors.filter(svc)} breakdown={breakdown.filter(svc)} compare={cardCompare ? false : compare} openHotel={openHotel} period={cardCompare ? <NowChip /> : undefined} />
       <div className="ac-row2">
         {cardCompare ? (
@@ -116,14 +120,16 @@ export function AcTab({ views, loading, error, service, compare, demo, periodA, 
         ) : (
           <GradeCard gradeDist={gradeDist.filter(svc)} chip={chip} prevChip={prevChip} compare={compare} customers={customers} initialOpen={openLists} />
         )}
-        <SystemFeeMock />
+        {DP_LEGACY && <SystemFeeMock />}
       </div>
-      <SectionHead title="ค่าใช้จ่ายรายสัญญา" desc="แต่ละสัญญาบริการจ่ายเราเดือนละเท่าไร · ใช้เตรียมคุยราคาตอนต่อสัญญา · ไม่ใช่การจัดอันดับ" />
-      {cardCompare ? (
+      {cardCompare && <PartnerSection demo={!!demo} />}
+      {DP_LEGACY && <SectionHead title="ค่าใช้จ่ายรายสัญญา" desc="แต่ละสัญญาบริการจ่ายเราเดือนละเท่าไร · ใช้เตรียมคุยราคาตอนต่อสัญญา · ไม่ใช่การจัดอันดับ" />
+      desc="แต่ละสัญญาบริการจ่ายเราเดือนละเท่าไร · ใช้เตรียมคุยราคาตอนต่อสัญญา · ไม่ใช่การจัดอันดับ" />}
+      {DP_LEGACY && (cardCompare ? (
         <ContractCostCard initialOpen={openLists} rows={costRows} service={service} compare periodA={kCost.a} periodB={kCost.b} period={kCost.control} />
       ) : (
         <ContractCostCard initialOpen={openLists} rows={costRows} service={service} compare={compare} periodA={periodA} periodB={periodB ?? null} />
-      )}
+      ))}
     </div>
   );
 }
