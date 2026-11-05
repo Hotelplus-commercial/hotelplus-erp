@@ -6,7 +6,7 @@ import { workspaceBySlug } from "@/lib/workspace-registry";
 import { WorkspaceViewSwitch } from "@/components/ps/workspace-view-switch";
 
 export const Route = createFileRoute("/workspace/$dept")({
-  validateSearch: (s: Record<string, unknown>) => ({ demo: s["demo"] === "1" || s["demo"] === 1 ? 1 : s["demo"] === "0" || s["demo"] === 0 ? 0 as const : undefined, ticket: typeof s["ticket"] === "string" ? s["ticket"] : undefined }),
+  validateSearch: (s: Record<string, unknown>) => ({ demo: s["demo"] === "1" || s["demo"] === 1 ? 1 as const : s["demo"] === "0" || s["demo"] === 0 ? 0 as const : undefined, ticket: typeof s["ticket"] === "string" ? s["ticket"] : undefined }),
   loader: ({ params }) => {
     const ws = workspaceBySlug(params.dept);
     if (!ws) throw notFound();
