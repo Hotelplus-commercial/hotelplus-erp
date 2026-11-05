@@ -70,7 +70,7 @@ export function meetingTabDemoAdditions(): MeetingSurveyData {
       surveys.push({
         id: `MT1S-${svc}-${code}`, meeting_id: m.id, hotel: m.hotel, service: svc, tier: m.tier, meeting_date: m.date, submitted_at: `${m.date}T12:00:00.000Z`,
         scores: sc, overall: lists[0]![i]!, free_comment: i === 1 ? 'อยากให้สรุปตัวเลขสั้นลง ส่งก่อนประชุม 1 วัน' : i === 4 ? 'ทีมตอบเร็ว ชอบคำแนะนำเรื่องรีวิว' : null,
-        customer_response_status: i === 3 ? 'Flagged' : 'Confirmed', flags: 0, no_score_reason: null, respondent: 'AE', template_version: 1, ae_display: m.ae_display,
+        customer_response_status: i === 3 ? 'Flagged' : 'Confirmed', flags: 0, no_score_reason: null, respondent: 'AE', template_version: 1, ae_display: m.ae_display ?? null,
       });
     }
   };
