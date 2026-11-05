@@ -19,7 +19,7 @@ import { addMainContract, mainContractById, mainContracts, setMainContractDemo }
 import { buildRenewedContract, contractFromSource, svcOfPackage } from './renewal-contract';
 import { readEarlyHandoff, toIsoDate } from './renewal-scan';
 import { renewalR2DemoItems, renewalR2Sim, RENEWAL_R2_DEMO_NOW } from './renewal-r2-demo';
-import { tabR1DemoBase, tabR1DemoFlow, tabR1HeaderPortfolio } from './contract-tab-r1-demo';
+import { tabR1DemoRenewalBase, tabR1DemoFlow, tabR1HeaderPortfolio } from './contract-tab-r1-demo';
 import { headerDemoPortfolio } from './ps-header-r2-demo';
 import { matchOffer, offerExpectedAvg, type FeeAverage, type OfferTerms, type RenewalOffer } from './renewalOffer';
 import { offerContextFor } from './renewal-offer-source';
@@ -197,7 +197,7 @@ function demoSourceFor(cid: string): { sc: SourceContract; row: Contract | null 
   const rec = item ? { contract_id: item.contract_id, hotel_id: item.hotel_id, hotel_name: item.hotel_name, service: item.service, end: item.end }
     : readEarlyHandoff(cid) ?? (flow?.end ? { contract_id: cid, hotel_id: flow.hotel_id, hotel_name: flow.hotel_name, service: flow.service, end: flow.end } : null);
   if (!rec) return null;
-  const base = tabR1DemoBase().find((b) => b.contract_id === cid);
+  const base = tabR1DemoRenewalBase().find((b) => b.contract_id === cid);
   const price = [...headerDemoPortfolio().prices, ...tabR1HeaderPortfolio().prices].find((p) => p.contract_id === cid);
   const end = rec.end.slice(0, 10); const start = base?.start ?? flow?.start?.slice(0, 10) ?? '';
   const months = start ? Math.max(1, Math.round((Date.parse(`${addDaysIso(end, 1)}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`)) / (30.4375 * 864e5))) : 12;
