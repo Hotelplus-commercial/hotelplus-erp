@@ -182,6 +182,8 @@ export function RenewalCardR2({ data }: { data: TabR1Data | undefined }) {
   const root = useRef<HTMLElement | null>(null);
   const boardRef = useRef<HTMLDivElement | null>(null);
 
+  // v1.4.1 RN47: header link ?tile=PAST_DUE opens the เลยกำหนด tile and scrolls here.
+  useEffect(() => { const p = new URLSearchParams(window.location.search); if (p.get("tile") === "PAST_DUE") { setTile("PAST_DUE" as TileKey); root.current?.scrollIntoView({ block: "start" }); } }, []);
   const periodItems = items.filter((i) => inPeriod(i, range));
   const lists = urgentLists(items, range, today, hasReason);
   const activeTile = tile === undefined ? TILE_KEYS.find((k) => lists[k].length) ?? null : tile;
@@ -223,7 +225,7 @@ export function RenewalCardR2({ data }: { data: TabR1Data | undefined }) {
 
   if (!data) return null;
   return (
-    <section className="dash-card rn2-card" data-testid="renewal-card-r2" ref={root}>
+    <section id="renewal-card" className="dash-card rn2-card" data-testid="renewal-card-r2" ref={root}>
       <header className="rn2-head">
         <div className="min-w-0">
           <h2>{RN2.title}<InfoButton info={{ count: RN2.info }} /></h2>

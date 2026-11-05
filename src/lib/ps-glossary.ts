@@ -297,7 +297,7 @@ export const RN2 = {
     due: "ครบกำหนดสัญญา", inStage: "อยู่ stage นี้", lastAct: "activity ล่าสุด", days: (n: number) => `${n} วันแล้ว`, scanOn: (d: string) => `ระบบจะสร้างงาน ${d}`,
     ago: (n: number) => (n <= 0 ? "วันนี้" : `${n} วันก่อน`), noAct: "ยังไม่มีความเคลื่อนไหว", sentNotSigned: (d: string) => `ส่ง ${d} · ยังไม่เซ็น`,
     left: (n: number) => `เหลือ ${n} วัน`, overdue: (n: number) => `เลยกำหนด ${n} วัน`,
-    banner: (n: number) => `เลยกำหนด ${n} วัน · สัญญาหมดอายุ ไม่ active · กระทบการวางบิล AC`,
+    banner: (n: number) => `เลยกำหนด ${n} วัน · ขาดอายุ ไม่นับเป็นใช้งาน · AC หยุดวางบิล · ยังไม่นับ churn จนกว่าจะบันทึกผล`, // v1.4.1 RN49 (Q58)
     earlyTag: "สร้างคำขอล่วงหน้า · ระบบไม่สร้างงานซ้ำ", btnEarly: "สร้างคำขอล่วงหน้า ↗", btnStart: "สร้างคำขอต่อสัญญา ↗",
     signedOn: (d: string) => `เซ็นต่อ ${d}`, newStart: (d: string, up: boolean) => `สัญญาใหม่ เริ่ม ${d}${up ? " · Upcoming" : ""}`, earlySigned: "ต่อสำเร็จล่วงหน้า · ไม่มีแจ้งเตือน",
     result: "ผล", edit: (n: number) => `แก้ไข · เหลือ ${n} วัน`, locked: (d: string, by: string) => `บันทึก ${d} โดย ${by} · ล็อกแล้ว`,

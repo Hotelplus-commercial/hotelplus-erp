@@ -1751,3 +1751,6 @@ textarea.r1-input{height:auto;padding:6px 8px;resize:vertical;}
 .sd-table td .sd-pill-stat{white-space:nowrap;font-size:11px;padding:2px 7px;}
 .sd-section .sd-table td,.sd-section .sd-table th{padding:6px 6px;}
 .sd-section .sd-table td:first-child{white-space:normal;min-width:120px;}
+
+/* v1.4.1 Q58 header sub-lines */
+.r2-lapsed{display:block;color:var(--destructive);font-weight:600;text-decoration:none;cursor:pointer;}.r2-lapsed:hover{text-decoration:underline;}.r2-unmatched{color:var(--text-secondary);}

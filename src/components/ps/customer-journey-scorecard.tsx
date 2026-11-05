@@ -6,8 +6,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { NowChip, useCardCompare } from "./compare-control";
 import { TH_MONTH, beYear } from "@/lib/card-compare";
-import { journeyScorecard, selLabel, type Delta, type GradeRow, type HeaderSel, type JourneyInput, type ScoreRowOut } from "@/lib/ps-header-r2";
+import { journeyScorecard, rowMatches, selLabel, type Delta, type GradeRow, type HeaderSel, type JourneyInput, type ScoreRowOut } from "@/lib/ps-header-r2";
 import { cn } from "@/lib/utils";
+import { Q58 } from "@/lib/ps-glossary";
+import { isRenewalTestMode } from "@/lib/renewal-test-actor";
 
 const fmt = (n: number, d = 0) => n.toLocaleString("th-TH", { maximumFractionDigits: d, minimumFractionDigits: d });
 export const monthTh = (m: string | null) => (m ? `${TH_MONTH[+m.slice(5, 7) - 1]} ${String(beYear(+m.slice(0, 4))).slice(-2)}` : "—");
@@ -90,7 +92,7 @@ export function CustomerJourneyScorecard({ input, sel, aliases }: { input: Journ
       case "c3": {
         const n = lapsedOf(r.service), u = unmatchedOf(r.service);
         return <>{main(fmt(r.active), "สัญญา")}
-          {n > 0 && <a href="/ps?tab=renewal&tile=pastDue#renewal-card" className="r2-sub r2-lapsed" data-testid={`q58-lapsed-${r.service}`} title={Q58.headerTip}>{Q58.headerLine(n)}</a>}
+          {n > 0 && <a href="/ps?tab=ps&tile=PAST_DUE#renewal-card" onClick={(e) => { e.preventDefault(); const u = new URL(window.location.href); u.searchParams.set("tab", "ps"); u.searchParams.set("tile", "PAST_DUE"); u.hash = "renewal-card"; window.location.assign(u.toString()); }} className="r2-sub r2-lapsed" data-testid={`q58-lapsed-${r.service}`} title={Q58.headerTip}>{Q58.headerLine(n)}</a>}
           {u > 0 && isRenewalTestMode() && <p className="r2-sub r2-unmatched" data-testid={`q58-unmatched-${r.service}`}>{Q58.unmatched(u)}</p>}</>;
       }
       case "c4": return <>{main(fmt(r.churn.out), "สัญญา")}<p className="r2-sub">{r.churn.pct == null ? "ยังไม่มีฐานสัญญา" : `${fmt(r.churn.pct, 1)}% ของฐาน`}</p><DeltaPill d={r.churn.d} /></>;
