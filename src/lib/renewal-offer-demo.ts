@@ -9,7 +9,10 @@ import { addDays, evaluateSignals, tierOf } from './contract-tab-r1';
 import type { L0Status, L0Ticket } from './tickets-l0';
 import type { RepriceInput } from './expansion';
 
-export const RENEWAL_OFFER_DEMO_NOW = '2026-11-02';
+import { DEMO_DAY } from './demo-session';
+
+/** v1.4.1 RN43: alias of the one R3.3 DEMO clock (28 ต.ค. 2569). */
+export const RENEWAL_OFFER_DEMO_NOW = DEMO_DAY;
 
 export type V14Demo = {
   card_id: string; contract_id: string; hotel_id: string; hotel: string; service: 'ORM' | 'Marcom'; package: string;
