@@ -148,7 +148,7 @@ function AdapterTodoGroup({ group, person, range, demo }: { group: TodoTypeGroup
           const [path, hash] = it.route_target.split("#");
           return (
             <li key={it.id} className="p-2 text-sm" data-testid="todo-item">
-              <Link to={path as "/workspace/ps/partners"} hash={hash} search={{ demo: demo ? 1 : undefined }} className="font-medium text-primary hover:underline">{it.title}</Link>
+              <Link to={path as "/workspace/ps/partners"} hash={hash ?? ""} search={{ demo: demo ? 1 : undefined }} className="font-medium text-primary hover:underline">{it.title}</Link>
               <div className="flex flex-wrap justify-between gap-2 text-xs text-muted-foreground"><span>{it.sub}</span><span className="tabular-nums">{it.due_relative}</span></div>
             </li>
           );
