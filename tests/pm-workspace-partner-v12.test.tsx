@@ -26,6 +26,8 @@ async function mountPage(hash: string) {
   document.body.innerHTML = ''; const div = document.createElement('div'); document.body.appendChild(div);
   const root = createRoot(div);
   await act(async () => { await router.load(); root.render(h(RouterProvider, { router } as never)); });
+  const t0 = Date.now();
+  while (!div.querySelector('[data-testid="pm-partner-page"]')) { if (Date.now() - t0 > 8000) throw new Error('page not mounted: ' + (div.textContent ?? '').slice(0, 400)); await act(async () => { await new Promise((r) => setTimeout(r, 30)); }); }
   await act(async () => { window.dispatchEvent(new Event('hashchange')); await new Promise((r) => setTimeout(r, 30)); });
   return { div, unmount: () => act(() => root.unmount()) };
 }
