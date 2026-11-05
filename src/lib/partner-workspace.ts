@@ -98,3 +98,65 @@ export function shutoffTwin(all: L0Ticket[], t: L0Ticket): L0Ticket | null {
   return all.find((x) => x.ticket_id !== t.ticket_id && x.type === 'SYSTEM_SHUTOFF' && (x.target_dept === 'ORM' || x.target_dept === 'MARCOM')
     && (key ? (x.subject_ref.contract_id ?? x.payload.contract_id) === key : x.subject_ref.hotel_id === t.subject_ref.hotel_id)) ?? null;
 }
+
+/* ---------- v1.2 PW23 — views: ภาพรวม · หน้า Partner · คำขอเครดิตทั้งหมด (replaces the 4 tabs; old hashes map here) ---------- */
+export const PARTNER_SECTIONS = ['docs', 'hotels', 'price', 'deals', 'credit'] as const;
+export type PartnerSection = (typeof PARTNER_SECTIONS)[number];
+export type PartnerView = { v: 'overview' } | { v: 'partner'; id: string; section: PartnerSection | null } | { v: 'credit'; anchor: string | null };
+export function viewOfHash(hash: string): PartnerView {
+  const h = decodeURIComponent(hash.replace(/^#/, ''));
+  if (h.startsWith('partner/')) {
+    const [, id = '', sec] = h.split('/');
+    return { v: 'partner', id, section: (PARTNER_SECTIONS as readonly string[]).includes(sec ?? '') ? (sec as PartnerSection) : null };
+  }
+  if (h.startsWith('deals/')) return { v: 'partner', id: h.slice(6), section: 'deals' };
+  if (h.startsWith('credit')) return { v: 'credit', anchor: h === 'credit' ? null : h };
+  return { v: 'overview' }; // '', #overview and the old #partner / #ratecard / #deals
+}
+export const hashOfView = (v: PartnerView): string =>
+  v.v === 'overview' ? 'overview' : v.v === 'credit' ? (v.anchor ?? 'credit') : `partner/${v.id}${v.section ? `/${v.section}` : ''}`;
+
+/** §4.1 short label of a storage location URL, e.g. "Google Drive › Partners › StayLink"; else the URL. */
+export function folderLabel(url: string | null | undefined): string | null {
+  if (!url) return null;
+  try {
+    const u = new URL(url);
+    const svc = /drive\.google\./.test(u.hostname) ? 'Google Drive' : /sharepoint|onedrive/.test(u.hostname) ? 'OneDrive' : /dropbox/.test(u.hostname) ? 'Dropbox' : null;
+    const parts = u.pathname.split('/').filter(Boolean).map(decodeURIComponent);
+    const i = parts.indexOf('folders');
+    const tail = (i >= 0 ? parts.slice(i + 1) : []).filter((x) => /[\s.]|^[A-Z][a-z]/.test(x) || x.length <= 20);
+    return svc && tail.length ? [svc, ...tail].join(' › ') : url;
+  } catch { return url; }
+}
+
+/** §5.1–5.2 hotels of one Partner on `today`: current users, upcoming moves in (first), and moving out. */
+export type PartnerHotelRow = { pid: string; name: string; allotment: number | null; from: string | null; status: 'ACTIVE' | 'UPCOMING' | 'LEAVING'; other: string | null; date: string | null };
+export function partnerHotelRows(data: PartnerData, contracts: PartnerContract[], today: string, partnerId: string, nameOf: (pid: string) => string): PartnerHotelRow[] {
+  const pids = new Set<string>([...data.property_partner_system.map((r) => r.property_id), ...contracts.filter((c) => c.service === 'ORM' && c.property_id).map((c) => c.property_id!)]);
+  const out: PartnerHotelRow[] = [];
+  for (const pid of pids) {
+    const rows = data.property_partner_system.filter((r) => r.property_id === pid);
+    const cur = rows.filter((r) => d10(r.effective_from) <= today).sort((a, b) => b.effective_from.localeCompare(a.effective_from) || b.set_at.localeCompare(a.set_at))[0] ?? null;
+    const next = rows.filter((r) => d10(r.effective_from) > today).sort((a, b) => a.effective_from.localeCompare(b.effective_from))[0] ?? null;
+    let curPartner = cur?.partner_id ?? null, allot = cur?.allotment ?? null, from = cur ? d10(cur.effective_from) : null;
+    if (!cur) { // contract-level system only
+      const c = contracts.find((x) => x.property_id === pid && x.service === 'ORM');
+      const s = c ? data.contract_partner_system.find((x) => x.contract_id === c.contract_id) : null;
+      if (s && c) { curPartner = s.partner_id; allot = s.allotment ?? c.allotment ?? null; from = c.start; }
+    }
+    if (curPartner === partnerId) {
+      const leaving = next && next.partner_id !== partnerId;
+      out.push({ pid, name: nameOf(pid), allotment: allot, from, status: leaving ? 'LEAVING' : 'ACTIVE', other: leaving ? next.partner_id : null, date: leaving ? d10(next.effective_from) : null });
+    } else if (next?.partner_id === partnerId) {
+      out.push({ pid, name: nameOf(pid), allotment: next.allotment, from: d10(next.effective_from), status: 'UPCOMING', other: curPartner, date: d10(next.effective_from) });
+    }
+  }
+  return out.sort((a, b) => (a.status === 'UPCOMING' ? 0 : 1) - (b.status === 'UPCOMING' ? 0 : 1) || a.name.localeCompare(b.name));
+}
+
+/** §5.1 history tags, newest first: รอมีผล {date} / ใช้อยู่ตอนนี้ / เดิม. */
+export function historyTag(rows: { id: string; effective_from: string }[], today: string): Record<string, 'FUTURE' | 'CURRENT' | 'OLD'> {
+  const sorted = [...rows].sort((a, b) => b.effective_from.localeCompare(a.effective_from));
+  const cur = sorted.find((r) => d10(r.effective_from) <= today)?.id;
+  return Object.fromEntries(sorted.map((r) => [r.id, d10(r.effective_from) > today ? 'FUTURE' : r.id === cur ? 'CURRENT' : 'OLD']));
+}
