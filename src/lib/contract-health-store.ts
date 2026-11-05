@@ -6,6 +6,7 @@ import { useEffect, useState, useSyncExternalStore } from 'react';
 import { buildRows, evaluateAlerts, snapshotOf, type AeLabel, type ChAlert, type TierSnapshot } from './contract-tab-r1';
 import { tabR1Demo, tabR1DemoLabels, tabR1DemoSnapshots } from './contract-tab-r1-demo';
 import type { L0Ticket } from './tickets-l0';
+import { getMeetingSurveyData, surveyContext } from './meeting-survey-store';
 
 export type ChAlertRec = ChAlert & { read?: boolean };
 type State = { labels: AeLabel[]; snapshots: TierSnapshot[]; alerts: ChAlertRec[]; lastRun: string | null };
@@ -69,6 +70,6 @@ export function runDemoDayIfNeeded(storeTickets: L0Ticket[]) {
   if (s.lastRun === d.today) return;
   const seen = new Set(storeTickets.map((t) => t.ticket_id));
   const tickets = [...d.seedTickets.filter((t) => !seen.has(t.ticket_id)), ...storeTickets];
-  const rows = buildRows(d.base, { today: d.today, labels: s.labels, snaps: s.snapshots, tickets });
+  const rows = buildRows(d.base, { today: d.today, labels: s.labels, snaps: s.snapshots, tickets, survey: surveyContext(getMeetingSurveyData(true), true) });
   recordDay(true, d.today, snapshotOf(rows, d.today), evaluateAlerts(rows, s.snapshots, new Set(s.alerts.map((a) => a.key)), d.today, new Date().toISOString()));
 }

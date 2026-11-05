@@ -53,7 +53,7 @@ export function ContractSignalDialog({ row, tickets, labels, by, creator, demo, 
   const qn = q.trim().toLowerCase();
   const filtered = selectable.filter((e) => !qn || e.label.toLowerCase().includes(qn) || SIGNAL_GROUPS[e.group]!.toLowerCase().includes(qn));
   const sysKeys = new Set(row.signals.map((s) => s.key));
-  const notFound = SIGNAL_CATALOG.filter((e) => (e.src === "A" || e.src === "MA") && !sysKeys.has(e.key));
+  const notFound = SIGNAL_CATALOG.filter((e) => (e.src === "A" || e.src === "MA" || e.src === "S") && !sysKeys.has(e.key));
   const locked = (b: Box) => b.state === "ok" || b.state === "sending";
 
   const addLabel = (boxId: string, key: string) => setBoxes((bs) => bs.map((b) => (b.ticket_id === boxId && !locked(b) && !b.labels.includes(key) ? { ...b, labels: [...b.labels, key] } : b)));

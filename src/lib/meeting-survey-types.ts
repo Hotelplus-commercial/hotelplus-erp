@@ -78,6 +78,34 @@ export type SurveyLabelAnswer = {
   created_at: string;
 };
 
-export type MeetingSurveyData = { meetings: MeetingRecord[]; surveys: SurveyRecord[]; answers: SurveyLabelAnswer[] };
-export const MS_COLLECTIONS = ['meetings', 'surveys', 'survey_label_answers'] as const;
+/** Contract Health · Survey signals patch §1 — new survey flag rules (CH1–CH6). Stored in meridia.survey_flags.v1 → Cloud doc ps:survey_flags.
+ * rule_version 2 = rules from this patch (older flags, e.g. the sample Coaching list, have no row here and stay as they are). */
+export type SurveyFlagRule = 'SURVEY_LOW_SCORE' | 'SURVEY_NO_SCORE' | 'SURVEY_SILENT_2M' | 'MEETING_REJECTED';
+export type SurveyFlagSeverity = 'red' | 'yellow';
+export type SurveyFlag = {
+  id: string;
+  rule: SurveyFlagRule;
+  severity: SurveyFlagSeverity;
+  rule_version: 2;
+  hotel_id: string | null;
+  hotel: string;
+  service: MeetingService;
+  /** Known only when the record carries it (DEMO mapping); live matches contracts by hotel_id + service. */
+  contract_id?: string | null;
+  /** Card month `YYYY-MM` (dedupe: one flag per contract × service × card month × rule). */
+  card_month: string;
+  /** Triggering topic names (v1 topic names / v2 topic · label) — never question numbers. */
+  topics: string[];
+  meeting_id: string | null;
+  survey_id: string | null;
+  status: 'OPEN' | 'CLOSED';
+  created_at: string;
+  closed_at?: string | null;
+  closed_by_survey?: string | null;
+  /** CH6: red and yellow flags are both coaching-eligible; routing is defined by the Coaching prompt. */
+  coaching_eligible: boolean;
+};
+
+export type MeetingSurveyData = { meetings: MeetingRecord[]; surveys: SurveyRecord[]; answers: SurveyLabelAnswer[]; flags?: SurveyFlag[] };
+export const MS_COLLECTIONS = ['meetings', 'surveys', 'survey_label_answers', 'survey_flags'] as const;
 export type MsCollection = (typeof MS_COLLECTIONS)[number];

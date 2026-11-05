@@ -58,7 +58,8 @@ export function worstMonth(orm: FlowMonth[], marcom: FlowMonth[]) {
 
 /* ================= §5 Signal catalog ================= */
 export type SignalDir = 'bad' | 'good' | 'opp';
-export type SignalSrc = 'A' | 'AM' | 'M' | 'MA';
+/** S = from survey / meeting flags (customer voice), Contract Health · Survey signals patch CH7. */
+export type SignalSrc = 'A' | 'AM' | 'M' | 'MA' | 'S';
 export type CatalogEntry = { key: string; group: number; dir: SignalDir; src: SignalSrc; label: string; rule: string };
 export const SIGNAL_GROUPS: Record<number, string> = {
   1: 'ราคาและความคุ้มค่า', 2: 'ผลลัพธ์ที่โรงแรมได้', 3: 'กำลังเงินของโรงแรม', 4: 'งานของผู้ให้บริการ',
@@ -71,8 +72,8 @@ export const SIGNAL_CATALOG: CatalogEntry[] = [
   E('GUARANTEE_HIGH', 1, 'bad', 'A', 'ค่าคอม / Guarantee fee สูงเกิน', 'เก็บ Guarantee fee แทนค่าคอม ≥ 2 เดือนติด'),
   E('ABOVE_MIN', 1, 'good', 'A', 'ผลงานเกินขั้นต่ำ', 'ค่าคอมสูงกว่า Guarantee 3 เดือนติด'),
   E('COMPETITOR_CHEAPER', 1, 'bad', 'M', 'คู่แข่งเสนอถูกกว่า'),
-  E('VALUE_UNSEEN', 1, 'bad', 'AM', 'มองไม่เห็นความคุ้มค่า', 'Survey ครั้งที่ 2 ข้อความคุ้มค่า ≤ 5'),
-  E('VALUE_SEEN', 1, 'good', 'AM', 'ลูกค้าเห็นความคุ้มค่า', 'Survey ครั้งที่ 2 ข้อความคุ้มค่า ≥ 7'),
+  E('VALUE_UNSEEN', 1, 'bad', 'AM', 'มองไม่เห็นความคุ้มค่า', 'Survey ข้อความคุ้มค่า ≤ 6 · Survey แบบป้าย หัวข้อความคุ้มค่า = ไม่คุ้ม'),
+  E('VALUE_SEEN', 1, 'good', 'AM', 'ลูกค้าเห็นความคุ้มค่า', 'Survey ข้อความคุ้มค่า ≥ 8 · Survey แบบป้าย หัวข้อความคุ้มค่า = คุ้ม'),
   E('REV_MISS', 2, 'bad', 'A', 'รายได้หรือยอดจองไม่ถึงที่คาดหวัง', 'ORM: Production Report เดือนล่าสุด ต่ำกว่าเป้ารายได้รายเดือน'),
   E('REV_HIT', 2, 'good', 'A', 'รายได้ถึงเป้า', 'ORM: Production Report เดือนล่าสุด ถึงเป้ารายได้รายเดือน'),
   E('OTA_FLAT', 2, 'bad', 'M', 'อันดับบน OTA ไม่ดีขึ้น'),
@@ -109,8 +110,21 @@ export const SIGNAL_CATALOG: CatalogEntry[] = [
   E('UPSELL', 8, 'opp', 'A', 'โอกาสขายบริการเพิ่ม', 'ใช้บริการเดียว + เกรด A / B + มีเรื่องดีด้านผลลัพธ์อย่างน้อย 1 เรื่อง'),
   E('PACKAGE_UP', 8, 'opp', 'M', 'พร้อมขยายแพ็กเกจ'),
   E('GROUP_HOTELS', 8, 'opp', 'M', 'มีโรงแรมในเครือ / เปิดสาขาใหม่'),
-  E('REFERRAL_READY', 8, 'opp', 'AM', 'ลูกค้าพร้อมแนะนำต่อ', 'Survey ครั้งที่ 2 ≥ 9'),
+  E('REFERRAL_READY', 8, 'opp', 'AM', 'ลูกค้าพร้อมแนะนำต่อ', 'ลูกค้าให้คะแนนแนะนำต่อ ≥ 9 (Survey แบบป้าย)'),
+  /* Contract Health · Survey signals patch §2 (CH7–CH9): +8 → 52 labels. */
+  E('PAGE_FLAT', 2, 'bad', 'S', 'เพจไม่ได้รับความสนใจเพิ่ม', 'Survey แบบป้าย หัวข้อความสนใจของเพจ (Marcom)'),
+  E('PAGE_UP', 2, 'good', 'S', 'เพจได้รับความสนใจมากขึ้น', 'Survey แบบป้าย หัวข้อความสนใจของเพจ (Marcom)'),
+  E('CONTENT_OFF', 4, 'bad', 'S', 'คอนเทนต์ไม่ตรงภาพลักษณ์', 'Survey แบบป้าย หัวข้อภาพลักษณ์คอนเทนต์ (Marcom)'),
+  E('CONTENT_ON', 4, 'good', 'S', 'คอนเทนต์ตรงภาพลักษณ์', 'Survey แบบป้าย หัวข้อภาพลักษณ์คอนเทนต์ (Marcom)'),
+  E('SURVEY_LOW_SCORE', 5, 'bad', 'S', 'คะแนนเซอร์เวย์ต่ำ', 'มีธงแดง คะแนนเซอร์เวย์ต่ำ ที่ยังเปิดอยู่'),
+  E('SURVEY_NO_SCORE', 5, 'bad', 'S', 'ลูกค้าไม่ให้คะแนน', 'มีธงเหลือง ลูกค้าไม่ให้คะแนน ที่ยังเปิดอยู่'),
+  E('SURVEY_SILENT_2M', 5, 'bad', 'S', 'เงียบ ≥2 เดือน', 'มีธงแดง เงียบ ≥2 เดือน ที่ยังเปิดอยู่'),
+  E('MEETING_REJECTED', 5, 'bad', 'S', 'ปฏิเสธนัด', 'มีธงแดง ปฏิเสธนัด ที่ยังเปิดอยู่'),
 ];
+/** Good / bad pairs (one result per pair). */
+export const SIGNAL_PAIRS: string[][] = [['VALUE_UNSEEN', 'VALUE_SEEN'], ['REV_MISS', 'REV_HIT'], ['OTA_FLAT', 'OTA_UP'], ['CAMPAIGN_MISS', 'CAMPAIGN_HIT'], ['OWNER_CHURN', 'OWNER_STEADY'], ['PAGE_FLAT', 'PAGE_UP'], ['CONTENT_OFF', 'CONTENT_ON']];
+/** CH7 legend text for source S. */
+export const SRC_S_LEGEND = 'S = จากเซอร์เวย์ / การประชุม (เสียงลูกค้า)';
 export const catalogByKey = new Map(SIGNAL_CATALOG.map((e) => [e.key, e]));
 /** People can pick M + AM labels (21); A + MA are system-only (23). */
 export const isSelectable = (e: CatalogEntry) => e.src === 'M' || e.src === 'AM';
@@ -125,8 +139,13 @@ export type SignalInputs = {
   billing_correction_ticket?: boolean | null; missed_meetings_3m?: number | null; meeting_actions_overdue?: number | null;
   onboard_red?: boolean | null; days_since_golive?: number | null; pi_incomplete?: boolean | null;
   entity_change_ticket?: boolean | null; survey2_score?: number | null; single_service?: boolean | null;
+  /** CH10–CH15: S signals of the contract (latest answered survey + open survey flags), prepared by src/lib/survey-flags.ts. */
+  survey_signals?: SurveySignal[] | null;
+  /** CH11: customer's REVENUE answer text (tooltip only; the automatic rule decides the chip). */
+  survey_revenue?: string | null;
 };
-export type Signal = { key: string; group: number; dir: SignalDir; label: string; rule: string };
+export type SurveySignal = { key: string; tip: string; amber?: boolean };
+export type Signal = { key: string; group: number; dir: SignalDir; label: string; rule: string; src?: SignalSrc; tip?: string[]; amber?: boolean };
 const has = <T,>(v: T | null | undefined): v is T => v !== null && v !== undefined;
 /** Evaluates every wired system rule for one contract (as of today). Returns fired signals + the keys that were evaluated. */
 export function evaluateSignals(svc: Svc, x: SignalInputs) {
@@ -135,7 +154,7 @@ export function evaluateSignals(svc: Svc, x: SignalInputs) {
   if (svc === 'ORM' && has(x.value_ratio)) { check(['PRICE_HIGH', 'PRICE_WORTH'], true); if (x.value_ratio < 2.5) fired.push('PRICE_HIGH'); else if (x.value_ratio >= 6.67) fired.push('PRICE_WORTH'); }
   if (has(x.guarantee_months)) { check(['GUARANTEE_HIGH'], true); if (x.guarantee_months >= 2) fired.push('GUARANTEE_HIGH'); }
   if (has(x.commission_above_months)) { check(['ABOVE_MIN'], true); if (x.commission_above_months >= 3) fired.push('ABOVE_MIN'); }
-  if (has(x.survey2_value)) { check(['VALUE_UNSEEN', 'VALUE_SEEN'], true); if (x.survey2_value <= 5) fired.push('VALUE_UNSEEN'); else if (x.survey2_value >= 7) fired.push('VALUE_SEEN'); }
+  if (has(x.survey2_value)) { check(['VALUE_UNSEEN', 'VALUE_SEEN'], true); if (x.survey2_value <= 6) fired.push('VALUE_UNSEEN'); else if (x.survey2_value >= 8) fired.push('VALUE_SEEN'); }
   if (svc === 'ORM' && has(x.rev_achievement_pct)) { check(['REV_MISS', 'REV_HIT'], true); fired.push(x.rev_achievement_pct >= 100 ? 'REV_HIT' : 'REV_MISS'); }
   if (has(x.overdue_this)) {
     check(['OVERDUE', 'OVERDUE_OTHER'], true);
@@ -153,13 +172,30 @@ export function evaluateSignals(svc: Svc, x: SignalInputs) {
   if (has(x.pi_incomplete)) { check(['SETUP_WRONG'], true); if (x.pi_incomplete) fired.push('SETUP_WRONG'); }
   if (has(x.entity_change_ticket)) { check(['OWNERSHIP_CHANGE'], true); if (x.entity_change_ticket) fired.push('OWNERSHIP_CHANGE'); }
   if (has(x.survey2_score)) { check(['REFERRAL_READY'], true); if (x.survey2_score >= 9) fired.push('REFERRAL_READY'); }
+  // CH10–CH15 survey (S) signals: automatic result decides a pair it evaluated; the S answer then only goes in the tooltip.
+  const autoEval = new Set(evaluated);
+  const notes = new Map<string, string[]>(); const sMeta = new Map<string, { tip: string; amber?: boolean | undefined }>();
+  for (const ss of x.survey_signals ?? []) {
+    const e = catalogByKey.get(ss.key); if (!e) continue;
+    const pair = SIGNAL_PAIRS.find((p) => p.includes(ss.key)) ?? [ss.key];
+    if (autoEval.has(ss.key)) { const owner = fired.find((k) => pair.includes(k) || k === ss.key); if (owner) notes.set(owner, [...(notes.get(owner) ?? []), `${e.label} · ${ss.tip}`]); continue; }
+    evaluated.add(ss.key);
+    if (!fired.includes(ss.key)) { fired.push(ss.key); sMeta.set(ss.key, { tip: ss.tip, amber: ss.amber }); }
+  }
+  if (x.survey_revenue) for (const k of ['REV_MISS', 'REV_HIT']) if (fired.includes(k)) notes.set(k, [...(notes.get(k) ?? []), `ลูกค้าตอบ: ${x.survey_revenue}`]);
   // Group 8 (replaces the old ⑦a cross-sell rule): single-service + grade A / B + ≥ 1 good result signal (groups 1–2).
   if (has(x.single_service) && has(x.grade)) {
     check(['UPSELL'], true);
     const goodResult = fired.some((k) => { const e = catalogByKey.get(k)!; return e.dir === 'good' && (e.group === 1 || e.group === 2); });
     if (x.single_service && ['A', 'B'].includes(x.grade) && goodResult) fired.push('UPSELL');
   }
-  const signals: Signal[] = fired.map((k) => { const e = catalogByKey.get(k)!; return { key: k, group: e.group, dir: e.dir, label: e.label, rule: e.rule }; });
+  const signals: Signal[] = fired.map((k) => {
+    const e = catalogByKey.get(k)!; const sm = sMeta.get(k); const n = notes.get(k);
+    const sig: Signal = { key: k, group: e.group, dir: e.dir, label: e.label, rule: e.rule };
+    if (sm) { sig.src = 'S'; sig.tip = [sm.tip]; if (sm.amber) sig.amber = true; }
+    if (n) sig.tip = [...(sig.tip ?? []), ...n];
+    return sig;
+  });
   return { signals, evaluated };
 }
 /** §4.4 tier — system signals only; AE labels never count; good / opportunity never offset bad. */
@@ -381,9 +417,10 @@ export type TabR1Data = {
   seedTickets: L0Ticket[];
 };
 const aeShort = (id: string | null) => { if (!id) return '—'; const m = /^AE\d+-(.+)$/.exec(id); return m ? m[1]! : id; };
-export function buildRows(base: BaseContract[], ctx: { today: string; labels: AeLabel[]; snaps: TierSnapshot[]; tickets: L0Ticket[] }): HealthRow[] {
+export function buildRows(base: BaseContract[], ctx: { today: string; labels: AeLabel[]; snaps: TierSnapshot[]; tickets: L0Ticket[]; survey?: ((b: BaseContract) => { signals: SurveySignal[]; revenue: string | null }) | undefined }): HealthRow[] {
   return base.map((b) => {
-    const { signals, evaluated } = evaluateSignals(b.service, b.inputs);
+    const sv = ctx.survey?.(b);
+    const { signals, evaluated } = evaluateSignals(b.service, sv ? { ...b.inputs, survey_signals: sv.signals, survey_revenue: sv.revenue } : b.inputs);
     const { tier, bad } = tierOf(signals);
     return {
       contract_id: b.contract_id, hotel_id: b.hotel_id, hotel_name: b.hotel_name, hotel_name_en: b.hotel_name_en, hotel_name_th: b.hotel_name_th,
