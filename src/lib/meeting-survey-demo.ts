@@ -9,7 +9,7 @@ const at = (day: number, h = 10) => `2026-10-${String(day).padStart(2, '0')}T${S
 const dt = (day: number) => `2026-10-${String(day).padStart(2, '0')}`;
 
 function mtg(code: string, service: 'ORM' | 'MARCOM', tier: 'A' | 'B' | 'C' | '—', day: number, channel: MeetingRecord['channel'], status = 'Completed'): MeetingRecord {
-  return { id: `DM-${code}`, hotel: `${service === 'ORM' ? 'ORM' : 'Marcom'} ${code}`, hotel_id: `HTL${code.padStart(4, '0')}`, service, tier, tier_at_booking: tier, ae: AE, ae_display: AE_NAME, contact: 'คุณลูกค้า', contact_email: `gm${code}@example.com`, date: dt(day), status, channel, origin: 'demo', created_at: at(day - 3) };
+  return { id: `DM-${code}`, hotel: `โรงแรม ${code}`, hotel_id: `HTL${code.padStart(4, '0')}`, service, tier, tier_at_booking: tier, ae: AE, ae_display: AE_NAME, contact: 'คุณลูกค้า', contact_email: `gm${code}@example.com`, date: dt(day), status, channel, origin: 'demo', created_at: at(day - 3) };
 }
 
 export function meetingSurveyDemoData(): MeetingSurveyData {

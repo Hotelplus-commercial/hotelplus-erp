@@ -66,7 +66,7 @@ const SEED: EmailTemplate[] = [
 export const fillPlaceholders = (text: string, vars: Record<string, string>) => text.replace(/\{(\w+)\}/g, (m, k: string) => vars[k] ?? m);
 export const activeEmail = (t: EmailTemplate) => t.versions[t.versions.length - 1]!;
 
-type State = { templates: EmailTemplate[]; sent: EmailSent[]; checklist: ChecklistMeta; surveys: SurveyDef[]; surveyStamps: Record<string, number>; riskRules: RiskRules; riskUpdated?: { by: string; at: string } };
+type State = { templates: EmailTemplate[]; sent: EmailSent[]; checklist: ChecklistMeta; surveys: SurveyDef[]; surveyStamps: Record<string, number>; riskRules: RiskRules; riskUpdated?: { by: string; at: string }; /** Survey v2 patch §1.4 `survey_active_template_version` (missing = 1). */ surveyActiveVersion?: number };
 const KEY = "meridia.ps.templates.v1";
 const initial = (): State => ({ templates: SEED, sent: [], checklist: { version: 1, published_at: SEED_AT, published_by: "System" }, surveys: SURVEY_SEED, surveyStamps: {}, riskRules: DEFAULT_RISK_RULES });
 

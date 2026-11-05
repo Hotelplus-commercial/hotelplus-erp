@@ -1,5 +1,6 @@
 /** Level A doc keys: one crm_documents row per key (namespace = doc key, PK is namespace alone). */
 import { PARTNER_COLLECTIONS } from './debt-partner-types';
+import { MS_COLLECTIONS } from './meeting-survey-types';
 export const CRM_COLLECTIONS = [
   'customers', 'invoices', 'contracts', 'products', 'reports', 'taxReceipts', 'deals', 'quotations',
   'templates', 'invRequests', 'liveLinks', 'gradeRecords', 'collectionEvents', 'billingWaiting', 'audit',
@@ -7,4 +8,6 @@ export const CRM_COLLECTIONS = [
 export type CrmCollection = (typeof CRM_COLLECTIONS)[number];
 /** Debt Partner R1: one doc per Partner collection (push-only, same engine as crm:*). */
 export const PARTNER_DOC_KEYS = PARTNER_COLLECTIONS.map((c) => `partner:${c}` as const);
-export const CLOUD_DOC_KEYS = [...CRM_COLLECTIONS.map((c) => `crm:${c}` as const), 'hotels', 'ws2', 'tickets', 'renewalReasons', ...PARTNER_DOC_KEYS] as unknown as [string, ...string[]];
+/** Survey v2 patch: meetings / surveys / survey label answers (push-only, same engine). */
+export const MS_DOC_KEYS = MS_COLLECTIONS.map((c) => `ps:${c}` as const);
+export const CLOUD_DOC_KEYS = [...CRM_COLLECTIONS.map((c) => `crm:${c}` as const), 'hotels', 'ws2', 'tickets', 'renewalReasons', ...PARTNER_DOC_KEYS, ...MS_DOC_KEYS] as unknown as [string, ...string[]];
