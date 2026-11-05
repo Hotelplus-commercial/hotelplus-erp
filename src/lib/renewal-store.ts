@@ -63,6 +63,10 @@ export const DEMO_EXTRA_CARDS: RenewalCard[] = [
   { id: 'RN-D7', hotelId: 'HTL0137', hotel: 'Krabi Cliff Villa', contractEnd: '20 Oct 2026', daysLeft: 20, status: 'ON_PROCESS', owner: 'AE001-Nont', contact: contact('คุณวิไล ผาสูง'), contractFile: 'Contract_v1_2025.pdf', contractGeneratedAt: '15 Oct 2025', activities: [] },
   /* v1.4 §9 additions (Renewal Offer demo, DEMO date 2 Nov 2026) */
   ...V14_DEMO.map((d): RenewalCard => ({ id: d.card_id, hotelId: d.hotel_id, hotel: d.hotel, contractEnd: d.contractEnd, daysLeft: d.daysLeft, status: 'ON_PROCESS', owner: 'AE001-Nont', contact: contact(d.contact), contractFile: 'Contract_v1_2024.pdf', contractGeneratedAt: '1 Dec 2024', activities: [], contract_id: d.contract_id, service: d.service })),
+  /* AE Workspace System Cost UAT (DEMO only, in memory): same contract / property ids as the Partner demo. */
+  { id: 'RN-AW-CHABA', hotelId: 'HP-CT-ORM-Q-ORM-0410', hotel: 'Chaba Grand', contractEnd: '30 Nov 2026', daysLeft: 33, status: 'ON_PROCESS', owner: 'AE001-Nont', contact: contact('คุณชบา'), contractFile: 'Contract_v1_2025.pdf', contractGeneratedAt: '1 Dec 2025', activities: [], contract_id: 'CT-ORM-Q-ORM-0410', service: 'ORM' },
+  { id: 'RN-AW-MARCOM', hotelId: 'HP-AW-LANTA', hotel: 'Lanta Bay Resort', contractEnd: '20 Dec 2026', daysLeft: 53, status: 'ON_PROCESS', owner: 'AE001-Nont', contact: contact('คุณลันตา'), contractFile: 'Contract_v1_2025.pdf', contractGeneratedAt: '21 Dec 2025', activities: [], contract_id: 'CT-AW-LANTA-MC', service: 'Marcom' },
+  { id: 'RN-AW-DOIMIST', hotelId: 'HP-DOIMIST', hotel: 'Doi Mist Resort', contractEnd: '15 Dec 2026', daysLeft: 48, status: 'ON_PROCESS', owner: 'AE001-Nont', contact: contact('คุณดอย'), contractFile: 'Contract_v1_2025.pdf', contractGeneratedAt: '16 Dec 2025', activities: [], contract_id: 'CT-AW-DOIMIST', service: 'ORM' },
 ];
 
 /** Demo v_ps_repricing rows, produced by the same repricingRow() engine with demo constants. */
