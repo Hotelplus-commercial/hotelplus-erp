@@ -327,3 +327,8 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [x] Fresh reads (open · tab · role · focus · storage) + รีเฟรช button · BD DEMO bar 28 ต.ค. 2569 · testing-mode check panel
 - [x] Tests WB21 1–9
 - [x] v1.4.1 · package fields · one DEMO clock · Q58
+
+# AE Workspace · Meeting channel + Survey v2
+- [x] Types/store/Cloud mirror keys, channel at booking, no-score, customer link + public page, template v2 (off by default), Q8 hidden, DEMO §7, rules, tests.
+- [ ] Real customer-link delivery to another device: needs the portal (shared backend with login).
+- [ ] "AE ยังไม่ส่ง" on PS Dashboard Meeting analyzer left unchanged (rule 6).
