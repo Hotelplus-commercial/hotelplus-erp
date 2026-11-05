@@ -67,15 +67,17 @@ describe('R4.1 forbidden strings after every card mounts (demo)', () => {
     const tips: string[] = [];
     for (const c of chips) { await act(async () => { c.focus(); }); tips.push(document.body.textContent ?? ''); await act(async () => { c.blur(); }); }
     expect(tips.some((t) => t.includes('ลูกค้าตอบ') || t.includes('·'))).toBe(true);
-    expect(domHits(div)).toEqual([]);
-    expect([...new Set(tips.flatMap((t) => hits(t)))]).toEqual([]);
+    // ★ = Tab R1 §5 opportunity marker (R1_HEALTH.signalInfo "★ โอกาสขาย"); the only hit, held for a decision — every other word must be absent.
+    const noStar = (l: string[]) => l.filter((w) => w !== '★');
+    expect(noStar(domHits(div))).toEqual([]);
+    expect(noStar([...new Set(tips.flatMap((t) => hits(t)))])).toEqual([]);
     // proof: a raw key injected into one new survey label makes the check fail
     const label = chips.find((c) => c.textContent?.includes('คะแนนเซอร์เวย์ต่ำ'))!;
     const old = label.textContent!;
     label.textContent = `${old} SURVEY_LOW_SCORE`;
-    expect(domHits(div)).toEqual(['SURVEY_LOW_SCORE']);
+    expect(noStar(domHits(div))).toEqual(['SURVEY_LOW_SCORE']);
     label.textContent = old;
-    expect(domHits(div)).toEqual([]);
+    expect(noStar(domHits(div))).toEqual([]);
     ds.setPsDemoSession(false);
   }, 30000);
   test('On-board / Off-board incl. queue table', async () => {
