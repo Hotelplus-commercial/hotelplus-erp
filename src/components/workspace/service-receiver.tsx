@@ -256,7 +256,7 @@ function ReceiverPanel({ r, actor, head, demo, today, l0, cats, onClose, onAccep
               {cats.map((c) => <option key={c.id} value={c.id}>{c.name_th}</option>)}
             </select>
           </label>
-          <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs">{kv.map(([k, v]) => <><dt key={`k-${k}`} className="text-muted-foreground">{k}</dt><dd key={`v-${k}`}>{v}</dd></>)}</dl>
+          <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs">{kv.flatMap(([k, v]) => [<dt key={`k-${k}`} className="text-muted-foreground">{k}</dt>, <dd key={`v-${k}`}>{v}</dd>])}</dl>
           {sp && (
             <div className="space-y-1 rounded-md border border-destructive/30 bg-destructive/5 p-2 text-xs" data-testid="recv-shutoff">
               <p className="font-medium">{r.type === "SYSTEM_SHUTOFF" ? "เคลียร์ข้อมูลบนระบบของโรงแรม (คล้าย Off-board)" : "เปิดระบบและคืนข้อมูล"}</p>
