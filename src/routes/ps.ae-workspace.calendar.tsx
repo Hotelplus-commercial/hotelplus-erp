@@ -71,6 +71,9 @@ const statusOfLabel: Record<string, MeetingCardV4["status"] | "ALL"> = {
 
 function CalendarTab() {
   const { role, month } = useMeetingMgmt();
+  useMeetingSurveyData();
+  /* Calendar cards are read through the shared helper (sample input; unchanged in DEMO, as before). */
+  const v4CalendarCards = getCalendarCards(false);
   const isPm = role === "Partner Manager";
 
   const [dept, setDept] = useState<Dept>("All");
