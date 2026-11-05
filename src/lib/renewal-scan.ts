@@ -37,6 +37,11 @@ export function scanCandidates(contracts: ScanContract[], cards: RenewalCard[], 
     return today >= scanDateOf(c.end) && today <= c.end.slice(0, 10) && !openCardFor(cards, c);
   });
 }
+/** v1.4.1 RN44: days left is computed on every render from the card's end date and the module clock (stored daysLeft only as fallback). */
+export function cardDaysLeft(c: Pick<RenewalCard, 'contractEnd' | 'daysLeft'>, today: string): number {
+  const iso = toIsoDate(c.contractEnd);
+  return iso ? dayDiff(today, iso) : c.daysLeft;
+}
 export const aeCode = (id: string | null | undefined) => (id ?? '').split('-')[0] ?? '';
 export function newCardFrom(c: ScanContract, source: 'BOT' | 'AE_EARLY', today: string, owner: string): RenewalCard {
   return {

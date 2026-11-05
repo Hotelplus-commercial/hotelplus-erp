@@ -48,7 +48,7 @@ import { RENEWAL_LABEL_TH as RL, RENEWAL_TEST_BANNER, RENEWAL_TEST_SWITCH, RN2, 
 import { RenewalReasonPicker } from "@/components/ps/renewal-reason-picker";
 import { recordReason, setReasonsDemo } from "@/lib/renewal-reasons";
 import { isOwningAe, reasonLabel, validPick } from "@/lib/renewal-r2";
-import { EARLY_PARAM, readEarlyHandoff, scanContractById, type ScanContract } from "@/lib/renewal-scan";
+import { EARLY_PARAM, cardDaysLeft, readEarlyHandoff, scanContractById, type ScanContract } from "@/lib/renewal-scan";
 import { RENEWAL_R2_DEMO_NOW, renewalR2DemoReasons, renewalR2DemoScanFeed } from "@/lib/renewal-r2-demo";
 import { actingRenewalUser, isRenewalTestMode, setTestMember, useTestMember } from "@/lib/renewal-test-actor";
 import { useMeetingMgmt } from "@/lib/orm-meeting";
@@ -119,7 +119,7 @@ export function RenewalActivityCards({
 
   const visible = cards
     .filter((c) => (scope === "my" ? c.owner === currentUser : true))
-    .sort((a, b) => (sortAsc ? a.daysLeft - b.daysLeft : b.daysLeft - a.daysLeft));
+    .sort((a, b) => { const da = cardDaysLeft(a, today()), db = cardDaysLeft(b, today()); return sortAsc ? da - db : db - da; });
 
   return (
     <div id="renewal-activities" className="mt-4 scroll-mt-20 rounded-xl border">
@@ -155,7 +155,7 @@ export function RenewalActivityCards({
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="truncate text-sm font-semibold">🏨 {c.hotel}</span>
-                    <span className="text-xs text-muted-foreground">· {c.daysLeft}d left ·</span>
+                    {(() => { const d = cardDaysLeft(c, today()); return d < 0 ? <span className="text-xs font-medium text-destructive">· เลยกำหนด {-d} วัน ·</span> : <span className="text-xs text-muted-foreground">· {d}d left ·</span>; })()}
                     <RenewalStatusBadge status={c.status} />
                     <RenewalRequestChips cardId={c.id} />
                     <SignedBadge card={c} />
