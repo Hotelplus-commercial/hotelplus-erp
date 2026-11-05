@@ -98,3 +98,9 @@
 - PW6–PW9 to-do group `partner` in the PS registry row (adapter src/lib/partner-todo.ts → pure partnerTodoItems in src/lib/partner-workspace.ts; 30 / 7 / 14 days; PM only; hidden when empty).
 - PW13–PW14 PS-side SYSTEM_SHUTOFF: row/detail in src/components/workspace/partner-shutoff.tsx; status moves only for role PS + picked AE member = property.assigned_ae_id (else payload.assigned_ae); PM read-only hint. Lifecycle stays NEW → IN_PROGRESS → DONE (ACK never offered, Tab R1 §6.6). DEMO shut-off tickets are seeded into the in-memory ticket store only.
 - Open: X1 AC App · X3 AE Workspace · X4 ORM / Marcom Workspace pending; DP-O2 · DP-O3 open. Portal: create property_partner_system with the other Partner tables (role-based RLS, needs login).
+
+## PM Workspace · Partner v1.1 (2026-11-05) — PW15–PW22
+- Partner data is edited only in PM Workspace › จัดการ Partner (/workspace/ps/partners, tabs #partner · #ratecard · #deals · #credit via hashOfTab/tabOfHash). PS Dashboard cards ③④⑤ and the renewal row are read-only for every role (edit components kept, not rendered); PM sees `จัดการใน PM Workspace ↗`, others the source tag. Header button always shown on PM Workspace: PM enabled · testing mode other role disabled + `สลับเป็น PM เพื่อทดสอบ` · real use not PM hidden. Why: one place to edit.
+- Partner attachments = optional `partners.attachments` (links only until Drive is connected) via addPartnerAttachment / updatePartnerAttachment / removePartnerAttachment in debt-partner-store; UI src/components/ps/partner-attachments.tsx (editor in PM Workspace, read-only `📎 n` popover on card ③).
+- Hotel Profile ORM block: `#orm` anchor, `?demo=1` reads the DEMO Partner store; DEMO Partner hotels (not in WS-2) open a DEMO-only profile and are listed on the hotel list under ?demo=1 (partnerDemoHotels()). Future system rows show `รอมีผล {date}`.
+- Workspace DEMO banners read pageDateLabel(true) from demo-session.ts.
