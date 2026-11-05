@@ -105,7 +105,7 @@ function valuesFor(type: Exclude<OfferType, 'NONE'>, fee: FeeAverage, model: Bil
         if (!band) return null;
         const mid = old * (1 + (band[0] + band[1]) / 2 / 100); let def = round100(mid);
         if (model === 'FLAT' && def - old < cfg.renewal_min_raise_thb) def = ceil100(old + cfg.renewal_min_raise_thb); // RN30, FLAT only
-        vals.push({ key: k, old, min: old * (1 + band[0] / 100), max: old * (1 + band[1] / 100), default: def });
+        vals.push({ key: k, old, min: pts(old * (1 + band[0] / 100)), max: pts(old * (1 + band[1] / 100)), default: def });
       } else { const rec = round100(old * (1 - (cfg.lower_fee_steps[step] ?? 0) / 100)); vals.push({ key: k, old, min: rec, max: old, default: rec }); }
       continue;
     }

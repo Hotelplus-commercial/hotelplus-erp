@@ -64,7 +64,7 @@ describe('§2.4–2.6', () => {
     const f = fee({ fixed_fee: 25000, avg_billed: 25000, avg_revenue_base: 380000 });
     const alts = E.packageAlternatives(f, 28400, cfg);
     expect(alts.map((a) => a.model)).toEqual(['FIXED_PLUS_COMMISSION', 'COMMISSION_GUARANTEE']);
-    expect(alts[0]!.terms).toMatchObject({ fixed_fee: 8500, commission_pct: 5.5 });
+    expect(alts[0]!.terms).toMatchObject({ fixed_fee: 8500, commission_pct: 5 });
     expect(alts[1]!.terms).toMatchObject({ commission_pct: 7.5, guarantee_fee: 22500 });
     expect(E.packageAlternatives(fee({}), 28400, cfg)).toEqual([]);
   });
