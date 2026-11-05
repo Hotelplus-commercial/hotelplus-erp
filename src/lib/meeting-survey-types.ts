@@ -37,6 +37,11 @@ export type MeetingRecord = {
   /** Original sample row (read-only input), so existing pages render exactly as before. */
   raw?: unknown;
   created_at?: string | null;
+  /** Meeting tab R1 (optional): card month `YYYY-MM` when it differs from / is missing in `date` (unbooked cards). */
+  card_month?: string | null;
+  /** Meeting tab R1 (optional): caretaker copy — ORM team / Marcom person. Missing = role assignment / calendar card / "—". */
+  caretaker_team?: string | null;
+  caretaker_person?: string | null;
 };
 
 export type SurveyRecord = {

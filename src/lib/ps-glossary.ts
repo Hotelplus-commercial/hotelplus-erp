@@ -60,7 +60,7 @@ export function plainSv(text: string): string {
 export const RENEWAL_LABEL = { renewed: "ต่อแล้ว", notRenewed: "ไม่ต่อ", inProgress: "กำลังคุย" } as const;
 export const CONTRACT_LABEL = { active: "ใช้งาน", inactive: "สิ้นสุด" } as const;
 export const FLAG_LABEL = { red: "ธงแดง", warn: "ธงเหลือง" } as const;
-export const MEETING_STATUS_LABEL = { aeNotSent: "AE ยังไม่ส่ง", surveyPending: "รอลูกค้าตอบ", surveyCommented: "ลูกค้าแย้ง", notDone: "ยังไม่สำเร็จ" } as const;
+export const MEETING_STATUS_LABEL = { aeNotSent: "รอทำ Survey", surveyPending: "รอลูกค้าตอบ", surveyCommented: "ลูกค้าแย้ง", notDone: "ยังไม่สำเร็จ" } as const;
 export const TIME_LABEL = { overdue: "เลยกำหนด", nearDue: "ใกล้ถึงกำหนด", onTime: "ทันกำหนด", dueToday: "ถึงกำหนดวันนี้" } as const;
 /** AE display name from an owner id ("AE001-Nont" → "Nont"); missing → "ไม่พบชื่อ AE". */
 export function aeNameTh(id: unknown): string {
@@ -721,4 +721,41 @@ export const DP_HELP = {
   deals: "ตอบว่ามีส่วนลด / สิทธิพิเศษอะไรจาก Partner และ AC รับทราบแล้วหรือยัง · ข้อมูลจาก PM Workspace › จัดการ Partner และ ticket ถึง AC · ณ วันนี้ · PM บันทึกใน PM Workspace › จัดการ Partner · หน้านี้ดูอย่างเดียว",
   credit: "ตอบว่ามีค่าระบบจ่ายล่วงหน้าเกินวันสิ้นสุดสัญญาที่ต้องขอเก็บเป็นเครดิตไหม · ข้อมูลจากบิล Partner ที่ AC บันทึกและคำขอของ PM · ณ วันนี้ · PM บันทึกใน PM Workspace › จัดการ Partner · หน้านี้ดูอย่างเดียว",
   tour: "ส่วนลด Partner: ③ ต้นทุนค่าระบบ ④ ข้อตกลงกับ Partner ⑤ เครดิตค่าระบบ · PM บันทึก AC รับทราบ",
+} as const;
+
+/** PS Dashboard · Tab การประชุม & เซอร์เวย์ R1 (MS1–MS40) — labels, glossary and ⓘ text (one source). */
+export const MEETING_R1 = {
+  heroTitle: "ประชุมที่ต้องนัดเดือนนี้",
+  heroOrm: "โควตา = การ์ด Tier A ของเดือน · นัดแทนด้วย Tier B / C ได้ · ไม่นับเลื่อนไปเดือนหน้า",
+  heroMc: "ทุกโรงแรมที่มีผู้ดูแล Marcom · ไม่นับเลื่อนไปเดือนหน้า",
+  noChannel: "ยังไม่มีข้อมูลช่องทางประชุม · นับทุกประชุมเป็น Online Meeting",
+  sectionA: "นัดครบไหม",
+  sectionB: "ประชุมแล้วได้ผลแค่ไหน",
+  surveyPending: "รอทำ Survey",
+  templateNote: "ชุดคำถามปัจจุบัน (ชุดที่ 1) · ใช้ไปก่อน · MD มีแผนปรับหัวข้อใหม่ · เมื่อเปลี่ยนชุด การ์ดแสดงตามชุดของเดือนนั้น และไม่เทียบหัวข้อที่ต่างชุดกัน",
+  glossary: {
+    "Online Meeting": "หน่วยนับของแท็บนี้ · ประชุมออนไลน์ ORM และ Marcom (Call / อีเมล / LINE ไม่นับ)",
+    "โควตา": "ORM = การ์ด Tier A ของเดือน · Marcom = ทุกการ์ดของเดือน · ไม่นับเลื่อนไปเดือนหน้า",
+    "นัดแทน": "Online Meeting กับโรงแรม Tier B / C เมื่อนัด Tier A ไม่ได้ · นับเข้าโควตา ORM",
+    "เกินโควตา": "ประชุมที่เกินจากโควตา · ยังนับในทุกจำนวน",
+    "ลูกค้าไม่ให้คะแนน": "ลูกค้าปฏิเสธให้คะแนน หรือลิงก์หมดอายุ · ธงเหลือง",
+    "รอทำ Survey": "ประชุมจบแล้ว ยังไม่มีเซอร์เวย์ · ยังไม่เป็นธง",
+    "เงียบ ≥2 เดือน": "ไม่มีคะแนนเซอร์เวย์ติดกันตั้งแต่ 2 เดือน · ธงแดง",
+  },
+  info: {
+    unit: "นับเป็น Online Meeting เท่านั้น · Call / อีเมล / LINE ของ Tier B / C ไม่นับในแท็บนี้",
+    quota: "ORM: การ์ด Tier A ของเดือนการ์ด ลบการ์ดที่เลื่อนไปเดือนหน้า · Marcom: ทุกการ์ดของเดือน ลบเลื่อนไปเดือนหน้า",
+    booked: "สถานะ ยืนยันนัด · ประชุมแล้ว · ไม่มา · ส่งเซอร์เวย์แล้ว · Online Meeting เท่านั้น · รวมเกินโควตา",
+    completed: "ประชุมแล้ว + ส่งเซอร์เวย์แล้ว",
+    surveyed: "ประชุมจบแล้วที่มีเซอร์เวย์มีคะแนน (AE กรอก หรือ ลูกค้าตอบเอง) · ทุกชุดคำถาม · รวมลูกค้าแย้ง",
+    score: "median ของคะแนนพึงพอใจรวม เฉพาะผู้ให้คะแนน · ลูกค้าไม่ให้คะแนนไม่อยู่ใน median · ≤6 ต่ำ · 7 กลาง · ≥8 พอใจ",
+    funnel: "นัดได้ → Meeting Completed → ได้คะแนน Survey · % หารด้วยนัดได้เสมอ · กรอบเส้นประ = โควตา",
+    hover: "ชี้ / แตะที่แถบเพื่อดูรายชื่อโรงแรม · แตะอีกครั้ง หรือกด Esc เพื่อปิด",
+    tierA: "Tier A ของเดือนที่ยังไม่จบประชุม · อยู่ในรายการจนกว่าประชุมของตัวเองจะจบ",
+    owner: "แถบ = โควตา · เต็ม = Tier A สำเร็จ · ลาย = นัดแทนสำเร็จ · เทา = ยังขาด · เรียงตามชื่อ ไม่ใช่อันดับ",
+    workload: "ทุก Online Meeting ของเดือน รวมเกินโควตา · ต่อ 10 โรงแรม = นัด ÷ พอร์ต × 10 · ไม่ใช่อันดับ",
+    survey: "ฐานต่อแถว = ได้คะแนน + ลูกค้าไม่ให้คะแนน (รอทำ Survey ไม่อยู่ในแถว) · ไม่เทียบหัวข้อต่างชุด",
+    bands: "≤6 ต่ำ (แดง) · 7 กลาง (เหลือง) · ≥8 พอใจ (เขียว) · ลูกค้าไม่ให้คะแนน = ลายเทา ท้ายแถบ",
+    analyzer: "เครื่องวิเคราะห์อยู่ที่ The Office App · ยังไม่เปิดใช้",
+  },
 } as const;

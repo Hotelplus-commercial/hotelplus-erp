@@ -34,6 +34,7 @@ import {
   type MeetingReport,
   type MeetingRow,
 } from "@/lib/meeting-dashboard-types";
+import { MeetingTabR1 } from "./meeting-tab-r1";
 import { DashCard, ChartHint, ChartSkeleton, toneClass } from "./dash-card";
 const FLAG_RED_MAX = MEETING_CONFIG.flag_red_max;
 const FLAG_WARN_SCORE = MEETING_CONFIG.flag_warn_score;
@@ -1044,7 +1045,11 @@ function RubricRow() {
 }
 
 /* ================= tab ================= */
-export function MeetingAnalyzerTab({
+/** R1 (MS8): the tab renders the R1 layout; the v2.0 layout (Flag Board, 5 % tiles, Q-cards) stays below, unmounted. */
+export function MeetingAnalyzerTab(_props: { report: MeetingReport | undefined; loading: boolean; error: boolean }) {
+  return <MeetingTabR1 />;
+}
+export function MeetingAnalyzerTabV2({
   report,
   loading,
   error,
