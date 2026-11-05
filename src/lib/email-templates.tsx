@@ -84,6 +84,9 @@ type Ctx = State & {
   /** Freeze at queue-creation: stamps unseen queue entries with the current version. */
   stampSurveys: (ids: { id: string; key: SurveyKey }[]) => void;
   surveyFor: (id: string, key: SurveyKey) => SurveyVersion;
+  /** Survey v2 patch §1.4 — active survey template version (1 or 2). */
+  surveyVersion: number;
+  setSurveyVersion: (v: 1 | 2) => void;
 };
 const C = createContext<Ctx | null>(null);
 
@@ -140,6 +143,8 @@ export function TemplateMgmtProvider({ children }: { children: ReactNode }) {
       setState((s) => { const st = { ...s.surveyStamps }; missing.forEach((i) => { if (st[i.id] === undefined) st[i.id] = activeSurvey(s.surveys.find((d) => d.key === i.key)!).version; }); return { ...s, surveyStamps: st }; });
     },
     surveyFor: (id, key) => { const d = state.surveys.find((x) => x.key === key)!; const v = state.surveyStamps[id]; return d.versions.find((x) => x.version === v) ?? activeSurvey(d); },
+    surveyVersion: state.surveyActiveVersion ?? 1,
+    setSurveyVersion: (v) => setState((s) => ({ ...s, surveyActiveVersion: v })),
     bumpChecklist: (by) => {
       const next = state.checklist.version + 1;
       setState((s) => ({ ...s, checklist: { version: s.checklist.version + 1, published_at: new Date().toISOString(), published_by: by } }));
