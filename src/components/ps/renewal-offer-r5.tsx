@@ -15,6 +15,25 @@ import { r5DemoOfferById } from "@/lib/renewal-r5-demo";
 import { DECIDED_TAG_TH, DECIDED_TAG_TONE, decidedTag, deltaOf, isGroup1, shortReco, shortTerms } from "@/lib/renewal-r5";
 import type { RenewalReason } from "@/lib/renewal-reasons";
 import { cn } from "@/lib/utils";
+import { partnerDataFor } from "@/lib/debt-partner-store";
+import { getContractSystemCost, getPrepaidUntil, monthsOver, type SystemCost } from "@/lib/debt-partner-calc";
+import { PARTNER_DEMO_CONTRACTS } from "@/lib/debt-partner-demo";
+import { DEMO_DAY } from "@/lib/demo-session";
+
+/** Debt Partner R1 §9 — the two Partner rows of the block (numbers from debt-partner-calc only). */
+export type SysRow = { marcom: boolean; cost: SystemCost | null; prepaid: string | null; beyond: number };
+export function sysRowFor(i: Pick<RenewalItem, "contract_id" | "service" | "end">, demo: boolean): SysRow {
+  if (i.service !== "ORM") return { marcom: true, cost: null, prepaid: null, beyond: 0 };
+  const d = partnerDataFor(demo);
+  const c = (demo ? PARTNER_DEMO_CONTRACTS.find((x) => x.contract_id === i.contract_id) : undefined)
+    ?? { contract_id: i.contract_id, hotel: "", service: "ORM" as const, allotment: null, start: null, end: i.end ?? null, end_reason: null };
+  const cost = getContractSystemCost(d, c, demo ? DEMO_DAY : new Date().toISOString().slice(0, 10));
+  const prepaid = getPrepaidUntil(d, i.contract_id);
+  const end = c.end ?? i.end ?? null;
+  return { marcom: false, cost, prepaid, beyond: prepaid && end ? monthsOver(end, prepaid) : 0 };
+}
+const sysThb = (n: number) => `฿${Math.round(n).toLocaleString("en-US")}`;
+const dmy = (iso: string) => new Date(`${iso.slice(0, 10)}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "2-digit", timeZone: "UTC" });
 
 export type OfferReco = { type: OfferType; model: BillingModel | null; values: OfferValue[]; avg_before: number | null; expected_avg: number | null };
 export type OfferInfo = {
@@ -22,6 +41,8 @@ export type OfferInfo = {
   type: OfferType | null; reco: OfferReco | null; ctx: OfferContext | null;
   req: RenewalRequest | null; offered: OfferTerms | null; oldModel: BillingModel | null; match: OfferMatch | null; offerAvg: number | null;
   overdue: boolean;
+  /** Debt Partner R1 §9 */
+  sys?: SysRow;
 };
 const thb = (n: number | null | undefined) => (n == null ? "—" : `฿${Math.round(n).toLocaleString("en-US")}`);
 
@@ -32,7 +53,7 @@ export function offerInfoFor(i: RenewalItem, req: RenewalRequest | null, demo: b
   if (r5) {
     const o = r5.offer;
     return { type: o.type, reco: { type: o.type, model: o.model, values: o.values, avg_before: o.avg_before, expected_avg: o.expected_avg }, ctx: null, req: null,
-      offered: r5.offered, oldModel: r5.old_model, match: r5.offer_match, offerAvg: r5.offer_expected_avg, overdue: !!o.overdue?.own };
+      offered: r5.offered, oldModel: r5.old_model, match: r5.offer_match, offerAvg: r5.offer_expected_avg, overdue: !!o.overdue?.own, sys: sysRowFor(i, demo) };
   }
   let ctx: OfferContext | null = null;
   if (isOpen(i)) { try { const src = sourceContractById(i.contract_id, i.service); ctx = src ? offerContextForSource(src) : null; } catch { ctx = null; } }
@@ -43,6 +64,7 @@ export function offerInfoFor(i: RenewalItem, req: RenewalRequest | null, demo: b
     type: reco?.type ?? null, reco, ctx, req: r, offered: r ? offerTermsOf(r.new_terms) : null, oldModel: r?.old_terms.billing_model ?? null,
     match: r?.offer_match ?? null, offerAvg: r?.offer_expected_avg ?? null,
     overdue: snap ? !!snap.overdue?.own : !!ctx?.offer.overdue?.own,
+    sys: sysRowFor(i, demo),
   };
 }
 
@@ -99,6 +121,18 @@ export function OfferBlock({ info, open, onToggle }: { info: OfferInfo; open: bo
           <Row label={B.current}>
             {fee?.model ? <span className="tabular-nums">{shortTerms(fee.model, fee)} <span className="rn5-grey">· {B.avg(thb(fee.avg_billed))}</span></span> : "—"}
           </Row>
+          {info.sys && (
+            <>
+              <Row label="ต้นทุนค่าระบบ">
+                <span data-testid="rn5-sys-cost">{info.sys.marcom ? "ไม่มี" : !info.sys.cost ? <span className="text-dash-watch">ยังไม่ระบุระบบ</span> : (
+                  <span className="tabular-nums">{info.sys.cost.currency === "THB" ? sysThb(info.sys.cost.net) : `${info.sys.cost.currency} ${info.sys.cost.net}`} / เดือน · {info.sys.cost.partner}{info.sys.cost.net < info.sys.cost.base && <s className="rn5-grey"> {info.sys.cost.currency === "THB" ? sysThb(info.sys.cost.base) : `${info.sys.cost.currency} ${info.sys.cost.base}`}</s>}</span>
+                )}</span>
+              </Row>
+              <Row label="จ่ายล่วงหน้าถึง">
+                <span data-testid="rn5-sys-prepaid">{info.sys.prepaid ? <>{dmy(info.sys.prepaid)}{info.sys.beyond > 0 && <span className="text-dash-watch"> · เกินวันสิ้นสุด {info.sys.beyond} เดือน</span>}</> : "–"}</span>
+              </Row>
+            </>
+          )}
           <Row label={B.reco}>
             {!reco || reco.type === "NONE" || !reco.model ? <span className="rn5-grey" data-testid="rn5-none">{B.none}</span> : (
               <span data-testid="rn5-reco" data-type={reco.type}><span className={typeChipCls(reco.type)}>{RO.chip[reco.type]}</span>{info.overdue && reco.type === "KEEP" && <span className="rn5-grey"> {B.overdue}</span>} <span className="tabular-nums">{shortReco(reco.type, reco.model, reco.values)}</span></span>
