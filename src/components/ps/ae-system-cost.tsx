@@ -27,10 +27,11 @@ const Amber = ({ children, testId }: { children: React.ReactNode; testId?: strin
 export function useSharedDemo(): boolean {
   const [on, setOn] = useState(false);
   useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get("demo");
+    // ?demo=1 / ?demo=0 writes the shared DEMO state once; afterwards the page follows the shared state only.
+    if (q === "1" && !psDemoOn()) setPsDemoSession(true); else if (q === "0" && psDemoOn()) setPsDemoSession(false);
     const apply = () => {
-      const q = new URLSearchParams(window.location.search).get("demo");
-      if (q === "1") setPsDemoSession(true); else if (q === "0") setPsDemoSession(false);
-      const v = q === "1" || (q !== "0" && psDemoOn());
+      const v = psDemoOn();
       setPartnerDemo(v); setTicketDemo(v);
       if (v) { seedShutoffDemo(); seedAcBillsDemo(); }
       setOn(v);
