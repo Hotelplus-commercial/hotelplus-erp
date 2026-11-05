@@ -113,7 +113,6 @@ export function AcTab({ views, loading, error, service, compare, demo, periodA, 
     <div className="flex min-w-0 flex-col gap-5" data-testid="ac-tab" data-demo={demo || undefined}>
       <DefinitionStrip />
       <SectionHead title="ลูกหนี้ & การเก็บเงิน" desc="ใครจ่ายตรงเวลา · ค้างเท่าไร อยู่ขั้นไหน · ต้องตามใคร" />
-      <DebtorCard initialOpen={openLists} views={views} svc={svc} debtors={debtors.filter(svc)} breakdown={breakdown.filter(svc)} compare={cardCompare ? false : compare} openHotel={openHotel} period={cardCompare ? <NowChip /> : undefined} />
       <div className="ac-row2">
         {cardCompare ? (
           <GradeCard gradeDist={rawGrade.filter((r) => String(r.billing_period ?? "").slice(0, 10) <= kGrade.a.to)} chip={gLatest ? monYY(gLatest) : "—"} prevChip={gPrev ? monYY(gPrev) : "—"} compare customers={gradeCustomersA} initialOpen={openLists} period={kGrade.control} periodKeys={{ latest: gLatest, prev: gPrev }} />
@@ -122,9 +121,9 @@ export function AcTab({ views, loading, error, service, compare, demo, periodA, 
         )}
         {DP_LEGACY && <SystemFeeMock />}
       </div>
+      <DebtorCard initialOpen={openLists} views={views} svc={svc} debtors={debtors.filter(svc)} breakdown={breakdown.filter(svc)} compare={cardCompare ? false : compare} openHotel={openHotel} period={cardCompare ? <NowChip /> : undefined} />
       {cardCompare && <PartnerSection demo={!!demo} />}
-      {DP_LEGACY && <SectionHead title="ค่าใช้จ่ายรายสัญญา" desc="แต่ละสัญญาบริการจ่ายเราเดือนละเท่าไร · ใช้เตรียมคุยราคาตอนต่อสัญญา · ไม่ใช่การจัดอันดับ" />
-      desc="แต่ละสัญญาบริการจ่ายเราเดือนละเท่าไร · ใช้เตรียมคุยราคาตอนต่อสัญญา · ไม่ใช่การจัดอันดับ" />}
+      {DP_LEGACY && <SectionHead title="ค่าใช้จ่ายรายสัญญา" desc="แต่ละสัญญาบริการจ่ายเราเดือนละเท่าไร · ใช้เตรียมคุยราคาตอนต่อสัญญา · ไม่ใช่การจัดอันดับ" />}
       {DP_LEGACY && (cardCompare ? (
         <ContractCostCard initialOpen={openLists} rows={costRows} service={service} compare periodA={kCost.a} periodB={kCost.b} period={kCost.control} />
       ) : (
