@@ -5,8 +5,8 @@ import { DashCard } from "@/components/ps/dash-card";
 import { NowChip } from "./compare-control";
 import { PartnerFormDrawer, type PartnerFormMode } from "./partner-form-drawer";
 import { setPartnerDemo, usePartnerData } from "@/lib/debt-partner-store";
-import { creditRows, creditTiles, getCashbackExpected, getDealState, rateCardRows, type DealState, type PartnerContract } from "@/lib/debt-partner-calc";
-import { PARTNER_DEMO_CONTRACTS, PARTNER_DEMO_TICKET_STATUS } from "@/lib/debt-partner-demo";
+import { creditAmountOf, creditRows, creditTiles, getCashbackExpected, getDealState, rateCardRows, type DealState, type PartnerContract } from "@/lib/debt-partner-calc";
+import { PARTNER_DEMO_TICKET_STATUS } from "@/lib/debt-partner-demo";
 import { DEMO_DAY } from "@/lib/demo-session";
 import { ticketById, useTickets, type L0Status } from "@/lib/tickets-l0";
 import type { PartnerData, PartnerDeal } from "@/lib/debt-partner-types";
@@ -20,11 +20,8 @@ const CYCLE: Record<string, string> = { MONTHLY: "รายเดือน", ADV
 const STATE_TH: Record<DealState, string> = { ACTIVE: "สำเร็จ · มีผลอยู่", UPCOMING: "สำเร็จ · รอเริ่ม", NEGOTIATING: "กำลังต่อรอง", EXPIRED: "หมดอายุ", FAILED: "ไม่สำเร็จ" };
 const pill = "inline-flex items-center rounded-full px-2 py-0.5 text-xs whitespace-nowrap";
 
-/** Contracts behind the Partner cards: DEMO bundle, else the system rows (allotment unknown → lowest tier, DP-O1). */
-export function partnerContracts(d: PartnerData, demo: boolean): PartnerContract[] {
-  if (demo) return PARTNER_DEMO_CONTRACTS;
-  return d.contract_partner_system.map((s) => ({ contract_id: s.contract_id, hotel: s.contract_id, service: "ORM", allotment: null, start: null, end: null, end_reason: null }));
-}
+import { partnerContracts } from "@/lib/partner-contracts";
+export { partnerContracts };
 /** AC notice status of a ticket id (real ticket store; DEMO fallback map). */
 export function noticeStatus(id: string | null, demo: boolean): L0Status | null {
   if (!id) return null;
@@ -217,7 +214,7 @@ function CreditCard({ d, contracts, today, demo }: { d: PartnerData; contracts: 
               <tr key={r.req.id} data-testid="dp-credit-stored" data-status={r.req.status}>
                 <td>{r.contract?.hotel ?? r.req.contract_id}<div className="text-xs text-muted-foreground">{r.req.contract_id}</div></td><td>{r.partner}</td>
                 <td>{r.contract ? endTag(r.contract) : dDMY(r.req.contract_end_date)}</td><td>{dDMY(r.req.prepaid_until)}</td>
-                <td className="tabular-nums">{r.req.months_over} เดือน</td><td className="tabular-nums">{money(r.req.amount, r.req.currency)}</td>
+                <td className="tabular-nums">{r.req.months_over} เดือน</td><td className="tabular-nums">{money(creditAmountOf(r.req), r.req.currency)}</td>
                 <td>{r.req.status === "REQUESTED" ? <><span className={cn(pill, "bg-teal-500/15 text-teal-700")}>ส่งคำขอแล้ว</span><div className="text-xs text-muted-foreground">รอ Partner ตอบ · {daysSince(r.req.requested_at)} วัน</div></> : r.req.status === "APPROVED" ? <><span className={cn(pill, "bg-dash-good/15 text-dash-good")}>Partner อนุมัติ</span><div className="text-xs text-muted-foreground">เครดิตใช้ได้ถึง {dDMY(r.req.credit_expires_at)}</div></> : <span className={cn(pill, "bg-muted text-muted-foreground")}>Partner ปฏิเสธ</span>}</td>
                 <td>{r.req.ac_ticket_id ? <AcNotice id={r.req.ac_ticket_id} demo={demo} /> : "–"}</td>
               </tr>

@@ -12,7 +12,7 @@ void useTickets;
 const d = partnerDemoData();
 describe('Debt Partner R1', () => {
   it('tab label renamed, key kept', () => { expect(DASHBOARD_TABS.find(([k]) => k === 'ac')?.[1]).toBe('ลูกหนี้ & ส่วนลด Partner'); });
-  it('9 partner doc keys are in the push list', () => { expect(CLOUD_DOC_KEYS.filter((k) => k.startsWith('partner:'))).toHaveLength(9); });
+  it('9 partner doc keys are in the push list', () => { expect(CLOUD_DOC_KEYS.filter((k) => k.startsWith('partner:'))).toHaveLength(10); });
   it('③ totals per partner', () => {
     const r = rateCardRows(d, PARTNER_DEMO_CONTRACTS, DEMO_DAY);
     const by = (n: string) => r.find((x) => x.partner === n)!;

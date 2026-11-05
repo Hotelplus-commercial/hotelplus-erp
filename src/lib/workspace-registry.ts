@@ -1,6 +1,7 @@
 /* Workspace Platform Layer 1 (spec v1.0): config-driven registry. The shell renders ONLY from these rows.
  * Adding a workspace = add a row here; no shell edits. ⏰/✅ adapters are defined but NOT wired. */
 import type { Dept } from './tickets-l0';
+import { partnerTodoAdapter } from './partner-todo';
 
 export type AppHost = 'BD_APP' | 'AC_APP' | 'PS_APP' | 'ORM_APP' | 'MARCOM_APP' | 'HR_APP' | 'AUTO_APP' | 'OFFICE_APP';
 export type DateRange = 'today' | '7d' | '14d';
@@ -33,7 +34,7 @@ const assignmentLanes = (scope: 'ORM' | 'MARCOM') => ({ ...lanes(), todo: [{ key
 export const WORKSPACES: WorkspaceConfig[] = [
   { dept_key: 'BD', label: 'BD Workspace', app_host: 'BD_APP', sidebar_order: 90, ticket_target_dept: 'BD', path: '/bd/tickets', lanes: lanes() },
   { dept_key: 'AC', label: 'AC Workspace', app_host: 'AC_APP', sidebar_order: 90, ticket_target_dept: 'AC', path: '/workspace/ac', lanes: lanes() },
-  { dept_key: 'PS', label: 'PM Workspace', app_host: 'PS_APP', sidebar_order: 50, ticket_target_dept: 'PS', path: '/workspace/ps', sidebar_entry: { label: 'Workspace', path: '/ps/workspace' }, lanes: lanes() },
+  { dept_key: 'PS', label: 'PM Workspace', app_host: 'PS_APP', sidebar_order: 50, ticket_target_dept: 'PS', path: '/workspace/ps', sidebar_entry: { label: 'Workspace', path: '/ps/workspace' }, lanes: { ...lanes(), todo: [{ key: 'partner', icon: '🤝', label_th: 'งาน Partner', adapter: partnerTodoAdapter }] } },
   { dept_key: 'ORM', label: 'ORM Workspace', app_host: 'ORM_APP', sidebar_order: 90, ticket_target_dept: 'ORM', path: '/workspace/orm', lanes: assignmentLanes('ORM') },
   { dept_key: 'MARCOM', label: 'Marcom Workspace', app_host: 'MARCOM_APP', sidebar_order: 90, ticket_target_dept: 'MARCOM', path: '/workspace/marcom', lanes: assignmentLanes('MARCOM') },
   { dept_key: 'HR', label: 'HR Workspace', app_host: 'HR_APP', sidebar_order: 90, ticket_target_dept: 'HR', path: '/workspace/hr', lanes: lanes() },

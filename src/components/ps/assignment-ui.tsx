@@ -9,6 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { ASSIGN_ROLE_LABEL, ORM_TEAMS, canAssign, teamLabel, useHrMembers, type AssignRole, type AssignType, type MemberFunction } from "@/lib/hr-members";
 import { STAGE_LABEL, fullSequence, useServicing, type OnboardingCard } from "@/lib/ps-servicing";
 import { serviceForVariant, useWs2 } from "@/lib/ws2-store";
+import { AssignSystemFields, currentSystemValues, saveAssignSystem } from "@/components/ps/partner-system-ui";
+import { getPartnerData } from "@/lib/debt-partner-store";
 
 const TYPE_LABEL: Record<AssignType, string> = { AE: "AE", SPECIALIST: "Specialist", ORM: "ORM", MARCOM: "Marcom" };
 /** v1.1 due rule: true only when the card's current stage is at/after the trigger stage (unknown stages → not due). */
@@ -93,6 +95,12 @@ export function AssignDialog({ card, type, onClose }: { card: OnboardingCard; ty
   const [rev, setRev] = useState<string>(pf?.revenue_member_id ?? "");
   const [ecom, setEcom] = useState<string>(pf?.ecommerce_member_id ?? "");
   const [one, setOne] = useState<string>((type === "AE" ? pr?.assigned_ae_id : type === "SPECIALIST" ? pr?.assigned_specialist_id : pf?.marcom_member_id) ?? "");
+  // PM Workspace Partner v1.0 §1.1: AE role + hotel has ORM → system + allotment (not a role slot, same Save).
+  const s = useServicing();
+  const hasOrm = type === "AE" && (s.cards.some((c) => c.property_id === card.property_id && c.service_variant === "ORM") || !!a.profile(card.property_id, "ORM"));
+  const [sysInit] = useState(() => currentSystemValues(getPartnerData(), card.property_id));
+  const [sysKeyV, setSysKeyV] = useState(sysInit.sys);
+  const [allot, setAllot] = useState(sysInit.allot);
   const opts = (fn: MemberFunction, t?: string) => hr.members.filter((m) => m.active && m.function === fn && (!t || m.orm_team === t));
   const allowed = canAssign(hr.role, type);
   const pick = (label: string, value: string, set: (v: string) => void, list: ReturnType<typeof opts>) => (
@@ -112,6 +120,7 @@ export function AssignDialog({ card, type, onClose }: { card: OnboardingCard; ty
       if (!one) { toast.info("เลือกผู้ดูแลก่อนบันทึก"); return; }
       const patch = type === "AE" ? { assigned_ae_id: one } : type === "SPECIALIST" ? { assigned_specialist_id: one } : { marcom_member_id: one };
       w.saveAssignment({ hotel_id: card.property_id, hotel_name: card.property_name, service: type === "MARCOM" ? svc : null, patch }, user, "Assignment");
+      if (hasOrm) { const r = saveAssignSystem(getPartnerData(), card.property_id, sysKeyV, allot, user); if (r !== "saved" && r !== "unchanged" && r !== "empty") toast.error(r); }
     }
     toast.success(`บันทึกผู้ดูแล ${TYPE_LABEL[type]} · ${card.property_name}`);
     onClose();
@@ -130,6 +139,7 @@ export function AssignDialog({ card, type, onClose }: { card: OnboardingCard; ty
             {pick("Revenue member", rev, setRev, opts("ORM_REVENUE", team))}
             {pick("Ecommerce member", ecom, setEcom, opts("ORM_ECOMMERCE", team))}
           </> : pick(type === "AE" ? "AE" : type === "SPECIALIST" ? "On-boarding Specialist" : "Marcom member", one, setOne, opts(type === "AE" ? "AE" : type === "SPECIALIST" ? "ONBOARDING_SPECIALIST" : "MARCOM"))}
+          {hasOrm && <AssignSystemFields sys={sysKeyV} allot={allot} onSys={setSysKeyV} onAllot={setAllot} disabled={!allowed} />}
           {!allowed && <p className="text-xs text-muted-foreground">บทบาท {ASSIGN_ROLE_LABEL[hr.role]} ดูได้อย่างเดียว</p>}
           <div className="flex justify-end"><Button disabled={!allowed} onClick={save}>Save</Button></div>
         </div>

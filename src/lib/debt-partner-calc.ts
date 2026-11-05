@@ -1,6 +1,6 @@
 /* Debt Partner R1 §2.1 — the one set of Partner cost / deal / credit calculations (pure). Cards ③④⑤, the §9 renewal
  * rows and later PM Workspace / AC App / AE Workspace screens call these; never re-implement them. */
-import type { PartnerData, PartnerDeal, PartnerRateCard, PartnerRateCardTier, SystemCreditRequest } from './debt-partner-types';
+import type { PartnerData, PartnerDeal, PartnerRateCard, PartnerRateCardTier, PropertyPartnerSystem, SystemCreditRequest } from './debt-partner-types';
 
 /** Contract facts the calculations need (from the main contract store, or the DEMO bundle). */
 export type PartnerContract = {
@@ -10,7 +10,31 @@ export type PartnerContract = {
   start: string | null; end: string | null; end_reason: 'NOT_RENEWED' | 'EARLY_TERMINATED' | null;
   /** When the not-renew / cancel outcome was recorded ("แจ้ง PM เมื่อ"). */
   outcome_at?: string | null;
+  /** PM Workspace Partner v1.0 §1.4: hotel of the contract → property_partner_system. */
+  property_id?: string | null;
 };
+
+/* ---------- PM Workspace Partner v1.0 §1.2 / §1.4 — system resolution ---------- */
+/** Latest property_partner_system row with effective_from ≤ date (ties → latest set_at). */
+export function propertySystemOn(data: PartnerData, property_id: string | null | undefined, date: string): PropertyPartnerSystem | null {
+  if (!property_id) return null;
+  const t = d10(date);
+  return data.property_partner_system.filter((r) => r.property_id === property_id && d10(r.effective_from) <= t)
+    .sort((a, b) => b.effective_from.localeCompare(a.effective_from) || b.set_at.localeCompare(a.set_at))[0] ?? null;
+}
+/** History newest first (future rows included). */
+export const propertySystemHistory = (data: PartnerData, property_id: string) =>
+  data.property_partner_system.filter((r) => r.property_id === property_id).sort((a, b) => b.effective_from.localeCompare(a.effective_from) || b.set_at.localeCompare(a.set_at));
+export type ResolvedSystem = { partner_id: string; system_name: string; allotment: number | null; source: 'CONTRACT' | 'PROPERTY' };
+/** contract_partner_system (override) → property_partner_system effective on `date`. Allotment: contract override → property row → contract fact. */
+export function resolveSystem(data: PartnerData, c: PartnerContract, date: string): ResolvedSystem | null {
+  const cps = data.contract_partner_system.find((s) => s.contract_id === c.contract_id);
+  const prop = propertySystemOn(data, c.property_id, date);
+  if (cps) return { partner_id: cps.partner_id, system_name: cps.system_name, allotment: cps.allotment ?? prop?.allotment ?? c.allotment, source: 'CONTRACT' };
+  if (prop) return { partner_id: prop.partner_id, system_name: prop.system_name, allotment: prop.allotment ?? c.allotment, source: 'PROPERTY' };
+  return null;
+}
+export const NO_ALLOTMENT_TH = 'ยังไม่ระบุ allotment · คิดราคาขั้นต่ำ';
 export type SystemCost = {
   partner_id: string; partner: string; system: string; currency: string; base: number; net: number;
   est_fx_to_thb: number | null; discounts: { deal_id: string; title: string; amount: number }[]; fallback_tier: boolean;
@@ -48,11 +72,11 @@ const inScope = (deal: PartnerDeal, contract_id: string) => deal.scope === 'ALL'
  *  (AMOUNT_PER_CONTRACT first, then PERCENT, floor 0). Marcom or no system row → null. */
 export function getContractSystemCost(data: PartnerData, c: PartnerContract, date: string): SystemCost | null {
   if (c.service !== 'ORM') return null;
-  const sys = data.contract_partner_system.find((s) => s.contract_id === c.contract_id);
+  const sys = resolveSystem(data, c, date);
   if (!sys) return null;
   const card = rateCardOn(data, sys.partner_id, sys.system_name, date);
   if (!card) return null;
-  const tp = tierPrice(tiersOf(data, card.id), c.allotment);
+  const tp = tierPrice(tiersOf(data, card.id), sys.allotment);
   if (!tp) return null;
   const deals = data.partner_deals.filter((d) => d.partner_id === sys.partner_id && d.kind === 'COST_DISCOUNT' && getDealState(d, date) === 'ACTIVE' && inScope(d, c.contract_id));
   let net = tp.price; const discounts: SystemCost['discounts'] = [];
@@ -121,7 +145,7 @@ export function creditRows(data: PartnerData, contracts: PartnerContract[], toda
 /** ⑤ tiles from tables: gained = Σ APPROVED; used = Σ usage; balance = gained − used; earliest expiry of approved credits. */
 export function creditTiles(data: PartnerData) {
   const approved = data.system_credit_requests.filter((r) => r.status === 'APPROVED');
-  const gained = approved.reduce((s, r) => s + r.amount, 0);
+  const gained = approved.reduce((s, r) => s + creditAmountOf(r), 0);
   const usage = data.system_credit_usage.filter((u) => approved.some((r) => r.id === u.credit_request_id));
   const used = usage.reduce((s, u) => s + u.amount, 0);
   const latestBill = [...usage].sort((a, b) => b.used_at.localeCompare(a.used_at))[0]?.partner_bill_ref ?? null;
@@ -129,12 +153,17 @@ export function creditTiles(data: PartnerData) {
   return { gained, gained_n: approved.length, used, latestBill, balance: gained - used, earliest, partners: [...new Set(approved.map((r) => r.partner_id))] };
 }
 
-/** ③ one row per current rate card: Σ base / Σ net over its contracts on `date`. */
+/** ⑤ / §2.3: approved rows show approved_amount (fallback amount). */
+export const creditAmountOf = (r: SystemCreditRequest) => (r.status === 'APPROVED' && r.approved_amount != null ? r.approved_amount : r.amount);
+
+/** ③ one row per current rate card: Σ base / Σ net over its contracts on `date` (system resolved per §1.4). */
 export function rateCardRows(data: PartnerData, contracts: PartnerContract[], date: string) {
   const current = data.partner_rate_cards.filter((r) => r.superseded_at == null);
+  const listed = new Set(contracts.map((c) => c.contract_id));
+  const pool: PartnerContract[] = [...contracts.filter((c) => c.service === 'ORM'),
+    ...data.contract_partner_system.filter((s) => !listed.has(s.contract_id)).map((s) => ({ contract_id: s.contract_id, hotel: '', service: 'ORM' as const, allotment: null, start: null, end: null, end_reason: null }))];
   return current.map((card) => {
-    const on = data.contract_partner_system.filter((s) => s.partner_id === card.partner_id && s.system_name === card.system_name);
-    const costs = on.map((s) => contracts.find((c) => c.contract_id === s.contract_id) ?? { contract_id: s.contract_id, hotel: '', service: 'ORM' as const, allotment: null, start: null, end: null, end_reason: null })
+    const costs = pool.filter((c) => { const s = resolveSystem(data, c, date); return !!s && s.partner_id === card.partner_id && s.system_name === card.system_name; })
       .map((c) => ({ c, cost: getContractSystemCost(data, c, date) })).filter((x) => x.cost);
     const base = costs.reduce((s, x) => s + x.cost!.base, 0), net = costs.reduce((s, x) => s + x.cost!.net, 0);
     const deals = data.partner_deals.filter((d) => d.partner_id === card.partner_id && d.kind === 'COST_DISCOUNT');
@@ -142,6 +171,7 @@ export function rateCardRows(data: PartnerData, contracts: PartnerContract[], da
     const negotiating = deals.some((d) => d.status === 'NEGOTIATING');
     return {
       card, partner: data.partners.find((p) => p.id === card.partner_id)?.name ?? card.partner_id, contracts: costs.length,
+      hotels: new Set(data.property_partner_system.map((r) => r.property_id).filter((pid) => { const s = propertySystemOn(data, pid, date); return s?.partner_id === card.partner_id && s.system_name === card.system_name; })).size,
       base, net, active, negotiating, fallback: costs.filter((x) => x.cost!.fallback_tier).map((x) => x.c.contract_id),
       toThb: (v: number) => (card.currency === 'THB' ? v : card.est_fx_to_thb ? v * card.est_fx_to_thb : null),
     };
