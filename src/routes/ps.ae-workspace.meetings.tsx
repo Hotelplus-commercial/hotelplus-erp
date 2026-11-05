@@ -44,6 +44,8 @@ import {
   type MeetingStatus,
 } from "@/lib/orm-meeting";
 import { cn } from "@/lib/utils";
+import { DemoSwitch } from "@/components/workspace/workspace-shell";
+import { setPsDemoSession } from "@/lib/demo-session";
 import type { Meeting } from "@/lib/orm-meeting";
 import type { MeetingChannel } from "@/lib/meeting-survey-types";
 import { bookMeeting, useMeetingSurveyData } from "@/lib/meeting-survey-store";
@@ -101,7 +103,7 @@ function MeetingsTab() {
   const [service, setService] = useState<"ORM" | "MARCOM">("ORM");
   const [channel, setChannel] = useState<MeetingChannel | null>(null);
   const me = currentUserByRole[role];
-  const { data } = useMeetingSurveyData();
+  const { data, demo } = useMeetingSurveyData();
   /* One read path: sample meetings + booked + DEMO entries (survey-queue / calendar rows belong to other pages). */
   const allMeetings = useMemo(() => data.meetings.filter((r) => r.origin === "meetings" || r.origin === "booked" || r.origin === "demo").map((r) => {
     const base = (r.raw as Meeting | undefined) ?? ({ id: r.id, hotel: r.hotel, tier: (r.tier === "—" ? "C" : r.tier), orm: "—", ae: r.ae_display ?? r.ae, date: r.date, status: r.status, survey: data.surveys.some((x) => x.meeting_id === r.id) ? "Submitted" : "—", email: r.contact_email ?? "" } as Meeting);
@@ -149,11 +151,14 @@ function MeetingsTab() {
         title="Meetings"
         description="รายการนัดหมายทั้งหมด ค้นหาและกรองตามสถานะ tier สถานะโรงแรม หรือชื่อโรงแรม"
         actions={
-          role === "AE" ? (
-            <Button onClick={() => setDraftOpen(true)}>
-              <Plus className="size-4" /> Draft New Meeting
-            </Button>
-          ) : undefined
+          <div className="flex flex-wrap items-center gap-2">
+            <DemoSwitch demo={demo} onToggle={(n) => setPsDemoSession(n)} />
+            {role === "AE" && (
+              <Button onClick={() => setDraftOpen(true)}>
+                <Plus className="size-4" /> Draft New Meeting
+              </Button>
+            )}
+          </div>
         }
       />
 

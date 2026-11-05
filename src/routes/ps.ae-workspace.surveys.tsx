@@ -45,6 +45,8 @@ import {
   type SurveyZoneCard,
 } from "@/lib/ps-v4";
 import { cn } from "@/lib/utils";
+import { DemoSwitch } from "@/components/workspace/workspace-shell";
+import { setPsDemoSession } from "@/lib/demo-session";
 import { SurveyV2Form } from "@/components/ps/survey-v2-form";
 import type { MeetingRecord, SurveyRecord } from "@/lib/meeting-survey-types";
 import { createSurveyLink, expireLinks, msNow, saveNoScore, saveSurveyV1, saveSurveyV2, useMeetingSurveyData } from "@/lib/meeting-survey-store";
@@ -123,6 +125,7 @@ function SurveysTab() {
         description="4 โซน: Inquiry (กำลังจะถึง) · Pending (ต้องกรอก) · Submitted (ส่งแล้ว) · Flagged — คะแนน ≤ 5 จะสร้าง flag อัตโนมัติ"
         actions={
           <div className="flex flex-wrap items-center gap-2">
+            <DemoSwitch demo={demo} onToggle={(n) => setPsDemoSession(n)} />
             <Select value={month} onValueChange={setMonth}>
               <SelectTrigger className="h-9 w-[160px]">
                 <SelectValue />
