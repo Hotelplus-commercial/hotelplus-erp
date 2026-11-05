@@ -141,7 +141,7 @@ describe('§6 ticket dialog', () => {
     const sel = R.SIGNAL_CATALOG.filter(R.isSelectable);
     expect(sel.every((e) => e.src === 'M' || e.src === 'AM')).toBe(true);
     expect(sel.some((e) => e.key === 'OVERDUE')).toBe(false);
-    expect(R.SIGNAL_CATALOG.length).toBe(44);
+    expect(R.SIGNAL_CATALOG.length).toBe(52);
   });
   test('17 · duplicate = same contract + recipient + label (not CANCELLED)', () => {
     const tickets = D.tabR1DemoTickets();
