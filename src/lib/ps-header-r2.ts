@@ -90,6 +90,10 @@ export type JourneyInput = {
   upcoming: HRow[];
   onboard: OnboardRow[];
   active: (HRow & { hotel_id: string })[];
+  /** v1.4.1 RN47 (Q58): past term end, no recorded outcome → not in `active`, not churn (header sub-line). */
+  lapsed?: (HRow & { hotel_id: string })[];
+  /** v1.4.1: active rows whose end date cannot be checked (no match in the main contract store) — testing-mode line only. */
+  unmatched?: (HRow & { hotel_id: string })[];
   churn: ChurnRow[];
   /** null = source view absent → empty state. */
   scores: ScoreRow[] | null;

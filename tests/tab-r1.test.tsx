@@ -25,7 +25,7 @@ describe('§3 card ① In / Out', () => {
   test('1 · active today per service = header ใช้งาน; current-month out = header หลุด', () => {
     const header = [...headerDemoInput().active, ...D.tabR1HeaderActive()];
     expect(data.activeToday).toEqual({ ORM: header.filter((a) => a.service === 'ORM').length, Marcom: header.filter((a) => a.service === 'Marcom').length });
-    expect(data.activeToday).toEqual({ ORM: 8, Marcom: 5 });
+    expect(data.activeToday).toEqual({ ORM: 9, Marcom: 5 }); // v1.4.1 RN52: +1 ORM = the added late renewal R1-O8 (lapsed additions are not ใช้งาน)
     const churn = [...headerDemoInput().churn, ...D.tabR1HeaderChurn()].filter((c) => c.month === '2026-10-01');
     expect(orm.months.at(-1)!.outs.length).toBe(churn.filter((c) => c.service === 'ORM').reduce((s, c) => s + c.out, 0));
     expect(mk.months.at(-1)!.outs.length).toBe(churn.filter((c) => c.service === 'Marcom').reduce((s, c) => s + c.out, 0));
@@ -41,13 +41,13 @@ describe('§3 card ① In / Out', () => {
     expect(aug.outs.map((x) => x.hotel_name)).toContain('อัญชลี');
   });
   test('3 · สิ้นเดือน pill = in − out; in 1 + out 1 shows +0', () => {
-    for (const m of [...orm.months, ...mk.months]) expect(m.net).toBe(m.ins.length - m.outs.length);
+    for (const m of [...orm.months, ...mk.months]) expect(m.net).toBe(m.ins.length - m.outs.length - m.lapsed.length); // v1.4.1 RN48
     expect(R.netPill(0)).toBe('+0'); expect(R.netPill(2)).toBe('+2'); expect(R.netPill(-1)).toBe('−1');
     const s = R.inOutSeries([{ contract_id: 'a', hotel_id: 'a', hotel_name: 'a', service: 'ORM', start: '2026-10-02', end: null, end_reason: null, renewal_of: null }, { contract_id: 'b', hotel_id: 'b', hotel_name: 'b', service: 'ORM', start: '2025-01-01', end: '2026-10-05', end_reason: 'NOT_RENEWED', renewal_of: null }], 'ORM', today, 1);
     expect(R.netPill(s.months.at(-1)!.net)).toBe('+0');
   });
   test('waterfall levels end at active today and chain month to month', () => {
-    expect(orm.months.at(-1)!.end).toBe(8);
+    expect(orm.months.at(-1)!.end).toBe(9); // v1.4.1 RN52 late renewal
     orm.months.slice(1).forEach((m, i) => expect(m.start).toBe(orm.months[i]!.end));
   });
 });
@@ -55,7 +55,7 @@ describe('§3 card ① In / Out', () => {
 describe('§4 card ⑦ Contract Health', () => {
   test('6 · rows = header ใช้งาน; a 2-service hotel has 2 rows', () => {
     const rows = demoRows();
-    expect(rows.length).toBe(13);
+    expect(rows.length).toBe(14); // v1.4.1 RN52 late renewal R1-O8
     expect(rows.filter((r) => r.hotel_name === 'ภูผา บูทีค').length).toBe(2);
   });
   test('7 · overdue here → red; overdue only elsewhere → yellow; AE label alone never changes tier', () => {
@@ -80,7 +80,7 @@ describe('§4 card ⑦ Contract Health', () => {
     const ages = sorted.ry.map((r) => R.ageDays(r.start, today)!);
     expect([...ages].sort((a, b) => b - a)).toEqual(ages);
     const p = R.paginate(sorted, 'ALL', 20, false);
-    expect(p.hiddenGreen).toBe(6); expect(p.pages.flat().some((r) => r.tier === 'G')).toBe(false);
+    expect(p.hiddenGreen).toBe(7); // v1.4.1 RN52 late renewal R1-O8 (green) expect(p.pages.flat().some((r) => r.tier === 'G')).toBe(false);
   });
   test('11 · pager / page sizes / page 1 grows to fit red + yellow', () => {
     expect(R.pageList(5, 10)).toEqual([1, 2, '…', 5, '…', 9, 10]);

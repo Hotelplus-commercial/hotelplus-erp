@@ -199,6 +199,10 @@ export type Contract = {
   /** Renewal v1.3 §3: the new contract made at signing points to its source contract + request (optional, never backfilled). */
   renewal_of?: string | null;
   renewal_request_id?: string | null;
+  /** v1.4.1 RN41: billing model of the contract (optional; missing = unknown, never backfilled). */
+  billing_model?: 'FLAT' | 'FIXED_PLUS_COMMISSION' | 'COMMISSION_GUARANTEE';
+  /** v1.4.1 RN41: monthly guarantee fee (COMMISSION_GUARANTEE only; else null; missing = unknown, never 0). */
+  guarantee_fee?: number | null;
 };
 
 /* ---------------- production report ---------------- */

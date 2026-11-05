@@ -1241,6 +1241,7 @@ textarea.r1-input{height:auto;padding:6px 8px;resize:vertical;}
 .r1-io-up,.r1-io-down{flex:1;display:flex;flex-direction:column;align-items:center;}.r1-io-up{justify-content:flex-end;}.r1-io-down{justify-content:flex-start;}
 .r1-io-zero{height:1px;background:var(--border-subtle);}
 .r1-bar-in,.r1-bar-out{width:62%;max-width:22px;min-height:3px;}.r1-bar-in{background:var(--c);border-radius:3px 3px 0 0;}.r1-bar-out{background:var(--cl);border-radius:0 0 3px 3px;}
+.r1-bar-lapsed{width:62%;max-width:22px;min-height:3px;background:var(--neutral-bar);border-radius:0 0 3px 3px;margin-top:1px;}.r1-io-n-lapsed{color:var(--text-secondary);}.r1-wf-lapsed{position:absolute;left:36%;width:52%;max-width:24px;background:var(--neutral-bar);border-radius:2px;}.r1-io-list li.is-lapsed{color:var(--text-secondary);}.r1-io-lapsedsum{color:var(--text-secondary);}.r1-io-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--text-secondary);margin-top:6px;}.r1-io-legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px;}
 .r1-io-n{font-size:10.5px;color:var(--text-secondary);line-height:1.4;}
 .r1-io-month{text-align:center;font-size:10.5px;color:var(--text-caption);padding-top:4px;line-height:1.25;}.r1-io-month small{display:block;font-size:9.5px;}
 .r1-wf{position:relative;height:100%;}
@@ -1750,3 +1751,6 @@ textarea.r1-input{height:auto;padding:6px 8px;resize:vertical;}
 .sd-table td .sd-pill-stat{white-space:nowrap;font-size:11px;padding:2px 7px;}
 .sd-section .sd-table td,.sd-section .sd-table th{padding:6px 6px;}
 .sd-section .sd-table td:first-child{white-space:normal;min-width:120px;}
+
+/* v1.4.1 Q58 header sub-lines */
+.r2-lapsed{display:block;color:var(--destructive);font-weight:600;text-decoration:none;cursor:pointer;}.r2-lapsed:hover{text-decoration:underline;}.r2-unmatched{color:var(--text-secondary);}

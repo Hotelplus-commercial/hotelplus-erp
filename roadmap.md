@@ -326,3 +326,4 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [x] DEMO Welcome Back tickets in session key `meridia.demo.welcomeBack.v1` (survive page loads, cleared when DEMO goes off)
 - [x] Fresh reads (open · tab · role · focus · storage) + รีเฟรช button · BD DEMO bar 28 ต.ค. 2569 · testing-mode check panel
 - [x] Tests WB21 1–9
+- [x] v1.4.1 · package fields · one DEMO clock · Q58

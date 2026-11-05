@@ -3,6 +3,7 @@
  * pagination, CONTRACT_SIGNAL dialog helpers (recipients, duplicate check, batch send) and the four AE bell events.
  * Unit = service contract (a hotel with ORM + Marcom = 2). Labels live in ps-glossary.ts / here as catalog text. */
 import type { L0Ticket, Dept, TicketAssignee } from './tickets-l0';
+import { contractStateOn } from './contract-state';
 
 export type Svc = 'ORM' | 'Marcom';
 export const SVCS: Svc[] = ['ORM', 'Marcom'];
@@ -16,6 +17,8 @@ export type EndReason = 'NOT_RENEWED' | 'EARLY_TERMINATION' | 'RENEWAL' | 'PAUSE
 export type ServiceContract = {
   contract_id: string; hotel_id: string; hotel_name: string; service: Svc;
   start: string; end: string | null; end_reason: EndReason | null;
+  /** v1.4.1 RN48: scheduled term end (optional; unknown = never lapses). */
+  term_end?: string | null;
   /** Previous contract of the same hotel + service this one continues (renewal) → never counted as "in". */
   renewal_of: string | null;
 };
@@ -28,18 +31,21 @@ export function months12(today: string): string[] {
 export const isIn = (c: ServiceContract, month: string, today: string) => !c.renewal_of && ym(c.start) === month && c.start.slice(0, 10) <= today;
 export const isOut = (c: ServiceContract, month: string, today: string) =>
   !!c.end && ym(c.end) === month && c.end.slice(0, 10) <= today && (c.end_reason === 'NOT_RENEWED' || c.end_reason === 'EARLY_TERMINATION');
-export type FlowMonth = { month: string; current: boolean; ins: ServiceContract[]; outs: ServiceContract[]; net: number; start: number; end: number };
+/** v1.4.1 RN48: ขาดอายุ รอผล = LAPSED_PENDING today and term end in the month (grey, not churn). */
+export const isLapsed = (c: ServiceContract, month: string, today: string, all: ServiceContract[] = []) =>
+  !!c.term_end && ym(c.term_end) === month && contractStateOn({ contract_id: c.contract_id, start: c.start, term_end: c.term_end, end: c.end, end_reason: c.end_reason }, today, all.map((x) => ({ renewal_of: x.renewal_of, start: x.start }))) === 'LAPSED_PENDING';
+export type FlowMonth = { month: string; current: boolean; ins: ServiceContract[]; outs: ServiceContract[]; lapsed: ServiceContract[]; net: number; start: number; end: number };
 /** 12-month flow for one service. End level of the current month = `activeToday` (header “ใช้งาน”); earlier levels walk back by in − out. */
 export function inOutSeries(contracts: ServiceContract[], svc: Svc, today: string, activeToday: number) {
   const list = contracts.filter((c) => c.service === svc);
   const ms = months12(today);
   const rows: FlowMonth[] = ms.map((month) => {
-    const ins = list.filter((c) => isIn(c, month, today)), outs = list.filter((c) => isOut(c, month, today));
-    return { month, current: month === ym(today), ins, outs, net: ins.length - outs.length, start: 0, end: 0 };
+    const ins = list.filter((c) => isIn(c, month, today)), outs = list.filter((c) => isOut(c, month, today)), lapsed = list.filter((c) => isLapsed(c, month, today, list));
+    return { month, current: month === ym(today), ins, outs, lapsed, net: ins.length - outs.length - lapsed.length, start: 0, end: 0 };
   });
   let level = activeToday;
   for (let i = rows.length - 1; i >= 0; i--) { const r = rows[i]!; r.end = level; r.start = level - r.net; level = r.start; }
-  return { months: rows, sumIn: rows.reduce((s, r) => s + r.ins.length, 0), sumOut: rows.reduce((s, r) => s + r.outs.length, 0) };
+  return { months: rows, sumIn: rows.reduce((s, r) => s + r.ins.length, 0), sumOut: rows.reduce((s, r) => s + r.outs.length, 0), sumLapsed: rows.reduce((s, r) => s + r.lapsed.length, 0) };
 }
 /** `+n` / `−n` / `+0` (no movement or in = out). */
 export const netPill = (n: number) => (n > 0 ? `+${n}` : n < 0 ? `−${Math.abs(n)}` : '+0');

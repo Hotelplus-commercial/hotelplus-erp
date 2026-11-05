@@ -5,6 +5,7 @@ import { HEADER_DEMO_NOW, headerDemoPortfolio } from './ps-header-r2-demo';
 import type { ChurnRow, HRow, PortfolioContract, PriceRow } from './ps-header-r2';
 import type { L0Status, L0Ticket } from './tickets-l0';
 import { aeNameTh } from './ps-glossary';
+import { contractStateOn } from './contract-state';
 import { addDays, evaluateSignals, tierOf, type AeLabel, type BaseContract, type EndReason, type ServiceContract, type SignalInputs, type Svc, type TabR1Data, type Tier, type TierSnapshot } from './contract-tab-r1';
 
 export const TAB_R1_DEMO_NOW = HEADER_DEMO_NOW;
@@ -12,7 +13,7 @@ export const TAB_R1_DEMO_NOW = HEADER_DEMO_NOW;
 export type { BaseContract, TabR1Data } from './contract-tab-r1';
 
 /* ---------- additions ---------- */
-type Add = { id: string; en: string; th: string; svc: Svc; start: string; end: string | null; reason: EndReason | null; renewal_of?: string; ae: string; orm: string | null; marcom: string | null; sku: PortfolioContract['sku']; quota?: PortfolioContract['quota']; price?: Omit<PriceRow, 'contract_id' | 'effective_from' | 'effective_to'> };
+type Add = { id: string; en: string; th: string; svc: Svc; start: string; end: string | null; reason: EndReason | null; renewal_of?: string; /** v1.4.1: scheduled term end (else TERM_END) */ term_end?: string; ae: string; orm: string | null; marcom: string | null; sku: PortfolioContract['sku']; quota?: PortfolioContract['quota']; price?: Omit<PriceRow, 'contract_id' | 'effective_from' | 'effective_to'> };
 const ADDED: Add[] = [
   { id: 'R1-O1', en: 'Riverside Lodge', th: 'ริเวอร์ไซด์ ลอดจ์', svc: 'ORM', start: '2026-10-06', end: null, reason: null, ae: 'AE003-ต้น', orm: 'C', marcom: null, sku: { flat: true }, price: { fee_amount: 15000, commission_pct: null } },
   { id: 'R1-O2', en: 'Dusit Pool Villa', th: 'ดุสิต พูล วิลล่า', svc: 'ORM', start: '2025-09-15', end: null, reason: null, ae: 'AE002-มายด์', orm: 'A', marcom: null, sku: { commission: true }, price: { fee_amount: null, commission_pct: 12 } },
@@ -22,6 +23,13 @@ const ADDED: Add[] = [
   { id: 'R1-M2', en: 'Teeneedee Hotel', th: 'ที่นี่ดี โฮเทล', svc: 'Marcom', start: '2025-12-03', end: '2026-04-30', reason: 'NOT_RENEWED', ae: 'AE003-ต้น', orm: null, marcom: 'บิว', sku: { content: true } },
   { id: 'R1-M3', en: 'Anjali', th: 'อัญชลี', svc: 'Marcom', start: '2025-06-01', end: '2026-03-01', reason: 'RENEWAL', ae: 'AE002-มายด์', orm: null, marcom: 'แนน', sku: { content: true } },
   { id: 'R1-M4', en: 'Anjali', th: 'อัญชลี', svc: 'Marcom', start: '2026-03-01', end: '2026-08-31', reason: 'NOT_RENEWED', renewal_of: 'R1-M3', ae: 'AE002-มายด์', orm: null, marcom: 'แนน', sku: { content: true } },
+  /* v1.4.1 RN52 additions (Q58): past term end, no outcome recorded → ขาดอายุ รอผล (not ใช้งาน, not churn). */
+  { id: 'R1-O6', en: 'Siam Loft', th: 'สยาม ลอฟท์', svc: 'ORM', start: '2025-10-16', end: null, reason: null, term_end: '2026-10-15', ae: 'AE001-ดาว', orm: 'B', marcom: null, sku: { flat: true }, price: { fee_amount: 14000, commission_pct: null } },
+  { id: 'R1-O5', en: 'Krabi Cliff Villa', th: 'กระบี่ คลิฟ วิลล่า', svc: 'ORM', start: '2025-10-21', end: null, reason: null, term_end: '2026-10-20', ae: 'AE001-ดาว', orm: 'A', marcom: null, sku: { flat: true }, price: { fee_amount: 24000, commission_pct: null } },
+  { id: 'R1-M5', en: 'Koh Samui Bay Resort', th: 'สมุย เบย์ รีสอร์ท', svc: 'Marcom', start: '2025-10-16', end: null, reason: null, term_end: '2026-10-15', ae: 'AE001-ดาว', orm: null, marcom: 'บิว', sku: { content: true } },
+  /* late renewal: old ended 30 Sep, signed 20 Oct, new starts 1 Oct (old end + 1) → continuous, never lapsed. */
+  { id: 'R1-O7', en: 'Phuket Old Town Inn', th: 'ภูเก็ต โอลด์ทาวน์ อินน์', svc: 'ORM', start: '2025-10-01', end: '2026-09-30', reason: 'RENEWAL', ae: 'AE002-มายด์', orm: 'C', marcom: null, sku: { flat: true } },
+  { id: 'R1-O8', en: 'Phuket Old Town Inn', th: 'ภูเก็ต โอลด์ทาวน์ อินน์', svc: 'ORM', start: '2026-10-01', end: null, reason: null, renewal_of: 'R1-O7', term_end: '2027-09-30', ae: 'AE002-มายด์', orm: 'C', marcom: null, sku: { flat: true }, price: { fee_amount: 16000, commission_pct: null } },
 ];
 /** EN names for the existing Header R2 demo hotels (search ไทย / EN). */
 const NAME_EN: Record<string, string> = {
@@ -54,12 +62,18 @@ const INPUTS: Record<string, SignalInputs> = {
 
 const hid = (a: Add) => `R1-${a.en}`;
 const activeOn = (start: string, end: string | null, day: string) => start <= day && (!end || end > day);
+/** v1.4.1 RN45/RN46: “ใช้งาน” = contractStateOn(...) === ACTIVE (lapsed past term end with no outcome leaves it). */
+const termOf = (a: Add) => a.term_end ?? TERM_END[a.id] ?? null;
+const renewLinks = () => ADDED.map((a) => ({ renewal_of: a.renewal_of ?? null, start: a.start }));
+const addState = (a: Add, day = TAB_R1_DEMO_NOW) => contractStateOn({ contract_id: a.id, start: a.start, term_end: termOf(a), end: a.end, end_reason: a.reason }, day, renewLinks());
+const addActive = (a: Add) => addState(a) === 'ACTIVE';
+const r2Active = (c: { contract_id: string; start: string; end: string | null }) => contractStateOn({ contract_id: c.contract_id, start: c.start, term_end: TERM_END[c.contract_id] ?? null, end: c.end, end_reason: c.end ? R2_REASON[c.contract_id] ?? 'NOT_RENEWED' : null }, TAB_R1_DEMO_NOW) === 'ACTIVE';
 const monthStarts = (from: string, to: string) => { const out: string[] = []; let d = new Date(from + 'T00:00:00Z'); while (d.toISOString().slice(0, 10) <= to) { out.push(d.toISOString().slice(0, 10)); d = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1)); } return out; };
 const ownRow = (a: Add): HRow => ({ service: a.svc, hotel_id: hid(a), hotel_name: a.th, ae: a.ae, orm: a.orm, marcom: a.marcom });
 
 /** Header “ใช้งาน” additions (merged into the header demo feed so the header and cards ① / ⑦ agree). */
 export function tabR1HeaderActive(): (HRow & { hotel_id: string })[] {
-  return ADDED.filter((a) => activeOn(a.start, a.end, TAB_R1_DEMO_NOW)).map((a) => ({ ...ownRow(a), hotel_id: hid(a) }));
+  return ADDED.filter(addActive).map((a) => ({ ...ownRow(a), hotel_id: hid(a) }));
 }
 /** Header “หลุด” additions — same month rows as the header fixture; renewal hand-over / pause never count as out. */
 export function tabR1HeaderChurn(): ChurnRow[] {
@@ -74,7 +88,7 @@ export function tabR1HeaderChurn(): ChurnRow[] {
 }
 /** Active Portfolio additions (active contracts only). */
 export function tabR1HeaderPortfolio(): { contracts: PortfolioContract[]; prices: PriceRow[] } {
-  const act = ADDED.filter((a) => activeOn(a.start, a.end, TAB_R1_DEMO_NOW));
+  const act = ADDED.filter(addActive);
   return {
     contracts: act.map((a) => ({ ...ownRow(a), contract_id: a.id, hotel_id: hid(a), start: a.start, end: a.end, sku: a.sku, quota: a.quota })),
     prices: act.filter((a) => a.price).map((a) => ({ contract_id: a.id, ...a.price!, effective_from: a.start, effective_to: null })),
@@ -83,18 +97,25 @@ export function tabR1HeaderPortfolio(): { contracts: PortfolioContract[]; prices
 
 /** Card ① demo contracts = Header R2 demo contracts (+ reasons) + additions. */
 export function tabR1DemoFlow(): ServiceContract[] {
-  const r2 = headerDemoPortfolio().contracts.map((c): ServiceContract => ({ contract_id: c.contract_id, hotel_id: c.hotel_id, hotel_name: c.hotel_name ?? c.hotel_id, service: c.service, start: c.start, end: c.end, end_reason: c.end ? R2_REASON[c.contract_id] ?? 'NOT_RENEWED' : null, renewal_of: null }));
-  const add = ADDED.map((a): ServiceContract => ({ contract_id: a.id, hotel_id: hid(a), hotel_name: a.th, service: a.svc, start: a.start, end: a.end, end_reason: a.reason, renewal_of: a.renewal_of ?? null }));
+  const r2 = headerDemoPortfolio().contracts.map((c): ServiceContract => ({ contract_id: c.contract_id, hotel_id: c.hotel_id, hotel_name: c.hotel_name ?? c.hotel_id, service: c.service, start: c.start, end: c.end, end_reason: c.end ? R2_REASON[c.contract_id] ?? 'NOT_RENEWED' : null, renewal_of: null, term_end: TERM_END[c.contract_id] ?? null }));
+  const add = ADDED.map((a): ServiceContract => ({ contract_id: a.id, hotel_id: hid(a), hotel_name: a.th, service: a.svc, start: a.start, end: a.end, end_reason: a.reason, renewal_of: a.renewal_of ?? null, term_end: termOf(a) }));
   return [...r2, ...add];
 }
-export function tabR1DemoBase(): BaseContract[] {
-  const r2 = headerDemoPortfolio().contracts.filter((c) => activeOn(c.start, c.end, TAB_R1_DEMO_NOW)).map((c): BaseContract => ({
+export function tabR1DemoBase(): BaseContract[] { return demoBase(false); }
+/** v1.4.1: active + ขาดอายุ รอผล contracts (Tab R2 keeps showing past-due cards). */
+export function tabR1DemoRenewalBase(): BaseContract[] { return demoBase(true); }
+/** v1.4.1 RN47: DEMO contracts in ขาดอายุ รอผล today (header sub-line). */
+export function tabR1DemoLapsed(): { contract_id: string; hotel_id: string; hotel_name: string; service: Svc; term_end: string; ae: string; orm: string | null; marcom: string | null }[] {
+  return ADDED.filter((a) => addState(a) === 'LAPSED_PENDING').map((a) => ({ contract_id: a.id, hotel_id: hid(a), hotel_name: a.th, service: a.svc, term_end: termOf(a)!, ae: a.ae, orm: a.orm, marcom: a.marcom }));
+}
+function demoBase(withLapsed: boolean): BaseContract[] {
+  const r2 = headerDemoPortfolio().contracts.filter((c) => activeOn(c.start, c.end, TAB_R1_DEMO_NOW) && (withLapsed || r2Active(c))).map((c): BaseContract => ({
     contract_id: c.contract_id, hotel_id: c.hotel_id, hotel_name: c.hotel_name ?? c.hotel_id, hotel_name_th: c.hotel_name ?? null, hotel_name_en: NAME_EN[c.hotel_name ?? ''] ?? null,
     service: c.service, ae: c.ae, orm_team: c.orm ? c.orm.replace(/^Team\s+/, '') : null, marcom: c.marcom, start: c.start, term_end: TERM_END[c.contract_id] ?? null, inputs: INPUTS[c.contract_id] ?? {},
   }));
-  const add = ADDED.filter((a) => activeOn(a.start, a.end, TAB_R1_DEMO_NOW)).map((a): BaseContract => ({
+  const add = ADDED.filter((a) => addActive(a) || (withLapsed && addState(a) === 'LAPSED_PENDING')).map((a): BaseContract => ({
     contract_id: a.id, hotel_id: hid(a), hotel_name: a.th, hotel_name_th: a.th, hotel_name_en: a.en, service: a.svc, ae: a.ae, orm_team: a.orm, marcom: a.marcom,
-    start: a.start, term_end: TERM_END[a.id] ?? null, inputs: INPUTS[a.id] ?? {},
+    start: a.start, term_end: termOf(a), inputs: INPUTS[a.id] ?? {},
   }));
   return [...r2, ...add];
 }

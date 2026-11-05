@@ -30,7 +30,8 @@ export type RenewalRequest = {
   offer_expected_avg?: number | null; offer_match?: 'MATCH' | 'ABOVE' | 'BELOW' | null; model_changed?: boolean | null;
 };
 /** fee_amount / commission_pct are null when the contract does not hold that term (v1.3 §4: empty, never 0). */
-export type PriceHistoryRow = { contract_id: string; cycle_no: number; fee_amount: number | null; commission_pct: number | null; term_months: number; package: string; effective_from: string; effective_to: string; source: 'INITIAL' | 'RENEWAL'; renewal_request_id: string | null };
+export type PriceHistoryRow = { contract_id: string; cycle_no: number; fee_amount: number | null; commission_pct: number | null; term_months: number; package: string; effective_from: string; effective_to: string; source: 'INITIAL' | 'RENEWAL'; renewal_request_id: string | null;
+  /** v1.4.1 RN42 (RENEWAL rows; optional, missing = unknown) */ billing_model?: Terms['billing_model']; guarantee_fee?: number | null };
 export type RenewalConfig = { renewal_reco_mode: RecoMode; renewal_approval_overdue_days: number; renewal_min_raise_thb: number;
   /* v1.4 §8 — Renewal Offer keys (read at runtime by renewalOffer.ts) */
   lower_fee_steps: number[]; lower_commission_steps: number[]; mc_commission_raise_points: number; cg_commission_raise_points: [number, number];
@@ -202,7 +203,8 @@ export function mainStoreInitialRows(list: MainContract[], existing: PriceHistor
 }
 export function renewalHistoryRow(r: RenewalRequest, prevCycle: number): PriceHistoryRow {
   const t = r.new_terms;
-  return { contract_id: r.new_contract_id ?? r.source_contract_id, cycle_no: prevCycle + 1, fee_amount: t.fee_amount, commission_pct: t.commission_pct, term_months: t.term_months, package: t.package, effective_from: t.start_date, effective_to: t.end_date, source: 'RENEWAL', renewal_request_id: r.id };
+  return { contract_id: r.new_contract_id ?? r.source_contract_id, cycle_no: prevCycle + 1, fee_amount: t.fee_amount, commission_pct: t.commission_pct, term_months: t.term_months, package: t.package, effective_from: t.start_date, effective_to: t.end_date, source: 'RENEWAL', renewal_request_id: r.id,
+    ...(t.billing_model ? { billing_model: t.billing_model, guarantee_fee: t.billing_model === 'COMMISSION_GUARANTEE' ? t.guarantee_fee ?? null : null } : {}) };
 }
 /** Billing price on a date = the price-history row whose cycle is ACTIVE on that date. */
 export function priceOn(rows: PriceHistoryRow[], dateIso: string) {

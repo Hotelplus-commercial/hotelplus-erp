@@ -132,6 +132,21 @@ export const R1_INOUT = {
   showAll: "▾ ดูทั้ง 12 เดือน", hideOld: "▴ ซ่อน 11 เดือนก่อนหน้า",
   worst: (m: string, n: number, a: number, b: number) => `เดือนที่หลุดมากสุด ${m} · ${n} สัญญา (ORM ${a} · Marcom ${b})`,
   noWorst: "12 เดือนนี้ยังไม่มีสัญญาหลุด",
+  /* v1.4.1 RN48 (Q58) */
+  lapsedLine: (h: string) => `▼ ขาดอายุ รอผล · ${h} · ยังไม่นับ churn`,
+  lapsedSum: (n: number) => `ขาดอายุ รอผล ${n}`,
+  lapsedTip: "ขาดอายุ รอผล (ยังไม่นับ churn)",
+  legend: ["เข้า", "หลุด", "ขาดอายุ รอผล (ยังไม่นับ churn)"] as const,
+} as const;
+/** v1.4.1 RN47 / RN49 / RN41 / RN51 (decision Q58) — header sub-lines, Tab R2 past-due banner, AC Billing notices. */
+export const Q58 = {
+  lapsed: "ขาดอายุ รอผล",
+  headerLine: (n: number) => `ขาดอายุ รอผล ${n}`,
+  headerTip: "เลยวันสิ้นสุดสัญญา · ยังไม่บันทึกผลต่อ / ไม่ต่อ · ไม่นับเป็นใช้งาน · ยังไม่นับ churn",
+  unmatched: (n: number) => `ตรวจวันสิ้นสุดไม่ได้ ${n} สัญญา (ไม่มีในคลังสัญญาหลัก)`,
+  pastDueBanner: (n: number) => `เลยกำหนด ${n} วัน · ขาดอายุ ไม่นับเป็นใช้งาน · AC หยุดวางบิล · ยังไม่นับ churn จนกว่าจะบันทึกผล`,
+  guaranteeNotice: (x: string) => `Commission + Guarantee · Guarantee fee ฿${x} / เดือน · ระบบยังไม่คิดขั้นต่ำให้ · AC ตรวจยอดก่อนวางบิล`,
+  lateManual: (start: string, signed: string, n: number, months: string) => `ต่อสัญญาล่าช้า · สัญญาเริ่ม ${start} · เซ็น ${signed} · ตรวจวางบิลย้อนหลัง ${n} รอบ (${months})`,
 } as const;
 export const R1_HEALTH = {
   question: "สัญญาไหนแดง / เหลือง / เขียว เพราะอะไร",
@@ -282,7 +297,7 @@ export const RN2 = {
     due: "ครบกำหนดสัญญา", inStage: "อยู่ stage นี้", lastAct: "activity ล่าสุด", days: (n: number) => `${n} วันแล้ว`, scanOn: (d: string) => `ระบบจะสร้างงาน ${d}`,
     ago: (n: number) => (n <= 0 ? "วันนี้" : `${n} วันก่อน`), noAct: "ยังไม่มีความเคลื่อนไหว", sentNotSigned: (d: string) => `ส่ง ${d} · ยังไม่เซ็น`,
     left: (n: number) => `เหลือ ${n} วัน`, overdue: (n: number) => `เลยกำหนด ${n} วัน`,
-    banner: (n: number) => `เลยกำหนด ${n} วัน · สัญญาหมดอายุ ไม่ active · กระทบการวางบิล AC`,
+    banner: (n: number) => `เลยกำหนด ${n} วัน · ขาดอายุ ไม่นับเป็นใช้งาน · AC หยุดวางบิล · ยังไม่นับ churn จนกว่าจะบันทึกผล`, // v1.4.1 RN49 (Q58)
     earlyTag: "สร้างคำขอล่วงหน้า · ระบบไม่สร้างงานซ้ำ", btnEarly: "สร้างคำขอล่วงหน้า ↗", btnStart: "สร้างคำขอต่อสัญญา ↗",
     signedOn: (d: string) => `เซ็นต่อ ${d}`, newStart: (d: string, up: boolean) => `สัญญาใหม่ เริ่ม ${d}${up ? " · Upcoming" : ""}`, earlySigned: "ต่อสำเร็จล่วงหน้า · ไม่มีแจ้งเตือน",
     result: "ผล", edit: (n: number) => `แก้ไข · เหลือ ${n} วัน`, locked: (d: string, by: string) => `บันทึก ${d} โดย ${by} · ล็อกแล้ว`,

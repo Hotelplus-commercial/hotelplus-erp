@@ -50,7 +50,9 @@ export function buildRenewedContract(base: Contract, req: RenewalRequest): Renew
     const commission_rate = hadComm || (i === 0 && t.commission_pct > 0) ? (t.commission_pct > 0 ? Math.round(t.commission_pct * 100) / 10000 : null) : null;
     return { ...l, line_id: `${id}-${l.line_id}`, unit_price: unit, commission_rate };
   });
-  if (t.package !== req.old_terms.package) unmapped.push('package (ไม่มีช่องในสัญญา · คงค่าเดิม)');
+  // service package unchanged (O-26): sku / name / package snapshots stay as on the source contract.
+  // COMMISSION_GUARANTEE: fee_amount = 0 → unit_price null (commission-only line; the engine bills commission from the report).
+  if (t.package !== req.old_terms.package) unmapped.push('service package unchanged (O-26)');
   if (base.lines.some((l) => l.billing !== 'monthly' && lineSvc(l) === svc)) unmapped.push('one_time lines (ค่าติดตั้งไม่ยกไปสัญญาใหม่)');
   const contract: Contract = {
     ...base, contract_id: id, lines, monthly_value: lines.reduce((s, l) => s + (l.unit_price ?? 0) * (l.quantity || 1), 0),
@@ -58,6 +60,8 @@ export function buildRenewedContract(base: Contract, req: RenewalRequest): Renew
     status: 'contract_completed', billing_status: 'ACTIVE', inactivated_at: null,
     live_link_signed_at: req.signed_at, created_at: req.signed_at ?? req.updated_at, created_by: `renewal:${req.id}`,
     renewal_of: base.contract_id, renewal_request_id: req.id,
+    // v1.4.1 RN41: billing model + guarantee from new_terms (absent on terms stored before v1.4 → field left out = unknown)
+    ...(t.billing_model ? { billing_model: t.billing_model, guarantee_fee: t.billing_model === 'COMMISSION_GUARANTEE' ? t.guarantee_fee ?? null : null } : {}),
   };
   return { ok: true, contract, unmapped };
 }

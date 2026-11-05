@@ -2,7 +2,9 @@
  * Live = localStorage; demo (?demo=1) = in-memory, seeded per §8, reset when demo toggles. */
 import { useSyncExternalStore } from 'react';
 import { EXPANSION_DEMO, repricingRow, type RepriceInput } from './expansion';
-import { DEMO_NOW } from './ps-demo-fixture';
+import { DEMO_DAY } from './demo-session';
+/** v1.4.1 RN43: the renewal module's one DEMO clock = R3.3 shared DEMO day (28 ต.ค. 2569). */
+const DEMO_NOW = `${DEMO_DAY}T00:00:00.000Z`;
 import { addAttachment, createTask, setTicketDemo, ticketById, ticketSnapshot } from './tickets-l0';
 import {
   DEFAULT_RENEWAL_CONFIG, OPEN_REQUEST, approve, cancel, decline, defaultNewTerms, editTerms, evaluate, mainStoreInitialRows, recommend,
@@ -17,7 +19,7 @@ import { addMainContract, mainContractById, mainContracts, setMainContractDemo }
 import { buildRenewedContract, contractFromSource, svcOfPackage } from './renewal-contract';
 import { readEarlyHandoff, toIsoDate } from './renewal-scan';
 import { renewalR2DemoItems, renewalR2Sim, RENEWAL_R2_DEMO_NOW } from './renewal-r2-demo';
-import { tabR1DemoBase, tabR1DemoFlow, tabR1HeaderPortfolio } from './contract-tab-r1-demo';
+import { tabR1DemoRenewalBase, tabR1DemoFlow, tabR1HeaderPortfolio } from './contract-tab-r1-demo';
 import { headerDemoPortfolio } from './ps-header-r2-demo';
 import { matchOffer, offerExpectedAvg, type FeeAverage, type OfferTerms, type RenewalOffer } from './renewalOffer';
 import { offerContextFor } from './renewal-offer-source';
@@ -47,6 +49,11 @@ const DEMO_CONTRACTS: SourceContract[] = [
 /** v1.4 §9 DEMO additions: the six Renewal Offer contracts (billing model / guarantee live in renewal-offer-demo.ts). */
 const V14_CONTRACTS: SourceContract[] = V14_DEMO.map((d) => ({ contract_id: d.contract_id, hotel_id: d.hotel_id, customer_id: `CUS-${d.hotel_id.slice(3)}`, legal_entity: d.legal, signatory: d.signatory, kyc_docs: ['หนังสือรับรองบริษัท.pdf'], service: d.service,
   terms: { fee_amount: d.fixed_fee ?? 0, commission_pct: d.commission_pct ?? 0, term_months: d.term_months, package: d.package, start_date: d.start, end_date: d.end } }));
+/** v1.4.1 RN52 DEMO additions (memory only): a late renewal source (ended 30 ก.ย. 69) and a commission source renewed as Commission + Guarantee. */
+const V141_CONTRACTS: SourceContract[] = [
+  { contract_id: 'CT-HTL0421', hotel_id: 'HTL0421', customer_id: 'CUS-0421', legal_entity: 'บริษัท ภูเก็ต โอลด์ทาวน์ อินน์ จำกัด', signatory: 'คุณสุรชัย เมืองเก่า', kyc_docs: ['หนังสือรับรองบริษัท.pdf'], service: 'ORM', terms: { fee_amount: 15000, commission_pct: 0, term_months: 12, package: 'ORM Full', start_date: '2025-10-01', end_date: '2026-09-30' } },
+  { contract_id: 'CT-HTL0422', hotel_id: 'HTL0422', customer_id: 'CUS-0422', legal_entity: 'บริษัท ระยอง ซีไซด์ จำกัด', signatory: 'คุณมาลี ริมหาด', kyc_docs: ['หนังสือรับรองบริษัท.pdf'], service: 'ORM', terms: { fee_amount: 0, commission_pct: 12, term_months: 12, package: 'ORM Full', start_date: '2025-11-01', end_date: '2026-10-31' } },
+];
 const contact = (name: string) => ({ name, phone: '08x-xxx-xxxx', email: '—', line: '—' });
 /** Demo-only renewal cards (§8 cases 4–7). Cases 1–3 reuse the bundled cards HTL0055 / HTL0042 / HTL0071. */
 export const DEMO_EXTRA_CARDS: RenewalCard[] = [
@@ -109,7 +116,7 @@ export function setRenewalDemo(on: boolean) {
   if (on === demoOn) return;
   demoOn = on; demoExtra = []; demoMisses = []; setTicketDemo(on);
   /* v1.3 §2: one demo contract state — the renewal sample contracts are seed data written into it (memory only). */
-  setMainContractDemo(on, on ? [...SAMPLE_CONTRACTS, ...DEMO_CONTRACTS, ...V14_CONTRACTS].map((c) => contractFromSource(c, DEMO_NOW)) : []);
+  setMainContractDemo(on, on ? [...SAMPLE_CONTRACTS, ...DEMO_CONTRACTS, ...V14_CONTRACTS, ...V141_CONTRACTS].map((c) => contractFromSource(c, DEMO_NOW)) : []);
   /* Tab R3 addendum: all R1-/R2- demo contracts join the demo state now (not on first open), so the v1.3 §4 backfill in seedDemo() covers every demo contract. */
   if (on) for (const id of demoBackfillIds()) materialiseDemo(id, false);
   demo = on ? seedDemo() : null;
@@ -195,7 +202,7 @@ function demoSourceFor(cid: string): { sc: SourceContract; row: Contract | null 
   const rec = item ? { contract_id: item.contract_id, hotel_id: item.hotel_id, hotel_name: item.hotel_name, service: item.service, end: item.end }
     : readEarlyHandoff(cid) ?? (flow?.end ? { contract_id: cid, hotel_id: flow.hotel_id, hotel_name: flow.hotel_name, service: flow.service, end: flow.end } : null);
   if (!rec) return null;
-  const base = tabR1DemoBase().find((b) => b.contract_id === cid);
+  const base = tabR1DemoRenewalBase().find((b) => b.contract_id === cid);
   const price = [...headerDemoPortfolio().prices, ...tabR1HeaderPortfolio().prices].find((p) => p.contract_id === cid);
   const end = rec.end.slice(0, 10); const start = base?.start ?? flow?.start?.slice(0, 10) ?? '';
   const months = start ? Math.max(1, Math.round((Date.parse(`${addDaysIso(end, 1)}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`)) / (30.4375 * 864e5))) : 12;
@@ -206,7 +213,8 @@ function demoSourceFor(cid: string): { sc: SourceContract; row: Contract | null 
     demo_fallback: true, empty_fields: flow ? [...empty, 'inactive'] : empty,
   };
   const main = contractFromSource(sc, DEMO_NOW);
-  const row = flow ? { ...main, billing_status: 'TERMINATED' as const, inactivated_at: `${end}T00:00:00.000Z`, ...(flow.renewal_of ? { renewal_of: flow.renewal_of } : {}) } : main;
+  const renewOf = tabR1DemoFlow().find((f) => f.contract_id === cid)?.renewal_of; // v1.4.1: an active demo renewal (R1-O8) also points to its source
+  const row = flow ? { ...main, billing_status: 'TERMINATED' as const, inactivated_at: `${end}T00:00:00.000Z`, ...(flow.renewal_of ? { renewal_of: flow.renewal_of } : {}) } : renewOf ? { ...main, renewal_of: renewOf } : main;
   return { sc, row: start ? row : null };
 }
 function materialiseDemo(cid: string, sync = true): SourceContract | null {
@@ -312,6 +320,7 @@ function seedDemo(): State {
   const signed7 = { ...r7, ...e7, new_terms: t7, status: 'SIGNED' as const, submitted_at: '2026-09-22T03:00:00.000Z', approved_by: 'PM001-Alex', approver_role: 'PM' as const, approved_at: '2026-09-23T03:00:00.000Z', link_sent_at: '2026-09-24T03:00:00.000Z', signed_at: '2026-09-28T07:15:00.000Z', new_contract_id: `${r7.source_contract_id}-R${r7.id.slice(-4)}` };
   s.requests.push(signed7); s.history.push(renewalHistoryRow(signed7, 1));
   seedV14Requests(s);
+  seedV141Requests(s);
   return s;
 }
 /** v1.4 §9 — added demo requests: Chiang Mai (link sent, offer = match) · Baan Suan (switch package, pending PM 1 day) · Hua Hin (draft 14% = match). */
@@ -325,11 +334,36 @@ function seedV14Requests(s: State) {
     return withOfferFields({ ...r, ...e, new_terms: next, ...p });
   };
   const cm = mk('RN-V14-CM');
-  s.requests.push(terms(cm, { billing_model: 'FIXED_PLUS_COMMISSION', fixed_fee: 7800, commission_pct: 8, guarantee_fee: null }, { reason_code: 'ผลงานยังไม่ถึงเป้า', reason_text: 'รายได้ลดลง 6 เดือนติด', status: 'LINK_SENT', submitted_at: '2026-10-27T03:00:00.000Z', approved_by: 'PM001-Alex', approver_role: 'PM', approved_at: '2026-10-28T03:00:00.000Z', link_sent_at: '2026-10-29T04:00:00.000Z' }));
+  s.requests.push(terms(cm, { billing_model: 'FIXED_PLUS_COMMISSION', fixed_fee: 7800, commission_pct: 8, guarantee_fee: null }, { reason_code: 'ผลงานยังไม่ถึงเป้า', reason_text: 'รายได้ลดลง 6 เดือนติด', status: 'LINK_SENT', submitted_at: '2026-10-22T03:00:00.000Z', approved_by: 'PM001-Alex', approver_role: 'PM', approved_at: '2026-10-23T03:00:00.000Z', link_sent_at: '2026-10-24T04:00:00.000Z' }));
   const bs = mk('RN-V14-BS');
-  s.requests.push(terms(bs, { billing_model: 'FIXED_PLUS_COMMISSION', fixed_fee: 8500, commission_pct: 5.5, guarantee_fee: null }, { reason_code: 'ลูกค้าต่อรอง', reason_text: 'ลูกค้าขอเปลี่ยนเป็นคิดตามผลงาน', status: 'PENDING_APPROVAL', submitted_at: '2026-11-01T03:00:00.000Z' }));
+  s.requests.push(terms(bs, { billing_model: 'FIXED_PLUS_COMMISSION', fixed_fee: 8500, commission_pct: 5.5, guarantee_fee: null }, { reason_code: 'ลูกค้าต่อรอง', reason_text: 'ลูกค้าขอเปลี่ยนเป็นคิดตามผลงาน', status: 'PENDING_APPROVAL', submitted_at: '2026-10-27T03:00:00.000Z' }));
   const hh = mk('RN-V14-HH');
   s.requests.push(terms(hh, { billing_model: 'COMMISSION_GUARANTEE', fixed_fee: null, commission_pct: 14, guarantee_fee: 8000 }, {}));
+}
+
+/** v1.4.1 RN52: two SIGNED renewals (demo only) — a late renewal (signed 20 ต.ค. 69, starts 1 ต.ค. 69) and Commission 15% + Guarantee ฿22,500. */
+const V141_RENEWALS: { card: string; src: string; hotel: string; newId: string; o: OfferTerms; at: { sub: string; app: string; link: string; signed: string } }[] = [
+  { card: 'RN-V141-LATE', src: 'CT-HTL0421', hotel: 'Phuket Old Town Inn', newId: 'CT-HTL0421-R0141', o: { billing_model: 'FLAT', fixed_fee: 16000, commission_pct: null, guarantee_fee: null }, at: { sub: '2026-10-14', app: '2026-10-15', link: '2026-10-16', signed: '2026-10-20' } },
+  { card: 'RN-V141-CG', src: 'CT-HTL0422', hotel: 'Rayong Seaside', newId: 'CT-HTL0422-R0142', o: { billing_model: 'COMMISSION_GUARANTEE', fixed_fee: null, commission_pct: 15, guarantee_fee: 22500 }, at: { sub: '2026-10-20', app: '2026-10-21', link: '2026-10-22', signed: '2026-10-24' } },
+];
+const v141Terms = (src: SourceContract, o: OfferTerms): Terms => ({ ...applyOfferTerms(src.terms, o), ...rollDates(src.terms.end_date, 12), term_months: 12 });
+function seedV141Requests(s: State) {
+  for (const d of V141_RENEWALS) {
+    const src = V141_CONTRACTS.find((c) => c.contract_id === d.src)!;
+    s.seq++; const r = newRequest({ id: d.card, hotelId: src.hotel_id, hotel: d.hotel, owner: 'AE001-Nont' }, src, s.seq, `${d.at.sub}T02:00:00.000Z`, s.history);
+    const signed: RenewalRequest = { ...r, new_terms: v141Terms(src, d.o), status: 'SIGNED', submitted_at: `${d.at.sub}T03:00:00.000Z`, approved_by: 'PM001-Alex', approver_role: 'PM', approved_at: `${d.at.app}T03:00:00.000Z`,
+      link_sent_at: `${d.at.link}T03:00:00.000Z`, signed_at: `${d.at.signed}T03:00:00.000Z`, new_contract_id: d.newId, updated_at: `${d.at.signed}T03:00:00.000Z` };
+    s.requests.push(signed); s.history.push(renewalHistoryRow(signed, 1));
+  }
+}
+/** v1.4.1 RN51 / RN41: the two DEMO renewed contracts, built by the same buildRenewedContract() (pure; no store is touched) — AC Billing DEMO notices. */
+export function v141DemoRenewedContracts(): Contract[] {
+  return V141_RENEWALS.flatMap((d) => {
+    const src = V141_CONTRACTS.find((c) => c.contract_id === d.src)!;
+    const req = { id: `RR-${d.card}`, source_contract_id: src.contract_id, new_contract_id: d.newId, old_terms: src.terms, new_terms: v141Terms(src, d.o), signed_at: `${d.at.signed}T03:00:00.000Z`, updated_at: `${d.at.signed}T03:00:00.000Z` } as RenewalRequest;
+    const b = buildRenewedContract({ ...contractFromSource(src, DEMO_NOW), customer_snapshot: { ...contractFromSource(src, DEMO_NOW).customer_snapshot, hotel_name: d.hotel } }, req);
+    return b.ok ? [b.contract] : [];
+  });
 }
 
 /* ---------- reads ---------- */

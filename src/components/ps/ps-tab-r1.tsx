@@ -51,7 +51,7 @@ export function useTabR1(demo: boolean, raw: PsReport | undefined, header: Heade
       const termEnd = str(lifetime.find((l) => String(l.contract_id) === cid)?.end_date);
       const o = outcome(cid);
       const reason: EndReason | null = !end ? null : o === "RENEWED" ? "RENEWAL" : o === "NOT_RENEWED" || o === "LOST" ? "NOT_RENEWED" : termEnd && end.slice(0, 10) < addDays(termEnd, -1) ? "EARLY_TERMINATION" : "NOT_RENEWED";
-      return [{ contract_id: cid, hotel_id: String(r.hotel_id ?? ""), hotel_name: String(r.hotel_name ?? r.hotel_id ?? ""), service: s, start, end, end_reason: reason, renewal_of: linked.get(cid) ?? null }];
+      return [{ contract_id: cid, hotel_id: String(r.hotel_id ?? ""), hotel_name: String(r.hotel_name ?? r.hotel_id ?? ""), service: s, start, end, end_reason: reason, renewal_of: linked.get(cid) ?? null, term_end: termEnd }]; // v1.4.1 RN48: term end from v_ps_contract_lifetime (absent = never lapsed)
     });
     // Renewal continuation without an explicit link: same hotel + service, previous contract handed over as RENEWAL within 31 days before this start.
     for (const c of flow) if (!c.renewal_of) {

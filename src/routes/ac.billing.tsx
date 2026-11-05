@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from '@tanstack/react-start';
 import { readServicingBotSignals } from '@/lib/servicing-dashboard.functions';
 import { FileText, Link2, Receipt } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { bangkokDate, outstandingOf, paymentSummary } from '@/lib/ac-v2-engine';
 import { useHotelStore } from '@/lib/hotel-store';
 import { toast } from "sonner";
@@ -25,6 +25,9 @@ import { liveScanInput } from "@/lib/alert-bot-sources";
 import { ticketSnapshot } from "@/lib/tickets-l0";
 import { runTaskSnapshotJob } from "@/lib/task-snapshot-job";
 import type { InvoiceLine } from "@/lib/crm-types";
+import { renewalAcNotices } from "@/lib/renewal-ac-notice";
+import { v141DemoRenewedContracts } from "@/lib/renewal-store";
+import { psDemoOn } from "@/lib/demo-session";
 
 export const Route = createFileRoute("/ac/billing")({
   head: () => ({
@@ -74,6 +77,10 @@ function BillingPage() {
     try { await runTaskSnapshotJob(ticketSnapshot()); } catch { toast.info('ยังบันทึก snapshot งานค้างไม่ได้ · ลองใหม่รอบถัดไป'); }
   };
 
+  /* v1.4.1 RN41 / RN51: renewal notices (display only). DEMO follows the shared R3.3 DEMO state; never written to the store. */
+  const [demoNotices, setDemoNotices] = useState(false);
+  useEffect(() => setDemoNotices(psDemoOn()), []);
+  const notices = useMemo(() => [...renewalAcNotices(contracts).map((n) => ({ ...n, demo: false })), ...(demoNotices ? renewalAcNotices(v141DemoRenewedContracts()).map((n) => ({ ...n, demo: true })) : [])], [contracts, demoNotices]);
   const [year, setYear] = useState(String(lastPeriod.year));
   const [month, setMonth] = useState(String(lastPeriod.month));
   const y = Number(year);
@@ -179,6 +186,7 @@ function BillingPage() {
             }
           >
             <div className="space-y-3">
+              {notices.map((n) => <div key={n.kind + n.contract_id} data-testid={`ac-renewal-notice-${n.kind}`} className="border-l-2 border-warning bg-warning/10 p-3 text-sm"><p className="font-medium">{n.hotel} · {n.contract_id}{n.demo ? " · DEMO" : ""}</p><p>{n.text}</p></div>)}
               {(billingWaiting??[]).map(w=><div key={w.contract_id+w.service_line+w.billing_period} className="border-l-2 border-warning bg-warning/10 p-3 text-sm"><p className="font-medium">{contracts.find(c=>c.contract_id===w.contract_id)?.customer_snapshot.hotel_name} · {w.service_line} · {w.billing_period.slice(0,7)}</p><p>awaiting Production Report</p></div>)}
               {invRequests.map((r) => {
                 const cs = contracts.filter((c) => r.contract_ids.includes(c.contract_id));
