@@ -342,17 +342,28 @@ function seedV14Requests(s: State) {
 }
 
 /** v1.4.1 RN52: two SIGNED renewals (demo only) — a late renewal (signed 20 ต.ค. 69, starts 1 ต.ค. 69) and Commission 15% + Guarantee ฿22,500. */
+const V141_RENEWALS: { card: string; src: string; hotel: string; newId: string; o: OfferTerms; at: { sub: string; app: string; link: string; signed: string } }[] = [
+  { card: 'RN-V141-LATE', src: 'CT-HTL0421', hotel: 'Phuket Old Town Inn', newId: 'CT-HTL0421-R0141', o: { billing_model: 'FLAT', fixed_fee: 16000, commission_pct: null, guarantee_fee: null }, at: { sub: '2026-10-14', app: '2026-10-15', link: '2026-10-16', signed: '2026-10-20' } },
+  { card: 'RN-V141-CG', src: 'CT-HTL0422', hotel: 'Rayong Seaside', newId: 'CT-HTL0422-R0142', o: { billing_model: 'COMMISSION_GUARANTEE', fixed_fee: null, commission_pct: 15, guarantee_fee: 22500 }, at: { sub: '2026-10-20', app: '2026-10-21', link: '2026-10-22', signed: '2026-10-24' } },
+];
+const v141Terms = (src: SourceContract, o: OfferTerms): Terms => ({ ...applyOfferTerms(src.terms, o), ...rollDates(src.terms.end_date, 12), term_months: 12 });
 function seedV141Requests(s: State) {
-  const one = (card: string, srcId: string, hotel: string, o: OfferTerms, at: { sub: string; app: string; link: string; signed: string }) => {
-    const src = V141_CONTRACTS.find((c) => c.contract_id === srcId)!;
-    s.seq++; const r = newRequest({ id: card, hotelId: src.hotel_id, hotel, owner: 'AE001-Nont' }, src, s.seq, `${at.sub}T02:00:00.000Z`, s.history);
-    const next = { ...applyOfferTerms(r.new_terms, o), ...rollDates(src.terms.end_date, 12), term_months: 12 };
-    const signed: RenewalRequest = { ...r, new_terms: next, status: 'SIGNED', submitted_at: `${at.sub}T03:00:00.000Z`, approved_by: 'PM001-Alex', approver_role: 'PM', approved_at: `${at.app}T03:00:00.000Z`,
-      link_sent_at: `${at.link}T03:00:00.000Z`, signed_at: `${at.signed}T03:00:00.000Z`, new_contract_id: `${srcId}-R${r.id.slice(-4)}`, updated_at: `${at.signed}T03:00:00.000Z` };
+  for (const d of V141_RENEWALS) {
+    const src = V141_CONTRACTS.find((c) => c.contract_id === d.src)!;
+    s.seq++; const r = newRequest({ id: d.card, hotelId: src.hotel_id, hotel: d.hotel, owner: 'AE001-Nont' }, src, s.seq, `${d.at.sub}T02:00:00.000Z`, s.history);
+    const signed: RenewalRequest = { ...r, new_terms: v141Terms(src, d.o), status: 'SIGNED', submitted_at: `${d.at.sub}T03:00:00.000Z`, approved_by: 'PM001-Alex', approver_role: 'PM', approved_at: `${d.at.app}T03:00:00.000Z`,
+      link_sent_at: `${d.at.link}T03:00:00.000Z`, signed_at: `${d.at.signed}T03:00:00.000Z`, new_contract_id: d.newId, updated_at: `${d.at.signed}T03:00:00.000Z` };
     s.requests.push(signed); s.history.push(renewalHistoryRow(signed, 1));
-  };
-  one('RN-V141-LATE', 'CT-HTL0421', 'Phuket Old Town Inn', { billing_model: 'FLAT', fixed_fee: 16000, commission_pct: null, guarantee_fee: null }, { sub: '2026-10-14', app: '2026-10-15', link: '2026-10-16', signed: '2026-10-20' });
-  one('RN-V141-CG', 'CT-HTL0422', 'Rayong Seaside', { billing_model: 'COMMISSION_GUARANTEE', fixed_fee: null, commission_pct: 15, guarantee_fee: 22500 }, { sub: '2026-10-20', app: '2026-10-21', link: '2026-10-22', signed: '2026-10-24' });
+  }
+}
+/** v1.4.1 RN51 / RN41: the two DEMO renewed contracts, built by the same buildRenewedContract() (pure; no store is touched) — AC Billing DEMO notices. */
+export function v141DemoRenewedContracts(): Contract[] {
+  return V141_RENEWALS.flatMap((d) => {
+    const src = V141_CONTRACTS.find((c) => c.contract_id === d.src)!;
+    const req = { id: `RR-${d.card}`, source_contract_id: src.contract_id, new_contract_id: d.newId, old_terms: src.terms, new_terms: v141Terms(src, d.o), signed_at: `${d.at.signed}T03:00:00.000Z`, updated_at: `${d.at.signed}T03:00:00.000Z` } as RenewalRequest;
+    const b = buildRenewedContract({ ...contractFromSource(src, DEMO_NOW), customer_snapshot: { ...contractFromSource(src, DEMO_NOW).customer_snapshot, hotel_name: d.hotel } }, req);
+    return b.ok ? [b.contract] : [];
+  });
 }
 
 /* ---------- reads ---------- */
