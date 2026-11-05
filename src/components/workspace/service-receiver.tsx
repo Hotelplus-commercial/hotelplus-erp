@@ -28,6 +28,7 @@ import { useWsViewer } from "@/lib/ws-viewer";
 import { setBellViewer } from "@/lib/bell-items";
 import { COACH_TH } from "@/lib/ps-glossary";
 
+export const RECV_DEMO_CASE_TITLE = "ขอปรับข้อมูลห้องบน OTA";
 const DEPT_TH: Record<SvcDept, string> = { ORM: "ORM", MARCOM: "Marcom", AC: "AC", BD: "BD" };
 
 /* ---------- data ---------- */
@@ -43,7 +44,12 @@ export function useReceiverRows(demo: boolean) {
   useEffect(() => {
     if (!demo || !isDemoTickets()) return;
     addDemoTickets(slaDemoTickets()); addDemoTickets(stabDemoTickets()); ensureSlaDemoFollowups(); seedReceiverDemo();
-    void ticketApi.list(true).then((c) => { if (!c.length) resetDemoTickets(); });
+    // §8 DEMO add-only: one ORM PS case created on the DEMO date, so a PS case can be accepted inside its 10-day window.
+    void ticketApi.list(true).then(async (c) => {
+      if (!c.length) resetDemoTickets();
+      const all = await ticketApi.list(true);
+      if (!all.some((x) => x.title === RECV_DEMO_CASE_TITLE)) await ticketApi.create(true, { hotel_id: "HTL0612", hotel_name: "โรงแรม 612", title: RECV_DEMO_CASE_TITLE, description: "ข้อมูลสาธิต", category: "ORM-RESV", actor: "PM (Alex)", routed_team: "ORM" } as Parameters<typeof ticketApi.create>[1]);
+    }).catch(() => {});
   }, [demo, l0.length]);
   // PS cases: same reader as the PS Dashboard (ticketApi.list); plain effect so the lane needs no query provider (BD tests mount the shell bare).
   const [caseData, setCaseData] = useState<PsCase[]>([]);
