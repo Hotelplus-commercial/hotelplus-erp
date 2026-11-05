@@ -65,7 +65,7 @@ describe('R4.1 forbidden strings after every card mounts (demo)', () => {
     const chips = [...health()!.querySelectorAll<HTMLElement>('.r1-chip')];
     expect(chips.length).toBeGreaterThan(0);
     const tips: string[] = [];
-    for (const c of chips) { await act(async () => { c.focus(); }); tips.push(document.body.textContent ?? ''); await act(async () => { c.blur(); }); }
+    for (const c of chips) { await act(async () => { c.focus(); }); tips.push([...document.querySelectorAll('.dash-tooltip-popover')].map((e) => e.textContent ?? '').join(' ')); await act(async () => { c.blur(); }); }
     expect(tips.some((t) => t.includes('ลูกค้าตอบ') || t.includes('·'))).toBe(true);
     // ★ = Tab R1 §5 opportunity marker (R1_HEALTH.signalInfo "★ โอกาสขาย"); the only hit, held for a decision — every other word must be absent.
     const noStar = (l: string[]) => l.filter((w) => w !== '★');
