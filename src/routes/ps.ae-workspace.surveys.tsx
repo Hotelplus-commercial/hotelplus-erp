@@ -38,16 +38,17 @@ import { SURVEY_OPEN_KEY, useTemplateMgmt } from "@/lib/email-templates";
 import { monthOptions, scoreTone, useMeetingMgmt } from "@/lib/orm-meeting";
 import {
   surveyFlagCards,
-  surveyPending,
   surveySubStatuses,
-  surveySubmitted,
-  surveyUpcoming,
   v4Color,
   v4SurveyQuestions,
   type MeetingType,
   type SurveyZoneCard,
 } from "@/lib/ps-v4";
 import { cn } from "@/lib/utils";
+import { SurveyV2Form } from "@/components/ps/survey-v2-form";
+import type { MeetingRecord, SurveyRecord } from "@/lib/meeting-survey-types";
+import { createSurveyLink, expireLinks, msNow, saveNoScore, saveSurveyV1, saveSurveyV2, useMeetingSurveyData } from "@/lib/meeting-survey-store";
+import { LINK_ACTION, LINK_ANSWERED_TAG, LINK_EXPIRED_TAG, NO_SCORE_CONFIRM, NO_SCORE_TH, SURVEY_TODO, emptyV2, isNoScore, linkSentTag, linkState, respondentOf, surveyRequired, v2AllUnsure, v2Complete, type V2Answers } from "@/lib/survey-v2";
 
 export const Route = createFileRoute("/ps/ae-workspace/surveys")({
   head: () => ({
@@ -65,7 +66,14 @@ export const Route = createFileRoute("/ps/ae-workspace/surveys")({
   component: SurveysTab,
 });
 
-type FormTarget = { card: SurveyZoneCard; preview: boolean };
+type QueueCard = SurveyZoneCard & { meeting: MeetingRecord; survey?: SurveyRecord };
+type FormTarget = { card: QueueCard; preview: boolean };
+
+/** Meeting record → the existing zone card shape (sample rows keep their original card). */
+const toCard = (m: MeetingRecord, survey?: SurveyRecord): QueueCard => ({
+  ...((m.raw as SurveyZoneCard | undefined) ?? { id: m.id, hotelId: m.hotel_id ?? "", hotel: m.hotel, tier: m.tier, type: m.service, date: m.date_label || m.date, attendees: m.ae_display ?? m.ae, contact: m.contact ?? "" }),
+  meeting: m, survey,
+});
 
 function SurveysTab() {
   const { role, month, setMonth } = useMeetingMgmt();
@@ -74,7 +82,25 @@ function SurveysTab() {
   const [subStatus, setSubStatus] = useState<string>("All");
   const [form, setForm] = useState<FormTarget | null>(null);
   const tmStore = useTemplateMgmt();
-  useEffect(() => { tmStore.stampSurveys(surveyPending.map((c) => ({ id: c.id, key: c.type === "ORM" ? "ORM_MONTHLY" : "MARCOM_MONTHLY" }))); }, [tmStore]);
+  const { data, demo } = useMeetingSurveyData();
+  const [linkFor, setLinkFor] = useState<SurveyRecord | null>(null);
+  useEffect(() => { expireLinks(demo); }, [demo]);
+  const now = msNow(demo);
+  const surveyOf = (id: string) => data.surveys.find((x) => x.meeting_id === id);
+  const queueMeetings = data.meetings.filter((m) => m.origin === "survey-queue" || m.origin === "demo" || m.origin === "booked");
+  const allPending = queueMeetings
+    .filter((m) => m.status === "Completed" && surveyRequired(m.channel))
+    .map((m) => toCard(m, surveyOf(m.id)))
+    .filter((c) => !c.survey || linkState(c.survey, now) === "OPEN");
+  const surveyPending = allPending;
+  const surveyUpcoming = queueMeetings.filter((m) => m.status !== "Completed" && m.origin === "survey-queue").map((m) => toCard(m));
+  const surveySubmitted = data.surveys.filter((x) => x.submitted_at || isNoScore(x)).map((x) => ({
+    id: x.id, hotel: x.hotel, tier: x.tier, type: x.service, meetingDate: x.meeting_date.length === 10 ? x.meeting_date.slice(5) : x.meeting_date,
+    submitted: x.submitted_at ? (x.submitted_at.length > 10 && x.submitted_at.includes("T") ? x.submitted_at.slice(0, 10) : x.submitted_at) : "—",
+    overall: x.overall, subStatus: x.customer_response_status, flags: x.flags, rec: x,
+  }));
+  const pendingKey = surveyPending.map((c) => c.id).join("|");
+  useEffect(() => { tmStore.stampSurveys(surveyPending.map((c) => ({ id: c.id, key: c.type === "ORM" ? "ORM_MONTHLY" : "MARCOM_MONTHLY" }))); }, [tmStore, pendingKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const typeOk = (t: MeetingType) => type === "All" || type === (t === "ORM" ? "ORM" : "Marcom");
   const tierOk = (t: string) => tier === "All" || tier === t;
@@ -86,7 +112,7 @@ function SurveysTab() {
       surveySubmitted.filter(
         (s) => typeOk(s.type) && tierOk(s.tier) && (subStatus === "All" || s.subStatus === subStatus),
       ),
-    [type, tier, subStatus],
+    [type, tier, subStatus, data], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   return (
@@ -188,10 +214,22 @@ function SurveysTab() {
                     {p.tier !== "—" && <TierBadge tier={p.tier as "A" | "B" | "C"} />}
                     <span className="text-xs text-muted-foreground">ประชุมเมื่อ {p.date}</span>
                     {(p.daysAgo ?? 0) > 3 && <Chip tone="danger">⚠ ค้าง {p.daysAgo} วัน</Chip>}
+                    <Chip tone="warn">{SURVEY_TODO}</Chip>
+                    {p.survey?.link_expires_at && <Chip tone="info">{linkSentTag(p.survey.link_expires_at)}</Chip>}
                   </div>
-                  <Button size="sm" onClick={() => setForm({ card: p, preview: false })}>
-                    Fill Survey →
-                  </Button>
+                  {p.survey ? (
+                    <Button size="sm" variant="outline" onClick={() => setLinkFor(p.survey!)}>ดูลิงก์</Button>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      <Button size="sm" variant="outline" onClick={() => {
+                        const r = createSurveyLink(p.meeting, tmStore.surveyVersion);
+                        if (r.ok) setLinkFor(r.survey); else toast.error(r.error);
+                      }}>{LINK_ACTION}</Button>
+                      <Button size="sm" onClick={() => setForm({ card: p, preview: false })}>
+                        Fill Survey →
+                      </Button>
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>
@@ -243,9 +281,13 @@ function SurveysTab() {
                   <TableCell>{s.meetingDate}</TableCell>
                   <TableCell>{s.submitted}</TableCell>
                   <TableCell>
-                    <Chip tone={scoreTone(s.overall)}>{s.overall.toFixed(1)}</Chip>
+                    {s.overall === null ? <span className="text-muted-foreground">—</span> : <Chip tone={scoreTone(s.overall)}>{s.overall.toFixed(1)}</Chip>}
                   </TableCell>
                   <TableCell>
+                    <div className="flex flex-wrap items-center gap-1">
+                    {isNoScore(s.rec) ? (
+                      <span className="rounded-full border border-destructive/30 bg-muted px-2 py-0.5 text-xs font-semibold text-destructive" data-testid="pill-no-score">{NO_SCORE_TH}</span>
+                    ) : s.subStatus && (
                     <Chip
                       tone={
                         s.subStatus === "Flagged"
@@ -257,6 +299,10 @@ function SurveysTab() {
                     >
                       {s.subStatus}
                     </Chip>
+                    )}
+                    {s.rec.no_score_reason === "LINK_EXPIRED" && <Chip tone="muted">{LINK_EXPIRED_TAG}</Chip>}
+                    {respondentOf(s.rec) === "CUSTOMER_LINK" && s.rec.no_score_reason !== "LINK_EXPIRED" && <Chip tone="info">{LINK_ANSWERED_TAG}</Chip>}
+                    </div>
                   </TableCell>
                   <TableCell>
                     {s.flags > 0 ? (
@@ -296,6 +342,7 @@ function SurveysTab() {
       </Panel>
 
       {form && <SurveyForm target={form} onClose={() => setForm(null)} />}
+      {linkFor && <LinkDialog survey={linkFor} onClose={() => setLinkFor(null)} />}
     </div>
   );
 }
