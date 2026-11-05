@@ -35,6 +35,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ActivityFeedList, useAutoRefresh } from "@/components/ps/v4-ui";
 import { activityFeed, coachGroups, coachRoles, coachStatuses, feedTypes } from "@/lib/ps-v4";
 import { mmFlags, useMeetingMgmt, type Flag } from "@/lib/orm-meeting";
+import { useSyncExternalStore } from "react";
+import { onDemoSessionChange, psDemoOn } from "@/lib/demo-session";
+import { CoachingGroup } from "@/components/workspace/coaching-group";
+import { ackCount } from "@/lib/coaching-routing";
+import { rosterFor, useCoachingTasks } from "@/lib/coaching-store";
+import { COACH_TH } from "@/lib/ps-glossary";
+
+/** Workspace Coaching patch v1.0: follows the shared DEMO switch immediately. */
+const useDemoOn = () => useSyncExternalStore(onDemoSessionChange, psDemoOn, () => false);
 
 export const Route = createFileRoute("/ps/ae-workspace/coaching")({
   head: () => ({
@@ -57,6 +66,7 @@ const statuses = ["All", "Open", "In Coaching", "Resolved"];
 
 function CoachingTab() {
   const { role } = useMeetingMgmt();
+  const demoOn = useDemoOn();
   const [ae, setAe] = useState("All");
   const [type, setType] = useState("All");
   const [status, setStatus] = useState("All");
@@ -77,9 +87,13 @@ function CoachingTab() {
 
   if (role !== "Partner Manager") {
     return (
+      <div className="space-y-4">
+      {/* WC7 note: AE awareness — ปฏิเสธนัด tasks where the AE is owner, with รับทราบ */}
+      <CoachingGroup scope="AE" demo={demoOn} onlyRule="MEETING_REJECTED" />
       <Panel title="Coaching Queue" subtitle="เฉพาะ Partner Manager">
         <EmptyState text="หน้านี้เปิดให้เฉพาะ Partner Manager — สลับบทบาทด้านบนเพื่อเข้าดู" />
       </Panel>
+      </div>
     );
   }
 
@@ -155,6 +169,8 @@ function CoachingTab() {
                   <TableHead>Detail</TableHead>
                   <TableHead>Age</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>{COACH_TH.owner}</TableHead>
+                  <TableHead>{COACH_TH.ack}</TableHead>
                   <TableHead className="text-right">Action</TableHead>
                 </TableRow>
               </TableHeader>
@@ -184,6 +200,9 @@ function CoachingTab() {
                         {f.status}
                       </Chip>
                     </TableCell>
+                    {/* old task: original routing kept, no owner recorded */}
+                    <TableCell className="text-muted-foreground">—</TableCell>
+                    <TableCell className="text-muted-foreground">—</TableCell>
                     <TableCell className="text-right">
                       <Button
                         size="sm"
@@ -276,6 +295,8 @@ function CoachingTab() {
         </DialogContent>
       </Dialog>
 
+      <NewCoachingPanel demo={demoOn} />
+      <CoachingGroup scope="AE" demo={demoOn} />
       <TeamCoachingTabs />
     </div>
   );
@@ -382,6 +403,43 @@ function TeamCoachingTabs() {
           <ActivityFeedList events={events} />
         </TabsContent>
       </Tabs>
+    </Panel>
+  );
+}
+
+/** WC10: new Coaching tasks (routed by service) with ผู้ดูแล + รับทราบ columns; topic-name titles. */
+function NewCoachingPanel({ demo }: { demo: boolean }) {
+  const tasks = useCoachingTasks(demo);
+  const roster = rosterFor(demo);
+  const nameOf = (id: string) => roster.find((m) => m.id === id)?.name ?? id;
+  return (
+    <Panel title="งาน Coaching จากธงเซอร์เวย์ / การประชุม" subtitle={`${tasks.length} รายการ`}>
+      {tasks.length === 0 ? <EmptyState text={COACH_TH.empty} /> : (
+        <div className="overflow-x-auto" data-testid="coach-pm-table">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>งาน</TableHead>
+                <TableHead>บริการ</TableHead>
+                <TableHead>{COACH_TH.assignee}</TableHead>
+                <TableHead>{COACH_TH.owner}</TableHead>
+                <TableHead>{COACH_TH.ack}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {tasks.map((t) => { const a = ackCount(t); return (
+                <TableRow key={t.id}>
+                  <TableCell><Chip tone={t.severity === "RED" ? "danger" : "warn"}>{t.severity === "RED" ? COACH_TH.fRed : COACH_TH.fYellow}</Chip> <span className="ml-1">{t.title}</span></TableCell>
+                  <TableCell>{t.service === "ORM" ? "ORM" : "Marcom"}</TableCell>
+                  <TableCell>{t.assignee_member_id ? nameOf(t.assignee_member_id) : COACH_TH.roleName[t.assignee_role]}</TableCell>
+                  <TableCell>{t.owner_team ? `${t.owner_team === "RE_ACTIVE" ? "Re-active" : `ทีม ${t.owner_team}`}: ` : ""}{t.owner_member_ids.length ? t.owner_member_ids.map(nameOf).join(" · ") : "—"}</TableCell>
+                  <TableCell>{COACH_TH.supervisorAck(a.n, a.total)}</TableCell>
+                </TableRow>
+              ); })}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </Panel>
   );
 }
