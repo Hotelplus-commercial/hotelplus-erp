@@ -165,3 +165,24 @@ describe('§5 / §9 / §10 help + guards', () => {
     expect(typeof ENG.computeRenewalOffer).toBe('function'); expect(typeof ENG.matchOffer).toBe('function');
   });
 });
+
+describe('★ retired: opportunity labels carry the text tag "ออกาสขาย"', () => {
+  test('R5 card ③ offer block: an opp chip draws the tag, never the star', () => {
+    const base = info('CT-HTL0411');
+    expect(base.ctx).toBeTruthy();
+    const html = renderToStaticMarkup(h(UI.OfferBlock, { info: { ...base, ctx: { ...base.ctx!, chips: [{ key: 'UPSELL', label: 'ออกาสขายบริการเพิ่ม', dir: 'opp' }] } }, open: true, onToggle: () => {} }));
+    expect(html).toContain('r1-chip-tag');
+    expect(text(html)).toContain('ออกาสขาย');
+    expect(html).not.toContain('★');
+  });
+  test('shared marker: opp = text tag, bad/good keep ▼ / ▲ (one rule for every chip surface)', async () => {
+    const { SignalMark } = await import('../src/components/ps/signal-mark');
+    const { R1_HEALTH } = await import('../src/lib/ps-glossary');
+    const tag = renderToStaticMarkup(h(SignalMark, { dir: 'opp' }));
+    expect(tag).toContain('r1-chip-tag');
+    expect(text(tag)).toBe(R1_HEALTH.oppTag);
+    expect(renderToStaticMarkup(h(SignalMark, { dir: 'bad' }))).toContain('▼');
+    expect(renderToStaticMarkup(h(SignalMark, { dir: 'good' }))).toContain('▲');
+    expect(tag).not.toContain('★');
+  });
+});
