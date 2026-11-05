@@ -8,9 +8,6 @@ import { setPartnerDemo, usePartnerData } from "@/lib/debt-partner-store";
 import { creditAmountOf, creditRows, creditTiles, getCashbackExpected, getDealState, rateCardRows, type DealState, type PartnerContract } from "@/lib/debt-partner-calc";
 import { PARTNER_DEMO_CONTRACTS, PARTNER_DEMO_TICKET_STATUS } from "@/lib/debt-partner-demo";
 import { DEMO_DAY } from "@/lib/demo-session";
-import { mainContracts } from "@/lib/main-contract-store";
-import { readReasons } from "@/lib/renewal-reasons";
-import { contractTermEnd } from "@/lib/contract-state";
 import { ticketById, useTickets, type L0Status } from "@/lib/tickets-l0";
 import type { PartnerData, PartnerDeal } from "@/lib/debt-partner-types";
 import { DP_HELP } from "@/lib/ps-glossary";
@@ -23,24 +20,7 @@ const CYCLE: Record<string, string> = { MONTHLY: "รายเดือน", ADV
 const STATE_TH: Record<DealState, string> = { ACTIVE: "สำเร็จ · มีผลอยู่", UPCOMING: "สำเร็จ · รอเริ่ม", NEGOTIATING: "กำลังต่อรอง", EXPIRED: "หมดอายุ", FAILED: "ไม่สำเร็จ" };
 const pill = "inline-flex items-center rounded-full px-2 py-0.5 text-xs whitespace-nowrap";
 
-/** Contracts behind the Partner cards: DEMO bundle, else the system rows (allotment unknown → lowest tier, DP-O1). */
-export function partnerContracts(d: PartnerData, demo: boolean): PartnerContract[] {
-  if (demo) return PARTNER_DEMO_CONTRACTS;
-  // PM Workspace Partner v1.0 §2.3 (PW10): ORM contracts of the main store; candidate fires when AE records ไม่ต่อ
-  // (renewal_reasons.outcome, at created_at) or the contract is terminated early (billing_status TERMINATED, at inactivated_at).
-  const reasons = readReasons();
-  const main = mainContracts().filter((c) => c.lines.some((l) => /^ORM/i.test(l.sku_snapshot))).map((c): PartnerContract => {
-    const rr = reasons.find((r) => r.contract_id === c.contract_id);
-    const term = c.billing_status === "TERMINATED" && c.inactivated_at ? c.inactivated_at.slice(0, 10) : null;
-    return {
-      contract_id: c.contract_id, hotel: c.customer_snapshot.legal_name || c.contract_id, service: "ORM", allotment: null, property_id: c.hotel_id ?? null,
-      start: c.start_date, end: term ?? (rr ? contractTermEnd(c) : null), end_reason: term ? "EARLY_TERMINATED" : rr ? "NOT_RENEWED" : null,
-      outcome_at: term ?? rr?.created_at ?? null,
-    };
-  });
-  const seen = new Set(main.map((c) => c.contract_id));
-  return [...main, ...d.contract_partner_system.filter((s) => !seen.has(s.contract_id)).map((s): PartnerContract => ({ contract_id: s.contract_id, hotel: s.contract_id, service: "ORM", allotment: null, start: null, end: null, end_reason: null }))];
-}
+export { partnerContracts } from "@/lib/partner-contracts";
 /** AC notice status of a ticket id (real ticket store; DEMO fallback map). */
 export function noticeStatus(id: string | null, demo: boolean): L0Status | null {
   if (!id) return null;
