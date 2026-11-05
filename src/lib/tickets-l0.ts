@@ -19,6 +19,8 @@ export const SYSTEM_CREATOR = 'SYSTEM:THE_OFFICE' as const;
 export type Creator = Role | typeof SYSTEM_CREATOR;
 export type Severity = 'high' | 'medium' | 'low';
 export type BotPayload = {
+  /** DEMO only: the demo deal / credit ac_ticket_id this seeded notice stands for (PS Dashboard / PM Workspace status). */
+  demo_ref?: string;
   severity?: Severity; event_key?: string;
   signal_detail?: { grade?: string; renewal_due_date?: string; days_left?: number; survey_id?: string; score?: number };
   assigned_ae?: { member_id: string; nickname: string } | null;
