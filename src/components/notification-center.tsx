@@ -39,6 +39,7 @@ const severityStyles = {
 
 export function NotificationCenter() {
   const location = useRouterState({ select: r => r.location });
+  const navigate = useNavigate();
   const demo = new URLSearchParams(location.searchStr).get("demo") === "1";
   useEffect(() => { setTicketDemo(new URLSearchParams(window.location.search).get("demo") === "1"); }, [location.pathname, location.searchStr]);
   const tickets = useTickets().filter(t => t.status === "NEW" || t.status === "ACK" || t.status === "IN_PROGRESS");
