@@ -31,7 +31,8 @@ import { isPsShutoff } from "@/lib/partner-workspace";
 import type { TodoTypeGroup } from "@/lib/workspace-registry";
 import { CoachingGroup } from "@/components/workspace/coaching-group";
 import { setBellViewer } from "@/lib/bell-items";
-import { HEAD_OF, SVC_DEPTS, type SvcDept } from "@/lib/service-tickets";
+import { HEAD_OF, SVC_DEPTS, inScopeL0, type SvcDept } from "@/lib/service-tickets";
+import { OgmCategoryGroup, ServiceReceiverLane } from "@/components/workspace/service-receiver";
 
 const fmt = (iso: string) => new Date(iso).toLocaleString("th-TH", { dateStyle: "medium", timeStyle: "short" });
 const RANGES: { key: DateRange; label: string }[] = [{ key: "today", label: "วันนี้" }, { key: "7d", label: "7 วัน" }, { key: "14d", label: "14 วัน" }];
@@ -134,6 +135,9 @@ export function WorkspaceShell({ config, demo, ticket, roleState, onGoBdm }: { c
       {/* Workspace Coaching patch v1.0 (WC7–WC9): 🎯 Coaching group from the registry row */}
       {config.coaching && <CoachingGroup scope={config.coaching} demo={demo} />}
 
+      {/* Service Ticket Receiver v1.0 §6: OGM reviews category requests (AUTO Workspace) */}
+      {config.dept_key === "AUTO" && <OgmCategoryGroup demo={demo} />}
+
       <div className="grid gap-4 lg:grid-cols-[1fr_1fr_1.4fr]">
         <Lane title="⏰ ตารางนัด">
           {/* scheduled adapter is null in every workspace this build → empty-state. `range` will feed it later. */}
@@ -151,7 +155,11 @@ export function WorkspaceShell({ config, demo, ticket, roleState, onGoBdm }: { c
         </Lane>
         <Lane title="🎫 Tickets" focus>
           {config.ticket_target_dept === "BD" && <WelcomeBackSection actor={wbActorOf(role, bdMember)} demo={demo} initialTicket={ticket} {...(onGoBdm ? { onGoBdm } : {})} />}
-          <TicketsLane dept={config.ticket_target_dept} role={deptRole} initialTicket={ticket} />
+          {config.service_sla ? <>
+            {/* Service Ticket Receiver v1.0 §2: service tickets (L0 + PS cases); FYI / watcher items stay in the unchanged list below. */}
+            <ServiceReceiverLane dept={config.ticket_target_dept as SvcDept} demo={demo} liveRole={role} initialTicket={ticket} />
+            <TicketsLane dept={config.ticket_target_dept} role={deptRole} initialTicket={ticket} exclude={(t) => inScopeL0(t) && t.target_dept === config.ticket_target_dept} />
+          </> : <TicketsLane dept={config.ticket_target_dept} role={deptRole} initialTicket={ticket} />}
         </Lane>
       </div>
     </div>
@@ -191,7 +199,7 @@ function AdapterTodoGroup({ group, person, range, demo }: { group: TodoTypeGroup
 const Empty = ({ text }: { text: string }) => <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">{text}</div>;
 
 /** Inbound: tickets WHERE target_dept = dept OR payload.watchers[] contains dept (👁 FYI, read-only). Never time-bound. */
-function TicketsLane({ dept, role, initialTicket }: { dept: Dept; role: Role; initialTicket?: string | undefined }) {
+function TicketsLane({ dept, role, initialTicket, exclude }: { dept: Dept; role: Role; initialTicket?: string | undefined; exclude?: (t: L0Ticket) => boolean }) {
   const tickets = useTickets();
   const [showClosed, setShowClosed] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
@@ -199,7 +207,7 @@ function TicketsLane({ dept, role, initialTicket }: { dept: Dept; role: Role; in
     const t = initialTicket && tickets.find((x) => x.ticket_id === initialTicket && x.type !== "WELCOME_BACK" && (x.target_dept === dept || isWatcherOf(x, dept)));
     if (t) { setOpenId(t.ticket_id); setShowClosed(!OPEN_STATUSES.includes(t.status)); }
   }, [initialTicket, dept]); // eslint-disable-line react-hooks/exhaustive-deps
-  const inbound = tickets.filter((t) => t.target_dept === dept || isWatcherOf(t, dept));
+  const inbound = tickets.filter((t) => (t.target_dept === dept || isWatcherOf(t, dept)) && !(exclude && exclude(t)));
   // R3.1: Welcome Back has its own section (BDM-first visibility); every other type stays in this table unchanged.
   const listed = inbound.filter((t) => t.type !== "WELCOME_BACK");
   const rows = sortBotFirst(listed.filter((t) => OPEN_STATUSES.includes(t.status) !== showClosed));
