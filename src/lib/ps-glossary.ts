@@ -759,3 +759,21 @@ export const MEETING_R1 = {
     analyzer: "เครื่องวิเคราะห์อยู่ที่ The Office App · ยังไม่เปิดใช้",
   },
 } as const;
+
+/** Workspace Coaching patch v1.0 (WC6–WC12) — Coaching group wording (topic names, never question numbers). */
+export const COACH_TH = {
+  picker: "สมาชิกที่ดู (DEMO)",
+  mine: "งานที่ฉันต้องดูแล",
+  about: "เรื่องที่เกี่ยวกับฉัน",
+  empty: "ยังไม่มีงาน Coaching",
+  fRed: "แดง", fYellow: "เหลือง", fOpen: "ยังไม่ปิด", fClosed: "ปิดแล้ว",
+  sOpen: "เปิด", sCoaching: "กำลังโค้ช", sClosed: "ปิดแล้ว",
+  owner: "ผู้ดูแล", assignee: "ผู้โค้ช",
+  ack: "รับทราบ", ackDone: "รับทราบแล้ว",
+  acked: (n: number, total: number) => `รับทราบแล้ว ${n}/${total}`,
+  supervisorAck: (n: number, total: number) => `ผู้ดูแลรับทราบแล้ว ${n}/${total}`,
+  meetingLink: "ดูการประชุม", surveyLink: "ดูเซอร์เวย์", healthLink: "ดูสุขภาพสัญญา",
+  notePh: "บันทึกการโค้ช", addNote: "บันทึก", close: "ปิดงาน",
+  roleName: { GRM: "GRM", MARCOM_LEAD: "Marcom Lead", PM: "PM" } as Record<"GRM" | "MARCOM_LEAD" | "PM", string>,
+  newTask: (title: string) => `🎯 งาน Coaching ใหม่ · ${title}`,
+} as const;

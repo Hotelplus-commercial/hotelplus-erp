@@ -1,4 +1,5 @@
 /* R1.1 §4 — render dashboard tabs in demo mode and fail on any forbidden display string. */
+import './dom-first';
 import { describe, expect, test } from 'bun:test';
 import { createElement as h } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';

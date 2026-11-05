@@ -5,7 +5,7 @@ import { GlobalRegistrator } from '@happy-dom/global-registrator';
 import { domHits, hits } from './forbidden-words';
 
 mock.module('../src/lib/cloud-sync', () => ({ stageCloudDoc: () => {} }));
-beforeAll(() => { GlobalRegistrator.register({ url: 'http://localhost:8080/ps?demo=1' }); (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+beforeAll(() => { if (!GlobalRegistrator.isRegistered) GlobalRegistrator.register({ url: 'http://localhost:8080/ps?demo=1' }); (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   // another test file stubs canvas without measureText; give charts a minimal 2D context
   Object.assign(HTMLCanvasElement.prototype, { getContext: () => ({ measureText: (t: string) => ({ width: t.length * 7 }), font: '' }) });
 });
@@ -65,7 +65,10 @@ describe('R4.1 forbidden strings after every card mounts (demo)', () => {
     const chips = [...health()!.querySelectorAll<HTMLElement>('.r1-chip')];
     expect(chips.length).toBeGreaterThan(0);
     const tips: string[] = [];
-    for (const c of chips) { await act(async () => { c.focus(); }); tips.push([...document.querySelectorAll('.dash-tooltip-popover')].map((e) => e.textContent ?? '').join(' ')); await act(async () => { c.blur(); }); }
+    // Stable open: focus alone depends on whether react-dom first loaded with a DOM (other test files import it without one), so also
+    // fire the hover the popover listens for (mouseover → onMouseEnter) and wait for the popover before reading it.
+    for (const c of chips) { await act(async () => { c.focus(); c.dispatchEvent(new MouseEvent('mouseover', { bubbles: true, relatedTarget: document.body })); });
+      await until(() => document.querySelectorAll('.dash-tooltip-popover').length > 0, 2000).catch(() => {}); tips.push([...document.querySelectorAll('.dash-tooltip-popover')].map((e) => e.textContent ?? '').join(' ')); await act(async () => { c.blur(); c.dispatchEvent(new MouseEvent('mouseout', { bubbles: true, relatedTarget: document.body })); }); }
     expect(tips.some((t) => t.includes('ลูกค้าตอบ') || t.includes('·'))).toBe(true);
     // ★ is forbidden everywhere again: sales-opportunity labels carry the text tag "โอกาสขาย" instead (display only).
     const opp = chips.filter((c) => c.className.includes('is-opp'));

@@ -25,6 +25,8 @@ export type WorkspaceConfig = {
   path: string;
   /** Optional merged sidebar entry (R1 §9): one entry that resolves to this and other role views. */
   sidebar_entry?: { label: string; path: string };
+  /** Workspace Coaching patch v1.0: show the 🎯 Coaching group (ORM / Marcom). */
+  coaching?: 'ORM' | 'MARCOM';
   lanes: { scheduled: ScheduledAdapter | null; todo: TodoTypeGroup[]; tickets: { enabled: true; default_filter: 'open' } };
 };
 
@@ -35,8 +37,8 @@ export const WORKSPACES: WorkspaceConfig[] = [
   { dept_key: 'BD', label: 'BD Workspace', app_host: 'BD_APP', sidebar_order: 90, ticket_target_dept: 'BD', path: '/bd/tickets', lanes: lanes() },
   { dept_key: 'AC', label: 'AC Workspace', app_host: 'AC_APP', sidebar_order: 90, ticket_target_dept: 'AC', path: '/workspace/ac', lanes: lanes() },
   { dept_key: 'PS', label: 'PM Workspace', app_host: 'PS_APP', sidebar_order: 50, ticket_target_dept: 'PS', path: '/workspace/ps', sidebar_entry: { label: 'Workspace', path: '/ps/workspace' }, lanes: { ...lanes(), todo: [{ key: 'partner', icon: '🤝', label_th: 'งาน Partner', adapter: partnerTodoAdapter }] } },
-  { dept_key: 'ORM', label: 'ORM Workspace', app_host: 'ORM_APP', sidebar_order: 90, ticket_target_dept: 'ORM', path: '/workspace/orm', lanes: assignmentLanes('ORM') },
-  { dept_key: 'MARCOM', label: 'Marcom Workspace', app_host: 'MARCOM_APP', sidebar_order: 90, ticket_target_dept: 'MARCOM', path: '/workspace/marcom', lanes: assignmentLanes('MARCOM') },
+  { dept_key: 'ORM', label: 'ORM Workspace', app_host: 'ORM_APP', sidebar_order: 90, ticket_target_dept: 'ORM', path: '/workspace/orm', coaching: 'ORM', lanes: assignmentLanes('ORM') },
+  { dept_key: 'MARCOM', label: 'Marcom Workspace', app_host: 'MARCOM_APP', sidebar_order: 90, ticket_target_dept: 'MARCOM', path: '/workspace/marcom', coaching: 'MARCOM', lanes: assignmentLanes('MARCOM') },
   { dept_key: 'HR', label: 'HR Workspace', app_host: 'HR_APP', sidebar_order: 90, ticket_target_dept: 'HR', path: '/workspace/hr', lanes: lanes() },
   { dept_key: 'AUTO', label: 'AUTO Workspace', app_host: 'AUTO_APP', sidebar_order: 90, ticket_target_dept: 'AUTO', path: '/workspace/auto', lanes: lanes() },
   { dept_key: 'OFFICE', label: 'The Office Workspace', app_host: 'OFFICE_APP', sidebar_order: 90, ticket_target_dept: 'OFFICE', path: '/workspace/office', lanes: lanes() },
