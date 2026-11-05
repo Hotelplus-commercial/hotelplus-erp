@@ -3,11 +3,11 @@
 import { useSyncExternalStore } from 'react';
 import { EXPANSION_DEMO, repricingRow, type RepriceInput } from './expansion';
 import { DEMO_NOW } from './ps-demo-fixture';
-import { addAttachment, createTask, setTicketDemo, ticketById } from './tickets-l0';
+import { addAttachment, createTask, setTicketDemo, ticketById, ticketSnapshot } from './tickets-l0';
 import {
   DEFAULT_RENEWAL_CONFIG, OPEN_REQUEST, approve, cancel, decline, defaultNewTerms, editTerms, evaluate, mainStoreInitialRows, recommend,
-  refreshGate, renewalHistoryRow, returnRequest, sendLink, sign, submit,
-  type ApproverRole, type PriceHistoryRow, type RenewalConfig, type RenewalRequest, type Terms,
+  refreshGate, renewalHistoryRow, returnRequest, rollDates, sendLink, sign, submit,
+  type ApproverRole, type PriceHistoryRow, type RecoSnapshot, type RenewalConfig, type RenewalRequest, type Terms,
 } from './renewal-rules';
 import type { PsReportRow } from './ps-dashboard-types';
 import type { RenewalCard } from './ps-renewal';
@@ -19,6 +19,9 @@ import { readEarlyHandoff, toIsoDate } from './renewal-scan';
 import { renewalR2DemoItems, renewalR2Sim, RENEWAL_R2_DEMO_NOW } from './renewal-r2-demo';
 import { tabR1DemoBase, tabR1DemoFlow, tabR1HeaderPortfolio } from './contract-tab-r1-demo';
 import { headerDemoPortfolio } from './ps-header-r2-demo';
+import { matchOffer, offerExpectedAvg, type FeeAverage, type OfferTerms, type RenewalOffer } from './renewalOffer';
+import { offerContextFor } from './renewal-offer-source';
+import { RENEWAL_OFFER_DEMO_NOW, V14_DEMO, v14RepriceInputs } from './renewal-offer-demo';
 
 export type SourceContract = {
   contract_id: string; hotel_id: string; customer_id: string; legal_entity: string; signatory: string; kyc_docs: string[]; terms: Terms;
@@ -41,6 +44,9 @@ const DEMO_CONTRACTS: SourceContract[] = [
   { contract_id: 'CT-HTL0137', hotel_id: 'HTL0137', customer_id: 'CUS-0137', legal_entity: 'บริษัท กระบี่ คลิฟ วิลล่า จำกัด', signatory: 'คุณวิไล ผาสูง', kyc_docs: ['หนังสือรับรองบริษัท.pdf'], terms: { fee_amount: 24000, commission_pct: 0, term_months: 12, package: 'ORM Full', start_date: '2025-10-21', end_date: '2026-10-20' } },
   { contract_id: 'CT-HTL0131', hotel_id: 'HTL0131', customer_id: 'CUS-0131', legal_entity: 'บริษัท สมุย เบย์ รีสอร์ท จำกัด', signatory: 'คุณนภา ทะเลใส', kyc_docs: ['หนังสือรับรองบริษัท.pdf'], terms: { fee_amount: 16000, commission_pct: 0, term_months: 12, package: 'Marcom', start_date: '2025-10-16', end_date: '2026-10-15' } },
 ];
+/** v1.4 §9 DEMO additions: the six Renewal Offer contracts (billing model / guarantee live in renewal-offer-demo.ts). */
+const V14_CONTRACTS: SourceContract[] = V14_DEMO.map((d) => ({ contract_id: d.contract_id, hotel_id: d.hotel_id, customer_id: `CUS-${d.hotel_id.slice(3)}`, legal_entity: d.legal, signatory: d.signatory, kyc_docs: ['หนังสือรับรองบริษัท.pdf'], service: d.service,
+  terms: { fee_amount: d.fixed_fee ?? 0, commission_pct: d.commission_pct ?? 0, term_months: d.term_months, package: d.package, start_date: d.start, end_date: d.end } }));
 const contact = (name: string) => ({ name, phone: '08x-xxx-xxxx', email: '—', line: '—' });
 /** Demo-only renewal cards (§8 cases 4–7). Cases 1–3 reuse the bundled cards HTL0055 / HTL0042 / HTL0071. */
 export const DEMO_EXTRA_CARDS: RenewalCard[] = [
@@ -48,6 +54,8 @@ export const DEMO_EXTRA_CARDS: RenewalCard[] = [
   { id: 'RN-D5', hotelId: 'HTL0124', hotel: 'Baan Suan Hua Hin', contractEnd: '5 Nov 2026', daysLeft: 36, status: 'ON_PROCESS', owner: 'AE001-Nont', contact: contact('คุณปรีชา สวนงาม'), contractFile: 'Contract_v1_2025.pdf', contractGeneratedAt: '25 Oct 2025', activities: [] },
   { id: 'RN-D6', hotelId: 'HTL0131', hotel: 'Koh Samui Bay Resort', contractEnd: '15 Oct 2026', daysLeft: 15, status: 'ON_PROCESS', owner: 'AE001-Nont', contact: contact('คุณนภา ทะเลใส'), contractFile: 'Contract_v1_2025.pdf', contractGeneratedAt: '10 Oct 2025', activities: [] },
   { id: 'RN-D7', hotelId: 'HTL0137', hotel: 'Krabi Cliff Villa', contractEnd: '20 Oct 2026', daysLeft: 20, status: 'ON_PROCESS', owner: 'AE001-Nont', contact: contact('คุณวิไล ผาสูง'), contractFile: 'Contract_v1_2025.pdf', contractGeneratedAt: '15 Oct 2025', activities: [] },
+  /* v1.4 §9 additions (Renewal Offer demo, DEMO date 2 Nov 2026) */
+  ...V14_DEMO.map((d): RenewalCard => ({ id: d.card_id, hotelId: d.hotel_id, hotel: d.hotel, contractEnd: d.contractEnd, daysLeft: d.daysLeft, status: 'ON_PROCESS', owner: 'AE001-Nont', contact: contact(d.contact), contractFile: 'Contract_v1_2024.pdf', contractGeneratedAt: '1 Dec 2024', activities: [], contract_id: d.contract_id, service: d.service })),
 ];
 
 /** Demo v_ps_repricing rows, produced by the same repricingRow() engine with demo constants. */
@@ -61,6 +69,13 @@ function demoRepricing(): PsReportRow[] {
     repricingRow(base('HTL0137', 'Krabi Cliff Villa', 24000, 'moderate'), EXPANSION_DEMO, now),
   ].filter((r): r is PsReportRow => !!r);
 }
+/** v1.4 §9: demo v_ps_repricing rows for the Renewal Offer additions (same repricingRow() engine, DEMO date 2 Nov 2026). */
+const v14Repricing = (): PsReportRow[] => v14RepriceInputs().map((i) => repricingRow(i, EXPANSION_DEMO, new Date(`${RENEWAL_OFFER_DEMO_NOW}T00:00:00Z`))).filter((r): r is PsReportRow => !!r);
+/** v1.4 §2.1: the v_ps_repricing row for a hotel (+ service). Live: the view is not read in the browser (no rows) → null. */
+export function repricingRowFor(hotelId: string, svc?: 'ORM' | 'Marcom'): PsReportRow | null {
+  if (!demoOn) return null;
+  return [...demoRepricing(), ...v14Repricing()].find((r) => r['hotel_id'] === hotelId && (!svc || r['service_line'] === svc || (svc === 'ORM' && r['service_line'] === 'ORM'))) ?? null;
+}
 
 type State = { seq: number; requests: RenewalRequest[]; history: PriceHistoryRow[] };
 const KEY = 'meridia.renewals.v1';
@@ -70,7 +85,7 @@ export const renewalConfig: RenewalConfig = { ...DEFAULT_RENEWAL_CONFIG };
 const nowIso = () => (demoOn ? DEMO_NOW : new Date().toISOString());
 /** R2.1: DEMO contracts materialised from the R2 demo records (in memory, reset when DEMO toggles). */
 let demoExtra: SourceContract[] = [];
-const contracts = () => (demoOn ? [...SAMPLE_CONTRACTS, ...DEMO_CONTRACTS, ...demoExtra] : SAMPLE_CONTRACTS);
+const contracts = () => (demoOn ? [...SAMPLE_CONTRACTS, ...DEMO_CONTRACTS, ...V14_CONTRACTS, ...demoExtra] : SAMPLE_CONTRACTS);
 /** v1.3 §4: INITIAL rows come from the main contract store only (live CRM store / DEMO contract state), never from SAMPLE_CONTRACTS. Add-only, idempotent. */
 const backfill = (existing: PriceHistoryRow[]): PriceHistoryRow[] => mainStoreInitialRows(mainContracts(), existing);
 function syncInitialHistory() {
@@ -94,7 +109,7 @@ export function setRenewalDemo(on: boolean) {
   if (on === demoOn) return;
   demoOn = on; demoExtra = []; demoMisses = []; setTicketDemo(on);
   /* v1.3 §2: one demo contract state — the renewal sample contracts are seed data written into it (memory only). */
-  setMainContractDemo(on, on ? [...SAMPLE_CONTRACTS, ...DEMO_CONTRACTS].map((c) => contractFromSource(c, DEMO_NOW)) : []);
+  setMainContractDemo(on, on ? [...SAMPLE_CONTRACTS, ...DEMO_CONTRACTS, ...V14_CONTRACTS].map((c) => contractFromSource(c, DEMO_NOW)) : []);
   /* Tab R3 addendum: all R1-/R2- demo contracts join the demo state now (not on first open), so the v1.3 §4 backfill in seedDemo() covers every demo contract. */
   if (on) for (const id of demoBackfillIds()) materialiseDemo(id, false);
   demo = on ? seedDemo() : null;
@@ -236,16 +251,52 @@ export function recoFor(hotelId: string, terms: Terms) {
   return recommend(rows.find((r) => r['hotel_id'] === hotelId), terms, demoOn, nowIso());
 }
 
-function newRequest(card: Pick<RenewalCard, 'id' | 'hotelId' | 'hotel' | 'owner'>, src: SourceContract, seq: number, at: string): RenewalRequest {
-  const reco = recoFor(src.hotel_id, src.terms);
-  const next = defaultNewTerms(src.terms, reco, renewalConfig.renewal_min_raise_thb);
-  const e = evaluate(reco, src.terms, next, renewalConfig.renewal_reco_mode, renewalConfig.renewal_min_raise_thb);
-  return { id: `RR-${String(seq).padStart(5, '0')}`, renewal_card_id: card.id, source_contract_id: src.contract_id, hotel_id: src.hotel_id, hotel_name: card.hotel, customer_id: src.customer_id, ae_owner_id: card.owner, reco_snapshot: reco, old_terms: src.terms, new_terms: next, changed_fields: e.changed_fields, deviates_from_reco: e.deviates_from_reco, approval_required: e.approval_required, reason_code: null, reason_text: '', entity_change: false, entity_ticket_id: null, entity_detail: null, status: 'DRAFT', submitted_at: null, approved_by: null, approver_role: null, approved_at: null, return_comment: null, link_sent_at: null, signed_at: null, new_contract_id: null, created_at: at, updated_at: at };
+/* ---------- v1.4 §3 / §7 — Renewal Offer on the request (one shared engine; snapshot taken when the AE presses ต่อสัญญา) ---------- */
+/** The card's fresh offer context (read only). `history` passed in while the demo state is still being seeded. */
+export function offerContextForSource(src: SourceContract, history?: PriceHistoryRow[]) {
+  return offerContextFor({ contract_id: src.contract_id, hotel_id: src.hotel_id, service: svcOf(src), package: src.terms.package, demo: demoOn,
+    history: history ?? cur().history, repricing: repricingRowFor(src.hotel_id, svcOf(src)), tickets: ticketSnapshot(), cfg: renewalConfig });
+}
+/** Terms → engine terms (null when the terms carry no billing model, e.g. requests stored before v1.4). */
+export function offerTermsOf(t: Terms): OfferTerms | null {
+  if (!t.billing_model) return null;
+  return { billing_model: t.billing_model, fixed_fee: t.billing_model === 'COMMISSION_GUARANTEE' ? null : t.fixed_fee ?? (t.fee_amount || null), commission_pct: t.billing_model === 'FLAT' ? null : t.commission_pct, guarantee_fee: t.billing_model === 'COMMISSION_GUARANTEE' ? t.guarantee_fee ?? null : null };
+}
+/** Engine terms applied to renewal Terms; fee_amount stays filled as before (= fixed monthly fee, 0 when there is none). */
+export function applyOfferTerms(t: Terms, o: OfferTerms): Terms {
+  return { ...t, billing_model: o.billing_model, fixed_fee: o.fixed_fee, guarantee_fee: o.guarantee_fee, fee_amount: o.fixed_fee ?? 0, commission_pct: o.commission_pct ?? 0 };
+}
+/** The fee average stored with the snapshot (reco_snapshot.inputs.fee). */
+export const snapshotFee = (r: Pick<RenewalRequest, 'reco_snapshot'>): FeeAverage | null => (r.reco_snapshot.inputs?.['fee'] as FeeAverage | undefined) ?? null;
+/** §7 fields from the snapshot + the current new_terms. */
+export function withOfferFields(r: RenewalRequest): RenewalRequest {
+  const fee = snapshotFee(r); const t = offerTermsOf(r.new_terms);
+  if (!fee || !t || !r.reco_snapshot.model) return { ...r, offer_expected_avg: null, offer_match: null, model_changed: r.old_terms.billing_model && r.new_terms.billing_model ? r.old_terms.billing_model !== r.new_terms.billing_model : null };
+  const reco = { type: r.reco_snapshot.type === 'HOLD' ? 'NONE' as const : r.reco_snapshot.type, model: r.reco_snapshot.model, values: r.reco_snapshot.values ?? [], expected_avg: r.reco_snapshot.expected_avg ?? null };
+  return { ...r, offer_expected_avg: offerExpectedAvg(fee, t), offer_match: matchOffer(reco, t, fee, renewalConfig), model_changed: !!r.old_terms.billing_model && r.old_terms.billing_model !== t.billing_model };
+}
+/** v1.4 reco_snapshot: the existing keys (type · band · reasons · inputs · computed_at) + the engine keys. */
+function snapshotOf(o: RenewalOffer, fee: FeeAverage, row: PsReportRow | null): RecoSnapshot {
+  const fixedBand = o.model === 'FLAT' || o.model === 'FIXED_PLUS_COMMISSION';
+  const band = (k: string) => (fixedBand && o.type === 'RAISE' && row?.[k] != null ? Number(row[k]) : null);
+  return { type: o.type, band_min_pct: band('band_min_pct'), band_max_pct: band('band_max_pct'),
+    reasons: o.reasons.map((x) => x.text), inputs: { revenue_profile: row?.['revenue_profile'] ?? null, cadence: row?.['cadence_path'] ?? null, months_since_increase: row?.['months_since_increase'] ?? null, fee, missing: o.missing, bad_count: o.bad_count },
+    computed_at: o.computed_at, model: o.model, values: o.values, factors: o.factors, overdue: o.overdue, avg_before: o.avg_before, expected_avg: o.expected_avg, alternatives: o.alternatives };
+}
+
+function newRequest(card: Pick<RenewalCard, 'id' | 'hotelId' | 'hotel' | 'owner'>, src: SourceContract, seq: number, at: string, history?: PriceHistoryRow[]): RenewalRequest {
+  const ctx = offerContextForSource(src, history);
+  const reco = snapshotOf(ctx.offer, ctx.fee, repricingRowFor(src.hotel_id, svcOf(src)));
+  const f = ctx.fee;
+  const old: Terms = f.model ? { ...src.terms, billing_model: f.model, fixed_fee: f.fixed_fee, guarantee_fee: f.guarantee_fee, commission_pct: f.commission_pct ?? src.terms.commission_pct } : src.terms;
+  const next = ctx.offer.default_terms ? { ...applyOfferTerms(old, ctx.offer.default_terms), ...rollDates(old.end_date, old.term_months) } : defaultNewTerms(old, reco, renewalConfig.renewal_min_raise_thb);
+  const e = evaluate(reco, old, next, renewalConfig.renewal_reco_mode, renewalConfig.renewal_min_raise_thb);
+  return withOfferFields({ id: `RR-${String(seq).padStart(5, '0')}`, renewal_card_id: card.id, source_contract_id: src.contract_id, hotel_id: src.hotel_id, hotel_name: card.hotel, customer_id: src.customer_id, ae_owner_id: card.owner, reco_snapshot: reco, old_terms: old, new_terms: next, changed_fields: e.changed_fields, deviates_from_reco: e.deviates_from_reco, approval_required: e.approval_required, reason_code: null, reason_text: '', entity_change: false, entity_ticket_id: null, entity_detail: null, status: 'DRAFT', submitted_at: null, approved_by: null, approver_role: null, approved_at: null, return_comment: null, link_sent_at: null, signed_at: null, new_contract_id: null, created_at: at, updated_at: at });
 }
 
 function seedDemo(): State {
   const s: State = { seq: 0, requests: [], history: backfill([]) };
-  const mk = (card: RenewalCard) => { s.seq++; return newRequest(card, sourceContractFor(card.hotelId)!, s.seq, DEMO_NOW); };
+  const mk = (card: RenewalCard) => { s.seq++; return newRequest(card, sourceContractFor(card.hotelId)!, s.seq, DEMO_NOW, s.history); };
   const [c4, c5, c6, c7] = DEMO_EXTRA_CARDS as [RenewalCard, RenewalCard, RenewalCard, RenewalCard];
   const r4 = mk(c4); const fee4 = r4.new_terms.fee_amount;
   s.requests.push({ ...r4, status: 'PENDING_APPROVAL', submitted_at: '2026-09-27T03:00:00.000Z', new_terms: { ...r4.new_terms, fee_amount: fee4 } });
@@ -260,7 +311,25 @@ function seedDemo(): State {
   const e7 = evaluate(r7.reco_snapshot, r7.old_terms, t7, renewalConfig.renewal_reco_mode, renewalConfig.renewal_min_raise_thb);
   const signed7 = { ...r7, ...e7, new_terms: t7, status: 'SIGNED' as const, submitted_at: '2026-09-22T03:00:00.000Z', approved_by: 'PM001-Alex', approver_role: 'PM' as const, approved_at: '2026-09-23T03:00:00.000Z', link_sent_at: '2026-09-24T03:00:00.000Z', signed_at: '2026-09-28T07:15:00.000Z', new_contract_id: `${r7.source_contract_id}-R${r7.id.slice(-4)}` };
   s.requests.push(signed7); s.history.push(renewalHistoryRow(signed7, 1));
+  seedV14Requests(s);
   return s;
+}
+/** v1.4 §9 — added demo requests: Chiang Mai (link sent, offer = match) · Baan Suan (switch package, pending PM 1 day) · Hua Hin (draft 14% = match). */
+function seedV14Requests(s: State) {
+  const card = (id: string) => DEMO_EXTRA_CARDS.find((c) => c.id === id)!;
+  const src = (id: string) => V14_CONTRACTS.find((c) => c.contract_id === card(id).contract_id)!;
+  const mk = (id: string) => { s.seq++; return newRequest(card(id), src(id), s.seq, `${RENEWAL_OFFER_DEMO_NOW}T02:00:00.000Z`, s.history); };
+  const terms = (r: RenewalRequest, o: OfferTerms, p: Partial<RenewalRequest>): RenewalRequest => {
+    const next = { ...applyOfferTerms(r.new_terms, o) };
+    const e = evaluate(r.reco_snapshot, r.old_terms, next, renewalConfig.renewal_reco_mode, renewalConfig.renewal_min_raise_thb);
+    return withOfferFields({ ...r, ...e, new_terms: next, ...p });
+  };
+  const cm = mk('RN-V14-CM');
+  s.requests.push(terms(cm, { billing_model: 'FIXED_PLUS_COMMISSION', fixed_fee: 7800, commission_pct: 8, guarantee_fee: null }, { reason_code: 'ผลงานยังไม่ถึงเป้า', reason_text: 'รายได้ลดลง 6 เดือนติด', status: 'LINK_SENT', submitted_at: '2026-10-27T03:00:00.000Z', approved_by: 'PM001-Alex', approver_role: 'PM', approved_at: '2026-10-28T03:00:00.000Z', link_sent_at: '2026-10-29T04:00:00.000Z' }));
+  const bs = mk('RN-V14-BS');
+  s.requests.push(terms(bs, { billing_model: 'FIXED_PLUS_COMMISSION', fixed_fee: 8500, commission_pct: 5.5, guarantee_fee: null }, { reason_code: 'ลูกค้าต่อรอง', reason_text: 'ลูกค้าขอเปลี่ยนเป็นคิดตามผลงาน', status: 'PENDING_APPROVAL', submitted_at: '2026-11-01T03:00:00.000Z' }));
+  const hh = mk('RN-V14-HH');
+  s.requests.push(terms(hh, { billing_model: 'COMMISSION_GUARANTEE', fixed_fee: null, commission_pct: 14, guarantee_fee: 8000 }, {}));
 }
 
 /* ---------- reads ---------- */
@@ -292,7 +361,7 @@ export function startRenewal(card: Pick<RenewalCard, 'id' | 'hotelId' | 'hotel' 
   const s = cur(); const r = newRequest(card, src, s.seq + 1, nowIso());
   commit({ ...s, seq: s.seq + 1, requests: [...s.requests, r] }); return { ok: true, req: r };
 }
-export const updateTerms = (id: string, t: Terms) => apply(id, (r) => editTerms(r, t, renewalConfig.renewal_reco_mode, nowIso(), renewalConfig.renewal_min_raise_thb));
+export const updateTerms = (id: string, t: Terms) => apply(id, (r) => { const o = editTerms(r, t, renewalConfig.renewal_reco_mode, nowIso(), renewalConfig.renewal_min_raise_thb); return o.ok ? { ok: true, req: withOfferFields(o.req) } : o; }); // v1.4 §7 fields follow the terms
 export const updateReason = (id: string, code: RenewalRequest['reason_code'], text: string) => apply(id, (r) => ({ ok: true, req: { ...r, reason_code: code, reason_text: text, updated_at: nowIso() } }));
 export const submitRequest = (id: string) => apply(id, (r) => submit(r, renewalConfig.renewal_reco_mode, entityClosed(r), nowIso(), renewalConfig.renewal_min_raise_thb));
 export const approveRequest = (id: string, by: string, role: ApproverRole) => apply(id, (r) => approve(r, by, role, entityClosed(r), nowIso(), nowIso(), renewalConfig));
@@ -426,7 +495,7 @@ function seedDemoLinks(s: State) {
   if (typeof localStorage === 'undefined') return;
   const links = readLinks().filter((l) => !l.token.startsWith('demo-'));
   for (const r of s.requests) if (r.status === 'LINK_SENT' || r.status === 'SIGNED') {
-    const src = [...SAMPLE_CONTRACTS, ...DEMO_CONTRACTS].find((c) => c.contract_id === r.source_contract_id); if (!src) continue;
+    const src = [...SAMPLE_CONTRACTS, ...DEMO_CONTRACTS, ...V14_CONTRACTS].find((c) => c.contract_id === r.source_contract_id); if (!src) continue;
     links.push({ token: `demo-${r.id.toLowerCase()}`, kind: 'RENEWAL', renewal_request_id: r.id, contract_id: r.source_contract_id, created_at: r.link_sent_at ?? DEMO_NOW, expires_at: null, status: r.status === 'SIGNED' ? 'SIGNED' : 'ACTIVE', signed_at: r.signed_at, signer: r.status === 'SIGNED' ? src.signatory : null, snapshot: { request: r, contract: src }, demo: true });
   }
   try { localStorage.setItem(LINK_KEY, JSON.stringify(links)); } catch { /* quota */ }

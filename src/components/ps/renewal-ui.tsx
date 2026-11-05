@@ -42,6 +42,7 @@ import {
 } from "@/lib/ps-renewal";
 import { cn } from "@/lib/utils";
 import { DEMO_EXTRA_CARDS, declineRequest, isRenewalDemo, latestRequestFor, openRequestFor, scanSourceContracts, setRenewalDemo, signedAwaitingDone, sourceContractFor, sourceMissesFor, useRenewalStore } from "@/lib/renewal-store";
+import { RenewalOfferSection } from "@/components/ps/renewal-offer-section";
 import { RenewalRequestChips, RenewalRequestPanel, SignedBadge } from "@/components/ps/renewal-request-ui";
 import { RENEWAL_LABEL_TH as RL, RENEWAL_TEST_BANNER, RENEWAL_TEST_SWITCH, RN2, aeNameTh } from "@/lib/ps-glossary";
 import { RenewalReasonPicker } from "@/components/ps/renewal-reason-picker";
@@ -319,10 +320,11 @@ export function RenewalCardModal({
             <DialogDescription>Renewal Card · Owner {card.owner}</DialogDescription>
           </DialogHeader>
 
-          {/* Section 1 — Hotel Info */}
+          {/* v1.4 §4 — section 1 ข้อมูลประกอบการต่อสัญญา (hotel info follows as "ข้อมูลโรงแรม") */}
+          <RenewalOfferSection card={card} />
           <section className="rounded-xl border p-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              1 · ข้อมูลโรงแรม (read-only)
+              ข้อมูลโรงแรม (read-only)
             </p>
             <dl className="mt-2 grid gap-x-6 gap-y-1.5 text-sm sm:grid-cols-2">
               {[

@@ -22,15 +22,22 @@ import { actingRenewalUser, useTestMember } from "@/lib/renewal-test-actor";
 import { RenewalContractPreview } from "@/components/ps/renewal-contract-doc";
 import { attachmentError, ticketById, STATUS_TH } from "@/lib/tickets-l0";
 import { cn } from "@/lib/utils";
+import { psDemoOn } from "@/lib/demo-session";
+import { RecoBoxV14, deltaText, thb as thbN, viewOfSnapshot } from "@/components/ps/renewal-offer-section";
+import { RO } from "@/lib/ps-glossary";
+import { offerExpectedAvg, type BillingModel } from "@/lib/renewalOffer";
+import { applyOfferTerms, offerTermsOf, snapshotFee } from "@/lib/renewal-store";
 
-const backHref = () => `/ps/ae-workspace/dashboard${typeof window !== "undefined" && new URLSearchParams(window.location.search).get("demo") === "1" ? "?demo=1" : ""}#renewal-activities`;
+/** DEMO = the page's ?demo=1 or the R3.3 shared DEMO state (never ?demo=1 alone). */
+const pageDemo = () => typeof window !== "undefined" && (new URLSearchParams(window.location.search).get("demo") === "1" || psDemoOn());
+const backHref = () => `/ps/ae-workspace/dashboard${pageDemo() ? "?demo=1" : ""}#renewal-activities`;
 const STEPS = ["ข้อมูลลูกค้า", "เงื่อนไขใหม่", "ตรวจและส่ง"];
 const thb = (n: number) => `฿${n.toLocaleString("th-TH")}`;
 
 export function RenewalWizard({ contractId }: { contractId: string }) {
   const navigate = useNavigate();
   const [ready, setReady] = useState(false);
-  useEffect(() => { setRenewalDemo(new URLSearchParams(window.location.search).get("demo") === "1"); setReady(true); }, []);
+  useEffect(() => { setRenewalDemo(pageDemo()); setReady(true); }, []);
   useRenewalStore();
   const { role } = useMeetingMgmt();
   const member = useTestMember();
@@ -123,7 +130,26 @@ export function RenewalWizard({ contractId }: { contractId: string }) {
         </Panel>
       )}
 
-      {step === 1 && (
+      {step === 1 && viewOfSnapshot(req.reco_snapshot) && req.new_terms.billing_model && (
+        <Panel title="เงื่อนไขใหม่">
+          <V14Terms req={req} editable={editable} service={src.service === "Marcom" ? "Marcom" : "ORM"} />
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {ev.approval_required && <Chip tone="warn">{L.needApproval}</Chip>}
+            {ev.reason_required && <span className="text-xs text-warning-foreground">ต้องระบุเหตุผล</span>}
+          </div>
+          {ev.reason_required && (
+            <div className="mt-2 grid gap-2 md:grid-cols-[14rem_1fr]">
+              <select aria-label="เหตุผลหลัก" disabled={!editable} className="h-9 rounded-md border bg-background px-2 text-sm" value={req.reason_code ?? ""} onChange={(e) => updateReason(req.id, (e.target.value || null) as ReasonCode | null, req.reason_text)}>
+                <option value="">เลือกเหตุผล</option>
+                {REASON_CODES.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+              <Input aria-label="รายละเอียดเหตุผล" disabled={!editable} value={req.reason_text} onChange={(e) => updateReason(req.id, req.reason_code, e.target.value)} placeholder={req.reason_code === "อื่นๆ" ? "ระบุเหตุผล (บังคับ)" : "รายละเอียด (ถ้ามี)"} />
+            </div>
+          )}
+          <div className="mt-3 flex justify-between"><Button variant="outline" onClick={() => setStep(0)}>ย้อนกลับ</Button><Button disabled={!reasonOk} onClick={() => setStep(2)}>ถัดไป</Button></div>
+        </Panel>
+      )}
+      {step === 1 && !(viewOfSnapshot(req.reco_snapshot) && req.new_terms.billing_model) && (
         <Panel title="เงื่อนไขใหม่">
           <RecoBox reco={req.reco_snapshot} oldFee={req.old_terms.fee_amount} />
           <div className="mt-3 grid gap-4 md:grid-cols-2">
@@ -198,3 +224,47 @@ const Msg = ({ text }: { text: string }) => (
     <Button variant="outline" size="sm" asChild><a href={backHref()}>กลับ AE Workspace</a></Button>
   </div>
 );
+
+/** v1.4 §6 — step 2 editor: recommendation box (no alternatives) · Package selector · fields of that package · live expected average. */
+function V14Terms({ req, editable, service }: { req: import("@/lib/renewal-rules").RenewalRequest; editable: boolean; service: "ORM" | "Marcom" }) {
+  const view = viewOfSnapshot(req.reco_snapshot)!;
+  const fee = snapshotFee(req);
+  const t = offerTermsOf(req.new_terms)!;
+  const models: BillingModel[] = service === "Marcom" ? ["FLAT"] : ["FLAT", "FIXED_PLUS_COMMISSION", "COMMISSION_GUARANTEE"];
+  const save = (o: typeof t) => { const r = updateTerms(req.id, applyOfferTerms(req.new_terms, o)); if (!r.ok) toast.error(r.error); };
+  const pick = (m: BillingModel) => {
+    if (m === t.billing_model) return;
+    const alt = view.alternatives.find((a) => a.model === m)?.terms;
+    const old = offerTermsOf(req.old_terms);
+    const keep = old && old.billing_model === m ? old : null;
+    save(alt ?? keep ?? { billing_model: m, fixed_fee: m === "COMMISSION_GUARANTEE" ? null : t.fixed_fee ?? 0, commission_pct: m === "FLAT" ? null : t.commission_pct ?? 0, guarantee_fee: m === "COMMISSION_GUARANTEE" ? t.guarantee_fee ?? 0 : null });
+  };
+  const num = (v: string) => (v === "" ? null : Number(v));
+  const fields: { k: "fixed_fee" | "commission_pct" | "guarantee_fee"; label: string }[] = [
+    ...(t.billing_model !== "COMMISSION_GUARANTEE" ? [{ k: "fixed_fee" as const, label: RO.fixedFee }] : []),
+    ...(t.billing_model !== "FLAT" ? [{ k: "commission_pct" as const, label: RO.commission }] : []),
+    ...(t.billing_model === "COMMISSION_GUARANTEE" ? [{ k: "guarantee_fee" as const, label: RO.guaranteeFee }] : []),
+  ];
+  const expected = fee ? offerExpectedAvg(fee, t) : null;
+  return (
+    <div className="space-y-3">
+      <RecoBoxV14 view={view} service={service} packageName={req.old_terms.package} alternatives={false} />
+      <div className="space-y-2 rounded-lg border p-3 text-sm">
+        <div className="grid grid-cols-[9rem_1fr] items-center gap-2">
+          <Label htmlFor="t-model">{RO.pkgLabel}</Label>
+          <select id="t-model" aria-label={RO.pkgLabel} disabled={!editable || models.length < 2} className="h-9 rounded-md border bg-background px-2 text-sm" value={t.billing_model} onChange={(e) => pick(e.target.value as BillingModel)}>
+            {models.map((m) => <option key={m} value={m}>{RO.model[m]}</option>)}
+          </select>
+        </div>
+        {fields.map((f) => (
+          <div key={f.k} className="grid grid-cols-[9rem_1fr] items-center gap-2">
+            <Label htmlFor={`t-${f.k}`}>{f.label}</Label>
+            <Input id={`t-${f.k}`} disabled={!editable} type="number" step={f.k === "commission_pct" ? "0.5" : "100"} value={t[f.k] == null ? "" : String(t[f.k])} onChange={(e) => save({ ...t, [f.k]: num(e.target.value) })} />
+          </div>
+        ))}
+        <p className="text-muted-foreground">{L.fields.term_months} {req.new_terms.term_months} · {L.fields.start_date} {req.new_terms.start_date} · {L.fields.end_date} {req.new_terms.end_date}</p>
+        <p data-testid="ro-live" className="tabular-nums">{RO.live(thbN(expected), deltaText(view.avg_before, expected), thbN(view.avg_before))}</p>
+      </div>
+    </div>
+  );
+}
