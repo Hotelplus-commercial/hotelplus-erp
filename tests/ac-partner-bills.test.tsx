@@ -133,17 +133,17 @@ describe('AC App Partner Bills v1.0', () => {
     const t = await T(); const x = await X();
     x.requestShutoff({ contract_id: 'C-2', hotel_id: 'HP-2', hotel_name: 'H2', service_line: 'ORM', partner: 'StayLink', system_name: 'Channel Manager', assigned_ae: null, outstanding: 1000, overdue_cycles: 1, note: '' });
     const ev = (id: string, type: string, at: string) => ({ id, customer_id: 'CUS-2', hotel_name: 'H2', event_type: type, occurred_at: at, by_member: 'daily', amount_outstanding: 0, note: '' });
-    const prev = [ev('e1', 'SUSPENDED', '2026-10-01')];
+    const prev = [ev('e1', 'SUSPENDED', '2026-09-01')];
     const next = [ev('e2', 'REACTIVATED', '2026-10-28'), ...prev];
-    const re = x.newReactivations(prev, next); expect(re).toEqual([{ customer_id: 'CUS-2', reactivated_at: '2026-10-28', suspended_at: '2026-10-01' }]);
-    const out = x.onReactivated(['C-2', 'C-NONE'], '2026-10-01', '2026-10-28');
+    const re = x.newReactivations(prev, next); expect(re).toEqual([{ customer_id: 'CUS-2', reactivated_at: '2026-10-28', suspended_at: '2026-09-01' }]);
+    const out = x.onReactivated(['C-2', 'C-NONE'], '2026-09-01', '2026-10-28');
     expect(out.cancelled).toHaveLength(2); expect(out.created).toHaveLength(2);
     const shut = t.ticketSnapshot().filter((k) => k.subject_ref.contract_id === 'C-2' && k.type === 'SYSTEM_SHUTOFF');
     expect(shut.every((k) => k.status === 'CANCELLED' && k.audit.at(-1)!.note === 'ลูกค้าชำระครบ ยกเลิกคำขอปิดระบบ')).toBe(true);
     const ra = t.ticketSnapshot().filter((k) => k.type === 'SYSTEM_REACTIVATE' && k.subject_ref.contract_id === 'C-2');
     expect(ra.map((k) => k.target_dept).sort()).toEqual(['ORM', 'PS']); expect(ra.every((k) => k.payload.shutoff?.auto && k.payload.shutoff.reactivated_at === '2026-10-28')).toBe(true);
     expect(t.ticketSnapshot().some((k) => k.subject_ref.contract_id === 'C-NONE')).toBe(false);
-    expect(x.onReactivated(['C-2'], '2026-10-01', '2026-10-28').created).toEqual([]); // idempotent
+    expect(x.onReactivated(['C-2'], '2026-09-01', '2026-10-28').created).toEqual([]); // idempotent
     // collection engine untouched: the hook only reads; recompute source has no ticket import
     expect(src('src/lib/ac-v2-engine.ts')).not.toContain('tickets-l0');
   });
@@ -153,6 +153,11 @@ describe('AC App Partner Bills v1.0', () => {
     x.seedAcBillsDemo();
     const n = t.ticketSnapshot().filter((k) => k.target_dept === 'AC' && (k.type === 'PARTNER_DEAL_NOTICE' || k.type === 'SYSTEM_CREDIT_NOTICE'));
     expect(n.map((k) => [k.type, k.status]).sort()).toEqual([['PARTNER_DEAL_NOTICE', 'NEW'], ['SYSTEM_CREDIT_NOTICE', 'NEW']]);
+    // §8 DEMO: Chaba Grand ORM กำลังทำ / PS เสร็จ · Baan Rim Nam 2 SYSTEM_REACTIVATE New (its shut-offs DONE)
+    const ch = t.ticketSnapshot().filter((k) => k.type === 'SYSTEM_SHUTOFF' && k.subject_ref.hotel_name === 'Chaba Grand');
+    expect(ch.map((k) => [k.target_dept, k.status]).sort()).toEqual([['ORM', 'IN_PROGRESS'], ['PS', 'DONE']]);
+    const ra = t.ticketSnapshot().filter((k) => k.type === 'SYSTEM_REACTIVATE');
+    expect(ra.map((k) => [k.target_dept, k.status]).sort()).toEqual([['ORM', 'NEW'], ['PS', 'NEW']]);
     for (const k of n) expect(t.acknowledgeNotice(k.ticket_id, k.revision, 'AC')).toBe(true);
     for (const k of n) { const y = t.ticketById(k.ticket_id)!; expect(y.status).toBe('DONE'); expect(y.audit.at(-1)).toMatchObject({ from_status: 'NEW', to_status: 'DONE', note: 'รับทราบ' }); }
     const shut = t.ticketSnapshot().find((k) => k.type === 'SYSTEM_SHUTOFF')!;
