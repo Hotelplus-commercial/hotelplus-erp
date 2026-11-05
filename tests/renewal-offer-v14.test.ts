@@ -41,7 +41,7 @@ describe('§2.3 values', () => {
   test('5 · FIXED_PLUS_COMMISSION raise +0.5 point; lower −8% to 100, commission unchanged', () => {
     const f = fee({ model: 'FIXED_PLUS_COMMISSION', fixed_fee: 8500, commission_pct: 8, avg_commission: 23500, avg_billed: 32000 });
     const up = run({ fee: f }); expect(up.values.find((x) => x.key === 'commission_pct')!.default).toBe(8.5);
-    const dn = run({ fee: f, repricing: rp({ revenue_profile: 'declining' }) });
+    const dn = run({ fee: f, repricing: rp({ revenue_profile: 'declining' }), health: { tier: 'R', red_by_own_overdue_only: false } });
     expect(dn.values.find((x) => x.key === 'fixed_fee')!.default).toBe(7800); expect(dn.values.find((x) => x.key === 'commission_pct')).toMatchObject({ old: 8, default: 8 });
   });
   test('6 · COMMISSION_GUARANTEE raise 12% → 14–17% default 15.5%, guarantee unchanged; lower −1/−2/−3', () => {
@@ -56,7 +56,7 @@ describe('§2.3 values', () => {
 
 describe('§2.4–2.6', () => {
   test('7 · expected average: Chiang Mai ฿31,300 · Baan Suan ฿28,400', () => {
-    const cm = run({ fee: fee({ model: 'FIXED_PLUS_COMMISSION', fixed_fee: 8500, commission_pct: 8, avg_commission: 23500, avg_billed: 32000 }), repricing: rp({ revenue_profile: 'declining' }) });
+    const cm = run({ fee: fee({ model: 'FIXED_PLUS_COMMISSION', fixed_fee: 8500, commission_pct: 8, avg_commission: 23500, avg_billed: 32000 }), repricing: rp({ revenue_profile: 'declining' }), health: { tier: 'R', red_by_own_overdue_only: false } });
     expect(cm.expected_avg).toBe(31300);
     expect(run({ fee: fee({ fixed_fee: 25000, avg_billed: 25000 }) }).expected_avg).toBe(28400);
   });
@@ -73,7 +73,7 @@ describe('§2.4–2.6', () => {
     const t = (x: number) => ({ billing_model: 'FLAT' as const, fixed_fee: x, commission_pct: null, guarantee_fee: null });
     expect(E.matchOffer(flat, t(28500))).toBe('MATCH'); expect(E.matchOffer(flat, t(29000))).toBe('ABOVE'); expect(E.matchOffer(flat, t(27000))).toBe('BELOW');
     const f = fee({ model: 'FIXED_PLUS_COMMISSION', fixed_fee: 8500, commission_pct: 8, avg_commission: 23500, avg_billed: 32000 });
-    const dn = run({ fee: f, repricing: rp({ revenue_profile: 'declining' }) });
+    const dn = run({ fee: f, repricing: rp({ revenue_profile: 'declining' }), health: { tier: 'R', red_by_own_overdue_only: false } });
     const fc = (x: number) => ({ billing_model: 'FIXED_PLUS_COMMISSION' as const, fixed_fee: x, commission_pct: 8, guarantee_fee: null });
     expect(E.matchOffer(dn, fc(7800))).toBe('MATCH'); expect(E.matchOffer(dn, fc(8500))).toBe('ABOVE'); expect(E.matchOffer(dn, fc(7000))).toBe('BELOW');
     const cg = run({ fee: fee({ model: 'COMMISSION_GUARANTEE', fixed_fee: null, commission_pct: 12, guarantee_fee: 8000, avg_commission: 9300, avg_billed: 9900 }) });
