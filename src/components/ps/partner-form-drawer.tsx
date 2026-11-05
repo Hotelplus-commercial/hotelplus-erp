@@ -7,7 +7,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { addPartner, saveDeal, saveRateCard, usePartnerData } from "@/lib/debt-partner-store";
 import type { BenefitType, BillingCycle, DealKind, DealStatus, PartnerDeal, PartnerRateCard } from "@/lib/debt-partner-types";
 
-export type PartnerFormMode = { kind: "deal"; deal?: PartnerDeal } | { kind: "rate"; card?: PartnerRateCard } | null;
+export type PartnerFormMode = { kind: "deal"; deal?: PartnerDeal | undefined } | { kind: "rate"; card?: PartnerRateCard | undefined } | null;
 const PM_ID = "PM001-Alex";
 const sel = "h-9 w-full rounded-md border border-input bg-background px-2 text-sm";
 
@@ -29,7 +29,7 @@ function PartnerPicker({ value, onChange }: { value: string; onChange: (id: stri
   );
 }
 
-function DealForm({ deal, onDone }: { deal?: PartnerDeal; onDone: () => void }) {
+function DealForm({ deal, onDone }: { deal?: PartnerDeal | undefined; onDone: () => void }) {
   const d = usePartnerData();
   const [kind, setKind] = useState<DealKind | "PROMO">(deal?.kind ?? "COST_DISCOUNT");
   const [partner, setPartner] = useState(deal?.partner_id ?? "");
@@ -49,7 +49,7 @@ function DealForm({ deal, onDone }: { deal?: PartnerDeal; onDone: () => void }) 
   const contractsOf = d.contract_partner_system.filter((s) => s.partner_id === partner).map((s) => s.contract_id);
   const submit = () => {
     const r = saveDeal({
-      id: deal?.id, partner_id: partner, kind: kind === "PROMO" ? "COST_DISCOUNT" : kind, status, title,
+      ...(deal ? { id: deal.id } : {}), partner_id: partner, kind: kind === "PROMO" ? "COST_DISCOUNT" : kind, status, title,
       start_date: start || null, end_date: openEnd ? null : end || null, benefit_type: bt, benefit_value: bt === "OTHER" ? null : bv === "" ? null : Number(bv),
       benefit_currency: bt === "OTHER" ? null : cur, scope, contract_ids: scope === "SELECTED" ? ids : [], note, attachment_url: file, created_by: PM_ID,
     });
@@ -92,7 +92,7 @@ function DealForm({ deal, onDone }: { deal?: PartnerDeal; onDone: () => void }) 
 }
 
 type TierRow = { min: string; max: string; price: string };
-function RateForm({ card, onDone }: { card?: PartnerRateCard; onDone: () => void }) {
+function RateForm({ card, onDone }: { card?: PartnerRateCard | undefined; onDone: () => void }) {
   const d = usePartnerData();
   const [partner, setPartner] = useState(card?.partner_id ?? "");
   const [system, setSystem] = useState(card?.system_name ?? "");
