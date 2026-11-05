@@ -45,7 +45,7 @@ export function meetingTabDemoAdditions(): MeetingSurveyData {
   const OCT = '2026-10', SEP = '2026-09', AUG = '2026-08';
 
   /* ---- October ORM: Tier A cards → quota 17 (+2 เลื่อนไปเดือนหน้า) ---- */
-  for (let i = 0; i < 8; i++) meetings.push(row(String(151 + i), 'ORM', 'A', `2026-10-${String(5 + i * 2).padStart(2, '0')}`, 'Completed', ORM_TEAMS[i % 6]!, OCT, AES[i % 4]!));
+  for (let i = 0; i < 8; i++) meetings.push(row(String(151 + i), 'ORM', 'A', `2026-10-${String(5 + i * 2).padStart(2, '0')}`, 'Completed', ['B', 'B', 'C', 'C', 'E', 'E', 'Re-active', 'Re-active'][i]!, OCT, AES[i % 4]!)); // ③ team quotas A4 · B3 · C3 · D3 · E2 · Re-active 2
   meetings.push(row('176', 'ORM', 'A', '2026-10-27', 'Confirmed', 'D', OCT, 'บอส')); // เลยวันนัด ยังไม่อัปเดต
   meetings.push(row('112', 'ORM', 'A', null, 'NOT_BOOKED', 'A', OCT, 'มิ้นท์'), row('147', 'ORM', 'A', null, 'NOT_BOOKED', 'B', OCT, 'เฟิร์น'), row('133', 'ORM', 'A', null, 'REJECTED', 'C', OCT, 'ปอ'));
   meetings.push(row('161', 'ORM', 'A', null, 'POSTPONED_NEXT_MONTH', 'E', OCT, 'บอส'), row('162', 'ORM', 'A', null, 'POSTPONED_NEXT_MONTH', 'Re-active', OCT, 'ปอ'));
