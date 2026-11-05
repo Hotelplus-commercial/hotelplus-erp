@@ -4,7 +4,8 @@ import { readFileSync } from 'node:fs';
 import { GlobalRegistrator } from '@happy-dom/global-registrator';
 
 const staged: { key: string; body: unknown }[] = [];
-mock.module('../src/lib/cloud-sync', () => ({ stageCloudDoc: (key: string, body: unknown) => { staged.push({ key, body }); } }));
+const realSync = await import('../src/lib/cloud-sync');
+mock.module('../src/lib/cloud-sync', () => ({ ...realSync, stageCloudDoc: (key: string, body: unknown) => { staged.push({ key, body }); } }));
 
 beforeAll(() => { GlobalRegistrator.register({ url: 'http://localhost:8080/workspace/ps/partners?demo=1' }); (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true; });
 afterAll(async () => { await GlobalRegistrator.unregister(); });
