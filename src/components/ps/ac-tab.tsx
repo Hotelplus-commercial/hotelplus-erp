@@ -35,6 +35,7 @@ import type { PsReportRow } from "@/lib/ps-dashboard-types";
 import { cn } from "@/lib/utils";
 import { NowChip, useCardCompare } from "./compare-control";
 import { PartnerSection } from "./partner-section";
+import { DebtorCardR11, PaidGradeCard } from "./debt-cards-r11";
 
 /** Debt Partner R1 §1: ค่าระบบ ORM and ค่าใช้จ่ายรายสัญญา are unmounted from this tab (components kept). */
 const DP_LEGACY = false;
@@ -113,15 +114,18 @@ export function AcTab({ views, loading, error, service, compare, demo, periodA, 
     <div className="flex min-w-0 flex-col gap-5" data-testid="ac-tab" data-demo={demo || undefined}>
       <DefinitionStrip />
       <SectionHead title="ลูกหนี้ & การเก็บเงิน" desc="ใครจ่ายตรงเวลา · ค้างเท่าไร อยู่ขั้นไหน · ต้องตามใคร" />
-      <div className={DP_LEGACY ? "ac-row2" : "min-w-0"}>
+      {cardCompare && <PaidGradeCard demo={!!demo} initialOpen={openLists} />}
+      {cardCompare && <DebtorCardR11 demo={!!demo} />}
+      {!cardCompare && <div className={DP_LEGACY ? "ac-row2" : "min-w-0"}>
         {cardCompare ? (
           <GradeCard gradeDist={rawGrade.filter((r) => String(r.billing_period ?? "").slice(0, 10) <= kGrade.a.to)} chip={gLatest ? monYY(gLatest) : "—"} prevChip={gPrev ? monYY(gPrev) : "—"} compare customers={gradeCustomersA} initialOpen={openLists} period={kGrade.control} periodKeys={{ latest: gLatest, prev: gPrev }} />
         ) : (
           <GradeCard gradeDist={gradeDist.filter(svc)} chip={chip} prevChip={prevChip} compare={compare} customers={customers} initialOpen={openLists} />
         )}
         {DP_LEGACY && <SystemFeeMock />}
-      </div>
-      <DebtorCard initialOpen={openLists} views={views} svc={svc} debtors={debtors.filter(svc)} breakdown={breakdown.filter(svc)} compare={cardCompare ? false : compare} openHotel={openHotel} period={cardCompare ? <NowChip /> : undefined} />
+      </div>}
+      {/* R1.1: on PS Dashboard the old GradeCard / DebtorCard are replaced by ① ② (code kept; BD-AC still mounts them). */}
+      {!cardCompare && <DebtorCard initialOpen={openLists} views={views} svc={svc} debtors={debtors.filter(svc)} breakdown={breakdown.filter(svc)} compare={cardCompare ? false : compare} openHotel={openHotel} period={cardCompare ? <NowChip /> : undefined} />}
       {cardCompare && <PartnerSection demo={!!demo} />}
       {DP_LEGACY && <SectionHead title="ค่าใช้จ่ายรายสัญญา" desc="แต่ละสัญญาบริการจ่ายเราเดือนละเท่าไร · ใช้เตรียมคุยราคาตอนต่อสัญญา · ไม่ใช่การจัดอันดับ" />}
       {DP_LEGACY && (cardCompare ? (
