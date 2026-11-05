@@ -3,7 +3,6 @@
  * Rows: vServiceTickets() only. Writes: acceptTicket / changeTicketStatus / changeTicketCategory / addCategory / hideCategory /
  * requestCategory / decideCategoryRequest (service-tickets.ts). PS case status stays on the existing case screen. */
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { addDemoTickets, isDemoTickets, useTickets, STATUS_TH, type L0Ticket } from "@/lib/tickets-l0";
-import { ticketApi, resetDemoTickets, useDemoVersion } from "@/lib/task-tickets";
+import { ticketApi, resetDemoTickets, useDemoVersion, type Ticket as PsCase } from "@/lib/task-tickets";
 import { slaDemoTickets, ensureSlaDemoFollowups } from "@/lib/service-tickets-demo";
 import { stabDemoTickets } from "@/lib/service-ticket-tab-demo";
 import {
@@ -44,7 +43,10 @@ export function useReceiverRows(demo: boolean) {
     addDemoTickets(slaDemoTickets()); addDemoTickets(stabDemoTickets()); ensureSlaDemoFollowups(); seedReceiverDemo();
     void ticketApi.list(true).then((c) => { if (!c.length) resetDemoTickets(); });
   }, [demo, l0.length]);
-  const cases = useQuery({ queryKey: ["task-tickets", demo, demo ? dv : 0], queryFn: () => ticketApi.list(demo), staleTime: demo ? Infinity : 15_000 });
+  // PS cases: same reader as the PS Dashboard (ticketApi.list); plain effect so the lane needs no query provider (BD tests mount the shell bare).
+  const [caseData, setCaseData] = useState<PsCase[]>([]);
+  useEffect(() => { let on = true; ticketApi.list(demo).then((c) => { if (on) setCaseData(c); }).catch(() => { if (on) setCaseData([]); }); return () => { on = false; }; }, [demo, dv]);
+  const cases = { data: caseData };
   const today = svcToday(demo);
   const cats = useMemo(() => getCategories(demo), [demo, v]); // eslint-disable-line react-hooks/exhaustive-deps
   const rows = useMemo(() => vServiceTickets({ l0, cases: cases.data ?? [], sla: ticketSla.all(demo), followups: ticketFollowups.all(demo), categories: cats, today }), [l0, cases.data, demo, v, cats, today]); // eslint-disable-line react-hooks/exhaustive-deps
