@@ -80,7 +80,7 @@ describe('§2.4–2.6', () => {
     const c = (x: number) => ({ billing_model: 'COMMISSION_GUARANTEE' as const, fixed_fee: null, commission_pct: x, guarantee_fee: 8000 });
     expect([E.matchOffer(cg, c(14)), E.matchOffer(cg, c(18)), E.matchOffer(cg, c(13))]).toEqual(['MATCH', 'ABOVE', 'BELOW']);
     const sw = { billing_model: 'FIXED_PLUS_COMMISSION' as const, fixed_fee: 8500, commission_pct: 5, guarantee_fee: null }; // 8,500 + 19,000 = 27,500 vs 28,400 → outside 568
-    expect(E.matchOffer(flat, sw, flat.fee ?? fee({ fixed_fee: 25000, avg_billed: 25000, avg_revenue_base: 380000 }), cfg)).toBe('BELOW');
+    expect(E.matchOffer(flat, sw, fee({ fixed_fee: 25000, avg_billed: 25000, avg_revenue_base: 380000 }), cfg)).toBe('BELOW');
     expect(E.matchOffer(flat, { ...sw, commission_pct: 5.25 }, fee({ fixed_fee: 25000, avg_billed: 25000, avg_revenue_base: 380000 }), cfg)).toBe('MATCH');
   });
   test('10 · approval: model change → approval + reason; existing rows unchanged', () => {
@@ -116,8 +116,6 @@ describe('§9 DEMO oracle + §3/§7 snapshot', () => {
     const pb = ctx('CT-HTL0416'); expect(pb.fee.avg_commission).toBe(30000); expect(pb.offer.type).toBe('RAISE');
   });
   test('12 · seeded requests carry the snapshot + §7 fields', () => {
-    const reqs = S.useRenewalStore.getState ? [] : [];
-    void reqs;
     const cm = S.latestRequestFor('RN-V14-CM')!; expect(cm.reco_snapshot.type).toBe('LOWER'); expect(cm.offer_match).toBe('MATCH'); expect(cm.status).toBe('LINK_SENT');
     const bs = S.latestRequestFor('RN-V14-BS')!; expect(bs.model_changed).toBe(true); expect(bs.offer_match).toBe('ABOVE'); expect(bs.approval_required).toBe(true);
     const hh = S.latestRequestFor('RN-V14-HH')!; expect(hh.offer_match).toBe('MATCH'); expect(hh.status).toBe('DRAFT');
