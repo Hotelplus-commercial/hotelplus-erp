@@ -5,7 +5,8 @@
 export const FORBIDDEN = ['RENEWAL_TERMS_APPROVAL', 'CUSTOMER_ENTITY_CHANGE', 'SOFT_FORCE', 'ADVISORY', 'SERVICING_STALL', 'CONTRACT_FOLLOWUP', 'UPSELL_PITCH', 'RENEWAL_DUE', 'GRADE_RISK', 'SURVEY_LOW', 'ASSIGNMENT_PENDING', 'RENEWED', 'NOT_RENEWED', 'IN_PROGRESS', 'LOST', 'NPS', 'row-1', '★', 'เพดาน', 'เคส PS', 'Ticket ระบบ', 'HTL-', 'รอ BOT', 'customer_segment', 'EXISTING',
   /* Partner v1.2 §7.2 (PW33): raw keys never shown */ 'WELCOME_BACK', 'SYSTEM_SHUTOFF', 'PARTNER_DEAL_NOTICE', 'SYSTEM_CREDIT_NOTICE', 'SYSTEM_REACTIVATE', 'LAPSED_PENDING', 'FIXED_PLUS_COMMISSION', 'COMMISSION_GUARANTEE', 'PENDING', 'STORED',
   /* Survey v2 patch: raw keys never shown */ 'CUSTOMER_DECLINED', 'LINK_EXPIRED', 'CUSTOMER_LINK', 'GOOD', 'UNSURE', 'BAD', 'OTA_VISIBILITY', 'PAGE_ATTENTION', 'CONTENT_IMAGE',
-  /* Contract Health · Survey signals patch: raw keys never shown */ 'SURVEY_LOW_SCORE', 'SURVEY_NO_SCORE', 'SURVEY_SILENT_2M', 'MEETING_REJECTED', 'PAGE_FLAT', 'PAGE_UP', 'CONTENT_OFF', 'CONTENT_ON', 'VALUE_UNSEEN', 'VALUE_SEEN'];
+  /* Contract Health · Survey signals patch: raw keys never shown */ 'SURVEY_LOW_SCORE', 'SURVEY_NO_SCORE', 'SURVEY_SILENT_2M', 'MEETING_REJECTED', 'PAGE_FLAT', 'PAGE_UP', 'CONTENT_OFF', 'CONTENT_ON', 'VALUE_UNSEEN', 'VALUE_SEEN',
+  /* Service SLA Core v1.0: raw keys never shown */ 'WAITING_CUSTOMER', 'WAITING_THIRD_PARTY', 'TICKET_FOLLOWUP', 'CATEGORY_REQUEST', 'TICKET_NEW', 'TICKET_NO_DATE_DAILY', 'TICKET_NOT_ACCEPTED_3D', 'TICKET_DUE_TOMORROW', 'TICKET_OVERDUE', 'NO_DATE', 'ON_TIME', 'OVERDUE', 'HAD_WAIT', 'NOT_ACCEPTED', 'DEPT_QUEUE_AND_HEAD', 'PARTNER_SYSTEM'];
 export const visibleText = (html: string) => html.replace(/<[^>]*>/g, ' ').replace(/&quot;/g, '"').replace(/&amp;/g, '&');
 export function hits(text: string, opts: { allowPhase?: boolean } = {}) {
   const found = FORBIDDEN.filter((w) => text.includes(w));
