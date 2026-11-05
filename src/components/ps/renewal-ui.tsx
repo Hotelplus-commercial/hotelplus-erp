@@ -41,7 +41,7 @@ import {
   type RenewalStatus,
 } from "@/lib/ps-renewal";
 import { cn } from "@/lib/utils";
-import { psDemoOn } from "@/lib/demo-session";
+import { onDemoSessionChange, psDemoOn } from "@/lib/demo-session";
 import { DEMO_EXTRA_CARDS, declineRequest, isRenewalDemo, latestRequestFor, openRequestFor, scanSourceContracts, setRenewalDemo, signedAwaitingDone, sourceContractFor, sourceMissesFor, useRenewalStore } from "@/lib/renewal-store";
 import { RenewalOfferSection } from "@/components/ps/renewal-offer-section";
 import { KeepCreditWarning } from "@/components/ps/ae-system-cost";
@@ -84,7 +84,11 @@ export function RenewalActivityCards({
   const currentUser = actingRenewalUser(roleUser, canOverride, member);
   const [demo, setDemo] = useState(false);
   const [denied, setDenied] = useState<ScanContract | null>(null);
-  useEffect(() => { const on = new URLSearchParams(window.location.search).get("demo") === "1" || psDemoOn(); setRenewalDemo(on); setDemo(on); }, []);
+  useEffect(() => {
+    const sync = () => { const on = new URLSearchParams(window.location.search).get("demo") === "1" || psDemoOn(); setRenewalDemo(on); setDemo(on); setReasonsDemo(on, renewalR2DemoReasons); };
+    sync();
+    return onDemoSessionChange(sync);
+  }, []);
   useRenewalStore();
   const cards = demo ? [...baseCards, ...DEMO_EXTRA_CARDS] : baseCards;
   const [open, setOpen] = useState(false);
