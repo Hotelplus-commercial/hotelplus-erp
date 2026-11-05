@@ -2,7 +2,7 @@
  * (which render only after mount) show real content, then reads the text. */
 import { afterAll, afterEach, beforeAll, describe, expect, mock, test } from 'bun:test';
 import { GlobalRegistrator } from '@happy-dom/global-registrator';
-import { domHits } from './forbidden-words';
+import { domHits, hits } from './forbidden-words';
 
 mock.module('../src/lib/cloud-sync', () => ({ stageCloudDoc: () => {} }));
 beforeAll(() => { GlobalRegistrator.register({ url: 'http://localhost:8080/ps?demo=1' }); (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -56,6 +56,26 @@ describe('R4.1 forbidden strings after every card mounts (demo)', () => {
     bad.remove();
     expect(domHits(div)).toEqual([]);
   }, 20000);
+  test('card ⑦ after survey labels draw: chips + hover text', async () => {
+    const { act } = await import('react');
+    const div = await mount('ps');
+    const health = () => div.querySelector('#contract-health');
+    await until(() => !!health()?.textContent?.includes('คะแนนเซอร์เวย์ต่ำ') && !!health()?.textContent?.includes('ลูกค้าไม่ให้คะแนน'));
+    const chips = [...health()!.querySelectorAll<HTMLElement>('.r1-chip')];
+    expect(chips.length).toBeGreaterThan(0);
+    const tips: string[] = [];
+    for (const c of chips) { await act(async () => { c.focus(); }); tips.push(document.body.textContent ?? ''); await act(async () => { c.blur(); }); }
+    expect(tips.some((t) => t.includes('ลูกค้าตอบ') || t.includes('·'))).toBe(true);
+    expect(domHits(div)).toEqual([]);
+    expect([...new Set(tips.flatMap((t) => hits(t)))]).toEqual([]);
+    // proof: a raw key injected into one new survey label makes the check fail
+    const label = chips.find((c) => c.textContent?.includes('คะแนนเซอร์เวย์ต่ำ'))!;
+    const old = label.textContent!;
+    label.textContent = `${old} SURVEY_LOW_SCORE`;
+    expect(domHits(div)).toEqual(['SURVEY_LOW_SCORE']);
+    label.textContent = old;
+    expect(domHits(div)).toEqual([]);
+  }, 30000);
   test('On-board / Off-board incl. queue table', async () => {
     const div = await mount('servicing');
     await until(() => !!div.querySelector('[data-testid="sd-queue"]'));
