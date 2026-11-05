@@ -17,7 +17,7 @@ export function readDemoSession(): DemoSession | null {
   try {
     const v = JSON.parse(s.getItem(DEMO_WB_KEY) ?? 'null') as Partial<DemoSession> | null;
     if (!v || typeof v !== 'object') return null;
-    return { ps_demo: v.ps_demo === true, seq: typeof v.seq === 'number' ? v.seq : DEMO_WB_SEQ0, items: Array.isArray(v.items) ? v.items : [], ...(v.l0 && Array.isArray(v.l0.items) ? { l0: v.l0 } : {}) };
+    return { ps_demo: v.ps_demo === true, seq: typeof v.seq === 'number' ? v.seq : DEMO_WB_SEQ0, items: Array.isArray(v.items) ? v.items : [], ...(v.l0 && Array.isArray(v.l0.items) ? { l0: v.l0 } : {}), ...(v.ms && Array.isArray(v.ms.surveys) ? { ms: v.ms } : {}) };
   } catch { return null; }
 }
 function write(v: DemoSession) { try { ss()?.setItem(DEMO_WB_KEY, JSON.stringify(v)); } catch { /* quota */ } }
