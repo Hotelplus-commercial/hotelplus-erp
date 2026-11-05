@@ -7,7 +7,7 @@
 import { useSyncExternalStore } from 'react';
 import { stageCloudDoc } from './cloud-sync';
 import { createTask } from './tickets-l0';
-import { PARTNER_COLLECTIONS, emptyPartnerData, type PartnerCollection, type PartnerData, type PartnerDeal, type PartnerRateCard, type PartnerRateCardTier } from './debt-partner-types';
+import { PARTNER_COLLECTIONS, emptyPartnerData, type PartnerCollection, type PartnerData, type PartnerDeal, type PartnerRateCard, type PartnerRateCardTier, type PropertyPartnerSystem, type SystemCreditRequest } from './debt-partner-types';
 import { partnerDemoData } from './debt-partner-demo';
 
 export const PARTNER_STORAGE_KEY = (c: PartnerCollection) => `meridia.${c}.v1`;
@@ -127,4 +127,64 @@ export function saveDeal(i: DealInput): { ok: true; id: string; ticket_id: strin
   const row: PartnerDeal = { ...body, id, ac_ticket_id, created_at: prev?.created_at ?? at, updated_at: at };
   write('partner_deals', prev ? d.partner_deals.map((x) => (x.id === id ? row : x)) : [...d.partner_deals, row]);
   return { ok: true, id, ticket_id: ac_ticket_id };
+}
+
+/* ---------------- PM Workspace Partner v1.0 — PM writers (property system, keep-credit requests) ---------------- */
+
+export type PropertySystemInput = { property_id: string; partner_id: string; system_name: string; effective_from: string; allotment: number | null; set_by: string; note?: string | null };
+export function propertySystemError(i: PropertySystemInput): string | null {
+  if (!i.property_id) return 'ไม่พบโรงแรม';
+  if (!i.partner_id || !i.system_name) return 'เลือกระบบ';
+  if (!/^\d{4}-\d{2}-\d{2}/.test(i.effective_from)) return 'ใส่วันที่เริ่มใช้';
+  if (i.allotment != null && (!Number.isFinite(i.allotment) || i.allotment < 0)) return 'allotment ต้องเป็นตัวเลขไม่ติดลบ';
+  return null;
+}
+/** Insert one property_partner_system row (history kept; never edits old rows). */
+export function setPropertySystem(i: PropertySystemInput): { ok: true; id: string } | { ok: false; error: string } {
+  const err = propertySystemError(i); if (err) return { ok: false, error: err };
+  const d = getPartnerData(); const id = uid('PPS');
+  const row: PropertyPartnerSystem = { id, property_id: i.property_id, partner_id: i.partner_id, system_name: i.system_name, effective_from: i.effective_from.slice(0, 10), allotment: i.allotment, set_by: i.set_by, set_at: nowIso(), note: i.note?.trim() || null };
+  write('property_partner_system', [...d.property_partner_system, row]);
+  return { ok: true, id };
+}
+
+export type CreditRequestInput = Pick<SystemCreditRequest, 'contract_id' | 'partner_id' | 'contract_end_date' | 'prepaid_until' | 'months_over' | 'amount' | 'currency'> & { note?: string; attachment_url?: string; by: string; at?: string };
+/** "บันทึกว่าส่งคำขอแล้ว" — one REQUESTED row per contract. */
+export function recordCreditRequest(i: CreditRequestInput): { ok: true; id: string } | { ok: false; error: string } {
+  if (!(i.amount >= 0) || Number.isNaN(i.amount)) return { ok: false, error: 'ใส่มูลค่าที่ขอ' };
+  const d = getPartnerData();
+  if (d.system_credit_requests.some((r) => r.contract_id === i.contract_id)) return { ok: false, error: 'สัญญานี้บันทึกคำขอแล้ว' };
+  const id = uid('CR'); const at = i.at ?? nowIso();
+  const row: SystemCreditRequest = { id, contract_id: i.contract_id, partner_id: i.partner_id, contract_end_date: i.contract_end_date, prepaid_until: i.prepaid_until, months_over: i.months_over, amount: i.amount, currency: i.currency,
+    status: 'REQUESTED', requested_at: at, decided_at: null, credit_expires_at: null, ac_ticket_id: null, created_by: i.by, requested_by: i.by, note: i.note?.trim() || null, attachment_url: i.attachment_url?.trim() || null };
+  write('system_credit_requests', [...d.system_credit_requests, row]);
+  return { ok: true, id };
+}
+
+export type CreditAnswerInput = { id: string; result: 'APPROVED' | 'REJECTED'; approved_amount: number | null; credit_expires_at: string | null; answer_attachment_url?: string; note?: string; hotel: string; by: string; at?: string };
+export function creditAnswerError(i: CreditAnswerInput): string | null {
+  if (i.result === 'APPROVED') {
+    if (i.approved_amount == null || !(i.approved_amount > 0)) return 'ใส่มูลค่าที่ได้จริง';
+    if (!i.credit_expires_at) return 'ใส่วันที่เครดิตใช้ได้ถึง';
+  }
+  return null;
+}
+/** "บันทึกผลจาก Partner" — APPROVED / REJECTED + one SYSTEM_CREDIT_NOTICE ticket to AC (Ticket L0 createTask). */
+export function recordCreditAnswer(i: CreditAnswerInput): { ok: true; ticket_id: string } | { ok: false; error: string } {
+  const err = creditAnswerError(i); if (err) return { ok: false, error: err };
+  const d = getPartnerData(); const r = d.system_credit_requests.find((x) => x.id === i.id);
+  if (!r) return { ok: false, error: 'ไม่พบคำขอ' };
+  if (r.status !== 'REQUESTED') return { ok: false, error: 'คำขอนี้บันทึกผลแล้ว' };
+  const partner = d.partners.find((p) => p.id === r.partner_id)?.name ?? r.partner_id;
+  const approved = i.result === 'APPROVED';
+  const t = createTask({
+    type: 'SYSTEM_CREDIT_NOTICE', target_dept: 'AC', created_by: 'PM',
+    subject_ref: { hotel_id: `CONTRACT:${r.contract_id}`, hotel_name: i.hotel || r.contract_id, gap_service: 'PARTNER', deal_id: `CR:${r.id}`, contract_id: r.contract_id },
+    payload: { readiness_tier: '', chips: [approved ? 'Partner อนุมัติ' : 'Partner ปฏิเสธ'], note: i.note?.trim() ?? '', contract_id: r.contract_id,
+      credit_notice: { contract: r.contract_id, partner, result: i.result, approved_amount: approved ? i.approved_amount : null, currency: r.currency, credit_expires_at: approved ? i.credit_expires_at : null } },
+  });
+  const row: SystemCreditRequest = { ...r, status: i.result, decided_at: i.at ?? nowIso(), approved_amount: approved ? i.approved_amount : null, credit_expires_at: approved ? i.credit_expires_at : null,
+    answer_attachment_url: i.answer_attachment_url?.trim() || null, note: i.note?.trim() || r.note || null, ac_ticket_id: t.ticket_id };
+  write('system_credit_requests', d.system_credit_requests.map((x) => (x.id === r.id ? row : x)));
+  return { ok: true, ticket_id: t.ticket_id };
 }
