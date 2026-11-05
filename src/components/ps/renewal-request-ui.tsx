@@ -19,7 +19,7 @@ import { RO } from "@/lib/ps-glossary";
 import { addAttachment, attachmentError, ticketById, useTickets, STATUS_TH, type L0Ticket } from "@/lib/tickets-l0";
 
 const thb = (n: number) => `฿${n.toLocaleString("th-TH")}`;
-export const recoLabel = (r: RecoSnapshot) => r.type === "RAISE" ? RENEWAL_RECO_TH.RAISE(r.band_min_pct ?? 0, r.band_max_pct ?? 0) : r.type === "LOWER" ? RO.type.LOWER : RENEWAL_RECO_TH[r.type];
+export const recoLabel = (r: RecoSnapshot) => r.type === "RAISE" ? RENEWAL_RECO_TH.RAISE(r.band_min_pct ?? 0, r.band_max_pct ?? 0) : r.type === "LOWER" ? RO.type["LOWER"] : RENEWAL_RECO_TH[r.type];
 const toneOf = (s: RenewalRequest["status"]) => s === "SIGNED" || s === "READY_TO_SEND" || s === "APPROVED" ? "success" : s === "RETURNED" || s === "PENDING_APPROVAL" ? "warn" : s === "DECLINED" ? "danger" : "muted";
 
 export function RecoBox({ reco, oldFee }: { reco: RecoSnapshot; oldFee?: number }) {
