@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { InfoButton } from "./dash-card";
+import { SignalMark } from "./signal-mark";
 import { GuidedTour } from "./guided-tour";
 import { R1_DIALOG, R1_TOUR, R1_STATUS_TH } from "@/lib/ps-glossary";
 import { createTask, peekNextSeq, ticketById, ticketIdOf, type Creator, type L0Ticket, type TicketAssignee } from "@/lib/tickets-l0";
@@ -111,7 +112,7 @@ export function ContractSignalDialog({ row, tickets, labels, by, creator, demo, 
         draggable={opts.draggable && !opts.disabled} onDragStart={(ev) => ev.dataTransfer.setData("text/plain", key)}
         onClick={opts.disabled ? undefined : opts.onClick} onKeyDown={(ev) => { if ((ev.key === "Enter" || ev.key === " ") && opts.onClick && !opts.disabled) { ev.preventDefault(); opts.onClick(); } }}
         className={cn("r1-chip", `is-${e.dir}`, opts.from === "ae" && "is-ae", opts.disabled && "is-disabled")}>
-        {e.dir === "bad" ? "▼" : e.dir === "good" ? "▲" : "★"} {e.label}
+        <SignalMark dir={e.dir} />{e.label}
         {opts.remove && <button type="button" aria-label={`${R1_DIALOG.remove} ${e.label}`} className="r1-chip-x" onClick={(ev) => { ev.stopPropagation(); opts.remove!(); }}>×</button>}
       </span>
     );

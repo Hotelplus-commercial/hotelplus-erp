@@ -67,17 +67,28 @@ describe('R4.1 forbidden strings after every card mounts (demo)', () => {
     const tips: string[] = [];
     for (const c of chips) { await act(async () => { c.focus(); }); tips.push([...document.querySelectorAll('.dash-tooltip-popover')].map((e) => e.textContent ?? '').join(' ')); await act(async () => { c.blur(); }); }
     expect(tips.some((t) => t.includes('ลูกค้าตอบ') || t.includes('·'))).toBe(true);
-    // ★ = Tab R1 §5 opportunity marker (R1_HEALTH.signalInfo "★ โอกาสขาย"); the only hit, held for a decision — every other word must be absent.
-    const noStar = (l: string[]) => l.filter((w) => w !== '★');
-    expect(noStar(domHits(div))).toEqual([]);
-    expect(noStar([...new Set(tips.flatMap((t) => hits(t)))])).toEqual([]);
+    // ★ is forbidden everywhere again: sales-opportunity labels carry the text tag "โอกาสขาย" instead (display only).
+    const opp = chips.filter((c) => c.className.includes('is-opp'));
+    expect(opp.length).toBeGreaterThan(0);
+    expect(opp.every((c) => c.textContent?.includes('โอกาสขาย'))).toBe(true);
+    expect(chips.some((c) => (c.textContent ?? '').includes('★'))).toBe(false);
+    expect(domHits(div)).toEqual([]);
+    expect([...new Set(tips.flatMap((t) => hits(t)))]).toEqual([]);
+    // the signals column ⓘ is the marker legend: open it and scan the text that actually draws
+    const info = [...div.querySelectorAll<HTMLElement>('button.dash-info-btn')].find((b) => b.closest('th')?.textContent?.includes('สัญญาณ'));
+    expect(info).toBeTruthy();
+    await act(async () => { info!.click(); });
+    const legend = [...document.querySelectorAll('.dash-info-pop')].map((e) => e.textContent ?? '').join(' ');
+    expect(legend.includes('โอกาสขาย')).toBe(true);
+    expect(hits(legend)).toEqual([]);
+    await act(async () => { info!.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
     // proof: a raw key injected into one new survey label makes the check fail
     const label = chips.find((c) => c.textContent?.includes('คะแนนเซอร์เวย์ต่ำ'))!;
     const old = label.textContent!;
     label.textContent = `${old} SURVEY_LOW_SCORE`;
-    expect(noStar(domHits(div))).toEqual(['SURVEY_LOW', 'SURVEY_LOW_SCORE']);
+    expect(domHits(div)).toEqual(['SURVEY_LOW', 'SURVEY_LOW_SCORE']);
     label.textContent = old;
-    expect(noStar(domHits(div))).toEqual([]);
+    expect(domHits(div)).toEqual([]);
     ds.setPsDemoSession(false);
   }, 30000);
   test('On-board / Off-board incl. queue table', async () => {
