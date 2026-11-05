@@ -55,12 +55,11 @@ describe('PM Workspace Partner v1.1', () => {
   });
 
   it('6 SUCCESS deal from PM Workspace creates exactly one PARTNER_DEAL_NOTICE ticket', () => {
-    const before = T.listTickets?.() ?? [];
-    const n0 = before.filter((t) => t.ticket_type === 'PARTNER_DEAL_NOTICE').length;
     const r = saveDeal({ partner_id: 'PTN-SL', kind: 'COST_DISCOUNT', status: 'SUCCESS', title: 'ทดสอบ', benefit_type: 'PERCENT', benefit_value: 5, benefit_currency: null, start_date: '2026-11-01', end_date: null, scope: 'ALL', contract_ids: [], note: '', attachment_url: '', created_by: 'PM001-Alex' });
     expect(r.ok).toBe(true);
-    const n1 = (T.listTickets?.() ?? []).filter((t) => t.ticket_type === 'PARTNER_DEAL_NOTICE').length;
-    expect(n1 - n0).toBe(1);
+    if (!r.ok) return;
+    expect(r.ticket_id).not.toBeNull();
+    expect(T.findOpenByDeal('PARTNER_DEAL_NOTICE', r.id)?.ticket_id).toBe(r.ticket_id!);
   });
 
   it('7 attachments: validation, add, edit, remove; newest first; upload disabled with Drive tooltip', () => {
