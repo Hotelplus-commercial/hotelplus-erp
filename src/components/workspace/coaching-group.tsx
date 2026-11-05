@@ -11,6 +11,7 @@ import { ackCount, ageDays, isAssignee, isOwner, sortTasks } from "@/lib/coachin
 import { ackTask, addTaskNote, flagClosedNote, liveCoachRole, rosterFor, setTaskStatus, useCoachingTasks } from "@/lib/coaching-store";
 import type { CoachMember, CoachRole, CoachingStatus, CoachingTask } from "@/lib/coaching-types";
 import { COACH_TH } from "@/lib/ps-glossary";
+import { useWsViewer } from "@/lib/ws-viewer";
 
 type Scope = "ORM" | "MARCOM" | "AE";
 const DEFAULT_VIEWER: Record<Scope, string> = { ORM: "grm", MARCOM: "mk-naen", AE: "ae-boss" };
@@ -43,7 +44,8 @@ export function MemberPicker({ scope, value, onChange }: { scope: Scope; value: 
 
 export function CoachingGroup({ scope, demo, onlyRule, defaultViewer }: { scope: Scope; demo: boolean; onlyRule?: CoachingTask["rule"]; defaultViewer?: string }) {
   const tasks = useCoachingTasks(demo);
-  const [viewer, setViewer] = useState(defaultViewer ?? DEFAULT_VIEWER[scope]);
+  // Service Ticket Receiver v1.0: the picked member is shared with the 🎫 lane of the same Workspace (same picker, same value).
+  const [viewer, setViewer] = useWsViewer(scope, defaultViewer ?? DEFAULT_VIEWER[scope]);
   const [filter, setFilter] = useState<FilterKey | null>(null);
   const roster = rosterFor(demo);
   const me = demo ? roster.find((m) => m.id === viewer) : undefined;

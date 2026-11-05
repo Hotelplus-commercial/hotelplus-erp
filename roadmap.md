@@ -340,3 +340,8 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 
 - [x] PS Dashboard Tab ติดตามงานผู้ให้บริการ R1 (cards ①–⑥, view-only drawer + Follow up, หมวด on create)
 - [ ] Live Contract Health for ⑤ outside DEMO — waits on a per-contract health source readable outside PS Dashboard projections
+
+## Service Ticket Receiver v1.0
+- [x] Receiver 🎫 lane ORM / Marcom / AC / BD, accept modal, panel, head categories, OGM group (AUTO), shut-off rows, bell icons/links, DEMO, tests
+- [ ] Open: Can PS cases be routed to BD? (file 1 routing currently ORM / MARCOM / AC) — waits on decision
+- [ ] Open: receiver progress notes need a write path (file 1 has none) — waits on decision

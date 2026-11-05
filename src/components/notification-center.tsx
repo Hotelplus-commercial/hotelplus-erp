@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { setTicketDemo, STATUS_TH, useTickets } from "@/lib/tickets-l0";
 import { workspaceByDept } from "@/lib/workspace-registry";
 import { Bell, AlertTriangle, Info, CircleAlert, Check } from "lucide-react";
@@ -18,6 +18,8 @@ import { markAlertRead, resetContractHealthDemo, runDemoDayIfNeeded, useContract
 import { QUICK_OF, type ChAlert } from "@/lib/contract-tab-r1";
 import { R1_ALERT_TH, R1_TIER_TH } from "@/lib/ps-glossary";
 import { markBellRead, useBellItems, useBellViewer, viewerFromPath } from "@/lib/bell-items";
+import { BELL_ICON, bellTarget } from "@/lib/service-receiver";
+const SVC_DEPT_KEYS = ["ORM", "MARCOM", "AC", "BD"];
 import { runServiceTicketDay } from "@/lib/service-ticket-runtime";
 import { isDemoTickets } from "@/lib/tickets-l0";
 
@@ -37,6 +39,7 @@ const severityStyles = {
 
 export function NotificationCenter() {
   const location = useRouterState({ select: r => r.location });
+  const navigate = useNavigate();
   const demo = new URLSearchParams(location.searchStr).get("demo") === "1";
   useEffect(() => { setTicketDemo(new URLSearchParams(window.location.search).get("demo") === "1"); }, [location.pathname, location.searchStr]);
   const tickets = useTickets().filter(t => t.status === "NEW" || t.status === "ACK" || t.status === "IN_PROGRESS");
@@ -105,7 +108,7 @@ export function NotificationCenter() {
           {bell.length > 0 && viewer && <div className="border-b px-4 py-3" data-testid="bell-ticket-alerts">
             <p className="mb-2 text-xs font-medium text-muted-foreground">แจ้งเตือน Ticket</p>
             <ul className="space-y-1">{bell.map((b) => <li key={b.id}>
-              <button type="button" onClick={() => markBellRead(bellDemo, b.id, viewer.id)} className={cn("w-full rounded px-2 py-1.5 text-left text-xs hover:bg-muted", !b.read_by.includes(viewer.id) && "font-medium")}>{b.text}</button>
+              <button type="button" data-testid="bell-ticket-item" onClick={() => { markBellRead(bellDemo, b.id, viewer.id); const tg = bellTarget(b, viewer.depts[0] ?? null); const ws = tg ? (tg.dept === "AUTO" ? workspaceByDept("AUTO") : SVC_DEPT_KEYS.includes(tg.dept) ? workspaceByDept(tg.dept as "ORM") : null) : null; if (tg && ws) void navigate({ to: ws.path, search: { demo: bellDemo ? 1 : undefined, ticket: tg.ticket } }); }} className={cn("w-full rounded px-2 py-1.5 text-left text-xs hover:bg-muted", !b.read_by.includes(viewer.id) && "font-medium")}>{BELL_ICON[b.alert_type] ? `${BELL_ICON[b.alert_type]} ` : ""}{b.text}</button>
             </li>)}</ul>
           </div>}
           {tickets.length > 0 && <div className="border-b px-4 py-3">
