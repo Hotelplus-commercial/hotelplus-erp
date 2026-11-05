@@ -4,10 +4,10 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { addPartner, saveDeal, saveRateCard, usePartnerData } from "@/lib/debt-partner-store";
-import type { BenefitType, BillingCycle, DealKind, DealStatus, PartnerDeal, PartnerRateCard } from "@/lib/debt-partner-types";
+import { addPartner, saveDeal, saveRateCard, updatePartner, usePartnerData } from "@/lib/debt-partner-store";
+import type { Partner, BenefitType, BillingCycle, DealKind, DealStatus, PartnerDeal, PartnerRateCard } from "@/lib/debt-partner-types";
 
-export type PartnerFormMode = { kind: "deal"; deal?: PartnerDeal | undefined } | { kind: "rate"; card?: PartnerRateCard | undefined } | null;
+export type PartnerFormMode = { kind: "deal"; deal?: PartnerDeal | undefined; partnerId?: string | undefined } | { kind: "rate"; card?: PartnerRateCard | undefined; partnerId?: string | undefined } | { kind: "partner"; partner: Partner } | null;
 const PM_ID = "PM001-Alex";
 const sel = "h-9 w-full rounded-md border border-input bg-background px-2 text-sm";
 
@@ -29,10 +29,10 @@ function PartnerPicker({ value, onChange }: { value: string; onChange: (id: stri
   );
 }
 
-function DealForm({ deal, onDone }: { deal?: PartnerDeal | undefined; onDone: () => void }) {
+function DealForm({ deal, partnerId, onDone }: { deal?: PartnerDeal | undefined; partnerId?: string | undefined; onDone: () => void }) {
   const d = usePartnerData();
   const [kind, setKind] = useState<DealKind | "PROMO">(deal?.kind ?? "COST_DISCOUNT");
-  const [partner, setPartner] = useState(deal?.partner_id ?? "");
+  const [partner, setPartner] = useState(deal?.partner_id ?? partnerId ?? "");
   const [status, setStatus] = useState<DealStatus>(deal?.status ?? "NEGOTIATING");
   const [title, setTitle] = useState(deal?.title ?? "");
   const [start, setStart] = useState(deal?.start_date ?? "");
@@ -92,9 +92,9 @@ function DealForm({ deal, onDone }: { deal?: PartnerDeal | undefined; onDone: ()
 }
 
 type TierRow = { min: string; max: string; price: string };
-function RateForm({ card, onDone }: { card?: PartnerRateCard | undefined; onDone: () => void }) {
+function RateForm({ card, partnerId, onDone }: { card?: PartnerRateCard | undefined; partnerId?: string | undefined; onDone: () => void }) {
   const d = usePartnerData();
-  const [partner, setPartner] = useState(card?.partner_id ?? "");
+  const [partner, setPartner] = useState(card?.partner_id ?? partnerId ?? "");
   const [system, setSystem] = useState(card?.system_name ?? "");
   const [cur, setCur] = useState(card?.currency ?? "THB");
   const [cycle, setCycle] = useState<BillingCycle>(card?.billing_cycle ?? "MONTHLY");
@@ -138,16 +138,40 @@ function RateForm({ card, onDone }: { card?: PartnerRateCard | undefined; onDone
   );
 }
 
+/* v1.2 §3 (PW25): Edit Partner — name · contact · storage location · note (currency / billing cycle live on the Rate Card). */
+function PartnerInfoForm({ partner, onDone }: { partner: Partner; onDone: () => void }) {
+  const [f, setF] = useState({ name: partner.name, contact_name: partner.contact_name ?? "", contact_email: partner.contact_email ?? "", contact_phone: partner.contact_phone ?? "", doc_folder_url: partner.doc_folder_url ?? "", note: partner.note ?? "" });
+  const [err, setErr] = useState<string | null>(null);
+  const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement>) => setF({ ...f, [k]: e.target.value });
+  const submit = () => { const r = updatePartner(partner.id, f); if (!r.ok) setErr(r.error); else onDone(); };
+  return (
+    <div className="flex flex-col gap-3" data-testid="dp-partner-form">
+      <Field label="ชื่อ Partner"><Input value={f.name} onChange={set("name")} aria-label="ชื่อ Partner" /></Field>
+      <Field label="ผู้ติดต่อ (ไม่บังคับ)"><Input value={f.contact_name} onChange={set("contact_name")} aria-label="ผู้ติดต่อ" /></Field>
+      <div className="grid grid-cols-2 gap-2">
+        <Field label="อีเมล (ไม่บังคับ)"><Input value={f.contact_email} onChange={set("contact_email")} aria-label="อีเมลผู้ติดต่อ" /></Field>
+        <Field label="โทร (ไม่บังคับ)"><Input value={f.contact_phone} onChange={set("contact_phone")} aria-label="โทร" /></Field>
+      </div>
+      <Field label="ที่เก็บเอกสาร (ลิงก์โฟลเดอร์)" hint="ต้องขึ้นต้นด้วย https:// · ไฟล์ที่อัปโหลดจะถูกส่งเข้าที่นี่เมื่อเชื่อม Google Drive แล้ว"><Input value={f.doc_folder_url} onChange={set("doc_folder_url")} placeholder="https://drive.google.com/drive/folders/…" aria-label="ที่เก็บเอกสาร" /></Field>
+      <Field label="หมายเหตุ"><Input value={f.note} onChange={set("note")} aria-label="หมายเหตุ Partner" /></Field>
+      <p className="text-xs text-muted-foreground">สกุลเงินและรอบเรียกเก็บแก้ที่ราคา (Rate Card)</p>
+      {err && <p className="text-sm text-destructive" role="alert">{err}</p>}
+      <Button type="button" onClick={submit} data-testid="dp-partner-save">บันทึกข้อมูล Partner</Button>
+    </div>
+  );
+}
+
 export function PartnerFormDrawer({ mode, onClose }: { mode: PartnerFormMode; onClose: () => void }) {
   const [key, setKey] = useState(0);
   useEffect(() => setKey((k) => k + 1), [mode]);
   return (
     <Sheet open={mode != null} onOpenChange={(o) => !o && onClose()}>
       <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
-        <SheetHeader><SheetTitle>{mode?.kind === "rate" ? (mode.card ? "แก้ไข Rate Card" : "เพิ่ม Rate Card") : mode?.deal ? "แก้ไขข้อตกลง" : "บันทึกข้อตกลง"}</SheetTitle></SheetHeader>
+        <SheetHeader><SheetTitle>{mode?.kind === "partner" ? "แก้ไขข้อมูล Partner" : mode?.kind === "rate" ? (mode.card ? "แก้ไข Rate Card" : "เพิ่ม Rate Card") : mode?.deal ? "แก้ไขข้อตกลง" : "บันทึกข้อตกลง"}</SheetTitle></SheetHeader>
         <div className="mt-4" key={key}>
-          {mode?.kind === "deal" && <DealForm deal={mode.deal} onDone={onClose} />}
-          {mode?.kind === "rate" && <RateForm card={mode.card} onDone={onClose} />}
+          {mode?.kind === "deal" && <DealForm deal={mode.deal} partnerId={mode.partnerId} onDone={onClose} />}
+          {mode?.kind === "rate" && <RateForm card={mode.card} partnerId={mode.partnerId} onDone={onClose} />}
+          {mode?.kind === "partner" && <PartnerInfoForm partner={mode.partner} onDone={onClose} />}
         </div>
       </SheetContent>
     </Sheet>
