@@ -3,6 +3,7 @@
  * Numbers come from the v1.4 engine via renewal-offer-source (fresh, daily) or the request's reco_snapshot / new_terms /
  * offer_expected_avg / offer_match once a request exists — never a local formula. */
 import { InfoButton } from "./dash-card";
+import { SignalMark } from "./signal-mark";
 import { viewOfSnapshot } from "./renewal-offer-section";
 import { RO, R1_TIER_TH, RN5 } from "@/lib/ps-glossary";
 import type { OfferContext } from "@/lib/renewal-offer-source";
@@ -87,7 +88,6 @@ export function v14BoardItems(requests: RenewalRequest[]): RenewalItem[] {
 const typeChipCls = (t: OfferType) => cn("rn5-type", t === "RAISE" ? "is-up" : t === "LOWER" ? "is-down" : "is-keep");
 const tierDot = { R: "is-red", A: "is-amber", G: "is-green" } as const;
 const chipCls = (dir: string, ae: boolean) => cn("r1-chip", ae ? "is-ae" : dir === "bad" ? "is-bad" : dir === "good" ? "is-good" : "is-opp", ae && "rn5-ae");
-const chipMark = (dir: string) => (dir === "bad" ? "▼" : dir === "good" ? "▲" : "★");
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return <><dt>{label}</dt><dd>{children}</dd></>;
@@ -116,7 +116,7 @@ export function OfferBlock({ info, open, onToggle }: { info: OfferInfo; open: bo
             ) : <span className="rn5-grey">{B.notFound}</span>}
           </Row>
           <Row label={B.labels}>
-            {ctx && ctx.chips.length ? <span className="r1-chips">{ctx.chips.map((c, k) => <span key={`${c.key}-${k}`} className={chipCls(c.dir, c.ae)} data-ae={c.ae || undefined}>{c.ae ? "AE ✎ " : `${chipMark(c.dir)} `}{c.label}</span>)}</span> : <span className="rn5-grey">{B.notFound}</span>}
+            {ctx && ctx.chips.length ? <span className="r1-chips">{ctx.chips.map((c, k) => <span key={`${c.key}-${k}`} className={chipCls(c.dir, c.ae)} data-ae={c.ae || undefined}>{c.ae ? "AE ✎ " : <SignalMark dir={c.dir} />}{c.label}</span>)}</span> : <span className="rn5-grey">{B.notFound}</span>}
           </Row>
           <Row label={B.tickets}>{ctx && ctx.tickets.length ? <b className="tabular-nums">{ctx.tickets.length}</b> : "–"}</Row>
           <Row label={B.pkg}>{model ? RO.model[model] : "—"}</Row>

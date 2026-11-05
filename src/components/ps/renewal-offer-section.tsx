@@ -3,6 +3,7 @@
  * then the request's reco_snapshot (taken when the AE pressed ต่อสัญญา). Labels from ps-glossary RO. */
 import { useState, useEffect } from "react";
 import { InfoButton } from "@/components/ps/dash-card";
+import { SignalMark } from "@/components/ps/signal-mark";
 import { SystemCostTile } from "@/components/ps/ae-system-cost";
 import { RO, R1_TIER_TH, R1_STATUS_TH } from "@/lib/ps-glossary";
 import type { RenewalCard } from "@/lib/ps-renewal";
@@ -148,8 +149,7 @@ function AltTable({ alts, before, base }: { alts: Alternative[]; before: number 
 const OPEN_KEY = "meridia.renewal.offerSection.open";
 const tierDot = { R: "bg-destructive", A: "bg-warning", G: "bg-success" } as const;
 const chipCls = (dir: string, ae: boolean) => cn("inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium",
-  dir === "bad" ? "bg-destructive/10 text-destructive" : dir === "good" ? "bg-success/12 text-success" : "border border-primary text-primary", ae && "border border-dashed bg-transparent");
-const chipMark = (dir: string) => (dir === "bad" ? "▼" : dir === "good" ? "▲" : "★");
+  dir === "bad" ? "bg-destructive/10 text-destructive" : dir === "good" ? "bg-success/12 text-success" : "bg-success/12 text-success", ae && "border border-dashed bg-transparent");
 
 export function RenewalOfferSection({ card }: { card: RenewalCard }) {
   const [open, setOpen] = useState(true);
@@ -191,7 +191,7 @@ export function RenewalOfferSection({ card }: { card: RenewalCard }) {
             <div className="rounded-lg border p-2.5 text-sm" data-testid="ro-labels">
               <p className="text-xs text-muted-foreground">{RO.section.labels}</p>
               {ctx && ctx.chips.length ? (
-                <div className="mt-1 flex flex-wrap gap-1">{ctx.chips.map((c, k) => <span key={`${c.key}-${k}`} className={chipCls(c.dir, c.ae)}>{c.ae ? "✎ " : `${chipMark(c.dir)} `}{c.label}</span>)}</div>
+                <div className="mt-1 flex flex-wrap gap-1">{ctx.chips.map((c, k) => <span key={`${c.key}-${k}`} className={chipCls(c.dir, c.ae)}>{c.ae ? "✎ " : <SignalMark dir={c.dir} />}{c.label}</span>)}</div>
               ) : <p className="mt-1 text-muted-foreground">{RO.notFound}</p>}
               {ctx && (ctx.chips.length > 0 || ctx.health) && <p className="mt-1 text-xs">{tone}</p>}
             </div>

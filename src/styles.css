@@ -1297,7 +1297,8 @@ textarea.r1-input{height:auto;padding:6px 8px;resize:vertical;}
 .r1-chip{display:inline-flex;align-items:center;gap:3px;font-size:11.5px;line-height:1.35;padding:2px 7px;border-radius:6px;border:1px solid transparent;cursor:default;user-select:none;}
 .r1-chip.is-bad{background:color-mix(in srgb,var(--grade-action) 12%,var(--card));color:var(--action-text);}
 .r1-chip.is-good{background:color-mix(in srgb,var(--grade-good) 12%,var(--card));color:var(--good-text);}
-.r1-chip.is-opp{background:var(--svc-orm-tint);color:var(--svc-orm);border-color:var(--svc-orm-light);}
+.r1-chip.is-opp{background:color-mix(in srgb,var(--grade-good) 12%,var(--card));color:var(--good-text);}
+.r1-chip-tag{flex-shrink:0;font-size:9.5px;font-weight:700;line-height:1;padding:2px 4px;margin-right:4px;border-radius:4px;white-space:nowrap;background:color-mix(in srgb,var(--grade-good) 30%,var(--card));color:var(--good-text);}
 .r1-chip.is-amber{background:color-mix(in srgb,var(--watch-line) 18%,var(--card));color:var(--watch-text);}
 .r1-chip.is-ae{border-style:dashed;border-color:currentColor;}
 .r1-chip.is-disabled{opacity:.55;}
