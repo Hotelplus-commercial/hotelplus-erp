@@ -1754,3 +1754,36 @@ textarea.r1-input{height:auto;padding:6px 8px;resize:vertical;}
 
 /* v1.4.1 Q58 header sub-lines */
 .r2-lapsed{display:block;color:var(--destructive);font-weight:600;text-decoration:none;cursor:pointer;}.r2-lapsed:hover{text-decoration:underline;}.r2-unmatched{color:var(--text-secondary);}
+
+/* Tab R5 (O-18) — Renewal Offer on card ③ */
+.rn5-block{margin:0 10px 8px;border-top:1px dashed var(--border-subtle);padding-top:6px;}
+.rn5-toggle{font-size:12px;font-weight:600;color:var(--accent-strong);}
+.rn5-grid{display:grid;grid-template-columns:auto 1fr;gap:4px 8px;margin-top:6px;font-size:11.5px;}
+.rn5-grid dt{color:var(--text-caption);white-space:nowrap;}
+.rn5-grid dd{min-width:0;display:flex;flex-wrap:wrap;gap:4px;align-items:center;}
+.rn5-result{margin:0 10px 8px;padding-top:6px;border-top:1px dashed var(--border-subtle);}
+.rn2-ct-lost .rn5-result{margin:0;}
+.rn5-grey{color:var(--text-caption);}
+.rn5-health{display:inline-flex;align-items:center;gap:4px;}
+.rn5-health em{font-style:normal;font-weight:600;}
+.rn5-health em.is-down,.rn5-delta.is-down{color:var(--action-text);}
+.rn5-health em.is-up,.rn5-delta.is-up{color:var(--good-text);}
+.rn5-delta{color:var(--text-secondary);font-weight:600;}
+.rn5-dot{display:inline-block;width:8px;height:8px;border-radius:999px;}
+.rn5-dot.is-red{background:var(--grade-action);}.rn5-dot.is-amber{background:var(--watch-line);}.rn5-dot.is-green{background:var(--grade-good);}
+.rn5-type{display:inline-block;font-size:11px;font-weight:600;padding:1px 6px;border-radius:999px;}
+.rn5-type.is-up{background:color-mix(in srgb,var(--grade-good) 14%,var(--card));color:var(--good-text);}
+.rn5-type.is-down{background:color-mix(in srgb,var(--grade-action) 12%,var(--card));color:var(--action-text);}
+.rn5-type.is-keep{background:var(--accent-soft);color:var(--accent-strong);}
+.rn5-tag{font-size:10.5px;font-weight:600;padding:1px 6px;border-radius:999px;border:1px solid var(--border-subtle);color:var(--text-secondary);}
+.rn5-match{font-size:10.5px;font-weight:600;padding:1px 6px;border-radius:999px;}
+.rn5-match.is-good{background:color-mix(in srgb,var(--grade-good) 16%,var(--card));color:var(--good-text);}
+.rn5-match.is-amber{background:color-mix(in srgb,var(--watch-line) 22%,var(--card));color:var(--watch-text);}
+.rn5-match.is-bad{background:color-mix(in srgb,var(--grade-action) 14%,var(--card));color:var(--action-text);}
+.r1-chip.rn5-ae{border-style:dashed;border-color:currentColor;}
+.r1-chip.rn5-g1{background:color-mix(in srgb,var(--watch-line) 16%,var(--card));color:var(--watch-text);border:1px solid var(--watch-line);}
+.rn5-chips{display:inline-flex;flex-wrap:wrap;align-items:center;gap:4px;}
+.rn5-chips-label{display:inline-flex;align-items:center;font-size:12px;color:var(--text-secondary);}
+.rn5-chip{font-size:11.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--border-subtle);color:var(--text-secondary);background:var(--bg-card);}
+.rn5-chip.is-on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-strong);font-weight:600;}
+.rn5-all{margin-left:auto;font-size:12px;font-weight:600;color:var(--accent-strong);}
