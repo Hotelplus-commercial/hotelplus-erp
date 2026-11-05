@@ -166,13 +166,16 @@ describe('§5 / §9 / §10 help + guards', () => {
   });
 });
 
-describe('★ retired: opportunity labels carry the text tag "ออกาสขาย"', () => {
+describe('★ retired: opportunity labels carry the text tag "โอกาสขาย"', () => {
+  STORE.setRenewalDemo(true);
+  const cm = () => UI.v14BoardItems([STORE.latestRequestFor('RN-V14-CM')!, STORE.latestRequestFor('RN-V14-BS')!].filter(Boolean));
+  const infoOf = (cid: string) => { const i = cm().concat(UI.v14BoardItems([])).find((x) => x.contract_id === cid)!; return UI.offerInfoFor(i, i.card_id ? STORE.latestRequestFor(i.card_id) : null, true); };
   test('R5 card ③ offer block: an opp chip draws the tag, never the star', () => {
-    const base = info('CT-HTL0411');
+    const base = infoOf('CT-HTL0411');
     expect(base.ctx).toBeTruthy();
-    const html = renderToStaticMarkup(h(UI.OfferBlock, { info: { ...base, ctx: { ...base.ctx!, chips: [{ key: 'UPSELL', label: 'ออกาสขายบริการเพิ่ม', dir: 'opp' }] } }, open: true, onToggle: () => {} }));
+    const html = renderToStaticMarkup(h(UI.OfferBlock, { info: { ...base, ctx: { ...base.ctx!, chips: [{ key: 'UPSELL', label: 'โอกาสขายบริการเพิ่ม', dir: 'opp' }] } }, open: true, onToggle: () => {} }));
     expect(html).toContain('r1-chip-tag');
-    expect(text(html)).toContain('ออกาสขาย');
+    expect(text(html)).toContain('โอกาสขาย');
     expect(html).not.toContain('★');
   });
   test('shared marker: opp = text tag, bad/good keep ▼ / ▲ (one rule for every chip surface)', async () => {
@@ -180,7 +183,7 @@ describe('★ retired: opportunity labels carry the text tag "ออกาสข
     const { R1_HEALTH } = await import('../src/lib/ps-glossary');
     const tag = renderToStaticMarkup(h(SignalMark, { dir: 'opp' }));
     expect(tag).toContain('r1-chip-tag');
-    expect(text(tag)).toBe(R1_HEALTH.oppTag);
+    expect(text(tag).trim()).toBe(R1_HEALTH.oppTag);
     expect(renderToStaticMarkup(h(SignalMark, { dir: 'bad' }))).toContain('▼');
     expect(renderToStaticMarkup(h(SignalMark, { dir: 'good' }))).toContain('▲');
     expect(tag).not.toContain('★');
