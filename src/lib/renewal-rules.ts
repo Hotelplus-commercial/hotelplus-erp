@@ -1,11 +1,18 @@
 /* Contract Renewal v1.0 — pure rules (recommendation, approval matrix, gates, state machine).
  * Reads a v_ps_repricing-shaped row; never sets a price outside the Repricing band, never recommends commission. */
 import type { PsReportRow } from './ps-dashboard-types';
+import type { Alternative, BillingModel, Factor, OfferValue } from './renewalOffer';
 
-export type RecoType = 'KEEP' | 'RAISE' | 'HOLD' | 'NONE';
+/** v1.4: the shared engine (renewalOffer.ts) produces RAISE · KEEP · LOWER · NONE; HOLD stays only for requests stored before v1.4. */
+export type RecoType = 'KEEP' | 'RAISE' | 'HOLD' | 'NONE' | 'LOWER';
 export type RecoMode = 'SOFT_FORCE' | 'ADVISORY';
-export type Terms = { fee_amount: number; commission_pct: number; term_months: number; package: string; start_date: string; end_date: string };
-export type RecoSnapshot = { type: RecoType; band_min_pct: number | null; band_max_pct: number | null; reasons: string[]; inputs: Record<string, unknown>; computed_at: string };
+/** v1.4 §7: billing_model · fixed_fee · guarantee_fee are additive (nullable); fee_amount stays filled as before (fixed monthly fee). */
+export type Terms = { fee_amount: number; commission_pct: number; term_months: number; package: string; start_date: string; end_date: string;
+  billing_model?: BillingModel | null; fixed_fee?: number | null; guarantee_fee?: number | null };
+/** v1.4 §7: the engine keys are additive; snapshots stored before v1.4 lack them. */
+export type RecoSnapshot = { type: RecoType; band_min_pct: number | null; band_max_pct: number | null; reasons: string[]; inputs: Record<string, unknown>; computed_at: string;
+  model?: BillingModel | null; values?: OfferValue[]; factors?: Factor[]; overdue?: { own: boolean; days: number | null } | null;
+  avg_before?: number | null; expected_avg?: number | null; alternatives?: Alternative[] };
 export type RequestStatus = 'DRAFT' | 'PENDING_APPROVAL' | 'APPROVED' | 'RETURNED' | 'READY_TO_SEND' | 'LINK_SENT' | 'SIGNED' | 'DECLINED' | 'CANCELLED';
 export type ApproverRole = 'PM' | 'HOC' | 'MD';
 export const REASON_CODES = ['ลูกค้าต่อรอง', 'แข่งขันกับคู่แข่ง', 'ผลงานยังไม่ถึงเป้า', 'ลูกค้าลดขอบเขตงาน', 'ลูกค้าเพิ่มขอบเขตงาน', 'อื่นๆ'] as const;
@@ -19,11 +26,18 @@ export type RenewalRequest = {
   status: RequestStatus; submitted_at: string | null; approved_by: string | null; approver_role: ApproverRole | null; approved_at: string | null; return_comment: string | null;
   link_sent_at: string | null; signed_at: string | null; new_contract_id: string | null; decline_reason?: string | null;
   created_at: string; updated_at: string;
+  /** v1.4 §7 (nullable, new): expected monthly average of the AE offer · match vs the recommendation · billing model changed. */
+  offer_expected_avg?: number | null; offer_match?: 'MATCH' | 'ABOVE' | 'BELOW' | null; model_changed?: boolean | null;
 };
 /** fee_amount / commission_pct are null when the contract does not hold that term (v1.3 §4: empty, never 0). */
 export type PriceHistoryRow = { contract_id: string; cycle_no: number; fee_amount: number | null; commission_pct: number | null; term_months: number; package: string; effective_from: string; effective_to: string; source: 'INITIAL' | 'RENEWAL'; renewal_request_id: string | null };
-export type RenewalConfig = { renewal_reco_mode: RecoMode; renewal_approval_overdue_days: number; renewal_min_raise_thb: number };
-export const DEFAULT_RENEWAL_CONFIG: RenewalConfig = { renewal_reco_mode: 'SOFT_FORCE', renewal_approval_overdue_days: 2, renewal_min_raise_thb: 500 };
+export type RenewalConfig = { renewal_reco_mode: RecoMode; renewal_approval_overdue_days: number; renewal_min_raise_thb: number;
+  /* v1.4 §8 — Renewal Offer keys (read at runtime by renewalOffer.ts) */
+  lower_fee_steps: number[]; lower_commission_steps: number[]; mc_commission_raise_points: number; cg_commission_raise_points: [number, number];
+  switch_fixed_share: number; switch_guarantee_share: number; switch_match_tolerance_baht: number; switch_match_tolerance_pct: number; fee_average_months: number };
+export const DEFAULT_RENEWAL_CONFIG: RenewalConfig = { renewal_reco_mode: 'SOFT_FORCE', renewal_approval_overdue_days: 2, renewal_min_raise_thb: 500,
+  lower_fee_steps: [3, 8, 15], lower_commission_steps: [1, 2, 3], mc_commission_raise_points: 0.5, cg_commission_raise_points: [2, 5],
+  switch_fixed_share: 0.3, switch_guarantee_share: 0.8, switch_match_tolerance_baht: 300, switch_match_tolerance_pct: 2, fee_average_months: 12 };
 
 export const OPEN_REQUEST: RequestStatus[] = ['DRAFT', 'PENDING_APPROVAL', 'APPROVED', 'RETURNED', 'READY_TO_SEND', 'LINK_SENT'];
 
@@ -77,6 +91,10 @@ export type Evaluation = { changed_fields: (keyof Terms)[]; approval_required: b
 /** The system default fee always counts as following the recommendation (raise within band). */
 export function evaluate(reco: RecoSnapshot, old: Terms, next: Terms, mode: RecoMode, minRaise: number = DEFAULT_RENEWAL_CONFIG.renewal_min_raise_thb): Evaluation {
   const changed = changedFields(old, next);
+  // v1.4 §6.3 (added row): billing model changed → approval + reason, whatever the recommendation.
+  if (old.billing_model && next.billing_model && old.billing_model !== next.billing_model) return { changed_fields: changed, approval_required: true, reason_required: true, deviates_from_reco: true };
+  // v1.4: a changed guarantee fee is an "other field change" (existing row).
+  if (old.guarantee_fee != null && next.guarantee_fee != null && old.guarantee_fee !== next.guarantee_fee) return { changed_fields: changed, approval_required: true, reason_required: true, deviates_from_reco: true };
   const pct = old.fee_amount > 0 ? ((next.fee_amount - old.fee_amount) / old.fee_amount) * 100 : 0;
   const otherChange = changed.some((k) => k !== 'fee_amount');
   const decrease = next.fee_amount < old.fee_amount;
@@ -87,7 +105,7 @@ export function evaluate(reco: RecoSnapshot, old: Terms, next: Terms, mode: Reco
     if (inBand) return { changed_fields: changed, approval_required: true, reason_required: false, deviates_from_reco: false };
     return { changed_fields: changed, approval_required: mode === 'SOFT_FORCE', reason_required: true, deviates_from_reco: true };
   }
-  // KEEP / HOLD / NONE: old terms → no approval; any fee increase deviates from the recommendation.
+  // KEEP / HOLD / NONE / LOWER (v1.4: the old HOLD row now serves NONE): old terms → no approval; any fee increase deviates from the recommendation.
   if (!changed.length) return { changed_fields: changed, approval_required: false, reason_required: false, deviates_from_reco: false };
   return { changed_fields: changed, approval_required: true, reason_required: true, deviates_from_reco: true };
 }
