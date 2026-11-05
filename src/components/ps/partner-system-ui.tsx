@@ -1,6 +1,9 @@
 /* PM Workspace Partner v1.0 §1 — "ระบบที่ใช้ (ORM)" + Allotment (DP-O1) for the AE Assign modal and the Hotel Profile ORM block.
  * Reads/writes only through debt-partner-store (setPropertySystem); resolution from debt-partner-calc. */
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Link } from "@tanstack/react-router";
+import { PARTNER_DEMO_CONTRACTS, PARTNER_DEMO_EXTRA_HOTELS } from "@/lib/debt-partner-demo";
+import { setPartnerDemo } from "@/lib/debt-partner-store";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -106,6 +109,32 @@ export function PropertySystemBlock({ propertyId, isPm }: { propertyId: string; 
           {!hist.length && <li className="text-muted-foreground">ยังไม่มีประวัติ</li>}
         </ul>
       </div>
+    </section>
+  );
+}
+
+/* v1.1 PW21 — DEMO hotels of the Partner demo (not in the WS-2 hotel list; never written to real storage). */
+export function partnerDemoHotels(): { property_id: string; hotel: string }[] {
+  const out = new Map<string, string>();
+  for (const h of PARTNER_DEMO_EXTRA_HOTELS) out.set(h.property_id, h.hotel);
+  for (const c of PARTNER_DEMO_CONTRACTS) if (c.property_id && !out.has(c.property_id)) out.set(c.property_id, c.hotel);
+  return [...out].map(([property_id, hotel]) => ({ property_id, hotel }));
+}
+export const partnerDemoHotel = (property_id: string): string | null => partnerDemoHotels().find((h) => h.property_id === property_id)?.hotel ?? null;
+
+/** Hotel list (DEMO only): demo Partner hotels open the Hotel Profile ORM block with DEMO data. */
+export function PartnerDemoHotelList() {
+  useEffect(() => { setPartnerDemo(true); }, []);
+  const [q, setQ] = useState("");
+  const all = partnerDemoHotels();
+  const rows = all.filter((h) => !q.trim() || h.hotel.toLowerCase().includes(q.trim().toLowerCase()));
+  return (
+    <section className="space-y-2 rounded-lg border p-4" data-testid="pc-demo-partner-hotels">
+      <h2 className="font-semibold">โรงแรมตัวอย่าง Partner (ข้อมูลสาธิต) · {all.length} โรงแรม</h2>
+      <Input aria-label="ค้นหาโรงแรมตัวอย่าง" className="h-9 max-w-sm" placeholder="🔍 เช่น Mae Ping" value={q} onChange={(e) => setQ(e.target.value)} />
+      <ul className="grid max-h-80 gap-1 overflow-y-auto text-sm sm:grid-cols-3">
+        {rows.map((h) => <li key={h.property_id}><Link to="/ps/property-content/$hotelId" params={{ hotelId: h.property_id }} search={{ demo: 1 }} hash="orm" className="text-primary hover:underline">📁 {h.hotel}</Link></li>)}
+      </ul>
     </section>
   );
 }

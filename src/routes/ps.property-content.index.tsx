@@ -76,6 +76,7 @@ function PropertyContentPage() {
         </ul>
         <p className="mt-2 text-[11px] text-muted-foreground">"ดูในฐานะ" ใช้จำลองผู้ใช้สำหรับตัวกรอง My Hotel เท่านั้น · บริการ: {Object.values(SERVICE_LABEL).join(", ")}</p>
       </Panel>
+      {demo && <PartnerDemoHotelList />}
     </div>
   );
 }
