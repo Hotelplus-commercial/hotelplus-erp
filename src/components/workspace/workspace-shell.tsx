@@ -158,7 +158,10 @@ export function WorkspaceShell({ config, demo, ticket, roleState, onGoBdm }: { c
           {config.service_sla ? <>
             {/* Service Ticket Receiver v1.0 §2: service tickets (L0 + PS cases); FYI / watcher items stay in the unchanged list below. */}
             <ServiceReceiverLane dept={config.ticket_target_dept as SvcDept} demo={demo} liveRole={role} initialTicket={ticket} />
-            <TicketsLane dept={config.ticket_target_dept} role={deptRole} initialTicket={ticket} exclude={(t) => inScopeL0(t) && t.target_dept === config.ticket_target_dept} />
+            {/* BD keeps its L0 table exactly as before (L0 / L1 / R3.x acceptance); other receiver workspaces list service tickets only once. */}
+            {config.ticket_target_dept === "BD"
+              ? <TicketsLane dept="BD" role={deptRole} initialTicket={ticket} />
+              : <TicketsLane dept={config.ticket_target_dept} role={deptRole} initialTicket={ticket} exclude={(t) => inScopeL0(t) && t.target_dept === config.ticket_target_dept} />}
           </> : <TicketsLane dept={config.ticket_target_dept} role={deptRole} initialTicket={ticket} />}
         </Lane>
       </div>
