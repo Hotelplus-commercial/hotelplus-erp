@@ -1,7 +1,7 @@
 import { Crown } from "lucide-react";
 import { modules } from "@/lib/erp-data";
 import { Link, useRouter, useRouterState } from "@tanstack/react-router";
-import { Fragment, useEffect } from "react";
+import { Fragment, useEffect, useState, type ReactNode } from "react";
 import { ArrowUpRight, ExternalLink, Flag, Hotel, LayoutDashboard, LifeBuoy, Server, Settings } from "lucide-react";
 
 import {
@@ -21,7 +21,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { ROLE_KEYS, ROLE_LABEL, hydrateMenuRole, setMenuRole, useMenuRole, type RoleKey } from "@/lib/menu-role";
-import { SIDEBAR_REGISTRY, SUITE_ITEMS, appOfPath, guardTarget, landingOf, matchRoute, visibleApps, visibleNodes, withDemo, type SidebarItem, type SidebarNode } from "@/lib/sidebar-registry";
+import { SUITE_ITEMS, appOfPath, guardTarget, landingOf, matchRoute, visibleApps, visibleNodes, withDemo, type SidebarItem, type SidebarNode } from "@/lib/sidebar-registry";
 import { psDemoOn } from "@/lib/demo-session";
 
 /* Suite Sidebar R1: every app's menu renders from SIDEBAR_REGISTRY. The menu role ("บทบาทเมนู (ทดสอบ)") only decides
@@ -37,7 +37,9 @@ export function AppSidebar() {
   const urlDemo = new URLSearchParams(searchStr).get("demo") === "1";
   const role = useMenuRole();
   useEffect(() => { hydrateMenuRole(); }, []);
-  const demo = urlDemo || (typeof window !== "undefined" && psDemoOn());
+  const [sharedDemo, setSharedDemo] = useState(false);
+  useEffect(() => { setSharedDemo(psDemoOn()); }, [pathname, searchStr]);
+  const demo = urlDemo || sharedDemo;
   // S10 + role switch: a hidden page replace-redirects to the app landing for the role, keeping ?demo=1 / shared DEMO.
   useEffect(() => {
     const t = guardTarget(pathname, role);
@@ -81,7 +83,7 @@ export function AppSidebar() {
       </SidebarMenuSubItem>
     );
   };
-  const renderNodes = (ns: (SidebarNode | SidebarItem)[], depth: number): React.ReactNode => ns.map((n, idx) => {
+  const renderNodes = (ns: (SidebarNode | SidebarItem)[], depth: number): ReactNode => ns.map((n, idx) => {
     if (n.kind === "group" || n.kind === "subheader") {
       return (
         <Fragment key={`${n.label}-${idx}`}>
