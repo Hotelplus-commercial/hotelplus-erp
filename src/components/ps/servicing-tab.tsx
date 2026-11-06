@@ -21,7 +21,7 @@ import { useServicing } from '@/lib/ps-servicing';
 import { readServicingDashboard } from '@/lib/servicing-dashboard.functions';
 import { assignmentComplete, missingCaretakers, servicingScope, servicingStats, type CaretakerSlot, type ServicingReport, type ServicingRow } from '@/lib/servicing-dashboard-types';
 import { demoServicingRows, demoServicingPhases, SERVICING_DEMO_NOW } from '@/lib/servicing-demo';
-import { calendarDays, cardStatus, MARCOM_REPORT_STAGES, ORM_REPORT_STAGES, reportStageLabel, servicingLanes, servicing_sla_config, shortThaiDate, slaStatusText, laneSla, stallEventKey, type ServicingLane } from '@/lib/servicing-time';
+import { calendarDays, cardStatus, MARCOM_REPORT_STAGES, ORM_REPORT_STAGES, reportStageLabel, servicingLanes, shortThaiDate, slaStatusText, laneSla, stallEventKey, type ServicingLane } from '@/lib/servicing-time';
 import { createServicingStall, stallRouting } from '@/lib/servicing-stall';
 import { OPEN_STATUSES, STATUS_TH, SYSTEM_CREATOR, useTickets, type L0Ticket } from '@/lib/tickets-l0';
 import { SetupQueueTable } from './setup-queue-table';

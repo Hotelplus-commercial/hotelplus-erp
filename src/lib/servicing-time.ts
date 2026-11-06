@@ -26,7 +26,8 @@ export type TimingCard = { card_id: string; service_variant: string | null; curr
 const day = 86_400_000;
 const dateOrdinal = (s: string) => { const d = new Date(s.length === 10 ? `${s}T00:00:00+07:00` : s); return Math.floor((d.getTime() + 7 * 3_600_000) / day); };
 export const calendarDays = (a: string, b: string) => Math.max(0, dateOrdinal(b) - dateOrdinal(a));
-export const phaseConfig = (p: Phase) => servicing_sla_config[p === 'P1' ? 'p1' : p === 'P2' ? 'p2' : 'p3'];
+/** DF1: phase-level thresholds (charts, ⓘ) now come from the latest SLA On-board version (ORM keys for P2 / P3; ORM and Marcom are equal by default). */
+export const phaseConfig = (p: Phase) => { const v = versionFor(currentSlaVersions(), '9999-12-31').values; const t = v[p === 'P1' ? 'p1' : p === 'P2' ? 'p2o_orm' : 'p3_orm']; return { ok_max: t.ok, sla: t.due, target: t.ok }; };
 export const laneTone = (p: Phase, d: number): LaneTone => d <= phaseConfig(p).ok_max ? 'ok' : d <= phaseConfig(p).sla ? 'amber' : 'red';
 export function statusText(p: Phase, d: number) { const tone = laneTone(p, d), left = phaseConfig(p).sla - d; return tone === 'ok' ? 'เร็วกว่า SLA' : tone === 'red' ? `เกิน SLA แล้ว ${-left} วัน` : left === 0 ? 'ครบ SLA วันนี้' : `เหลือเวลาอีก ${left} วันของ SLA`; }
 export function latestEntry(c: TimingCard, stage: string) { return (c.stage_events ?? []).filter(e => e.stage_key === stage).map(e => e.entered_at).sort().at(-1) ?? null; }
