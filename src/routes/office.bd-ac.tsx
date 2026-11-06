@@ -1,10 +1,10 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
-import { OFFICE_BDAC_PATH } from "@/lib/office-bdac";
+import { movedHref } from "@/lib/suite-r2-moves";
 
-/* /office/bd-ac (route named in the move spec) → the real The Office APP prefix, params kept. */
+/* Suite Sidebar R2: old address → new page, query (incl. ?demo=1) kept. */
 export const Route = createFileRoute("/office/bd-ac")({
   beforeLoad: ({ location }) => {
-    throw redirect({ href: `${OFFICE_BDAC_PATH}${location.searchStr}`, replace: true });
+    throw redirect({ href: movedHref("/office/bd-ac", location.searchStr), replace: true });
   },
 });
