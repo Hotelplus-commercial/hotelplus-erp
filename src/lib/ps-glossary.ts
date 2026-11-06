@@ -797,7 +797,7 @@ const ORM_STAGE_TEXT: Record<string, OnbStageText> = {
   property_pending: { name: '(Property Pending)', who: 'AE · ลูกค้า', meaning: 'ข้อมูลยังขาด รอลูกค้าส่งเพิ่ม · ยังนับเวลาในช่วง AE', end: 'ลูกค้าส่งข้อมูลที่ขาดครบ' },
   final_check: { name: 'Final Check', who: 'AE', meaning: 'AE ตรวจข้อมูลทั้งหมดก่อนส่งต่อทีมเตรียมระบบ', end: 'AE กด Approved' },
   approved: { name: 'Approved', who: 'Specialist · ORM', meaning: 'ข้อมูลผ่านแล้ว เริ่มช่วงเตรียมระบบ · Specialist และ ORM ทำพร้อมกัน', end: 'ทั้งสองฝั่งเริ่มงานเตรียมระบบ' },
-  prepare_data: { name: 'Prepare Data', who: 'Specialist · ORM', meaning: 'Specialist ทำงานส่งมอบชุดแรก · ORM เตรียมข้อมูลระบบของโรงแรม', end: 'Specialist ส่งงานส่งมอบชุดแรกครบ · ORM สร้างนัดประชุม' },
+  prepare_data: { name: 'Prepare Data', who: 'Specialist · ORM', meaning: 'Specialist ทำ handover แถว 1 · ORM เตรียมข้อมูลระบบของโรงแรม', end: 'Specialist ส่ง handover แถว 1 ครบ · ORM สร้างนัดประชุม' },
   rate_structure: { name: 'Rate Structure', q: '(วันประชุม)', who: 'ORM · ลูกค้า', meaning: 'ORM สร้างนัดประชุม Rate Structure กับลูกค้าแล้ว · ช่วงรอถึงวันประชุมไม่นับกำหนด แต่นับในเป้ารวม', end: 'ถึงวันประชุม' },
   final_setup: { name: 'Final Setup', q: '(รอ handover ก่อน Training)', who: 'ORM', meaning: 'หลังวันประชุม ORM ตั้งค่าระบบชุดสุดท้าย · รอ handover ครบก่อนสอนใช้ระบบ', end: 'ORM ตรวจรับ handover' },
   completed: { name: 'Completed', q: '(Handover)', who: 'ORM', meaning: 'ORM ตรวจรับงานส่งมอบจาก Specialist ครบแล้ว', end: 'นัดสอนใช้ระบบ' },

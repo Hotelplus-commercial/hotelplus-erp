@@ -360,7 +360,7 @@ function OwnersCard({ feed }: { feed: Feed }) {
   const latest = versionFor(versions, today).values;
   const tables = role === 'ps'
     ? [{ id: 'p1', title: 'ช่วง AE · สร้างการ์ด → Approved', lane: 'p1' as LaneKey, svc: null, who: (c: OnbCard) => c.owners.ae, thr: latest.p1 },
-       { id: 'p2s', title: 'ช่วงเตรียมระบบ · Specialist (ORM) · Approved → ส่งงานส่งมอบครบ', lane: 'p2s' as LaneKey, svc: 'ORM' as SetupSvc, who: (c: OnbCard) => c.owners.specialist, thr: latest.p2s }]
+       { id: 'p2s', title: 'ช่วงเตรียมระบบ · Specialist (ORM) · Approved → ส่ง handover ครบ', lane: 'p2s' as LaneKey, svc: 'ORM' as SetupSvc, who: (c: OnbCard) => c.owners.specialist, thr: latest.p2s }]
     : [{ id: role, title: `${role === 'orm' ? 'ORM' : 'Marcom'} · ${phase === 'p2o' ? 'ช่วงเตรียมระบบ' : 'ช่วงก่อน Go Live'}`, lane: phase as LaneKey, svc: (role === 'orm' ? 'ORM' : 'Marcom') as SetupSvc,
         who: (c: OnbCard) => (role === 'orm' ? teamText(c.owners) : c.owners.marcom), thr: latest[role === 'orm' ? (phase === 'p2o' ? 'p2o_orm' : 'p3_orm') : phase === 'p2o' ? 'p2o_mc' : 'p3_mc'] }];
   const data = tables.map((t) => ({ ...t, ...vOnbOwners(cards, t.lane, t.svc, t.who, versions, went) }));
