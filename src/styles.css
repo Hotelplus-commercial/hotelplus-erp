@@ -2125,6 +2125,8 @@ textarea.r1-input{height:auto;padding:6px 8px;resize:vertical;}
 .ms-funnel .ms-f-bar{min-width:168px;} .ms-f-sumitem{white-space:nowrap;}
 
 /* Patch A SP11 — Portfolio Waterfall like r15 'fall': in = dark tone (left half), out = light tone (right half), both themes. */
+:root{--wf-orm-in:var(--svc-orm);--wf-orm-out:var(--svc-orm-light);}
+.dark{--wf-orm-in:var(--svc-orm-light);--wf-orm-out:var(--svc-orm);}
 .r1-io-panel{--wf-in:var(--svc-orm);--wf-out:var(--svc-orm-light);}
 .r1-io-panel.svc-marcom{--wf-in:var(--svc-marcom);--wf-out:var(--svc-marcom-light);}
 .dark .r1-io-panel{--wf-in:var(--svc-orm-light);--wf-out:var(--svc-orm);}

@@ -39,7 +39,7 @@ export function ContractInOutCard({ data }: { data: TabR1Data | undefined }) {
               <InOutPanel key={svc} svc={svc} active={data.activeToday[svc]} s={series[svc]} today={data.today} view={view} />
             ))}
           </div>
-          <div className="r1-io-legend" data-testid="r1-io-legend"><span><i style={{ background: "var(--svc-orm)" }} />{R1_INOUT.legend[0]}</span><span><i style={{ background: "var(--svc-orm-light)" }} />{R1_INOUT.legend[1]}</span><span><i style={{ background: "var(--neutral-bar)" }} />{R1_INOUT.legend[2]}</span></div>
+          <div className="r1-io-legend" data-testid="r1-io-legend"><span><i style={{ background: view === "waterfall" ? "var(--wf-orm-in)" : "var(--svc-orm)" }} />{R1_INOUT.legend[0]}</span><span><i style={{ background: view === "waterfall" ? "var(--wf-orm-out)" : "var(--svc-orm-light)" }} />{R1_INOUT.legend[1]}</span><span><i style={{ background: "var(--neutral-bar)" }} />{R1_INOUT.legend[2]}</span></div>
           <p className="r1-io-foot">{worst ? R1_INOUT.worst(mFull(worst.month), worst.n, worst.a, worst.b) : R1_INOUT.noWorst}</p>
         </>
       )}
