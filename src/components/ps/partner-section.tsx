@@ -102,7 +102,7 @@ function RateCardCard({ d, contracts, today, isPm, onForm, manage }: { d: Partne
               const a = r.active[0];
               return (
                 <tr key={r.card.id} data-testid={`dp-rate-${r.partner}`}>
-                  <td>{r.partner}<AttachmentCountPopover partnerId={r.card.partner_id} /></td><td>{r.card.system_name}</td><td className="tabular-nums">{r.contracts}</td>
+                  <td>{r.partner}</td><td>{r.card.system_name}<AttachmentCountPopover partnerId={r.card.partner_id} variant="docs" /></td><td className="tabular-nums">{r.contracts}</td>
                   <td>{r.active.length ? r.active.map((x) => <span key={x.id} className={cn(pill, "bg-dash-good/15 text-dash-good")}>{discountText(x)}</span>) : r.negotiating ? <span className={cn(pill, "bg-dash-watch/15 text-dash-watch")}>กำลังต่อรอง</span> : "–"}</td>
                   <td>{a ? `${dDMY(a.start_date)} – ${a.end_date ? dDMY(a.end_date) : "until further notice"}` : "–"}</td>
                   <td className="tabular-nums" data-testid="dp-base">{money(r.base, r.card.currency)}{est(r.base)}</td>
