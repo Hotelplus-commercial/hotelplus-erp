@@ -19,7 +19,7 @@ import {
   KNOWN_STAGES, NO_HIGHLIGHT, OPEN_STAGES, STAGE_ORDER, TH_MON_FULL, TILE_KEYS, activityDays, addDaysIso, addMonthsIso, boardSort, byOwner, canEarlyCreate, canEditReason,
   canRecordReason, churnTone, compareOf, countdown, daysLeftToEdit, groupBars, highlightActive, highlightHit, inPeriod, isEarlyRequest, isEarlySigned, isOpen, isPastDue,
   ownerClick, pendingDays, periodDate, periodLabel, periodOf, rangeText, reasonLabel, shiftAnchor, slaTone, stageDays, stageOf, stageTone, stagesWithHits, stepBounds,
-  thShort, topLabels, urgentLists, validPick, windowStats, RENEWAL_SLA, CHURN_PILL,
+  thShort, topLabels, urgentLists, validPick, windowStats, quarterRenewalStats, RENEWAL_SLA, CHURN_PILL,
   type Actor, type Highlight, type OwnerView, type PKind, type Range, type RenewalItem, type Stage, type TileKey, type WindowStats,
 } from "@/lib/renewal-r2";
 import { RN2, RN2_OUTCOME_TH, RN2_STAGE_TH, RN2_ZONE_TH, RENEWAL_OWNER_ONLY_HINT, RENEWAL_OWNER_ONLY_TOOLTIP, RENEWAL_TEST_BANNER, RENEWAL_TEST_SWITCH, aeNameTh } from "@/lib/ps-glossary";
