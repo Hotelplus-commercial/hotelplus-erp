@@ -139,7 +139,7 @@ export function RenewalPackageCard({ req, editable }: { req: RenewalRequest; edi
               {d.kept.map((l) => <tr key={`k-${l.sku}`} className="text-muted-foreground"><td className="py-1">{l.name}</td><td>คงเดิม</td><td className="text-right">{l.unit_price != null ? thb(l.unit_price) : "—"}</td></tr>)}
             </tbody>
           </table>
-          <p>ค่าบริการรายเดือน: {thb(oldFee)} → <b>{thb(newFee)}</b> ({diff >= 0 ? "+" : ""}{thb(diff)} · {pct >= 0 ? "+" : ""}{pct.toFixed(1)}%)
+          <p>ค่าบริการรายเดือน: {thb(oldFee)} → <b>{thb(newFee)}</b> ({diff >= 0 ? "+" : ""}{thb(diff)}{oldFee > 0 ? ` · ${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%` : ""})
             {svc === "Marcom" && monthlySum(newL) !== newFee && <span className="text-muted-foreground"> · รวมรายการ {thb(monthlySum(newL))}</span>}
             {req.offer_expected_avg != null && <> · ค่าเฉลี่ยที่คาดหวัง <b>{thb(req.offer_expected_avg)}</b>/เดือน</>}</p>
           {suggestions.length > 0 && (
