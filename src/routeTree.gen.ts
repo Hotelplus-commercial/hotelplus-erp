@@ -42,6 +42,7 @@ import { Route as BdTicketsRouteImport } from './routes/bd.tickets'
 import { Route as BdSplatRouteImport } from './routes/bd_.$'
 import { Route as BdAdrCalculatorRouteImport } from './routes/bd_.adr-calculator'
 import { Route as BdDemandCalendarRouteImport } from './routes/bd_.demand-calendar'
+import { Route as BdMeetingAnalyzerRouteImport } from './routes/bd_.meeting-analyzer'
 import { Route as BdPackageCalculatorRouteImport } from './routes/bd_.package-calculator'
 import { Route as BdQuotationRouteImport } from './routes/bd_.quotation'
 import { Route as FTokenRouteImport } from './routes/f.$token'
@@ -279,6 +280,11 @@ const BdAdrCalculatorRoute = BdAdrCalculatorRouteImport.update({
 const BdDemandCalendarRoute = BdDemandCalendarRouteImport.update({
   id: '/bd_/demand-calendar',
   path: '/bd/demand-calendar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BdMeetingAnalyzerRoute = BdMeetingAnalyzerRouteImport.update({
+  id: '/bd_/meeting-analyzer',
+  path: '/bd/meeting-analyzer',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BdPackageCalculatorRoute = BdPackageCalculatorRouteImport.update({
@@ -684,6 +690,7 @@ export interface FileRoutesByFullPath {
   '/bd/$': typeof BdSplatRoute
   '/bd/adr-calculator': typeof BdAdrCalculatorRoute
   '/bd/demand-calendar': typeof BdDemandCalendarRoute
+  '/bd/meeting-analyzer': typeof BdMeetingAnalyzerRoute
   '/bd/package-calculator': typeof BdPackageCalculatorRoute
   '/bd/quotation': typeof BdQuotationRoute
   '/f/$token': typeof FTokenRoute
@@ -784,6 +791,7 @@ export interface FileRoutesByTo {
   '/bd/$': typeof BdSplatRoute
   '/bd/adr-calculator': typeof BdAdrCalculatorRoute
   '/bd/demand-calendar': typeof BdDemandCalendarRoute
+  '/bd/meeting-analyzer': typeof BdMeetingAnalyzerRoute
   '/bd/package-calculator': typeof BdPackageCalculatorRoute
   '/bd/quotation': typeof BdQuotationRoute
   '/f/$token': typeof FTokenRoute
@@ -890,6 +898,7 @@ export interface FileRoutesById {
   '/bd_/$': typeof BdSplatRoute
   '/bd_/adr-calculator': typeof BdAdrCalculatorRoute
   '/bd_/demand-calendar': typeof BdDemandCalendarRoute
+  '/bd_/meeting-analyzer': typeof BdMeetingAnalyzerRoute
   '/bd_/package-calculator': typeof BdPackageCalculatorRoute
   '/bd_/quotation': typeof BdQuotationRoute
   '/f/$token': typeof FTokenRoute
@@ -1000,6 +1009,7 @@ export interface FileRouteTypes {
     | '/bd/$'
     | '/bd/adr-calculator'
     | '/bd/demand-calendar'
+    | '/bd/meeting-analyzer'
     | '/bd/package-calculator'
     | '/bd/quotation'
     | '/f/$token'
@@ -1100,6 +1110,7 @@ export interface FileRouteTypes {
     | '/bd/$'
     | '/bd/adr-calculator'
     | '/bd/demand-calendar'
+    | '/bd/meeting-analyzer'
     | '/bd/package-calculator'
     | '/bd/quotation'
     | '/f/$token'
@@ -1205,6 +1216,7 @@ export interface FileRouteTypes {
     | '/bd_/$'
     | '/bd_/adr-calculator'
     | '/bd_/demand-calendar'
+    | '/bd_/meeting-analyzer'
     | '/bd_/package-calculator'
     | '/bd_/quotation'
     | '/f/$token'
@@ -1300,6 +1312,7 @@ export interface RootRouteChildren {
   BdSplatRoute: typeof BdSplatRoute
   BdAdrCalculatorRoute: typeof BdAdrCalculatorRoute
   BdDemandCalendarRoute: typeof BdDemandCalendarRoute
+  BdMeetingAnalyzerRoute: typeof BdMeetingAnalyzerRoute
   BdPackageCalculatorRoute: typeof BdPackageCalculatorRoute
   BdQuotationRoute: typeof BdQuotationRoute
   FTokenRoute: typeof FTokenRoute
@@ -1549,6 +1562,13 @@ declare module '@tanstack/react-router' {
       path: '/bd/demand-calendar'
       fullPath: '/bd/demand-calendar'
       preLoaderRoute: typeof BdDemandCalendarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bd_/meeting-analyzer': {
+      id: '/bd_/meeting-analyzer'
+      path: '/bd/meeting-analyzer'
+      fullPath: '/bd/meeting-analyzer'
+      preLoaderRoute: typeof BdMeetingAnalyzerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/bd_/package-calculator': {
@@ -2347,6 +2367,7 @@ const rootRouteChildren: RootRouteChildren = {
   BdSplatRoute: BdSplatRoute,
   BdAdrCalculatorRoute: BdAdrCalculatorRoute,
   BdDemandCalendarRoute: BdDemandCalendarRoute,
+  BdMeetingAnalyzerRoute: BdMeetingAnalyzerRoute,
   BdPackageCalculatorRoute: BdPackageCalculatorRoute,
   BdQuotationRoute: BdQuotationRoute,
   FTokenRoute: FTokenRoute,
