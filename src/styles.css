@@ -2122,4 +2122,4 @@ textarea.r1-input{height:auto;padding:6px 8px;resize:vertical;}
 .ms-f-sumitem{margin-right:14px;} .ms-f-sumitem b{color:var(--text-primary);}
 .ms-f-sumitem b.ms-low-t{color:var(--action-text);}
 .ms-funnel .ms-f-summary{margin-top:10px;}
-.ms-funnel .ms-f-bar{min-width:140px;} .ms-f-sumitem{white-space:nowrap;}
+.ms-funnel .ms-f-bar{min-width:168px;} .ms-f-sumitem{white-space:nowrap;}
