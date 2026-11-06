@@ -142,7 +142,7 @@ describe('§3 Q58 (RN45–RN49)', () => {
     const hit = (r: { hotel_id?: string; service: string }) => lapsed.some((l) => l.hotel_id === r.hotel_id && l.service === r.service);
     expect(D1.tabR1HeaderActive().some(hit)).toBe(false);
     expect(D1.tabR1HeaderChurn().some((c) => c.out > 0 && hit(c))).toBe(false);
-    expect(G.Q58.headerLine(2)).toBe('ขาดอายุ รอผล 2');
+    expect(G.Q58.headerLine(2)).toBe('ขาดอายุ รอผล 2 สัญญา'); // UAT polish UP1
     expect(G.Q58.unmatched(3)).toBe('ตรวจวันสิ้นสุดไม่ได้ 3 สัญญา (ไม่มีในคลังสัญญาหลัก)');
   });
   test('9 · card ①: grey lapsed in ต.ค.; start + in − out − lapsed = end for all 12 months; current month = header', () => {

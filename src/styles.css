@@ -2106,14 +2106,14 @@ textarea.r1-input{height:auto;padding:6px 8px;resize:vertical;}
 .ms-funnel .ms-f-row{grid-template-columns:104px 1fr 150px;}
 .ms-funnel .ms-f-label{text-align:right;color:var(--text-secondary);}
 .ms-funnel .ms-f-track{min-height:48px;}
-.ms-funnel .lv0{--lv:color-mix(in srgb,var(--svc) 100%,black 25%);}
+.ms-funnel .lv0{--lv:color-mix(in srgb,var(--svc) 80%,var(--text-primary));}
 .ms-funnel .lv1{--lv:var(--svc);}
-.ms-funnel .lv2{--lv:color-mix(in srgb,var(--svc) 60%,white);}
+.ms-funnel .lv2{--lv:color-mix(in srgb,var(--svc) 65%,var(--card));}
 .ms-funnel .ms-f-bar{height:40px;border-radius:3px;opacity:1;display:flex;align-items:center;justify-content:center;
-  background:repeating-linear-gradient(45deg,color-mix(in srgb,var(--lv) 55%,white) 0 3px,var(--lv) 3px 7px);}
+  background:repeating-linear-gradient(45deg,color-mix(in srgb,var(--lv) 55%,var(--card)) 0 3px,var(--lv) 3px 7px);}
 .ms-funnel.is-mc .ms-f-bar{background:var(--lv);}
 .ms-funnel .ms-f-solid{background:var(--lv);}
-.ms-funnel .ms-f-num{color:#fff;}
+.ms-funnel .ms-f-num{color:var(--primary-foreground);}
 .ms-funnel .ms-f-num b{font-size:14px;} .ms-funnel .ms-f-num small{font-size:11px;font-weight:600;}
 .ms-funnel .ms-quota-frame{top:0;bottom:0;border-radius:6px;}
 .ms-funnel .ms-quota-frame span{top:-17px;}
