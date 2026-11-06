@@ -1,6 +1,7 @@
 /* PS Dashboard Shell v1.0 — Headline KPI strip + shared filter + AC tab (read-only).
  * AC data comes only from the existing v_ac_* views (cloud mirror, C5); nothing here mutates
  * AC data. Signed/Won are re-homed from BD-AC using the unchanged v_bdac_flow projection. */
+import { DEMO_DAY } from "@/lib/demo-session";
 import { DASHBOARD_TABS, GRADE_D_LABEL } from "@/lib/ps-glossary";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -298,7 +299,8 @@ export function DashboardShell({
               <div data-testid="active-dashboard-tab" className="min-w-0 space-y-4">
                 {demo && (
                   <p className="text-xs font-semibold text-warning-foreground">
-                    DEMO · 30 Sep 2026
+                    {/* UAT polish UP12: shared DEMO date (DEMO_DAY). */}
+                    DEMO · {demoDateTh()}
                   </p>
                 )}
                 {filter.compare && (
@@ -591,3 +593,10 @@ function AcTab() {
   return <AcTabV2 {...props} cardCompare={{ raw, today: (now || new Date().toISOString()).slice(0, 10) }} />;
 }
 
+
+/** UP12 — DEMO_DAY as `28 ต.ค. 2569`. */
+export function demoDateTh(day: string = DEMO_DAY): string {
+  const [y, m, d] = day.slice(0, 10).split("-").map(Number);
+  const mo = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."][m! - 1];
+  return `${d} ${mo} ${y! + 543}`;
+}

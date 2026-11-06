@@ -144,7 +144,7 @@ export const R1_INOUT = {
 /** v1.4.1 RN47 / RN49 / RN41 / RN51 (decision Q58) — header sub-lines, Tab R2 past-due banner, AC Billing notices. */
 export const Q58 = {
   lapsed: "ขาดอายุ รอผล",
-  headerLine: (n: number) => `ขาดอายุ รอผล ${n}`,
+  headerLine: (n: number) => `ขาดอายุ รอผล ${n} สัญญา`,
   headerTip: "เลยวันสิ้นสุดสัญญา · ยังไม่บันทึกผลต่อ / ไม่ต่อ · ไม่นับเป็นใช้งาน · ยังไม่นับ churn",
   unmatched: (n: number) => `ตรวจวันสิ้นสุดไม่ได้ ${n} สัญญา (ไม่มีในคลังสัญญาหลัก)`,
   pastDueBanner: (n: number) => `เลยกำหนด ${n} วัน · ขาดอายุ ไม่นับเป็นใช้งาน · AC หยุดวางบิล · ยังไม่นับ churn จนกว่าจะบันทึกผล`,
