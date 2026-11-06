@@ -6,8 +6,6 @@ import { domHits } from './forbidden-words';
 
 mock.module('../src/lib/cloud-sync', () => ({ stageCloudDoc: () => {} }));
 beforeAll(() => { if (!GlobalRegistrator.isRegistered) GlobalRegistrator.register({ url: 'http://localhost:8080/ps' }); (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true; });
-// test hygiene: release the page simulator for later files
-afterAll(async () => { if (GlobalRegistrator.isRegistered) await GlobalRegistrator.unregister(); });
 afterAll(async () => { /* keep one DOM for the whole run (see r41 stability note) */ });
 
 const OCT = ['2026-10'], SEP = ['2026-09'], TODAY = '2026-10-28';
