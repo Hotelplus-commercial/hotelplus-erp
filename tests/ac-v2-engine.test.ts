@@ -1,6 +1,6 @@
 import { describe, expect, test, setSystemTime, afterAll } from 'bun:test';
-// DF8: fixtures in crm-seed are built from "now" at import time and expect a September 2026 clock. Test-only freeze; engine unchanged.
-setSystemTime(new Date('2026-11-01T05:00:00Z'));
+// DF8: fixtures in crm-seed are built from "now" at import time and expect an October 2026 clock (written then). Test-only freeze; engine unchanged.
+setSystemTime(new Date('2026-10-15T05:00:00Z'));
 afterAll(() => setSystemTime());
 const { confirmPayment, invoiceGrade, runDailyBilling, recomputeAccounting, collectionStatus, manualCollection, paymentSummary } = await import('../src/lib/ac-v2-engine');
 const { resolveContractHotel, stampInvoiceHotel, attributedOwner } = await import('../src/lib/ac-attribution');
