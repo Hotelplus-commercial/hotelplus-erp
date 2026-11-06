@@ -160,7 +160,7 @@ export function runDailyBilling<T extends AccountingData>(original: T, t = bangk
     // Service month inside the contract term (a renewal's first invoice charges no commission: that month belongs to the old contract).
     const inTerm = sm0.slice(0,7) >= c.start_date.slice(0,7) && sm0 < cEnd;
     const final = cEnd<=t || item.billing_period >= cEnd;
-    if (final && !inTerm) continue;
+    if (final && !(inTerm && c.lines.some(l=>l.billing==='monthly' && l.commission_rate!=null && serviceOf(l.sku_snapshot,data.products)===item.service_line))) continue;
     if (invoices.some(i => i.contract_ids.includes(c.contract_id) && i.billing_period_start.slice(0,7)===item.billing_period.slice(0,7) && (i.service_line===item.service_line || i.lines.some(l=>serviceOf(l.sku_snapshot,data.products)===item.service_line)) && i.status!=='void')) continue;
     const relevant = c.lines.filter(l => l.billing==='monthly' && serviceOf(l.sku_snapshot,data.products)===item.service_line);
     // PR-O1 one month rule: the invoice of billing month M+1 charges the commission of service month M (every source).
@@ -168,7 +168,7 @@ export function runDailyBilling<T extends AccountingData>(original: T, t = bangk
     const hasComm = relevant.some(l=>l.commission_rate!=null);
     // Switch-over guard: never charge a service month a non-void invoice already charged.
     const charged = hasComm && (!inTerm || chargedServiceMonths(invoices, c.contract_id).has(sm.slice(0,7)));
-    const reports = mergeDropReports(data.reports, data.prDropReports ?? []).filter(r=>r.contract_id===c.contract_id && `${r.period_year}-${String(r.period_month).padStart(2,'0')}`===sm.slice(0,7) && serviceOf(r.sku,data.products)===item.service_line);
+    const reports = mergeDropReports(data.reports, data.prDropReports ?? []).filter(r=>r.contract_id===c.contract_id && `${r.period_year}-${String(r.period_month).padStart(2,'0')}`===(hasComm ? sm : item.billing_period).slice(0,7) && serviceOf(r.sku,data.products)===item.service_line);
     const missingReport = !charged && (!reports.length || relevant.some(l=>l.commission_rate!=null && !reports.some(r=>r.sku===l.sku_snapshot)));
     // AC-G1 (DF2): commission + Guarantee — no report by the drop deadline (3rd after the service month) → bill the Guarantee.
     const guarantee = !charged && isGuaranteeContract(c) && hasComm;
