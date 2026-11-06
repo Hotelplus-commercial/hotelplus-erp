@@ -38,6 +38,8 @@ const ws = (dept: Parameters<typeof workspaceByDept>[0], access: Access, also: s
 };
 const MA = 'วิเคราะห์การประชุม';
 const PAY = 'ยอดผลตอบแทนรายรอบ';
+/** R2 A: Production Report lives once, in AC App. */
+export const PROD_REPORT = '/ac/production-report';
 
 /* ---------- BD APP ---------- */
 const BD_ALL = A('TM', 'BD', 'BDM', 'HOC', 'MD');
@@ -86,8 +88,6 @@ const ps: AppDef = {
       { kind: 'page', key: 'property', label: 'Property Content', route: '/ps/property-content', access: PS_ALL },
     ] },
     { kind: 'group', label: 'ดูแลลูกค้ารายเดือน', children: [
-      // Report Automation = today's /ps/production page (Production Report [R2] stays here until R2 moves it to AC App).
-      { kind: 'page', key: 'production', label: 'Report Automation', route: '/ps/production', r2: true, access: M(S('own_hotels', 'AE'), S('all_hotels', 'PM', 'HOC', 'MD')) },
     ] },
     { kind: 'group', label: 'ผลงานของฉัน', children: [
       { kind: 'subheader', label: 'KPI', children: [P('ps', 'my-kpi', 'My KPI', M(S('own', 'AE', 'OBS'), S('all', 'PM', 'HOC', 'MD')), 'ผลงานของฉันเทียบ KPI บริษัท')] },
@@ -118,13 +118,16 @@ const orm: AppDef = {
       P('orm', 'revplus-meeting-analyzer', 'RevPlus+ / Rate Structure Meeting Analyzer', ORM_OWN, MA),
     ] },
     { kind: 'group', label: 'ส่งงานรายเดือน (Monthly Delivery)', children: [
-      { kind: 'link_out', key: 'snapshot-report', label: 'Snapshot Report', target: { app: 'PS', route: '/ps/production', mode: 'drop_file' }, access: ORM_HOT },
-      P('orm', 'production-report', 'Production Report', ORM_HOT),
+      // R2 A.4: the Snapshot Report link-out pointed at the moved page; it becomes a placeholder until it gets its own page.
+      P('orm', 'snapshot-report', 'Snapshot Report', ORM_HOT),
+      { kind: 'link_out', key: 'production-report', label: 'Production Report', target: { app: 'AC', route: PROD_REPORT, mode: 'drop_file' }, access: ORM_HOT },
       P('orm', 'snapshot-meeting-analyzer', 'Snapshot Meeting Analyzer', ORM_OWN, MA),
     ] },
     { kind: 'group', label: 'Revenue', children: [
       P('orm', 'revmax', 'RevMax', ORM_T),
       P('orm', 'revmax-meeting-analyzer', 'RevMax Meeting Analyzer', ORM_OWN, MA),
+      // R2 B: Tier page moved from The Office APP (old ORM Bonus) — view-only page, one copy.
+      { kind: 'page', key: 'orm-tier', label: 'ORM Tier', route: '/orm/orm-tier', also: ['/the-office-app/orm-bonus'], access: ORM_T },
     ] },
     { kind: 'group', label: 'ผลงานของฉัน', children: [
       { kind: 'subheader', label: 'KPI', children: [
@@ -157,8 +160,8 @@ const marcom: AppDef = {
       P('marcom', 'upsell-management', 'Upsell Management', MK_HOT, 'ดำเนินการ upsell · ส่งเรื่องให้ PS ยืนยัน'),
     ] },
     { kind: 'group', label: 'ส่งงานรายเดือน (Monthly Delivery)', children: [
-      { kind: 'link_out', key: 'sync-up-report', label: 'Sync Up Report', target: { app: 'PS', route: '/ps/production', mode: 'drop_file' }, access: MK_HOT },
-      P('marcom', 'production-report', 'Production Report', MK_HOT),
+      P('marcom', 'sync-up-report', 'Sync Up Report', MK_HOT),
+      { kind: 'link_out', key: 'production-report', label: 'Production Report', target: { app: 'AC', route: PROD_REPORT, mode: 'drop_file' }, access: MK_HOT },
       P('marcom', 'graphic-summary', 'สรุปชิ้นงานกราฟฟิก', MK_HOT, 'สรุปจำนวนชิ้นงานจาก Content Plan · ยืนยันก่อนส่ง AC'),
       P('marcom', 'sync-up-meeting-analyzer', 'Sync Up Meeting Analyzer', MK_OWN, MA),
     ] },
@@ -195,6 +198,8 @@ const ac: AppDef = {
       ] },
     ] },
     { kind: 'group', label: 'วางบิล & รับเงิน (Receivables)', children: [
+      // R2 A.1: Production Report moved from PS App; item 1 of Receivables. ORM / MKT reach it only via ↗ (drop mode).
+      { kind: 'page', key: 'production-report', label: 'Production Report', route: PROD_REPORT, also: ['/ps/production'], access: AC_T },
       { kind: 'page', key: 'billing', label: 'AC Billing', route: '/ac/billing', also: ['/ac/operations'], access: AC_T },
       P('ac', 'collection', 'ติดตามหนี้', AC_T),
     ] },
@@ -280,14 +285,13 @@ const office: AppDef = {
   key: 'OFFICE', label: 'The Office APP', prefix: 'the-office-app',
   landing: { HOC: '/the-office-app/dashboard', MD: '/the-office-app/dashboard', HOD: '/the-office-app/hod-meeting-minutes', HR: '/the-office-app/hod-meeting-minutes' },
   nodes: [
-    P('the-office-app', 'dashboard', 'The Office Dashboard', A('HOC', 'MD'), 'ภาพรวมผู้บริหาร', { tabs: [{ key: 'bd-ac', label: 'BD-AC' }, { key: 'renewal-offer', label: 'ข้อเสนอต่อสัญญา' }] }),
+    // R2 C: BD-AC is tab 1 of The Office Dashboard (old BD-AC addresses forward here).
+    { kind: 'page', key: 'dashboard', label: 'The Office Dashboard', route: '/the-office-app/dashboard', also: ['/the-office-app/bd-ac', '/office/bd-ac'], tabs: [{ key: 'bd-ac', label: 'BD-AC' }, { key: 'renewal-offer', label: 'ข้อเสนอต่อสัญญา' }], access: A('HOC', 'MD') },
     ws('OFFICE', M(S('own', 'HOC'), S('all', 'MD'))),
     { kind: 'group', label: 'รายงานผู้บริหาร', children: [
       { kind: 'link_out', key: 'pnl', label: 'P&L', target: { app: 'AC', route: '/ac/pnl' }, access: A('HOC', 'MD') },
       P('the-office-app', 'hod-meeting-minutes', 'HOD Meeting Minutes', M(A('HOC', 'MD'), S('view', 'HOD', 'HR')), 'บันทึกการประชุม HOD และมติ'),
     ] },
-    { kind: 'page', key: 'bd-ac', label: 'BD-AC', route: '/the-office-app/bd-ac', also: ['/office/bd-ac'], r2: true, access: A('HOC', 'MD') },
-    { kind: 'page', key: 'orm-bonus', label: 'ORM Bonus', route: '/the-office-app/orm-bonus', r2: true, access: A('HOC', 'MD') },
   ],
 };
 
