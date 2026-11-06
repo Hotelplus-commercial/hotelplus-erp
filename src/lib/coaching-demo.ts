@@ -31,7 +31,7 @@ export const COACH_DEMO_ROSTER: CoachMember[] = [
 export const COACH_DEMO_SLOTS: Record<string, { orm_team?: string; marcom_person?: string; marcom_overrides?: Partial<Record<'CONTENT' | 'ADS' | 'PRESENTER', string>> }> = {
   'ORM:HTL0214': { orm_team: 'B' }, 'ORM:HTL0401': { orm_team: 'A' }, 'ORM:HTL0403': { orm_team: 'C' },
   'ORM:HTL0405': { orm_team: 'D' }, 'ORM:HTL0406': { orm_team: 'RE_ACTIVE' },
-  'MARCOM:HTL0501': { marcom_person: 'บิว' }, 'MARCOM:HTL0503': { marcom_person: 'โบว์', marcom_overrides: { ADS: 'เจน' } }, // DF5 DEMO: hotel override (Ads → เจน) 'MARCOM:HTL0504': { marcom_person: 'เจน' },
+  'MARCOM:HTL0501': { marcom_person: 'บิว' }, 'MARCOM:HTL0503': { marcom_person: 'โบว์', marcom_overrides: { ADS: 'เจน' } }, /* DF5 DEMO: hotel override (Ads → เจน) */ 'MARCOM:HTL0504': { marcom_person: 'เจน' },
   'MARCOM:HTL0505': { marcom_person: 'บิว' }, 'MARCOM:HTL0506': { marcom_person: 'โบว์' }, 'MARCOM:HTL0508': { marcom_person: 'เจน' },
   'MARCOM:HTL0510': { marcom_person: 'บิว' }, 'MARCOM:HTL0511': { marcom_person: 'โบว์' },
   'MARCOM:HTL0331': { marcom_person: 'บิว' }, 'MARCOM:HTL0298': { marcom_person: 'โบว์' },
