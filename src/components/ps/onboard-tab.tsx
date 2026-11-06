@@ -33,9 +33,10 @@ const SVC_TH = (s: SetupSvc) => (s === 'ORM' ? 'ORM' : 'Marcom');
 const toneCls = (t: Tone) => `onb-tone-${t}`;
 
 /* ================= feed ================= */
-type Feed = { demo: boolean; today: string; cards: OnbCard[]; rows: Map<string, ServicingRow>; members: HrMember[] };
-function useOnbFeed(): Feed | undefined {
-  const { demo, filter } = useDashboardGlobal();
+export type Feed = { demo: boolean; today: string; cards: OnbCard[]; rows: Map<string, ServicingRow>; members: HrMember[] };
+/** `demoOverride`: pages outside the PS Dashboard (Settings › SLA On-board) pass the shared DEMO state. */
+export function useOnbFeed(demoOverride?: boolean): Feed | undefined {
+  const g = useDashboardGlobal(); const demo = demoOverride ?? g.demo; const filter = g.filter;
   const read = useServerFn(readServicingDashboard);
   const hr = useHrMembers();
   const [ready, setReady] = useState(false);
