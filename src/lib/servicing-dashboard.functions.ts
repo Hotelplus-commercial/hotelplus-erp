@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import type { ServicingReport, ServicingRow, PhaseTimeRow } from "./servicing-dashboard-types";
 import type { StallCandidate } from './servicing-stall';
-import { phaseConfig, servicingLanes } from './servicing-time';
+import { servicingLanes } from './servicing-time';
 
 /** Reads only the granted v_servicing_stage_cards projection (empty + pending until seed+C5). */
 export const readServicingDashboard = createServerFn({ method: "GET" }).handler(async (): Promise<ServicingReport> => {
