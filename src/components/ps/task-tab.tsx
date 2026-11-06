@@ -43,7 +43,7 @@ import { ServiceTicketTab, useServiceTicketRows } from './service-ticket-tab';
 import { CreateTicketAttachments, DuplicateTicketDialog, CaseAttachmentList } from './ticket-create-extras';
 import { findOpenDuplicates, recordDuplicateAck, saveCaseAttachments, type PendingAttachment } from '@/lib/ticket-create-extras';
 import type { ServiceTicketRow } from '@/lib/service-tickets';
-import { getCategories, ticketSla, SVC_DEPTS, type SvcDept } from '@/lib/service-tickets';
+import { getCategories, ticketSla, routeCaseToBd, SVC_DEPTS, type SvcDept } from '@/lib/service-tickets';
 import { activeContracts, meetingsFromFunnel, prefillContract, recentMeetings, type MeetingRef, type ServiceContractRef } from '@/lib/ticket-links';
 
 /** R1.2 §5.1 — service contracts (contract × service) for ticket links: demo spine, else the browser contract store (read-only). */
