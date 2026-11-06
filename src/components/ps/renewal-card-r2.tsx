@@ -616,7 +616,7 @@ function ReasonsSection({ lostBase, recs, view, onView }: { lostBase: RenewalIte
                     </div>
                   )}
                 </div>
-                <em className="tabular-nums">{R.share(`${r.share.toFixed(0)}%`, r.total)}</em>
+                <em className="tabular-nums">{R.share(`${r.share.toFixed(0)}%`, r.total, r.contracts)}</em>
               </div>
             ))}
           </div>

@@ -260,7 +260,7 @@ export function topLabels(records: Rec[], which: 'primary' | 'secondary'): { row
   const k = third == null ? 0 : all.slice(3).filter((r) => r.n === third).length;
   return { rows, tie: k ? { k, n: third! } : null, N };
 }
-export type GroupBar = { group: number; name: string; primary: number; secondary: number; total: number; share: number; labels: { key: string; label: string; n: number; primary: number; secondary: number; pctOfGroup: number }[] };
+export type GroupBar = { group: number; name: string; primary: number; secondary: number; total: number; share: number; /** UP5: distinct contracts with ≥1 label in this group */ contracts: number; labels: { key: string; label: string; n: number; primary: number; secondary: number; pctOfGroup: number }[] };
 /** 7 groups, label counts (2 labels of one group in one contract = 2), share = group labels ÷ all labels, sorted desc. */
 export function groupBars(records: Rec[]): { rows: GroupBar[]; totalLabels: number } {
   const p = new Map<string, number>(), s = new Map<string, number>();
@@ -271,7 +271,8 @@ export function groupBars(records: Rec[]): { rows: GroupBar[]; totalLabels: numb
     const primary = keys.reduce((a, k) => a + (p.get(k) ?? 0), 0), secondary = keys.reduce((a, k) => a + (s.get(k) ?? 0), 0), total = primary + secondary;
     const labels = keys.map((k) => ({ key: k, label: reasonLabel(k), primary: p.get(k) ?? 0, secondary: s.get(k) ?? 0, n: (p.get(k) ?? 0) + (s.get(k) ?? 0), pctOfGroup: 0 }))
       .filter((l) => l.n).map((l) => ({ ...l, pctOfGroup: total ? (l.n / total) * 100 : 0 })).sort((a, b) => b.n - a.n);
-    return { group: g, name: SIGNAL_GROUPS[g]!, primary, secondary, total, share: totalLabels ? (total / totalLabels) * 100 : 0, labels };
+    const contracts = records.filter((r) => r.primary.some((k) => reasonGroup(k) === g) || reasonGroup(r.secondary) === g).length;
+    return { group: g, name: SIGNAL_GROUPS[g]!, primary, secondary, total, contracts, share: totalLabels ? (total / totalLabels) * 100 : 0, labels };
   });
   return { rows: rows.sort((a, b) => b.total - a.total || a.group - b.group), totalLabels };
 }

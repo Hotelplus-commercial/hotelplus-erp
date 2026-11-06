@@ -314,7 +314,7 @@ export const RN2 = {
     primary: "เหตุผลหลัก · 3 อันดับแรก", secondary: "เหตุผลรอง · 3 อันดับแรก", n: (n: number) => `${n} สัญญา`,
     tie: (k: number, n: number) => `อีก ${k} เหตุผลมีจำนวนเท่ากับอันดับ 3 (${n} สัญญา)`,
     foot: (a: number, b: number, c: number) => `ไม่ต่อ / หลุดในช่วงนี้ ${a} สัญญา · บันทึกเหตุผลแล้ว ${b} · รอบันทึก ${c} ·`, footLink: "อยากรู้ว่ากลุ่มไหนโดนบ่อยสุด ดู 7 กลุ่ม",
-    legendP: "เหตุผลหลัก", legendS: "เหตุผลรอง", share: (p: string, n: number) => `${p} · รวม ${n}`,
+    legendP: "เหตุผลหลัก", legendS: "เหตุผลรอง", share: (p: string, n: number, m: number) => `${p} · รวม ${n} ป้าย · ${m} สัญญา`,
     tipHead: (g: string, n: number) => `${g} · ทั้งหมด ${n} ป้าย`, tipSplit: (p: number, s: number) => `หลัก ${p} · รอง ${s}`, tipLabel: (n: number, p: number, s: number) => `${n} ป้าย · หลัก ${p} · รอง ${s}`,
     groupsFoot: (t: number, n: number) => `นับเป็นจำนวนป้าย (2 ป้ายในกลุ่มเดียวกัน = 2) · % = ป้ายของกลุ่ม ÷ ป้ายทั้งหมด ${t} ป้ายจาก ${n} สัญญา · ชี้ที่แถบเพื่อดูป้ายในกลุ่ม`,
   },
