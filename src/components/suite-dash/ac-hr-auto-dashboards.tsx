@@ -1,5 +1,4 @@
 /* Patch B DB6 / DB7 / DB8 — AC, HR (top section) and AUTO Dashboards. Read only. */
-import { InfoTip } from "./kit";
 import type { ReactNode } from "react";
 import { DebtorCardR11, PaidGradeCard } from "@/components/ps/debt-cards-r11";
 import { PartnerBillCostCard } from "@/components/ac/partner-bills-page";
@@ -9,6 +8,7 @@ import { AC_SAMPLE_SOURCE, COMMISSION_DUE, MISC_DUE } from "@/lib/suite-dashboar
 import { COMMISSION_PENDING, COMMISSION_ROUNDS, HR_MOVES, HR_SAMPLE_SOURCE } from "@/lib/suite-dashboards/hr-dashboard-sample";
 import { AUTO_SAMPLE_SOURCE, AUTO_TILES, PIPELINE_STEPS, TOOL_CATALOG } from "@/lib/suite-dashboards/auto-dashboard-sample";
 import { CardGrid, DashHeader, DCard, DetailLink, HBars, SampleBadge, Tile, TileStrip, suiteToday, thb, useDashPeriod, useSuiteDemo } from "./kit";
+import { usePrWaiting } from "@/components/ac/use-pr-waiting";
 import { SuiteDashProvider, useCategoryRequestsPending, useDebtHeadline, usePartnerBillNumbers, useRoster } from "./sources";
 
 function Gate({ children }: { children: (demo: boolean) => ReactNode }) {

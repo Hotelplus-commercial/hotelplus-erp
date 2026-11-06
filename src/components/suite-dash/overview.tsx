@@ -8,6 +8,7 @@ import { thShort } from "@/lib/card-compare";
 import { TM_TARGET, TM_PEOPLE, TM_TODAY } from "@/lib/suite-dashboards/bd-dashboard-sample";
 import { AUTO_TILES, AUTO_SAMPLE_SOURCE } from "@/lib/suite-dashboards/auto-dashboard-sample";
 import { COMMISSION_PENDING, HR_KPI_ROUND, HR_SAMPLE_SOURCE } from "@/lib/suite-dashboards/hr-dashboard-sample";
+import { usePrWaiting } from "@/components/ac/use-pr-waiting";
 import { SAMPLE_TAG, demoSearch, suiteToday, thb, useSuiteDemo } from "./kit";
 import {
   SuiteDashProvider, useAllOverdueTickets, useRenewalRate, useAutoTicketsOpen, useBdacNumbers, useCategoryRequestsPending, useDebtHeadline,
@@ -28,6 +29,7 @@ function Body({ demo }: { demo: boolean }) {
   const role = useMenuRole();
   const apps = visibleApps(role);
   const ps = usePsHeadline(demo);
+  const prWait = usePrWaiting(demo);
   const bdac = useBdacNumbers(demo);
   const wb = useWelcomeBackPending(demo);
   const overdue = useAllOverdueTickets();
