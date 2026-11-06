@@ -1,5 +1,6 @@
 /* Debt Partner R1 §6–§8 — section "ส่วนลด Partner": cards ③ Rate Card ④ deals ⑤ system credit + the shared PM form.
  * Read-only for everyone except PM (testing role switcher, simulation only). Numbers come only from src/lib/debt-partner-calc.ts. */
+import { DEF_UNIT_COST } from "./ac-definitions";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { DashCard } from "@/components/ps/dash-card";
 import { NowChip } from "./compare-control";
@@ -82,7 +83,7 @@ function RateCardCard({ d, contracts, today, isPm, onForm, manage }: { d: Partne
   return (
     <DashCard noteKey="dp-rate" noteLines={[`ต้นทุนรวมหลังส่วนลด ${anyEst ? "≈ " : ""}${thb(netThb)} / เดือน`, `ประหยัดจากส่วนลด ${thb(baseThb - netThb)} / เดือน`]} howToRead={DP_HELP.rate}
       period={<NowChip />} title={<span data-testid="dp-card-3">③ Rate Card ค่าระบบ Partner</span>} question="แต่ละระบบ H+ จ่ายเท่าไร และหลังส่วนลดเหลือเท่าไร?"
-      info={{ source: "ที่มา PM Workspace › จัดการ Partner · " + PARTNER_READONLY_INFO + " · Rate Card เป็นราคาขั้นบันไดตาม allotment ของสัญญา ในสกุลเงินที่ Partner เรียกเก็บ · ระบบคำนวณค่าระบบรวมและยอดหลังหักส่วนลดที่สำเร็จและอยู่ในช่วงมีผล · ต้นทุนรายสัญญาไปแสดงในข้อมูลประกอบการต่อสัญญา" }}
+      info={{ source: "ที่มา PM Workspace › จัดการ Partner · " + PARTNER_READONLY_INFO + " · Rate Card เป็นราคาขั้นบันไดตาม allotment ของสัญญา ในสกุลเงินที่ Partner เรียกเก็บ · ระบบคำนวณค่าระบบรวมและยอดหลังหักส่วนลดที่สำเร็จและอยู่ในช่วงมีผล · ต้นทุนรายสัญญาไปแสดงในข้อมูลประกอบการต่อสัญญา", extra: [{ label: "หน่วยนับ", body: DEF_UNIT_COST }] }}
       answer={<span data-testid="dp-rate-headline">{anyEst ? "≈ " : ""}{thb(netThb)} / เดือน</span>}
       answerSub={`ต้นทุนค่าระบบรวมหลังหักส่วนลด${anyEst ? " · estimate THB" : ""} · ก่อนส่วนลด ${anyEst ? "≈ " : ""}${thb(baseThb)}`}
       right={isPm ? <button type="button" className="rn5-toggle" onClick={() => onForm({ kind: "rate" })} data-testid="dp-add-rate">+ เพิ่ม Rate Card</button> : manage}>
@@ -101,7 +102,7 @@ function RateCardCard({ d, contracts, today, isPm, onForm, manage }: { d: Partne
               const a = r.active[0];
               return (
                 <tr key={r.card.id} data-testid={`dp-rate-${r.partner}`}>
-                  <td>{r.partner}<AttachmentCountPopover partnerId={r.card.partner_id} /></td><td>{r.card.system_name}</td><td className="tabular-nums">{r.contracts}</td>
+                  <td>{r.partner}</td><td>{r.card.system_name}<AttachmentCountPopover partnerId={r.card.partner_id} variant="docs" /></td><td className="tabular-nums">{r.contracts}</td>
                   <td>{r.active.length ? r.active.map((x) => <span key={x.id} className={cn(pill, "bg-dash-good/15 text-dash-good")}>{discountText(x)}</span>) : r.negotiating ? <span className={cn(pill, "bg-dash-watch/15 text-dash-watch")}>กำลังต่อรอง</span> : "–"}</td>
                   <td>{a ? `${dDMY(a.start_date)} – ${a.end_date ? dDMY(a.end_date) : "until further notice"}` : "–"}</td>
                   <td className="tabular-nums" data-testid="dp-base">{money(r.base, r.card.currency)}{est(r.base)}</td>

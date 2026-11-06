@@ -1,6 +1,7 @@
 /* R1.2 · Tab "ลูกหนี้ & ค่าใช้จ่ายรายสัญญา" (stored key: ac) — read-only Visual Standard cards over the
  * existing v_ac_* views + v_ac_contract_cost_monthly. Revenue cards ①②③ were removed (views kept).
  * No writes, no ticket buttons, no grade/collection logic — results only. */
+import { GradeDefs, CollectionDefs, DEF_UNIT_GRADE, DEF_UNIT_COST, DEF_READONLY } from "./ac-definitions";
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Lock, Search } from "lucide-react";
@@ -112,7 +113,8 @@ export function AcTab({ views, loading, error, service, compare, demo, periodA, 
 
   return (
     <div className="flex min-w-0 flex-col gap-5" data-testid="ac-tab" data-demo={demo || undefined}>
-      <DefinitionStrip />
+      {/* UAT polish UP7: strip removed from the page when the R1.1 cards show; its text lives in their ⓘ. */}
+      {!cardCompare && <DefinitionStrip />}
       <SectionHead title="ลูกหนี้ & การเก็บเงิน" desc="ใครจ่ายตรงเวลา · ค้างเท่าไร อยู่ขั้นไหน · ต้องตามใคร" />
       {cardCompare && <PaidGradeCard demo={!!demo} initialOpen={openLists} />}
       {cardCompare && <DebtorCardR11 demo={!!demo} />}
@@ -142,33 +144,9 @@ export function AcTab({ views, loading, error, service, compare, demo, periodA, 
 function DefinitionStrip() {
   return (
     <section className="dash-card ac-def-strip">
-      <div className="ac-def-row">
-        <span className="ac-def-label">เกรดการชำระ</span>
-        {(["A", "B", "C", "D"] as const).map((g) => (
-          <span key={g} className={cn("ac-pill", GRADE_META[g]!.pill)}>
-            <b>{g}</b> {GRADE_META[g]!.desc}
-          </span>
-        ))}
-        <span className="ac-def-note">· คิดเฉพาะบิลรายเดือน (RECURRING) · คำนวณที่ AC App</span>
-      </div>
-      <div className="ac-def-row">
-        <span className="ac-def-label">Collection</span>
-        {(["OVERDUE", "SUSPENDED", "LEGAL", "WRITTEN_OFF"] as const).map((s, i) => (
-          <span key={s} className="ac-def-chain">
-            {i > 0 && <span className="text-muted-foreground">›</span>}
-            <span className={cn("ac-pill", COLLECTION_META[s].pill)}>
-              {COLLECTION_META[s].label}
-              {s === "OVERDUE" && " · เกรด C"}
-              {s === "SUSPENDED" && " · เกรด D"}
-            </span>
-          </span>
-        ))}
-        <span className="ac-def-note">· พักบริการ (PAUSED) ไม่ใช่ลูกหนี้ · แยกกล่อง</span>
-      </div>
-      <p className="ac-def-caption">
-        หน่วยนับ: เกรดและ collection นับราย customer (1 customer อาจมีหลายโรงแรม) · ค่าใช้จ่ายรายสัญญา
-        นับรายสัญญาบริการ · ทั้ง tab อ่านอย่างเดียว คลิกชื่อเปิด AC App
-      </p>
+      <div className="ac-def-row"><span className="ac-def-label">เกรดการชำระ</span><GradeDefs /></div>
+      <div className="ac-def-row"><span className="ac-def-label">Collection</span><CollectionDefs /></div>
+      <p className="ac-def-caption">{DEF_UNIT_GRADE} · {DEF_UNIT_COST} · {DEF_READONLY}</p>
     </section>
   );
 }

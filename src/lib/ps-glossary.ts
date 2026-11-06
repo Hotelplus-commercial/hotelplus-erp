@@ -144,7 +144,7 @@ export const R1_INOUT = {
 /** v1.4.1 RN47 / RN49 / RN41 / RN51 (decision Q58) — header sub-lines, Tab R2 past-due banner, AC Billing notices. */
 export const Q58 = {
   lapsed: "ขาดอายุ รอผล",
-  headerLine: (n: number) => `ขาดอายุ รอผล ${n}`,
+  headerLine: (n: number) => `ขาดอายุ รอผล ${n} สัญญา`,
   headerTip: "เลยวันสิ้นสุดสัญญา · ยังไม่บันทึกผลต่อ / ไม่ต่อ · ไม่นับเป็นใช้งาน · ยังไม่นับ churn",
   unmatched: (n: number) => `ตรวจวันสิ้นสุดไม่ได้ ${n} สัญญา (ไม่มีในคลังสัญญาหลัก)`,
   pastDueBanner: (n: number) => `เลยกำหนด ${n} วัน · ขาดอายุ ไม่นับเป็นใช้งาน · AC หยุดวางบิล · ยังไม่นับ churn จนกว่าจะบันทึกผล`,
@@ -314,7 +314,7 @@ export const RN2 = {
     primary: "เหตุผลหลัก · 3 อันดับแรก", secondary: "เหตุผลรอง · 3 อันดับแรก", n: (n: number) => `${n} สัญญา`,
     tie: (k: number, n: number) => `อีก ${k} เหตุผลมีจำนวนเท่ากับอันดับ 3 (${n} สัญญา)`,
     foot: (a: number, b: number, c: number) => `ไม่ต่อ / หลุดในช่วงนี้ ${a} สัญญา · บันทึกเหตุผลแล้ว ${b} · รอบันทึก ${c} ·`, footLink: "อยากรู้ว่ากลุ่มไหนโดนบ่อยสุด ดู 7 กลุ่ม",
-    legendP: "เหตุผลหลัก", legendS: "เหตุผลรอง", share: (p: string, n: number) => `${p} · รวม ${n}`,
+    legendP: "เหตุผลหลัก", legendS: "เหตุผลรอง", share: (p: string, n: number, m: number) => `${p} · รวม ${n} ป้าย · ${m} สัญญา`,
     tipHead: (g: string, n: number) => `${g} · ทั้งหมด ${n} ป้าย`, tipSplit: (p: number, s: number) => `หลัก ${p} · รอง ${s}`, tipLabel: (n: number, p: number, s: number) => `${n} ป้าย · หลัก ${p} · รอง ${s}`,
     groupsFoot: (t: number, n: number) => `นับเป็นจำนวนป้าย (2 ป้ายในกลุ่มเดียวกัน = 2) · % = ป้ายของกลุ่ม ÷ ป้ายทั้งหมด ${t} ป้ายจาก ${n} สัญญา · ชี้ที่แถบเพื่อดูป้ายในกลุ่ม`,
   },

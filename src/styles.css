@@ -1253,6 +1253,7 @@ textarea.r1-input{height:auto;padding:6px 8px;resize:vertical;}
 .r1-io-col:first-child .r1-io-tip,.r1-io-col:nth-child(2) .r1-io-tip{left:0;transform:none;}.r1-io-col:nth-last-child(-n+2) .r1-io-tip{left:auto;right:0;transform:none;}
 .r1-io-endrow{display:flex;gap:4px;align-items:center;margin-top:6px;}.r1-io-endlabel{width:38px;flex:none;font-size:10.5px;color:var(--text-caption);}
 .r1-net-pill{justify-self:center;font-size:10.5px;padding:1px 4px;border-radius:999px;background:var(--bg-app);color:var(--text-secondary);}
+.r1-net-pill.is-current{outline:1.5px solid var(--c);outline-offset:1px;}
 .r1-net-pill.is-up{background:var(--ct);color:var(--c);font-weight:600;}.r1-net-pill.is-down{background:color-mix(in srgb,var(--cl) 35%,transparent);color:var(--text-primary);}
 .r1-io-list{margin-top:10px;border-top:1px solid var(--border-subtle);padding-top:8px;font-size:12.5px;}
 .r1-io-listmonth{margin-bottom:6px;}.r1-io-listhead{font-weight:600;font-size:12px;color:var(--text-secondary);}
@@ -2099,3 +2100,26 @@ textarea.r1-input{height:auto;padding:6px 8px;resize:vertical;}
 .onb-savebar{position:sticky;bottom:0;display:flex;gap:10px;align-items:center;justify-content:flex-end;border:1px solid var(--border);border-radius:10px;padding:10px 14px;background:var(--card);box-shadow:0 -4px 16px color-mix(in srgb,var(--foreground) 8%,transparent);}
 .onb-savebar>span{margin-right:auto;font-size:13px;}
 .onb-hist{display:flex;flex-direction:column;gap:6px;font-size:13px;}
+
+/* UAT polish UP10 — Funnel drawing (Meeting & Survey card ①): 104px label · bars · 150px result; dark → light down the funnel. */
+.ms-funnel{gap:0;}
+.ms-funnel .ms-f-row{grid-template-columns:104px 1fr 150px;}
+.ms-funnel .ms-f-label{text-align:right;color:var(--text-secondary);}
+.ms-funnel .ms-f-track{min-height:48px;}
+.ms-funnel .lv0{--lv:color-mix(in srgb,var(--svc) 80%,var(--text-primary));}
+.ms-funnel .lv1{--lv:var(--svc);}
+.ms-funnel .lv2{--lv:color-mix(in srgb,var(--svc) 65%,var(--card));}
+.ms-funnel .ms-f-bar{height:40px;border-radius:3px;opacity:1;display:flex;align-items:center;justify-content:center;
+  background:repeating-linear-gradient(45deg,color-mix(in srgb,var(--lv) 55%,var(--card)) 0 3px,var(--lv) 3px 7px);}
+.ms-funnel.is-mc .ms-f-bar{background:var(--lv);}
+.ms-funnel .ms-f-solid{background:var(--lv);}
+.ms-funnel .ms-f-num{color:var(--primary-foreground);}
+.ms-funnel .ms-f-num b{font-size:14px;} .ms-funnel .ms-f-num small{font-size:11px;font-weight:600;}
+.ms-funnel .ms-quota-frame{top:0;bottom:0;border-radius:6px;}
+.ms-funnel .ms-quota-frame span{top:-17px;}
+.ms-f-connrow .ms-f-conn{height:22px;width:100%;background:var(--lv);opacity:.4;}
+.ms-f-pct{font-size:15px;font-weight:700;}
+.ms-f-sumitem{margin-right:14px;} .ms-f-sumitem b{color:var(--text-primary);}
+.ms-f-sumitem b.ms-low-t{color:var(--action-text);}
+.ms-funnel .ms-f-summary{margin-top:10px;}
+.ms-funnel .ms-f-bar{min-width:168px;} .ms-f-sumitem{white-space:nowrap;}

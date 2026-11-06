@@ -146,13 +146,13 @@ export function PartnerAttachmentsPanel({ partnerId, by, isPm, onEditFolder }: {
 }
 
 /** PS Dashboard card ③ — `📎 n` with a read-only list (only เปิด). Renders nothing when n = 0. */
-export function AttachmentCountPopover({ partnerId }: { partnerId: string }) {
+export function AttachmentCountPopover({ partnerId, variant = "count" }: { partnerId: string; /** UP9: "docs" = `เอกสารประกอบ (n)` line under the system name */ variant?: "count" | "docs" }) {
   const d = usePartnerData();
   const items = partnerAttachments(d, partnerId);
   if (!items.length) return null;
   return (
     <Popover>
-      <PopoverTrigger asChild><button type="button" className="ml-1 text-xs text-primary underline" data-testid="dp-att-count">📎 {items.length}</button></PopoverTrigger>
+      <PopoverTrigger asChild><button type="button" className={variant === "docs" ? "block text-xs text-primary underline" : "ml-1 text-xs text-primary underline"} data-testid={variant === "docs" ? "dp-att-docs" : "dp-att-count"}>{variant === "docs" ? `เอกสารประกอบ (${items.length})` : `📎 ${items.length}`}</button></PopoverTrigger>
       <PopoverContent className="w-96 space-y-2" data-testid="dp-att-popover">
         <p className="text-xs text-muted-foreground">เอกสารประกอบ · ดูอย่างเดียว · แก้ไขใน PM Workspace › จัดการ Partner</p>
         <AttachmentTable items={items} />

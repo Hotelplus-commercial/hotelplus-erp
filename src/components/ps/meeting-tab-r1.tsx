@@ -1,6 +1,6 @@
 // PS Dashboard · Tab "การประชุม & เซอร์เวย์" R1 (MS1–MS40). Read-only: meetings / surveys / label answers / survey flags come only
 // from meeting-survey-store (+ tab DEMO additions) through the pure helpers in src/lib/meeting-tab-r1.ts. Writes nothing.
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { TH_MONTH } from "@/lib/card-compare";
 import { monthsInPeriod, MEETING_CONFIG } from "@/lib/meeting-dashboard-types";
@@ -173,14 +173,19 @@ function tipContent(svc: Svc, stage: 1 | 2 | 3, f: Funnel, detail: DetailRow[]) 
     <Group title={`หลุดจาก${s === 2 ? "นัดได้" : " Completed"} ${list.length}`} sub={<>{evs.map((ev) => { const it = list.filter((r) => r.event === ev); return it.length ? <div key={ev} className="ms-tip-sub">{EVENT_TH[ev]} {it.length}: {it.map((r) => `${r.hotel}${svc === "ORM" ? ` (Tier ${r.tier})` : ""}${ev === "OVERDUE_NO_UPDATE" ? ` · นัด ${dayTh(r.date)}` : ""}`).join(" · ")}</div> : null; })}</>} />
   );
 }
+/** UP10 summary row parts — same numbers as `summary`. */
+function summaryParts(f: Funnel): { label: string; value: string; bad?: boolean }[] {
+  const q = f.over_quota ? { label: "เกินโควตา", value: `+${f.over_quota}` } : f.short_quota ? { label: "ขาดโควตา", value: String(f.short_quota), bad: true } : { label: "เต็มโควตา", value: "" };
+  return [q, { label: "หลุดก่อน Completed", value: String(f.booked.total - f.completed.total) }, { label: "หลุดก่อนได้คะแนน", value: String(f.completed.total - f.scored.total) }];
+}
 function FunnelCard({ svc, f, detail }: { svc: Svc; f: Funnel; detail: DetailRow[] }) {
   const [open, setOpen] = useState<{ stage: 1 | 2 | 3; pinned: boolean } | null>(null);
   useEffect(() => { const k = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(null); }; window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); }, []);
   const scale = Math.max(f.quota, f.booked.total, 1);
   const stages: { stage: 1 | 2 | 3; label: string; s: { total: number; A: number; B: number; C: number }; right: ReactNode }[] = [
     { stage: 1, label: "นัดได้", s: f.booked, right: <>{f.over_quota ? <span className="ms-sat-t">+{f.over_quota} เกินโควตา</span> : f.short_quota ? <span className="ms-low-t">ขาด {f.short_quota} จากโควตา</span> : <span className="ms-sat-t">เต็มโควตา</span>}{svc === "ORM" && <small>Tier A {f.booked.A} · แทน {f.booked.B + f.booked.C}</small>}</> },
-    { stage: 2, label: "Meeting Completed", s: f.completed, right: <>{pct(f.completed.total, f.booked.total)}% ของนัดได้{svc === "ORM" && <small>Tier A {f.completed.A} · แทน {f.completed.B + f.completed.C}</small>}</> },
-    { stage: 3, label: "ได้คะแนน Survey", s: f.scored, right: <>{pct(f.scored.total, f.booked.total)}% ของนัดได้{svc === "ORM" && <small>Tier A {f.scored.A} · แทน {f.scored.B + f.scored.C}</small>}</> },
+    { stage: 2, label: "Meeting Completed", s: f.completed, right: <><b className="ms-f-pct">{pct(f.completed.total, f.booked.total)}%</b><small>ของนัดได้</small>{svc === "ORM" && <small>Tier A {f.completed.A} · แทน {f.completed.B + f.completed.C}</small>}</> },
+    { stage: 3, label: "ได้คะแนน Survey", s: f.scored, right: <><b className="ms-f-pct">{pct(f.scored.total, f.booked.total)}%</b><small>ของนัดได้</small>{svc === "ORM" && <small>Tier A {f.scored.A} · แทน {f.scored.B + f.scored.C}</small>}</> },
   ];
   const summary = svc === "ORM"
     ? `${f.over_quota ? `เกินโควตา +${f.over_quota}` : `ขาดโควตา ${f.short_quota}`} · หลุดก่อน Completed ${f.booked.total - f.completed.total} · หลุดก่อนได้คะแนน ${f.completed.total - f.scored.total}`
@@ -193,8 +198,13 @@ function FunnelCard({ svc, f, detail }: { svc: Svc; f: Funnel; detail: DetailRow
         {stages.map((st, i) => {
           const w = (st.s.total / scale) * 100; const aW = st.s.total ? (st.s.A / st.s.total) * 100 : 0;
           const isOpen = open?.stage === st.stage;
+          const bw = (x: number) => Math.max((x / scale) * 100, 6);
+          const next = stages[i + 1];
+          /* UAT polish UP10: trapezoid connector from this bar's bottom edge to the next bar's top edge. */
+          const conn = next ? (() => { const u = bw(st.s.total), l = bw(next.s.total); return `polygon(${(100 - u) / 2}% 0, ${(100 + u) / 2}% 0, ${(100 + l) / 2}% 100%, ${(100 - l) / 2}% 100%)`; })() : null;
           return (
-            <div key={st.stage} className="ms-f-row">
+            <Fragment key={st.stage}>
+            <div className="ms-f-row">
               <div className="ms-f-label">{st.label}</div>
               <div className="ms-f-track">
                 {st.stage === 1 && <div className="ms-quota-frame" style={{ width: `${(f.quota / scale) * 100}%` }} data-testid="ms-quota-frame"><span>โควตา {f.quota}</span></div>}
@@ -206,7 +216,7 @@ function FunnelCard({ svc, f, detail }: { svc: Svc; f: Funnel; detail: DetailRow
                   onBlur={() => setOpen(null)}
                   onClick={() => setOpen((o) => (o?.stage === st.stage && o.pinned ? null : { stage: st.stage, pinned: true }))}>
                   {svc === "ORM" && <span className="ms-f-solid" style={{ width: `${aW}%` }} />}
-                  <span className="ms-f-num">{st.s.total} Online Meeting</span>
+                  <span className="ms-f-num"><b>{st.s.total}</b> <small>Online Meeting</small></span>
                 </button>
                 {isOpen && (
                   <div className="ms-tip" role="tooltip" data-testid="ms-tip">
@@ -217,9 +227,11 @@ function FunnelCard({ svc, f, detail }: { svc: Svc; f: Funnel; detail: DetailRow
               </div>
               <div className="ms-f-right">{st.right}</div>
             </div>
+            {conn && <div className="ms-f-row ms-f-connrow" aria-hidden><span /><div className={cn("ms-f-conn", `lv${i}`)} data-testid={`ms-conn-${svc}-${st.stage}`} style={{ clipPath: conn }} /><span /></div>}
+            </Fragment>
           );
         })}
-        <div className="ms-f-summary"><span>{summary}</span><span className="ms-hint">ชี้ที่แถบเพื่อดูรายละเอียด</span></div>
+        <div className="ms-f-summary"><span data-testid={`ms-summary-${svc}`}>{summaryParts(f).map((x, j) => <span key={j} className="ms-f-sumitem">{x.label} <b className={x.bad ? "ms-low-t" : undefined}>{x.value}</b></span>)}</span><span className="ms-hint">ชี้ที่แถบเพื่อดูรายละเอียด</span></div>
         {svc === "ORM" && f.chain && (
           <div className="ms-chain">Tier A · KPI #1: ต้องนัด {f.chain.quota} › นัดได้ {f.chain.booked} › Completed {f.chain.completed} › ได้คะแนน {f.chain.scored} · Tier A ยังไม่จบ {f.chain.quota - f.chain.completed} ประชุม <a href="#ms-tiera">ดู ②</a></div>
         )}
@@ -277,7 +289,7 @@ function OwnerQuotaCard({ rows, today }: { rows: TabMeeting[]; today: string }) 
             <div key={o.name} className="ms-row">
               <span className="ms-row-name">{o.name}</span>
               <div className="ms-qbar"><span className="ms-q-solid" style={{ width: `${aW}%` }} /><span className="ms-q-hatch" style={{ width: `${sW}%` }} /></div>
-              <span className={cn("ms-row-val", ok && "ms-sat-t")}>{d}/{o.quota}{ok ? " ✓" : ""}</span>
+              <span className={cn("ms-row-val", ok && "ms-sat-t")}>{d}/{o.quota} ประชุม{ok ? " ✓" : ""}</span>
             </div>
           );
         })}
