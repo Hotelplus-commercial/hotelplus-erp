@@ -377,4 +377,7 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [ ] Open: Marcom survey recommendation logic needed from the real portal (Q3 channels first for now)
 - [x] ADR room-weighted overall confirmed by Sai (2026-11-06)
 - [ ] Open: ใบเสนอราคา — only the list view (14 of 35 rows) from IMG-6; detail / export / Special Deal need their own screenshots (deferred, sample results for now)
-- [ ] Patch B Suite Dashboards R1 (DB1–DB9) — plan must be posted and approved before code
+- [x] Patch B Suite Dashboards R1 (DB1–DB9) — Overview at /, BD / ORM / Marcom / AC / HR / AUTO dashboards, old summary at /overview-legacy
+- [ ] Open: PS อัตราต่อสัญญา (ไตรมาส) on Overview — source to confirm
+- [ ] Open: AC ใบแจ้งหนี้รอ Production Report — AC Billing has no such status yet
+- [ ] Open: dashboard ticket counts exclude PS cases (loaded only in PS tab)

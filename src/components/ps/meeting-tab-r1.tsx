@@ -37,6 +37,18 @@ function useTabRows() {
   return { rows, tab, demo, today };
 }
 
+/** Patch B DB4/DB5: the same funnel card for one service, for another page (no fork). Default period = this card's own compare choice. */
+export function useMeetingFunnel(svc: Svc, period?: { from: string; to: string }) {
+  const { rows, today } = useTabRows();
+  const k = useCardCompare("meeting", "r1-head", today);
+  const months = monthsInPeriod(period ?? k.a);
+  return { f: vMeetingFunnel(rows, svc, months, today), detail: vMeetingFunnelDetail(rows, svc, months, today), today };
+}
+export function MeetingFunnel({ svc, period }: { svc: Svc; period?: { from: string; to: string } }) {
+  const { f, detail } = useMeetingFunnel(svc, period);
+  return <FunnelCard svc={svc} f={f} detail={detail} />;
+}
+
 /* =============================== tab =============================== */
 export function MeetingTabR1() {
   const { rows, tab, demo, today } = useTabRows();
@@ -178,7 +190,7 @@ function summaryParts(f: Funnel): { label: string; value: string; bad?: boolean 
   const q = f.over_quota ? { label: "เกินโควตา", value: `+${f.over_quota}` } : f.short_quota ? { label: "ขาดโควตา", value: String(f.short_quota), bad: true } : { label: "เต็มโควตา", value: "" };
   return [q, { label: "หลุดก่อน Completed", value: String(f.booked.total - f.completed.total) }, { label: "หลุดก่อนได้คะแนน", value: String(f.completed.total - f.scored.total) }];
 }
-function FunnelCard({ svc, f, detail }: { svc: Svc; f: Funnel; detail: DetailRow[] }) {
+export function FunnelCard({ svc, f, detail }: { svc: Svc; f: Funnel; detail: DetailRow[] }) {
   const [open, setOpen] = useState<{ stage: 1 | 2 | 3; pinned: boolean } | null>(null);
   useEffect(() => { const k = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(null); }; window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); }, []);
   const scale = Math.max(f.quota, f.booked.total, 1);

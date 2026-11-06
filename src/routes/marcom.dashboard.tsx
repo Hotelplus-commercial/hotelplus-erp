@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { Panel } from "@/components/crm/crm-ui";
-import { PageHeader } from "@/components/erp-ui";
+import { MarcomDashboard } from "@/components/suite-dash/orm-marcom-dashboards";
 import { PendingAssignList } from "@/components/ps/assignment-ui";
 
 const description = "รายการโรงแรมที่มีบริการ Marcom และยังไม่ได้ระบุผู้ดูแล Marcom";
@@ -18,11 +18,10 @@ export const Route = createFileRoute("/marcom/dashboard")({
     ],
   }),
   component: () => (
-    <div className="flex flex-col gap-4">
-      <PageHeader eyebrow="Assignment inbox" title="Marcom Dashboard" description={description} />
+    <MarcomDashboard assign={
       <Panel title="รอระบุผู้ดูแล" subtitle="บันทึกแล้วอัปเดตข้อมูลโรงแรมชุดเดียวกับ PS Dashboard">
         <PendingAssignList scope="MARCOM" />
       </Panel>
-    </div>
+    } />
   ),
 });

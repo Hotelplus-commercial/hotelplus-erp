@@ -102,6 +102,16 @@ function useLastPaidChange(demo: boolean, inv: PaidInv[], period: string | null)
 }
 
 /* ---------- ① ---------- */
+/** Patch B DB2/DB6: headline numbers of cards ① ② for other pages (same model, read only). */
+export function useDebtHeadline(demo: boolean) {
+  const today = demo ? DEMO_DAY : new Date().toISOString().slice(0, 10);
+  const m = useDebtModel(demo, today, 0);
+  const s = debtSummary(m.debts);
+  const c = gradeCounts(m.grades);
+  const total = GRADES.reduce((a, x) => a + c[x], 0);
+  return { debtTotal: s.total, debtN: s.n, empty: !m.debts.length, abPct: total ? Math.round(((c.A + c.B) / total) * 100) : null, gradeTotal: total };
+}
+
 export function PaidGradeCard({ demo, initialOpen = false }: { demo: boolean; initialOpen?: boolean }) {
   const today = demo ? DEMO_DAY : new Date().toISOString().slice(0, 10);
   const focus = useFocusTick();

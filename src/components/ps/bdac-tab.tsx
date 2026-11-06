@@ -352,36 +352,7 @@ export function BdacTab({ source, globalFilter, clock }: { source?: ContractLife
         >
           <div className="relative">
             <div className="pointer-events-none absolute inset-x-0 top-0 border-t-2 border-dashed border-[#0E7C86]" aria-hidden />
-            <div className="grid grid-cols-6 items-end gap-2 pt-2" role="group" aria-label="cohort รายเดือน">
-              {cohort.map((c) => {
-                const p = c.size ? Math.round((c.won / c.size) * 100) : 0;
-                const isCur = c.open_current > 0 && c.carry === 0 && c.month === cohort.at(-1)?.month;
-                const sel = selected?.month === c.month;
-                return (
-                  <ChartHint
-                    key={c.month}
-                    header={`Sent Contract ${formatMonthEn(c.month)} · ${c.size} ดีล${isCur ? " (เดือนปัจจุบัน)" : ""}`}
-                    lines={[`WON ${c.won} (${p}%) · KPI 100%`, c.carry > 0 ? `⚑ carry ${c.carry} ดีล (ยังไม่ WON)` : c.open_current > 0 ? `ยังเปิด ${c.open_current} ดีล (ยังอยู่ในเดือน)` : `ปิดครบตาม KPI`]}
-                  >
-                    <button
-                      type="button"
-                      aria-pressed={sel}
-                      onClick={() => setSelCohort(c.month)}
-                      className={cn("flex h-44 w-full flex-col items-center justify-end gap-1 rounded-md outline-none", sel && "bg-[#E2F1F2]/60 ring-2 ring-[#0E7C86]")}
-                    >
-                      <span className="text-xs font-bold tabular-nums">{p}%{c.carry > 0 && <span className="ml-0.5 text-[#A63E29]">⚑{c.carry}</span>}</span>
-                      <span className={cn("flex h-32 w-full max-w-14 flex-col-reverse overflow-hidden rounded-t-md", isCur && "border border-dashed border-[#8A9AA2]")}>
-                        <span className="w-full bg-[#0E7C86]" style={{ height: `${p}%` }} />
-                        {c.carry > 0 && <span className="w-full bg-[#C8553D]" style={{ height: `${(c.carry / c.size) * 100}%` }} />}
-                        {c.open_current > 0 && <span className="w-full bg-[#E2F1F2]" style={{ height: `${(c.open_current / c.size) * 100}%` }} />}
-                      </span>
-                      <span className="text-[11px] text-muted-foreground">{formatMonthEn(c.month)}</span>
-                      <span className="text-[11px] text-muted-foreground tabular-nums">n={c.size}</span>
-                    </button>
-                  </ChartHint>
-                );
-              })}
-            </div>
+            <BdacCohortBars cohort={cohort} selected={selected} onSelect={setSelCohort} />
           </div>
           {/* Carry list */}
           <div className="mt-4 rounded-xl border border-[#F1D5CD] bg-[#FDF6F4] p-3">
@@ -695,5 +666,41 @@ function CycleCard({ rows, agg, leg, setLeg, byOwner, setByOwner, ownerGroups, o
         howToRead={`1 จุด = 1 ดีล · เส้นทึบ = median · เส้นประแดง = SLA ${limit} วัน · จุดเหนือเส้นประ = เกิน SLA`}
       />
     </section>
+  );
+}
+
+/** Patch B DB3: card ③ cohort bars, shared by BD-AC and the BD Dashboard (same component, no fork). */
+export function BdacCohortBars({ cohort, selected, onSelect }: { cohort: ReturnType<typeof v_bdac_conversion_cohort>; selected: ReturnType<typeof v_bdac_conversion_cohort>[number] | undefined; onSelect: (m: string) => void }) {
+  return (
+            <div className="grid grid-cols-6 items-end gap-2 pt-2" role="group" aria-label="cohort รายเดือน">
+              {cohort.map((c) => {
+                const p = c.size ? Math.round((c.won / c.size) * 100) : 0;
+                const isCur = c.open_current > 0 && c.carry === 0 && c.month === cohort.at(-1)?.month;
+                const sel = selected?.month === c.month;
+                return (
+                  <ChartHint
+                    key={c.month}
+                    header={`Sent Contract ${formatMonthEn(c.month)} · ${c.size} ดีล${isCur ? " (เดือนปัจจุบัน)" : ""}`}
+                    lines={[`WON ${c.won} (${p}%) · KPI 100%`, c.carry > 0 ? `⚑ carry ${c.carry} ดีล (ยังไม่ WON)` : c.open_current > 0 ? `ยังเปิด ${c.open_current} ดีล (ยังอยู่ในเดือน)` : `ปิดครบตาม KPI`]}
+                  >
+                    <button
+                      type="button"
+                      aria-pressed={sel}
+                      onClick={() => onSelect(c.month)}
+                      className={cn("flex h-44 w-full flex-col items-center justify-end gap-1 rounded-md outline-none", sel && "bg-[#E2F1F2]/60 ring-2 ring-[#0E7C86]")}
+                    >
+                      <span className="text-xs font-bold tabular-nums">{p}%{c.carry > 0 && <span className="ml-0.5 text-[#A63E29]">⚑{c.carry}</span>}</span>
+                      <span className={cn("flex h-32 w-full max-w-14 flex-col-reverse overflow-hidden rounded-t-md", isCur && "border border-dashed border-[#8A9AA2]")}>
+                        <span className="w-full bg-[#0E7C86]" style={{ height: `${p}%` }} />
+                        {c.carry > 0 && <span className="w-full bg-[#C8553D]" style={{ height: `${(c.carry / c.size) * 100}%` }} />}
+                        {c.open_current > 0 && <span className="w-full bg-[#E2F1F2]" style={{ height: `${(c.open_current / c.size) * 100}%` }} />}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground">{formatMonthEn(c.month)}</span>
+                      <span className="text-[11px] text-muted-foreground tabular-nums">n={c.size}</span>
+                    </button>
+                  </ChartHint>
+                );
+              })}
+            </div>
   );
 }

@@ -47,7 +47,8 @@ const bd: AppDef = {
   key: 'BD', label: 'BD APP', prefix: 'bd',
   landing: { TM: '/bd/dashboard', BD: '/bd/dashboard', BDM: '/bd/dashboard', HOC: '/bd/dashboard', MD: '/bd/dashboard', AUTO: '/bd/pulse' },
   nodes: [
-    P('bd', 'dashboard', 'Dashboard', BD_ALL, 'ภาพรวมทีม TM และ BD', { tabs: [{ key: 'tm', label: 'TM Dashboard', access: ['TM', 'BDM', 'HOC', 'MD'] }, { key: 'bd', label: 'BD Dashboard', access: ['BD', 'BDM', 'HOC', 'MD'] }] }),
+    // Patch B DB3: real page (was placeholder).
+    { kind: 'page', key: 'dashboard', label: 'Dashboard', route: '/bd/dashboard', access: BD_ALL, tabs: [{ key: 'tm', label: 'TM Dashboard', access: ['TM', 'BDM', 'HOC', 'MD'] }, { key: 'bd', label: 'BD Dashboard', access: ['BD', 'BDM', 'HOC', 'MD'] }] },
     ws('BD', M(S('own', 'TM', 'BD'), S('all', 'BDM', 'HOC', 'MD'))),
     { kind: 'group', label: 'หาลูกค้า (Prospect)', children: [
       P('bd', 'pulse', 'Pulse', A('AUTO', 'HOC', 'MD')),
@@ -186,7 +187,7 @@ const ac: AppDef = {
   key: 'AC', label: 'AC App', prefix: 'ac',
   landing: { AC: '/ac/dashboard', AC_LEAD: '/ac/dashboard', HOC: '/ac/dashboard', MD: '/ac/dashboard', PM: '/ac/hotel-profile' },
   nodes: [
-    P('ac', 'dashboard', 'AC Dashboard', A('AC', 'AC_LEAD', 'HOC', 'MD'), 'งานของ AC วันนี้'),
+    { kind: 'page', key: 'dashboard', label: 'AC Dashboard', route: '/ac/dashboard', access: A('AC', 'AC_LEAD', 'HOC', 'MD') }, // Patch B DB6
     ws('AC', M(S('own', 'AC'), S('all', 'AC_LEAD', 'HOC', 'MD'))),
     { kind: 'group', label: 'ข้อมูลหลัก (Master)', children: [
       { kind: 'subheader', label: 'ลูกค้า', children: [
@@ -267,7 +268,7 @@ const auto: AppDef = {
   key: 'AUTO', label: 'AUTO APP', prefix: 'automation',
   landing: Object.fromEntries(ROLE_KEYS.map((r) => [r, '/automation/dashboard'])),
   nodes: [
-    P('automation', 'dashboard', 'AUTO Dashboard', AU_T, 'ภาพรวมระบบ automation'),
+    { kind: 'page', key: 'dashboard', label: 'AUTO Dashboard', route: '/automation/dashboard', access: AU_T }, // Patch B DB8
     ws('AUTO', M(S('own', 'AUTO', 'OGM'), S('all', 'HOC', 'MD'))),
     { kind: 'group', label: 'Monitor', children: [
       P('automation', 'automation', 'Automation', AU_T, 'Monitor'),

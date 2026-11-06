@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { Panel } from "@/components/crm/crm-ui";
-import { PageHeader } from "@/components/erp-ui";
+import { OrmDashboard } from "@/components/suite-dash/orm-marcom-dashboards";
 import { PendingAssignList } from "@/components/ps/assignment-ui";
 
 const description = "รายการโรงแรมที่มีบริการ ORM และยังไม่ได้ระบุทีม + ผู้ดูแล Revenue / Ecommerce";
@@ -18,11 +18,10 @@ export const Route = createFileRoute("/orm/dashboard")({
     ],
   }),
   component: () => (
-    <div className="flex flex-col gap-4">
-      <PageHeader eyebrow="Assignment inbox" title="ORM Dashboard" description={description} />
+    <OrmDashboard assign={
       <Panel title="รอระบุผู้ดูแล" subtitle="บันทึกแล้วอัปเดตข้อมูลโรงแรมชุดเดียวกับ PS Dashboard">
         <PendingAssignList scope="ORM" />
       </Panel>
-    </div>
+    } />
   ),
 });
