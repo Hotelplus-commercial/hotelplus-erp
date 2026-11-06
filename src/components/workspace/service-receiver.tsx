@@ -154,6 +154,7 @@ function ReceiverRow({ r, today, l0, canAccept, onOpen, onAccept }: { r: Service
         <span className={cn("rounded px-1.5 py-0.5", due.tone === "red" ? "bg-destructive/10 text-destructive" : due.tone === "amber" ? "bg-warning/15 text-warning-foreground" : "bg-muted")} data-testid="recv-due">{due.text}</span>
         {due.waitChip && <span className="rounded bg-muted px-1.5 py-0.5">{due.waitChip}</span>}
         {fb && <span className={cn("rounded px-1.5 py-0.5", fb.today ? "bg-warning/15 text-warning-foreground" : "bg-muted")} data-testid="recv-fu">{fb.text}</span>}
+        {r.last_progress_at && <span className="rounded bg-muted px-1.5 py-0.5" data-testid="recv-last-progress">อัปเดตล่าสุด {thDate(r.last_progress_at)} · {r.last_progress_by_label}</span>}
         {canAccept && <Button size="sm" className="ml-auto h-6 px-2 text-xs" onClick={onAccept} data-testid="recv-accept">รับงาน</Button>}
       </div>
     </li>

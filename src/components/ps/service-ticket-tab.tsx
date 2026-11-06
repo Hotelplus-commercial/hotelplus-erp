@@ -84,7 +84,10 @@ const Card = ({ id, n, title, q, right, info, children, now }: { id?: string; n:
 );
 const Seg = ({ label, n, total, tone, onClick }: { label: string; n: number; total: number; tone: string; onClick?: () => void }) =>
   n ? <button type="button" className={cn('stab-seg', tone)} style={{ flexGrow: n, minWidth: 28 }} onClick={onClick} title={`${label} ${n}`} aria-label={`${label} ${n} ticket`}>{n}</button> : null;
-export const fuCell = (r: ServiceTicketRow, today: string) => r.followup_count
+/** DF4: latest receiver progress note under the follow-up cell. */
+const lastProgress = (r: ServiceTicketRow) => r.last_progress_at ? <small className="block text-muted-foreground" data-testid="stab-last-progress">อัปเดตล่าสุด {thDay(r.last_progress_at.slice(0, 10))} · {r.last_progress_by_label}</small> : null;
+export const fuCell = (r: ServiceTicketRow, today: string) => <>{fuCellBase(r, today)}{lastProgress(r)}</>;
+const fuCellBase = (r: ServiceTicketRow, today: string) => r.followup_count
   ? <span className="stab-fu">📣 {r.followup_count} ครั้ง<small>ล่าสุด {r.last_followup_at && r.last_followup_at.slice(0, 10) === today ? 'วันนี้' : r.last_followup_at ? thDay(r.last_followup_at.slice(0, 10)) : '—'} · {r.last_followup_by_label}</small></span>
   : <span className="text-muted-foreground">—</span>;
 export function DueCell({ r, today }: { r: ServiceTicketRow; today: string }) {
@@ -335,7 +338,9 @@ export function timelineOf(r: ServiceTicketRow, l0: L0Ticket | undefined, demo: 
   const items: { at: string; text: string }[] = [];
   if (l0) for (const a of l0.audit) if (!(a.note ?? '').startsWith('Follow up')) items.push({ at: a.at, text: `${a.actor ?? a.by}${a.to_status && a.to_status !== a.from_status ? ` · ${a.to_status === 'NEW' ? 'สร้าง ticket' : SVC_STATUS_TH[(a.to_status === 'DONE' ? 'SOLVED' : a.to_status) as DisplayStatus] ?? a.to_status}` : ''}${a.note ? ` · ${a.note}` : ''}` });
   if (!l0) { items.push({ at: r.created_at, text: `${r.opened_by_label} · สร้าง ticket` }); if (r.solved_at) items.push({ at: r.solved_at, text: 'Solve' }); }
-  for (const f of ticketFollowups.all(demo).filter((x) => x.ticket_store === r.ticket_store && x.ticket_id === r.ticket_id)) items.push({ at: f.sent_at, text: `📣 Follow up โดย ${f.sent_by}${f.note ? ` · “${f.note}”` : ''}` });
+  for (const f of ticketFollowups.all(demo).filter((x) => x.kind !== 'PROGRESS' && x.ticket_store === r.ticket_store && x.ticket_id === r.ticket_id)) items.push({ at: f.sent_at, text: `📣 Follow up โดย ${f.sent_by}${f.note ? ` · “${f.note}”` : ''}` });
+  // DF4: receiver progress notes (author + time), never counted as follow-ups.
+  for (const n of r.progress_notes ?? []) items.push({ at: n.at, text: `📝 อัปเดตงาน · ${n.by} · “${n.text}”` });
   return items.sort((a, b) => a.at.localeCompare(b.at));
 }
 function TicketDrawer({ row, today, demo, onClose }: { row: ServiceTicketRow | null; today: string; demo: boolean; onClose: () => void }) {
@@ -345,7 +350,7 @@ function TicketDrawer({ row, today, demo, onClose }: { row: ServiceTicketRow | n
   useEffect(() => setNote(''), [row?.ticket_id]);
   if (!row) return <Sheet open={false} onOpenChange={() => onClose()}><SheetContent /></Sheet>;
   const l0 = row.ticket_store === 'L0' ? l0all.find((t) => t.ticket_id === row.ticket_id) : undefined;
-  const sentToday = !!row.last_followup_at && ticketFollowups.all(demo).some((f) => f.ticket_store === row.ticket_store && f.ticket_id === row.ticket_id && f.sent_date_bkk === today);
+  const sentToday = !!row.last_followup_at && ticketFollowups.all(demo).some((f) => f.kind !== 'PROGRESS' && f.ticket_store === row.ticket_store && f.ticket_id === row.ticket_id && f.sent_date_bkk === today);
   const isOpen = row.display_status !== 'SOLVED' && row.display_status !== 'CANCELLED';
   const canFu = who === 'AE' || who === 'PM';
   const recipient = row.accepted && row.assignee_label ? row.assignee_label : `คิว ${DEPT_TH[row.dept]} + ${TEST_ROLE_LABEL[HEAD_OF[row.dept]]}`;
