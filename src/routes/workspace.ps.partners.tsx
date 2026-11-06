@@ -19,6 +19,7 @@ import { DEMO_DAY } from "@/lib/demo-session";
 import { setTicketDemo, useTickets } from "@/lib/tickets-l0";
 import type { Partner, PartnerData, PartnerDeal } from "@/lib/debt-partner-types";
 import { cn } from "@/lib/utils";
+import { signedPackageSwitches, useRenewalStore } from "@/lib/renewal-store";
 
 export const Route = createFileRoute("/workspace/ps/partners")({
   validateSearch: (s: Record<string, unknown>) => ({ demo: s["demo"] === "1" || s["demo"] === 1 ? 1 : undefined }),
@@ -176,6 +177,7 @@ function Overview(c: Common) {
   const activeP = d.partners.filter((p) => rows.some((r) => r.card.partner_id === p.id && r.contracts > 0));
   const cov = useHotelCoverage(d, contracts, today, demo);
   const credit = creditTiles(d);
+  useRenewalStore(); // O-26: re-read signed package switches
   const todos = partnerTodoItems(d, contracts, today, "today", "PM", signedPackageSwitches(), !!demo);
   const [q, setQ] = useState("");
   const nameOf = (pid: string) => hotelNameOf(contracts, pid);
