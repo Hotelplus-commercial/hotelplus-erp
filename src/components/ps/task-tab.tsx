@@ -116,8 +116,8 @@ const EmptyState = ({ text }: { text: string }) => <div className="flex flex-col
 function CategoryPicker({ categories, value, onChange }: { categories: Category[]; value: string; onChange: (v: string) => void }) {
   return <Select value={value} onValueChange={onChange}><SelectTrigger aria-label="หมวดย่อย"><SelectValue placeholder="เลือกหมวดย่อย" /></SelectTrigger><SelectContent>{TEAMS.map(team => <SelectGroup key={team}><SelectLabel>{TEAM_LABEL[team]}</SelectLabel>{categories.filter(c => c.domain === team).sort((a, b) => a.sort - b.sort).map(c => <SelectItem key={c.code} value={c.code}>{c.subcategory_label_th}</SelectItem>)}</SelectGroup>)}</SelectContent></Select>;
 }
-function DeptPicker({ value, onChange, disabled }: { value: Team | null; onChange: (t: Team) => void; disabled?: boolean }) {
-  return <Select value={value ?? ''} onValueChange={v => onChange(v as Team)} disabled={!!disabled}><SelectTrigger aria-label="แผนกรับผิดชอบ"><SelectValue placeholder="เลือกหมวดย่อยก่อน" /></SelectTrigger><SelectContent>{TEAMS.map(t => <SelectItem key={t} value={t}>{TEAM_LABEL[t]}</SelectItem>)}</SelectContent></Select>;
+function DeptPicker({ value, onChange, disabled, allowBd = false }: { value: Team | 'BD' | null; onChange: (t: Team | 'BD') => void; disabled?: boolean; allowBd?: boolean }) {
+  return <Select value={value ?? ''} onValueChange={v => onChange(v as Team | 'BD')} disabled={!!disabled}><SelectTrigger aria-label="แผนกรับผิดชอบ"><SelectValue placeholder="เลือกหมวดย่อยก่อน" /></SelectTrigger><SelectContent>{TEAMS.map(t => <SelectItem key={t} value={t}>{TEAM_LABEL[t]}</SelectItem>)}{allowBd && <SelectItem value="BD">BD (BDM รับ)</SelectItem>}</SelectContent></Select>;
 }
 function People({ care, team }: { care: HotelCare | undefined; team: Team | null }) {
   return <div className="space-y-1 text-sm"><p>ผู้รับผิดชอบ (ตามแผนกที่เลือก): <span className="rounded bg-primary/10 px-1.5 py-0.5 font-semibold text-primary">{team ? responsibleOf(team, care) : '—'}</span></p><div className="flex flex-wrap items-center gap-1"><span className="text-muted-foreground">ผู้ติดตาม:</span>{watchersOf(care).map(w => <Chip key={w.role} tone="muted">{w.role}: {w.name}</Chip>)}{!care && <span className="text-muted-foreground">—</span>}</div></div>;
@@ -216,37 +216,38 @@ export function saveCaseCategory(demo: boolean, caseId: string, category_id: str
 /** Tab R1: old layout kept behind a constant (unmounted, not deleted). */
 const LEGACY_TASK_TAB = false;
 function CreateCase({ cases, open, onClose, hotels, categories, actor, demo, contracts, meetings, now, onDone }: { cases: Ticket[]; open: boolean; onClose: () => void; hotels: HotelCare[]; categories: Category[]; actor: string; demo: boolean; contracts: ServiceContractRef[]; meetings: MeetingRef[]; now: Date; onDone: (t: Ticket) => void }) {
-  const [hq, setHq] = useState(''); const [hotel, setHotel] = useState<HotelCare | null>(null); const [cat, setCat] = useState(''); const [title, setTitle] = useState(''); const [desc, setDesc] = useState(''); const [dept, setDept] = useState<Team | null>(null); const [busy, setBusy] = useState(false); const [svcCat, setSvcCat] = useState('');
+  const [hq, setHq] = useState(''); const [hotel, setHotel] = useState<HotelCare | null>(null); const [cat, setCat] = useState(''); const [title, setTitle] = useState(''); const [desc, setDesc] = useState(''); const [dept, setDept] = useState<Team | null>(null); const [busy, setBusy] = useState(false); const [svcCat, setSvcCat] = useState(''); const [toBd, setToBd] = useState(false);
   const [contractId, setContractId] = useState<string>(NONE); const [meetingId, setMeetingId] = useState<string>(NONE); const [contractTouched, setContractTouched] = useState(false);
   const [files, setFiles] = useState<PendingAttachment[]>([]); const [dups, setDups] = useState<ServiceTicketRow[] | null>(null);
   const { rows: svcRows, demo: rowsDemo } = useServiceTicketRows(cases as never);
   useEffect(() => { if (open) { setFiles([]); setDups(null); } }, [open]);
-  useEffect(() => { if (open) { setHq(''); setHotel(null); setCat(''); setTitle(''); setDesc(''); setDept(null); setContractId(NONE); setMeetingId(NONE); setContractTouched(false); setSvcCat(''); } }, [open]);
+  useEffect(() => { if (open) { setHq(''); setHotel(null); setCat(''); setTitle(''); setDesc(''); setDept(null); setContractId(NONE); setMeetingId(NONE); setContractTouched(false); setSvcCat(''); setToBd(false); } }, [open]);
   const team = dept ?? categories.find(c => c.code === cat)?.domain ?? null;
   const hotelContracts = hotel ? activeContracts(contracts, hotel.hotel_id, team) : [];
   const hotelMeetings = hotel ? recentMeetings(meetings, hotel.hotel_id, now) : [];
   // §5.1: pre-fill when exactly one active contract matches the ticket's service; otherwise the creator picks (optional).
   useEffect(() => { if (!contractTouched) setContractId(hotel ? prefillContract(contracts, hotel.hotel_id, team) ?? NONE : NONE); }, [hotel?.hotel_id, team, contracts, contractTouched]); // eslint-disable-line react-hooks/exhaustive-deps
-  const svcDept = team && (SVC_DEPTS as string[]).includes(team) ? team as SvcDept : null;
+  /* ST-O2 (DF3): BD = PS case created with routed_team PS (RPC unchanged) + ticket_sla.routed_team_override BD. */
+  const svcDept = toBd ? 'BD' as SvcDept : team && (SVC_DEPTS as string[]).includes(team) ? team as SvcDept : null;
   const svcCats = serviceCategoryOptions(demo, svcDept);
   useEffect(() => { if (svcCat && !svcCats.some(c => c.id === svcCat)) setSvcCat(''); }, [svcDept]); // eslint-disable-line react-hooks/exhaustive-deps
-  const pickCat = (v: string) => { setCat(v); setDept(categories.find(c => c.code === v)?.domain ?? null); };
+  const pickCat = (v: string) => { setToBd(false); setCat(v); setDept(categories.find(c => c.code === v)?.domain ?? null); };
   const matches = hotels.filter(h => `${h.hotel_name} ${h.hotel_id}`.toLowerCase().includes(hq.trim().toLowerCase())).slice(0, 8);
   /* UAT Polish R2 SP15: before saving, show open tickets of the same hotel + department; the user decides (never blocked). */
   const save = async (confirmed = false) => {
     if (!hotel || !cat || !title.trim()) { toast.error('กรุณาเลือกโรงแรม หมวดย่อย และใส่หัวข้อ'); return; }
     if (svcDept && !svcCat) { toast.error('กรุณาเลือกหมวด'); return; }
-    const found = findOpenDuplicates(svcRows, hotel.hotel_id, team, svcCat || null);
+    const found = findOpenDuplicates(svcRows, hotel.hotel_id, toBd ? 'BD' : team, svcCat || null);
     if (!confirmed && found.length) { setDups(found); return; }
     setBusy(true);
-    try { const t = await ticketApi.create(demo, { hotel_id: hotel.hotel_id, hotel_name: hotel.hotel_name, category: cat, ...(team ? { routed_team: team } : {}), title, description: desc, actor, ...(team ? stampOf(team, hotel) : {}), contract_id: contractId === NONE ? null : contractId, meeting_id: meetingId === NONE ? null : meetingId }); if (svcDept && svcCat) saveCaseCategory(demo, t.id, svcCat); const at = new Date().toISOString(); await saveCaseAttachments(demo, t.id, files, at); if (confirmed) recordDuplicateAck(demo, t.id, (dups ?? []).map(r => r.ticket_no), at, actor); setDups(null); onDone(t); onClose(); }
+    try { const t = await ticketApi.create(demo, { hotel_id: hotel.hotel_id, hotel_name: hotel.hotel_name, category: cat, ...(team ? { routed_team: team } : {}), title, description: desc, actor, ...(team ? stampOf(team, hotel) : {}), contract_id: contractId === NONE ? null : contractId, meeting_id: meetingId === NONE ? null : meetingId }); if (toBd) routeCaseToBd(demo, t.id, svcCat || null); else if (svcDept && svcCat) saveCaseCategory(demo, t.id, svcCat); const at = new Date().toISOString(); await saveCaseAttachments(demo, t.id, files, at); if (confirmed) recordDuplicateAck(demo, t.id, (dups ?? []).map(r => r.ticket_no), at, actor); setDups(null); onDone(t); onClose(); }
     catch (e) { toast.error(e instanceof Error ? e.message : 'สร้าง ticket ไม่สำเร็จ'); } finally { setBusy(false); }
   };
   return <Dialog open={open} onOpenChange={o => !o && onClose()}><DialogContent className="max-w-lg"><DialogHeader><DialogTitle>สร้าง ticket</DialogTitle></DialogHeader>
     <div className="space-y-3 text-sm">
       <div><label className="text-xs font-medium">โรงแรม *</label>{hotel ? <div className="mt-1 flex items-center justify-between rounded-md border px-3 py-2"><span>{hotel.hotel_name}</span><Button variant="ghost" size="sm" onClick={() => setHotel(null)}>เปลี่ยน</Button></div> : <><Input aria-label="ค้นหาโรงแรม" className="mt-1" placeholder="พิมพ์ชื่อหรือรหัสโรงแรม" value={hq} onChange={e => setHq(e.target.value)} /><div className="mt-1 max-h-40 overflow-y-auto rounded-md border">{matches.length ? matches.map(h => <button key={h.hotel_id} type="button" className="block w-full px-3 py-1.5 text-left hover:bg-muted" onClick={() => setHotel(h)}>{h.hotel_name} <span className="text-xs text-muted-foreground">{h.hotel_id}</span></button>) : <p className="px-3 py-2 text-muted-foreground">ไม่พบโรงแรม</p>}</div></>}</div>
       <div><label className="text-xs font-medium">หมวดย่อย *</label><CategoryPicker categories={categories} value={cat} onChange={pickCat} /></div>
-      <div><label className="text-xs font-medium">แผนกรับผิดชอบ *</label><DeptPicker value={team} onChange={setDept} disabled={!cat} /><p className="mt-1 text-xs text-muted-foreground">ค่าเริ่มต้นตามหมวดย่อย · เปลี่ยนได้ · 1 ticket = 1 แผนก</p></div>
+      <div><label className="text-xs font-medium">แผนกรับผิดชอบ *</label><DeptPicker value={toBd ? 'BD' : team} onChange={v => { if (v === 'BD') { setToBd(true); setDept('PS'); } else { setToBd(false); setDept(v); } }} disabled={!cat} allowBd /><p className="mt-1 text-xs text-muted-foreground">ค่าเริ่มต้นตามหมวดย่อย · เปลี่ยนได้ · 1 ticket = 1 แผนก</p></div>
       <div><label className="text-xs font-medium">หมวด *</label><Select value={svcCat} onValueChange={setSvcCat} disabled={!svcDept}><SelectTrigger aria-label="หมวด"><SelectValue placeholder={team ? (svcDept ? 'เลือกหมวด' : 'ไม่ใช้หมวดบริการ') : 'เลือกแผนกก่อน'} /></SelectTrigger><SelectContent>{svcCats.map(c => <SelectItem key={c.id} value={c.id}>{c.name_th}</SelectItem>)}</SelectContent></Select>{!team && <p className="mt-1 text-xs text-muted-foreground">เลือกแผนกก่อน</p>}</div>
       {hotel && <div className="grid gap-2 sm:grid-cols-2">
         <div><label className="text-xs font-medium">สัญญาบริการ (ไม่บังคับ)</label><Select value={contractId} onValueChange={v => { setContractTouched(true); setContractId(v); }}><SelectTrigger aria-label="สัญญาบริการ"><SelectValue /></SelectTrigger><SelectContent><SelectItem value={NONE}>— ไม่ระบุสัญญา</SelectItem>{hotelContracts.map(c => <SelectItem key={`${c.contract_id}-${c.service}`} value={c.contract_id}>{c.contract_id} · {c.service}</SelectItem>)}</SelectContent></Select>{!hotelContracts.length && <p className="mt-1 text-xs text-muted-foreground">ไม่พบสัญญาที่ใช้งานของโรงแรมนี้</p>}</div>
