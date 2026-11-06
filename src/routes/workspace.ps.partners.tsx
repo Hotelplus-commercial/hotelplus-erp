@@ -144,7 +144,6 @@ const TODO_TAG: Record<PartnerTodo["kind"], [string, string, string]> = {
 };
 function runTodo(c: Common, t: PartnerTodo) {
   const ref = t.id.slice(2);
-  if (t.kind === "E") { if (t.route_target) window.location.assign(t.route_target); return; }
   if (t.kind === "A") c.go({ v: "credit", anchor: "credit-pending" }, { req: ref });
   else if (t.kind === "B") c.go({ v: "credit", anchor: "credit-waiting" }, { ans: ref });
   else {
@@ -152,6 +151,17 @@ function runTodo(c: Common, t: PartnerTodo) {
     if (t.kind === "C") c.onForm({ kind: "deal", deal });
     else c.go({ v: "partner", id: deal.partner_id, section: "deals" }, { quick: deal.id });
   }
+}
+
+/** O-26: to-do E opens the existing "เปลี่ยนระบบ" flow (Hotel Profile › ORM block) in place, effective from the new contract start. */
+function PkgSwitchAction({ t, act }: { t: PartnerTodo; act: string }) {
+  const [open, setOpen] = useState(false);
+  return <>
+    <button type="button" className="self-start text-xs font-medium text-primary underline" onClick={() => setOpen(true)} data-testid="pm-todo-act-E">{act} →</button>
+    <Dialog open={open} onOpenChange={setOpen}><DialogContent className="max-w-2xl"><DialogHeader><DialogTitle>{t.title}</DialogTitle></DialogHeader>
+      {t.property_id && <PropertySystemBlock propertyId={t.property_id} isPm defaultFrom={t.effective_from} startOpen />}
+    </DialogContent></Dialog>
+  </>;
 }
 
 function useHotelCoverage(d: PartnerData, contracts: Contracts, today: string, demo: boolean) {
@@ -202,7 +212,7 @@ function Overview(c: Common) {
                 <span className={cn(pill, "self-start", cls)}>{tag}</span>
                 <span className="font-medium leading-snug">{t.title}</span>
                 <span className="text-xs text-muted-foreground">{t.sub} · {t.due_relative}</span>
-                {c.isPm && <button type="button" className="self-start text-xs font-medium text-primary underline" onClick={() => runTodo(c, t)} data-testid={`pm-todo-act-${t.kind}`}>{act} →</button>}
+                {c.isPm && (t.kind === "E" ? <PkgSwitchAction t={t} act={act} /> : <button type="button" className="self-start text-xs font-medium text-primary underline" onClick={() => runTodo(c, t)} data-testid={`pm-todo-act-${t.kind}`}>{act} →</button>)}
               </div>); })}
           </div>
         ) : <p className="text-sm text-muted-foreground">ไม่มีงานค้าง</p>}

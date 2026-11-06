@@ -64,13 +64,13 @@ export function saveAssignSystem(d: PartnerData, property_id: string, sys: strin
 }
 
 /** Hotel Profile · ORM service block: current system + allotment, PM-only change form, history. */
-export function PropertySystemBlock({ propertyId, isPm }: { propertyId: string; isPm: boolean }) {
+export function PropertySystemBlock({ propertyId, isPm, defaultFrom, startOpen }: { propertyId: string; isPm: boolean; defaultFrom?: string; startOpen?: boolean }) {
   const d = usePartnerData();
   const cur = propertySystemOn(d, propertyId, today());
   const hist = propertySystemHistory(d, propertyId);
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(!!startOpen);
   const [sys, setSys] = useState("");
-  const [from, setFrom] = useState(today());
+  const [from, setFrom] = useState(defaultFrom ?? today());
   const [allot, setAllot] = useState("");
   const [note, setNote] = useState("");
   const submit = () => {

@@ -49,7 +49,7 @@ export function creditSections(data: PartnerData, contracts: PartnerContract[], 
   return { pending, waiting, closed };
 }
 
-export type PartnerTodo = TodoItem & { kind: 'A' | 'B' | 'C' | 'D' | 'E'; trigger: string; sub: string; partner_id?: string | null };
+export type PartnerTodo = TodoItem & { kind: 'A' | 'B' | 'C' | 'D' | 'E'; trigger: string; sub: string; partner_id?: string | null; property_id?: string; effective_from?: string };
 /** §3 items A–D. Show when trigger ≤ end of range; stay until the condition clears. PM only. */
 export function partnerTodoItems(data: PartnerData, contracts: PartnerContract[], today: string, range: DateRange, person: string, switches: PkgSwitch[] = [], demo = false): PartnerTodo[] {
   if (person !== 'PM') return [];

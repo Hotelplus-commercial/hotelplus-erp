@@ -37,7 +37,7 @@ export function packageSwitchTodos(d: PartnerData, switches: PkgSwitch[], today:
   return switches.filter((s) => !pkgSwitchDone(d, s)).map((s) => {
     const cur = propertySystemOn(d, s.hotel_id, today);
     return {
-      kind: 'E' as const, id: `E-${s.contract_id}`, trigger: s.signed_at.slice(0, 10), partner_id: cur?.partner_id ?? null,
+      kind: 'E' as const, id: `E-${s.contract_id}`, trigger: s.signed_at.slice(0, 10), partner_id: cur?.partner_id ?? null, property_id: s.hotel_id, effective_from: s.start,
       title: `${pkgSwitchTitle(s)} · ${s.hotel}`,
       sub: `ระบบปัจจุบัน: ${cur ? `${pName(cur.partner_id)} · ${cur.system_name}` : 'ยังไม่ระบุระบบ'} · มีผล ${s.start}`,
       due_relative: '', route_target: `/ps/property-content/${s.hotel_id}${demo ? '?demo=1' : ''}#orm`,
