@@ -93,7 +93,7 @@ function BdTab({ demo }: { demo: boolean }) {
         <DCard demo={demo} title="③ Flag ต้อง coaching" question="BD คนไหนต้อง coaching เรื่องอะไรก่อน?" info="5 รายการแรกจาก Flag Alert Board ของ Meeting Analyzer" sample="BD Meeting Analyzer" href="/bd/meeting-analyzer">
           <ul className="space-y-2 text-xs">{MA_FLAGS.slice(0, 5).map((f, i) => <li key={i} className="rounded border border-destructive/30 bg-destructive/5 p-2"><b className="text-destructive">{f.text}</b><div className="text-muted-foreground">{f.hotel} · {f.bd}</div></li>)}</ul>
         </DCard>
-        <DCard demo={demo} title="④ Welcome Back / Special Deal รอดำเนินการ" question="มีงานรอ BDM มอบหมายหรืออนุมัติกี่รายการ?" info="Welcome Back = ticket จริงที่รอ BDM มอบหมาย · Special Deal = ข้อมูลตัวอย่าง" href="/bd/workspace">
+        <DCard demo={demo} title="④ Welcome Back / Special Deal รอดำเนินการ" question="มีงานรอ BDM มอบหมายหรืออนุมัติกี่รายการ?" info="Welcome Back = ticket จริงที่รอ BDM มอบหมาย · Special Deal = ข้อมูลตัวอย่าง" href="/bd/tickets">
           <div className="grid grid-cols-2 gap-3">
             <Tile label="Welcome Back รอ BDM มอบหมาย" value={wb} now testId="bd-tile-wb" />
             <Tile label="Special Deal รออนุมัติ" value={SPECIAL_DEAL_PENDING} sample={BD_SAMPLE_SOURCE.specialDeal} />
