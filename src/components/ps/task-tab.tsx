@@ -39,7 +39,10 @@ import { useCrmOptional } from '@/lib/crm-store';
 import { serviceOf } from '@/lib/ac-v2-engine';
 import { readMeetingDashboard } from '@/lib/meeting-dashboard.functions';
 import { demoServiceContracts, demoTaskMeetings } from '@/lib/task-demo';
-import { ServiceTicketTab } from './service-ticket-tab';
+import { ServiceTicketTab, useServiceTicketRows } from './service-ticket-tab';
+import { CreateTicketAttachments, DuplicateTicketDialog, CaseAttachmentList } from './ticket-create-extras';
+import { findOpenDuplicates, recordDuplicateAck, saveCaseAttachments, type PendingAttachment } from '@/lib/ticket-create-extras';
+import type { ServiceTicketRow } from '@/lib/service-tickets';
 import { getCategories, ticketSla, SVC_DEPTS, type SvcDept } from '@/lib/service-tickets';
 import { activeContracts, meetingsFromFunnel, prefillContract, recentMeetings, type MeetingRef, type ServiceContractRef } from '@/lib/ticket-links';
 
@@ -193,7 +196,7 @@ export function TaskTab() {
     <div className="flex flex-wrap items-center justify-end gap-2"><label>ผู้ทำรายการ</label><Select value={actor} onValueChange={setActor}><SelectTrigger aria-label="ผู้ทำรายการ" className="w-44"><SelectValue/></SelectTrigger><SelectContent>{actors.map(a=><SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent></Select></div>
     <TaskWorklistV2 rows={rows} categories={d.categories} now={d.now} demo={d.demo} compare={filter.compare} onCreate={()=>setCreating(true)} onCase={t=>setOpenId(t.id)} person={person} onPerson={setPerson} meetings={meetings} contracts={contracts}/>
 </> : <ServiceTicketTab cases={d.tickets} onCreate={()=>setCreating(true)}/>}
-    <CreateCase open={creating} onClose={()=>setCreating(false)} hotels={care} categories={d.categories} actor={actor} demo={d.demo} contracts={contracts} meetings={meetings} now={d.now} onDone={t=>{refresh();toast.success(`สร้าง ${t.case_no} แล้ว`);}}/>
+    <CreateCase cases={d.tickets} open={creating} onClose={()=>setCreating(false)} hotels={care} categories={d.categories} actor={actor} demo={d.demo} contracts={contracts} meetings={meetings} now={d.now} onDone={t=>{refresh();toast.success(`สร้าง ${t.case_no} แล้ว`);}}/>
     {LEGACY_TASK_TAB && <CaseDrawer ticket={selected} onClose={()=>setOpenId(null)} care={selected?byHotel.get(selected.hotel_id):undefined} categories={d.categories} actor={actor} actors={actors} onActor={setActor} demo={d.demo} onSaved={refresh}/>}
   </div>;
 }
@@ -212,9 +215,12 @@ export function saveCaseCategory(demo: boolean, caseId: string, category_id: str
 }
 /** Tab R1: old layout kept behind a constant (unmounted, not deleted). */
 const LEGACY_TASK_TAB = false;
-function CreateCase({ open, onClose, hotels, categories, actor, demo, contracts, meetings, now, onDone }: { open: boolean; onClose: () => void; hotels: HotelCare[]; categories: Category[]; actor: string; demo: boolean; contracts: ServiceContractRef[]; meetings: MeetingRef[]; now: Date; onDone: (t: Ticket) => void }) {
+function CreateCase({ cases, open, onClose, hotels, categories, actor, demo, contracts, meetings, now, onDone }: { cases: Ticket[]; open: boolean; onClose: () => void; hotels: HotelCare[]; categories: Category[]; actor: string; demo: boolean; contracts: ServiceContractRef[]; meetings: MeetingRef[]; now: Date; onDone: (t: Ticket) => void }) {
   const [hq, setHq] = useState(''); const [hotel, setHotel] = useState<HotelCare | null>(null); const [cat, setCat] = useState(''); const [title, setTitle] = useState(''); const [desc, setDesc] = useState(''); const [dept, setDept] = useState<Team | null>(null); const [busy, setBusy] = useState(false); const [svcCat, setSvcCat] = useState('');
   const [contractId, setContractId] = useState<string>(NONE); const [meetingId, setMeetingId] = useState<string>(NONE); const [contractTouched, setContractTouched] = useState(false);
+  const [files, setFiles] = useState<PendingAttachment[]>([]); const [dups, setDups] = useState<ServiceTicketRow[] | null>(null);
+  const { rows: svcRows, demo: rowsDemo } = useServiceTicketRows(cases as never);
+  useEffect(() => { if (open) { setFiles([]); setDups(null); } }, [open]);
   useEffect(() => { if (open) { setHq(''); setHotel(null); setCat(''); setTitle(''); setDesc(''); setDept(null); setContractId(NONE); setMeetingId(NONE); setContractTouched(false); setSvcCat(''); } }, [open]);
   const team = dept ?? categories.find(c => c.code === cat)?.domain ?? null;
   const hotelContracts = hotel ? activeContracts(contracts, hotel.hotel_id, team) : [];
@@ -226,11 +232,14 @@ function CreateCase({ open, onClose, hotels, categories, actor, demo, contracts,
   useEffect(() => { if (svcCat && !svcCats.some(c => c.id === svcCat)) setSvcCat(''); }, [svcDept]); // eslint-disable-line react-hooks/exhaustive-deps
   const pickCat = (v: string) => { setCat(v); setDept(categories.find(c => c.code === v)?.domain ?? null); };
   const matches = hotels.filter(h => `${h.hotel_name} ${h.hotel_id}`.toLowerCase().includes(hq.trim().toLowerCase())).slice(0, 8);
-  const save = async () => {
+  /* UAT Polish R2 SP15: before saving, show open tickets of the same hotel + department; the user decides (never blocked). */
+  const save = async (confirmed = false) => {
     if (!hotel || !cat || !title.trim()) { toast.error('กรุณาเลือกโรงแรม หมวดย่อย และใส่หัวข้อ'); return; }
     if (svcDept && !svcCat) { toast.error('กรุณาเลือกหมวด'); return; }
+    const found = findOpenDuplicates(svcRows, hotel.hotel_id, team, svcCat || null);
+    if (!confirmed && found.length) { setDups(found); return; }
     setBusy(true);
-    try { const t = await ticketApi.create(demo, { hotel_id: hotel.hotel_id, hotel_name: hotel.hotel_name, category: cat, ...(team ? { routed_team: team } : {}), title, description: desc, actor, ...(team ? stampOf(team, hotel) : {}), contract_id: contractId === NONE ? null : contractId, meeting_id: meetingId === NONE ? null : meetingId }); if (svcDept && svcCat) saveCaseCategory(demo, t.id, svcCat); onDone(t); onClose(); }
+    try { const t = await ticketApi.create(demo, { hotel_id: hotel.hotel_id, hotel_name: hotel.hotel_name, category: cat, ...(team ? { routed_team: team } : {}), title, description: desc, actor, ...(team ? stampOf(team, hotel) : {}), contract_id: contractId === NONE ? null : contractId, meeting_id: meetingId === NONE ? null : meetingId }); if (svcDept && svcCat) saveCaseCategory(demo, t.id, svcCat); const at = new Date().toISOString(); await saveCaseAttachments(demo, t.id, files, at); if (confirmed) recordDuplicateAck(demo, t.id, (dups ?? []).map(r => r.ticket_no), at, actor); setDups(null); onDone(t); onClose(); }
     catch (e) { toast.error(e instanceof Error ? e.message : 'สร้าง ticket ไม่สำเร็จ'); } finally { setBusy(false); }
   };
   return <Dialog open={open} onOpenChange={o => !o && onClose()}><DialogContent className="max-w-lg"><DialogHeader><DialogTitle>สร้าง ticket</DialogTitle></DialogHeader>
@@ -245,9 +254,12 @@ function CreateCase({ open, onClose, hotels, categories, actor, demo, contracts,
       </div>}
       <div><label className="text-xs font-medium">หัวข้อ *</label><Input aria-label="หัวข้อ" value={title} onChange={e => setTitle(e.target.value)} /></div>
       <div><label className="text-xs font-medium">รายละเอียด</label><Textarea aria-label="รายละเอียด" value={desc} onChange={e => setDesc(e.target.value)} rows={3} /></div>
+      <CreateTicketAttachments value={files} onChange={setFiles} />
       <div className="rounded-lg bg-muted/50 p-2"><People care={hotel ?? undefined} team={team} /></div>
-      <div className="flex justify-end gap-2"><Button variant="ghost" onClick={onClose}>ยกเลิก</Button><Button onClick={save} disabled={busy}>บันทึก ticket</Button></div>
+      <div className="flex justify-end gap-2"><Button variant="ghost" onClick={onClose}>ยกเลิก</Button><Button onClick={() => save(false)} disabled={busy}>บันทึก ticket</Button></div>
     </div>
+    {dups && <DuplicateTicketDialog rows={dups} note={desc || title} demo={rowsDemo} actor={actor}
+      onCancel={() => setDups(null)} onConfirm={() => save(true)} onFollowedUp={() => { setDups(null); onClose(); }} />}
   </DialogContent></Dialog>;
 }
 
@@ -279,7 +291,7 @@ function CaseDrawer({ ticket, onClose, care, categories, actor, actors, onActor,
   return <Sheet open={!!ticket} onOpenChange={o => !o && onClose()}><SheetContent className="task-drawer" aria-describedby={undefined}>
     {ticket && <><SheetHeader><p className="task-drawer-eyebrow">{ticket.case_no} · PS เปิดเอง</p><SheetTitle>{ticket.title}</SheetTitle></SheetHeader>
       <div className="mt-3 space-y-4 text-sm">
-        <div className="space-y-1"><p className="text-base font-semibold">{ticket.title}</p><p className="text-muted-foreground">{ticket.hotel_name} · {categories.find(c => c.code === ticket.category_id)?.subcategory_label_th} → {TEAM_LABEL[ticket.routed_team]}</p>{ticket.description && <p className="whitespace-pre-wrap">{ticket.description}</p>}<StatusPill t={ticket} /></div>
+        <div className="space-y-1"><p className="text-base font-semibold">{ticket.title}</p><p className="text-muted-foreground">{ticket.hotel_name} · {categories.find(c => c.code === ticket.category_id)?.subcategory_label_th} → {TEAM_LABEL[ticket.routed_team]}</p>{ticket.description && <p className="whitespace-pre-wrap">{ticket.description}</p>}<StatusPill t={ticket} /><CaseAttachmentList demo={demo} caseId={ticket.id} /></div>
         <People care={care} team={team} />
         {conflict && <div className="rounded-lg border border-warning bg-warning/15 p-2 text-xs">มีคนแก้ ticket นี้ก่อนหน้า · โหลดล่าสุดแล้วลองอีกครั้ง <Button size="sm" variant="outline" onClick={() => { setConflict(false); onSaved(); }}>โหลดใหม่</Button></div>}
         <div className="grid gap-2 rounded-lg border p-3 task-case-controls">
