@@ -25,7 +25,8 @@ function liveTicket(created: string, target: L0.Dept = 'ORM') {
   L0.patchServiceTicket(r.ticket_id, (t) => ({ ...t, created_at: `${created}T09:00:00+07:00` }), { by: 'PS', note: 'test setup' });
   return () => view(L0.ticketSnapshot(), { followups: S.ticketFollowups.all(false) }).find((x) => x.ticket_id === r.ticket_id)!;
 }
-beforeEach(() => { localStorage.clear(); });
+// test hygiene: live collections cache in memory, so an earlier file's rows survive localStorage.clear()
+beforeEach(() => { localStorage.clear(); bellItems.save(false, []); S.ticketFollowups.save(false, []); });
 
 describe('SLA core', () => {
   test('1 · accept: day 0 and day 10 ok, day 11 refused, second accept refused, sender cannot set', () => {
