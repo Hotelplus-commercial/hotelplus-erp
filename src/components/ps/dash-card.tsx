@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, type ReactNode, type ReactElement } from "react";
+import { useEffect, useState, useRef, useId, type ReactNode, type ReactElement } from "react";
 import { ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -254,7 +254,7 @@ export type InfoBlocks = { source?: ReactNode; count?: ReactNode; formula?: Reac
 /** Shared ⓘ: long explanations, rules and legends live here, not on the card face. */
 export function InfoButton({ info, label = "คำอธิบาย" }: { info: InfoBlocks; label?: string }) {
   const [open, setOpen] = useState(false);
-  const id = useRef(`info-${Math.random().toString(36).slice(2, 9)}`).current;
+  const id = `info-${useId().replace(/:/g, "")}`;
   const blocks: [string, ReactNode | undefined][] = [
     ["ที่มา", info.source], ["นับอย่างไร", info.count], ["สูตร", info.formula], ["อ่านอย่างไร", info.read],
     ...(info.extra ?? []).map((b) => [b.label, b.body] as [string, ReactNode]),

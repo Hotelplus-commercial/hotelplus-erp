@@ -6,6 +6,7 @@ export type Grade = 'A' | 'B' | 'C' | 'D';
 export type GradeRecord = { customer_id: string; billing_period: string; grade: Grade; basis: string[]; computed_at: string };
 export type CollectionEvent = { id: string; customer_id: string; hotel_name: string; event_type: string; occurred_at: string; by_member: string; amount_outstanding: number; note: string };
 export type AccountingData = { contracts: Contract[]; invoices: Invoice[]; reports: ProductionReport[]; products: Product[]; customers: Customer[]; taxReceipts: TaxReceipt[]; liveLinks: LiveLink[]; invRequests: InvRequest[]; gradeRecords?: GradeRecord[]; collectionEvents?: CollectionEvent[]; billingWaiting?: { contract_id: string; service_line: string; billing_period: string }[] };
+import { guaranteeCharge, isGuaranteeContract, LATE_REPORT_NOTE, reportDeadline } from './ac-guarantee';
 export const bangkokDate = (now = new Date()) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok', year:'numeric', month:'2-digit', day:'2-digit' }).format(now);
 const monthShift = (period: string, shift: number, day = 1) => {
   const [year, month] = period.slice(0,7).split('-').map(Number);
@@ -135,12 +136,23 @@ export function runDailyBilling<T extends AccountingData>(original: T, t = bangk
     if (invoices.some(i => i.contract_ids.includes(c.contract_id) && i.billing_period_start.slice(0,7)===item.billing_period.slice(0,7) && (i.service_line===item.service_line || i.lines.some(l=>serviceOf(l.sku_snapshot,data.products)===item.service_line)) && i.status!=='void')) continue;
     const relevant = c.lines.filter(l => l.billing==='monthly' && serviceOf(l.sku_snapshot,data.products)===item.service_line);
     const reports = data.reports.filter(r=>r.contract_id===c.contract_id && `${r.period_year}-${String(r.period_month).padStart(2,'0')}`===item.billing_period.slice(0,7) && serviceOf(r.sku,data.products)===item.service_line);
-    if (!reports.length || relevant.some(l=>l.commission_rate!=null && !reports.some(r=>r.sku===l.sku_snapshot))) { pending.push(item); continue; }
+    const missingReport = !reports.length || relevant.some(l=>l.commission_rate!=null && !reports.some(r=>r.sku===l.sku_snapshot));
+    // AC-G1 (DF2): commission + Guarantee — no report by the drop deadline (3rd of next month) → bill the Guarantee.
+    const guarantee = isGuaranteeContract(c) && relevant.some(l=>l.commission_rate!=null);
+    if (missingReport && !(guarantee && t >= reportDeadline(item.billing_period))) { pending.push(item); continue; }
     const lines: InvoiceLine[] = [];
     for (const l of relevant) {
       if (l.unit_price && l.unit_price>0) lines.push({line_id:crypto.randomUUID(),contract_id:c.contract_id,sku_snapshot:l.sku_snapshot,name_snapshot:l.name_snapshot,line_type:'fixed',quantity:l.quantity,unit_price:l.unit_price,amount:l.unit_price*l.quantity});
       const r = reports.find(r=>r.sku===l.sku_snapshot);
       if (l.commission_rate!=null && r) lines.push({line_id:crypto.randomUUID(),contract_id:c.contract_id,sku_snapshot:l.sku_snapshot,name_snapshot:l.name_snapshot+' — Commission',line_type:'commission',quantity:1,unit_price:r.commission_thb,amount:r.commission_thb,production_report_id:r.report_id});
+    }
+    if (guarantee) {
+      const comm = lines.filter(l=>l.line_type==='commission');
+      const total = missingReport ? null : comm.reduce((a,l)=>a+l.amount,0);
+      const g = guaranteeCharge(total, c.guarantee_fee!);
+      const base = relevant.find(l=>l.commission_rate!=null)!;
+      const kept = lines.filter(l=>l.line_type!=='commission');
+      lines.length = 0; lines.push(...kept, {line_id:crypto.randomUUID(),contract_id:c.contract_id,sku_snapshot:base.sku_snapshot,name_snapshot:`${base.name_snapshot} — ${g.text}${g.noReport ? ` · ${LATE_REPORT_NOTE}` : ''}`,line_type:'commission',quantity:1,unit_price:g.amount,amount:g.amount,...(comm[0]?.production_report_id ? {production_report_id:comm[0].production_report_id} : {})});
     }
     if (!lines.length) continue;
     invoices.unshift({...(c.hotel_id ? {hotel_id:c.hotel_id} : {}),invoice_type:'RECURRING',invoice_id:nextInvoiceId(invoices.map(i=>i.invoice_id)),case_number:c.case_number ?? '',contract_ids:[c.contract_id],customer_snapshot:c.customer_snapshot,billing_period_start:item.billing_period,billing_period_end:monthShift(item.billing_period,1,0),lines,totals:computeTotals(lines,c.customer_snapshot.type),status:'issued',issued_at:item.billing_period.slice(0,7)+'-05T00:00:00Z',issued_by:'daily',paid_at:null,created_at:t+'T00:00:00Z',issue_date:item.billing_period.slice(0,7)+'-05',due_date:item.billing_period.slice(0,7)+'-15',customer_segment:'EXISTING',service_line:item.service_line as 'ORM'|'Marcom',paid_amount:0,settled_date:null});

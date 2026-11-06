@@ -3,6 +3,7 @@
  * - Late renewal: the engine captures only the current period on the 5th and never back-bills → AC bills the missed rounds by hand. */
 import type { Contract } from './crm-types';
 import { Q58 } from './ps-glossary';
+import { GUARANTEE_RULE_LIVE } from './ac-guarantee';
 
 export type AcNotice = { contract_id: string; hotel: string; kind: 'GUARANTEE' | 'LATE'; text: string; months?: string[] };
 const TH_MON = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
@@ -26,7 +27,8 @@ export function renewalAcNotices(contracts: Contract[]): AcNotice[] {
   for (const c of contracts) {
     if (!c.renewal_of) continue;
     const hotel = c.customer_snapshot?.hotel_name || c.customer_snapshot?.legal_name || c.contract_id;
-    if (c.billing_model === 'COMMISSION_GUARANTEE' && c.guarantee_fee != null) out.push({ contract_id: c.contract_id, hotel, kind: 'GUARANTEE', text: Q58.guaranteeNotice(c.guarantee_fee.toLocaleString('en-US')) });
+    // AC-G1 live (DF2): runDailyBilling bills max(commission, Guarantee) → notice hidden, code kept.
+    if (!GUARANTEE_RULE_LIVE && c.billing_model === 'COMMISSION_GUARANTEE' && c.guarantee_fee != null) out.push({ contract_id: c.contract_id, hotel, kind: 'GUARANTEE', text: Q58.guaranteeNotice(c.guarantee_fee.toLocaleString('en-US')) });
     const signed = c.live_link_signed_at;
     if (signed && c.start_date.slice(0, 10) < signed.slice(0, 10)) {
       const months = missedRounds(c.start_date, signed);

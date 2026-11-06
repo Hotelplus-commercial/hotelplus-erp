@@ -28,6 +28,7 @@ import type { InvoiceLine } from "@/lib/crm-types";
 import { renewalAcNotices } from "@/lib/renewal-ac-notice";
 import { v141DemoRenewedContracts } from "@/lib/renewal-store";
 import { psDemoOn } from "@/lib/demo-session";
+import { guaranteeDemoInvoices } from "@/lib/ac-guarantee-demo";
 
 export const Route = createFileRoute("/ac/billing")({
   head: () => ({
@@ -81,6 +82,8 @@ function BillingPage() {
   const [demoNotices, setDemoNotices] = useState(false);
   useEffect(() => setDemoNotices(psDemoOn()), []);
   const notices = useMemo(() => [...renewalAcNotices(contracts).map((n) => ({ ...n, demo: false })), ...(demoNotices ? renewalAcNotices(v141DemoRenewedContracts()).map((n) => ({ ...n, demo: true })) : [])], [contracts, demoNotices]);
+  /* AC-G1 (DF2): DEMO-only Guarantee examples from the real billing step; in memory, never written. */
+  const gDemo = useMemo(() => (demoNotices ? guaranteeDemoInvoices() : []), [demoNotices]);
   const [year, setYear] = useState(String(lastPeriod.year));
   const [month, setMonth] = useState(String(lastPeriod.month));
   const y = Number(year);
@@ -187,6 +190,7 @@ function BillingPage() {
           >
             <div className="space-y-3">
               {notices.map((n) => <div key={n.kind + n.contract_id} data-testid={`ac-renewal-notice-${n.kind}`} className="border-l-2 border-warning bg-warning/10 p-3 text-sm"><p className="font-medium">{n.hotel} · {n.contract_id}{n.demo ? " · DEMO" : ""}</p><p>{n.text}</p></div>)}
+              {gDemo.length > 0 && <div data-testid="ac-guarantee-demo" className="rounded-xl border p-3 text-sm"><p className="font-medium">ตัวอย่าง Guarantee ขั้นต่ำ · DEMO (ข้อมูลตัวอย่าง · งวด ก.ย. 69)</p>{gDemo.map(g=><div key={g.contract_id} className="mt-2 border-t pt-2"><p className="font-medium">{g.hotel} · {g.contract_id}{g.invoice ? ` · ${g.invoice.invoice_id}` : ""}</p>{g.invoice?.lines.map(l=><p key={l.line_id} className="text-xs text-muted-foreground">{l.name_snapshot}</p>)}<p className="text-xs">ยอดก่อน VAT {thb(g.invoice?.totals.subtotal ?? 0)}</p></div>)}</div>}
               {(billingWaiting??[]).map(w=><div key={w.contract_id+w.service_line+w.billing_period} className="border-l-2 border-warning bg-warning/10 p-3 text-sm"><p className="font-medium">{contracts.find(c=>c.contract_id===w.contract_id)?.customer_snapshot.hotel_name} · {w.service_line} · {w.billing_period.slice(0,7)}</p><p>awaiting Production Report</p></div>)}
               {invRequests.map((r) => {
                 const cs = contracts.filter((c) => r.contract_ids.includes(c.contract_id));

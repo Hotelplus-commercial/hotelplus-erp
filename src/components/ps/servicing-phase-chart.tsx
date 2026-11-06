@@ -3,7 +3,7 @@ import { ChartHint, ChartSkeleton, DashCard } from './dash-card';
 import { Button } from '@/components/ui/button';
 import type { PhaseTimeRow } from '@/lib/servicing-dashboard-types';
 import { median } from '@/lib/servicing-dashboard-types';
-import { phaseConfig, servicing_sla_config, statusText, type Phase } from '@/lib/servicing-time';
+import { phaseConfig, statusText, type Phase } from '@/lib/servicing-time';
 import { plainSv } from '@/lib/ps-glossary';
 import type { Period } from '@/lib/ps-dashboard-global';
 const fmt=(n:number|null)=>n==null?'—':n.toLocaleString('th-TH',{maximumFractionDigits:1});
@@ -63,9 +63,9 @@ export function ServicingPhaseChart({rows,service,periodA,periodB,compare,pendin
   </>}
  </DashCard>;
 }
-/** R1 §8.1: the former definition strip, now inside ⓘ (numbers from servicing_sla_config). */
+/** R1 §8.1: the former definition strip, now inside ⓘ (DF1: numbers from SLA On-board via phaseConfig). */
 export function servicingInfo() {
- const {p1,p2,p3}=servicing_sla_config;
+ const p1=phaseConfig('P1'),p2=phaseConfig('P2'),p3=phaseConfig('P3');
  return {
   count:<>ช่วง AE · กำหนดเสร็จ {p1.sla} วัน: สร้างการ์ด (วันที่ 0) → ผ่าน Final Check (เข้า Approved)<br/>ช่วงเตรียมระบบ (Specialist / ORM / Marcom) · กำหนดเสร็จ {p2.sla} วัน (ทำคู่ขนาน): นับจาก Approved · Specialist → ส่ง handover ครบ · ORM / Marcom → สร้างนัดประชุม · GMB → Go Live<br/>รอประชุม · ไม่นับ: สร้างนัดแล้ว → ถึงวันประชุม · รอ ORM ตรวจรับ handover ก็ไม่นับ<br/>ช่วงก่อน Go Live · เป้า {p3.target} วัน · กำหนดเสร็จ {p3.sla} วัน: วันประชุม (Rate Structure / First Sync) → Go Live</>,
   read:<>ทันกำหนด = ช่วง AE / เตรียมระบบ วันที่ 0–{p1.ok_max} · ก่อน Go Live วันที่ 0–{p3.ok_max}<br/>ใกล้ถึงกำหนด (“อีก x วันถึงกำหนด”) = ช่วง AE / เตรียมระบบ วันที่ {p1.ok_max+1}–{p1.sla} · ก่อน Go Live วันที่ {p3.ok_max+1}–{p3.sla}<br/>เลยกำหนด (“เลยกำหนด x วัน”) = เกินกำหนดเสร็จของช่วงนั้น · ระบบสร้าง ticket ให้หัวหน้างาน<br/>สีจุด = เจ้าของ stage (AE / Specialist / ORM / Marcom) · Prepare Data (ORM) ทำร่วม Specialist + ORM · นับวันปฏิทินเต็ม เวลาไทย</>,

@@ -43,14 +43,16 @@ const stamp = (demo: boolean) => (demo ? `${DEMO_DAY.slice(0, 10)}T09:00:00+07:0
 
 /* ---------- collections ---------- */
 export type TicketCategory = { id: string; key: string; name_th: string; dept: SvcDept; keywords: string[]; is_system: boolean; hidden: boolean; sort_order: number; created_by: string; created_at: string };
-export type TicketFollowup = { id: string; ticket_store: TicketStore; ticket_id: string; sent_by: string; sent_by_role: 'AE' | 'PM'; recipient_kind: 'ASSIGNEE' | 'DEPT_QUEUE_AND_HEAD'; recipient_ids: string[]; note: string | null; sent_at: string; sent_date_bkk: string };
+export type TicketFollowup = { id: string; ticket_store: TicketStore; ticket_id: string; sent_by: string; sent_by_role: 'AE' | 'PM' | 'ASSIGNEE' | 'HEAD'; /** DF4: 'PROGRESS' = receiver progress note (not a requester follow-up); empty = follow-up. */ kind?: 'PROGRESS'; recipient_kind: 'ASSIGNEE' | 'DEPT_QUEUE_AND_HEAD'; recipient_ids: string[]; note: string | null; sent_at: string; sent_date_bkk: string };
 export type CategoryRequest = { id: string; dept: SvcDept; proposed_name: string; proposed_note: string | null; conflict_category_ids: string[]; requested_by: string; requested_at: string; status: 'PENDING' | 'APPROVED' | 'REJECTED'; ogm_note: string | null; decided_by: string | null; decided_at: string | null; created_category_id: string | null };
 /** PS case SLA side record (one per case id). accepted_by_label = "name (team)". */
 export type TicketSla = { case_id: string; category_id?: string | null; accepted_at?: string | null; accepted_by?: string | null; accepted_by_label?: string | null; due_date?: string | null; due_set_at?: string | null; due_set_by?: string | null; waiting_on?: WaitingOn | null; waiting_on_note?: string | null;
   /** UAT Polish R2 SP14: create-ticket attachments (on-device file ref or link). */
   attachments?: TicketAttachmentRef[];
   /** UAT Polish R2 SP15: audit — the creator saw these open tickets and confirmed a new one. */
-  duplicate_ack?: { seen: string[]; at: string; by: string } };
+  duplicate_ack?: { seen: string[]; at: string; by: string };
+  /** ST-O2 (DF3): PS case routed to BD. The database routed_team stays as created (PS); vServiceTickets reads this. */
+  routed_team_override?: 'BD' | null };
 export type TicketAttachmentRef = { name: string; ref?: string; url?: string; added_at: string };
 
 const SEED: [string, string, SvcDept[], string[]][] = [
@@ -66,6 +68,8 @@ const SEED: [string, string, SvcDept[], string[]][] = [
   ['shutoff', 'ปิด / เปิดระบบ (ค้างชำระ)', ['ORM', 'MARCOM'], ['ปิดระบบ', 'เปิดระบบ', 'ค้างชำระ']],
   ['bill', 'บิล & เอกสารการเงิน', ['AC'], ['บิล', 'ใบลดหนี้', 'ใบกำกับ', 'invoice']],
   ['cust', 'ข้อมูลลูกค้า & นิติบุคคล', ['AC'], ['นิติบุคคล', 'ผู้มีอำนาจ', 'customer id']],
+  ['bdterms', 'สัญญา / เงื่อนไขที่ BD ทำไว้', ['BD'], ['สัญญา', 'เงื่อนไข', 'ข้อตกลง']],
+  ['quote', 'ใบเสนอราคา / ราคา', ['BD'], ['quotation', 'เสนอราคา']],
   ['offer', 'เพิ่มบริการ & ข้อเสนอ', ['BD'], ['ใบเสนอราคา', 'เพิ่มบริการ', 'special deal', 'upsell']],
   ['other', 'อื่น ๆ', ['ORM', 'MARCOM', 'AC', 'BD'], []],
 ];
@@ -100,7 +104,7 @@ export type ServiceTicketRow = {
   subject: string; description: string | null; display_status: DisplayStatus; accepted: boolean; assignee_id: string | null; assignee_label: string | null;
   opened_by_label: string; created_at: string; created_date: string; age_days: number; due_date: string | null; due_source: 'SET' | 'AUTO';
   effective_due_date: string; due_state: DueState; overdue_remark: 'HAD_WAIT' | 'NOT_ACCEPTED' | null; waiting_days: number;
-  solved_at: string | null; solve_days: number | null; followup_count: number; last_followup_at: string | null; last_followup_by_label: string | null; is_counted: boolean;
+  solved_at: string | null; solve_days: number | null; followup_count: number; progress_notes: { at: string; by: string; text: string }[]; last_progress_at: string | null; last_progress_by_label: string | null; last_followup_at: string | null; last_followup_by_label: string | null; is_counted: boolean;
 };
 export type ViewInput = { l0: L0Ticket[]; cases?: PsCase[]; sla?: TicketSla[]; followups?: TicketFollowup[]; categories: TicketCategory[]; today: string; caseWaitDays?: Record<string, number> };
 
@@ -130,8 +134,8 @@ export function openedByLabel(t: L0Ticket): string {
 
 export function vServiceTickets(i: ViewInput): ServiceTicketRow[] {
   const cat = (id: string | null | undefined, dept: SvcDept, key: string) => i.categories.find((c) => c.id === id) ?? i.categories.find((c) => c.key === key && c.dept === dept) ?? { id: `other:${dept}`, name_th: 'อื่น ๆ' };
-  const fu = (store: TicketStore, id: string) => (i.followups ?? []).filter((f) => f.ticket_store === store && f.ticket_id === id).sort((a, b) => a.sent_at.localeCompare(b.sent_at));
-  const finish = (base: Omit<ServiceTicketRow, 'age_days' | 'effective_due_date' | 'due_source' | 'due_state' | 'overdue_remark' | 'solve_days' | 'followup_count' | 'last_followup_at' | 'last_followup_by_label' | 'is_counted'>): ServiceTicketRow => {
+  const fu = (store: TicketStore, id: string) => (i.followups ?? []).filter((f) => f.kind !== 'PROGRESS' && f.ticket_store === store && f.ticket_id === id).sort((a, b) => a.sent_at.localeCompare(b.sent_at));
+  const finish = (base: Omit<ServiceTicketRow, 'age_days' | 'effective_due_date' | 'due_source' | 'due_state' | 'overdue_remark' | 'solve_days' | 'followup_count' | 'progress_notes' | 'last_progress_at' | 'last_progress_by_label' | 'last_followup_at' | 'last_followup_by_label' | 'is_counted'>): ServiceTicketRow => {
     const eff = base.due_date ?? addDays(base.created_date, AUTO_DUE_DAYS);
     const solvedDate = base.display_status === 'SOLVED' && base.solved_at ? bkkDate(base.solved_at) : null;
     let state: DueState;
@@ -140,8 +144,10 @@ export function vServiceTickets(i: ViewInput): ServiceTicketRow[] {
     else state = base.due_date ? 'ON_TIME' : 'NO_DATE';
     const remark = state !== 'OVERDUE' ? null : base.waiting_days >= 1 ? 'HAD_WAIT' : base.display_status === 'NEW' ? 'NOT_ACCEPTED' : null;
     const f = fu(base.ticket_store, base.ticket_id); const last = f[f.length - 1];
+    const pn = (i.followups ?? []).filter((x) => x.kind === 'PROGRESS' && x.ticket_store === base.ticket_store && x.ticket_id === base.ticket_id).sort((a, b) => a.sent_at.localeCompare(b.sent_at)).map((x) => ({ at: x.sent_at, by: x.sent_by, text: x.note ?? '' }));
+    const lp = pn[pn.length - 1];
     return { ...base, age_days: daysBetween(base.created_date, solvedDate ?? i.today), effective_due_date: eff, due_source: base.due_date ? 'SET' : 'AUTO', due_state: state, overdue_remark: remark,
-      solve_days: solvedDate ? daysBetween(base.created_date, solvedDate) : null, followup_count: f.length, last_followup_at: last?.sent_at ?? null, last_followup_by_label: last?.sent_by ?? null, is_counted: base.display_status !== 'CANCELLED' };
+      solve_days: solvedDate ? daysBetween(base.created_date, solvedDate) : null, followup_count: f.length, progress_notes: pn, last_progress_at: lp?.at ?? null, last_progress_by_label: lp?.by ?? null, last_followup_at: last?.sent_at ?? null, last_followup_by_label: last?.sent_by ?? null, is_counted: base.display_status !== 'CANCELLED' };
   };
   const out: ServiceTicketRow[] = [];
   for (const t of i.l0) {
@@ -157,8 +163,10 @@ export function vServiceTickets(i: ViewInput): ServiceTicketRow[] {
       waiting_days: l0WaitingDays(t, ds === 'SOLVED' && t.solved_at ? bkkDate(t.solved_at) : i.today), solved_at: ds === 'SOLVED' ? t.solved_at ?? (t.audit.filter((a) => a.to_status === 'DONE').pop()?.at ?? null) : null }));
   }
   for (const cse of i.cases ?? []) {
-    if (!inScopeCase(cse)) continue;
-    const dept = cse.routed_team as SvcDept; const x = (i.sla ?? []).find((s) => s.case_id === cse.id);
+    const x = (i.sla ?? []).find((s) => s.case_id === cse.id);
+    const toBd = x?.routed_team_override === 'BD';
+    if (!toBd && !inScopeCase(cse)) continue;
+    const dept = (toBd ? 'BD' : cse.routed_team) as SvcDept;
     const accepted = !!x?.accepted_at;
     const ds: DisplayStatus = cse.status === 'resolved' || cse.status === 'closed' ? 'SOLVED' : cse.status === 'waiting' ? (cse.waiting_reason === 'CUSTOMER' && (!x?.waiting_on || x.waiting_on === 'CUSTOMER') ? 'WAITING_CUSTOMER' : 'WAITING_THIRD_PARTY') : cse.status === 'in-progress' || accepted ? 'IN_PROGRESS' : 'NEW';
     const c = cat(x?.category_id, dept, defaultCategoryKey(null, dept, cse.category_id));
@@ -238,7 +246,7 @@ export function sendFollowUp(row: ServiceTicketRow, actor: SvcActor, o: { demo: 
   const note = o.note?.trim() || null; if (note && note.length > 300) return fail('ข้อความยาวเกิน 300 ตัวอักษร');
   const at = o.at ?? stamp(o.demo); const day = bkkDate(at);
   const rows = ticketFollowups.all(o.demo);
-  if (rows.some((f) => f.ticket_store === row.ticket_store && f.ticket_id === row.ticket_id && f.sent_date_bkk === day)) return fail(FOLLOWUP_DUP_TH);
+  if (rows.some((f) => f.kind !== 'PROGRESS' && f.ticket_store === row.ticket_store && f.ticket_id === row.ticket_id && f.sent_date_bkk === day)) return fail(FOLLOWUP_DUP_TH);
   const head = HEAD_OF[row.dept];
   const accepted = row.accepted && !!row.assignee_id;
   const sender = `${nameOf(actor)} (${role})`;
@@ -324,3 +332,30 @@ export function decideCategoryRequest(id: string, approve: boolean, actor: SvcAc
   return { ok: true };
 }
 export { roleTh as svcRoleTh };
+
+/* ---------- ST-O2 (DF3) · PS case → BD ---------- */
+/** Mark a PS case as routed to BD (side record only; never writes the PS case tables). */
+export function routeCaseToBd(demo: boolean, caseId: string, category_id?: string | null): Res {
+  const rows = ticketSla.all(demo); const x = rows.find((s) => s.case_id === caseId);
+  const next: TicketSla = { ...(x ?? { case_id: caseId }), routed_team_override: 'BD', ...(category_id ? { category_id } : {}) };
+  ticketSla.save(demo, x ? rows.map((s) => (s.case_id === caseId ? next : s)) : [...rows, next]);
+  return { ok: true };
+}
+
+/* ---------- DF4 · receiver progress notes ---------- */
+/** Only the assignee or the department head adds a note; stored in ticket_followups with kind PROGRESS; no edit / delete. */
+export function canAddProgressNote(row: ServiceTicketRow, actor: SvcActor): boolean {
+  if (isHeadOf(actor, row.dept)) return true;
+  return !!row.accepted && !!actor.member_id && actor.member_id === row.assignee_id;
+}
+export function addProgressNote(row: ServiceTicketRow, text: string, actor: SvcActor, o: { demo: boolean; at?: string }): Res {
+  const note = text.trim();
+  if (!note) return fail('กรุณาใส่ข้อความ');
+  if (!canAddProgressNote(row, actor)) return fail('เฉพาะผู้รับงานหรือหัวหน้าแผนกเท่านั้น');
+  const at = o.at ?? stamp(o.demo);
+  const rows = ticketFollowups.all(o.demo);
+  const head = isHeadOf(actor, row.dept);
+  const f: TicketFollowup = { id: `PN-${row.ticket_store}-${row.ticket_id}-${rows.length + 1}-${Date.parse(at)}`, ticket_store: row.ticket_store, ticket_id: row.ticket_id, sent_by: `${nameOf(actor)} (${roleTh(actor)})`, sent_by_role: head ? 'HEAD' : 'ASSIGNEE', recipient_kind: 'ASSIGNEE', recipient_ids: [], note, sent_at: at, sent_date_bkk: bkkDate(at), kind: 'PROGRESS' };
+  ticketFollowups.save(o.demo, [...rows, f]);
+  return { ok: true };
+}

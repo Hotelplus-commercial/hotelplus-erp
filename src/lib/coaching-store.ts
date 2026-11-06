@@ -9,7 +9,7 @@ import { DEMO_DAY, onDemoSessionChange, psDemoOn } from './demo-session';
 import { getMeetings, getSurveyFlags, getSurveys } from './meeting-survey-store';
 import type { MeetingRecord } from './meeting-survey-types';
 import { routeFlag } from './coaching-routing';
-import type { CoachMember, CoachRole, CoachingStatus, CoachingTask } from './coaching-types';
+import type { CoachMember, CoachRole, CoachingStatus, CoachingTask, MarcomOverrides, MarcomSubRole } from './coaching-types';
 import { COACH_DEMO_ACKS, COACH_DEMO_AGE, COACH_DEMO_OWNER_AE, COACH_DEMO_ROSTER, COACH_DEMO_SLOTS } from './coaching-demo';
 
 export const COACHING_KEY = 'meridia.coaching_tasks.v1';
@@ -20,24 +20,29 @@ let version = 0;
 const bump = () => { version++; cache = null; listeners.forEach((l) => l()); };
 
 /* ---------- live roster + Assign slots (read only) ---------- */
-type HrRaw = { id: string; nickname: string; function: string; orm_team: string | null; active: boolean };
+type HrRaw = { id: string; nickname: string; function: string; orm_team: string | null; active: boolean; marcom_sub_roles?: MarcomSubRole[] };
 function readJson<T>(k: string): T | null { try { return typeof localStorage === 'undefined' ? null : (JSON.parse(localStorage.getItem(k) ?? 'null') as T); } catch { return null; } }
 export function liveRoster(): CoachMember[] {
   const hr = readJson<{ members?: HrRaw[] }>('meridia.hr.members.v1')?.members ?? [];
-  return hr.map((m): CoachMember => ({ id: m.id, name: m.nickname, kind: m.function === 'AE' ? 'AE' : m.function === 'MARCOM' ? 'MARCOM' : m.function.startsWith('ORM') ? 'ORM' : 'AE', orm_team: m.orm_team, active: m.active }));
+  return hr.map((m): CoachMember => ({ id: m.id, name: m.nickname, kind: m.function === 'AE' ? 'AE' : m.function === 'MARCOM' ? 'MARCOM' : m.function.startsWith('ORM') ? 'ORM' : 'AE', orm_team: m.orm_team, active: m.active, ...(m.marcom_sub_roles?.length ? { marcom_sub_roles: m.marcom_sub_roles } : {}) }));
 }
-type Ws2Profile = { property_id: string; service: string; orm_team?: string | null; assigned_to?: string | null };
+type Ws2Profile = { property_id: string; service: string; orm_team?: string | null; assigned_to?: string | null; marcom_content_member_id?: string | null; marcom_ads_member_id?: string | null; marcom_presenter_member_id?: string | null };
 function liveSlot(hotelId: string | null, service: string) {
   if (!hotelId) return undefined;
   const p = (readJson<{ profiles?: Ws2Profile[] }>('ps-ws2-v1')?.profiles ?? []).find((x) => x.property_id === hotelId && (service === 'ORM' ? x.service === 'ORM' : x.service.startsWith('MARCOM')));
-  return p ? { orm_team: p.orm_team ?? null, marcom_person: p.assigned_to ?? null } : undefined;
+  return p ? { orm_team: p.orm_team ?? null, marcom_person: p.assigned_to ?? null, marcom_overrides: { CONTENT: p.marcom_content_member_id ?? null, ADS: p.marcom_ads_member_id ?? null, PRESENTER: p.marcom_presenter_member_id ?? null } as MarcomOverrides } : undefined;
 }
 /** Live testing role (HR testing role switcher, simulation only). */
 export function liveCoachRole(): CoachRole | null {
   const r = readJson<{ role?: string }>('meridia.hr.members.v1')?.role;
   return r === 'GRM' || r === 'PM' || r === 'MARCOM_LEAD' ? r : 'PM';
 }
-export const rosterFor = (demo: boolean) => (demo ? COACH_DEMO_ROSTER : liveRoster());
+/** DF5: in DEMO the HR roster's Marcom sub-roles (same nickname, read only) replace the DEMO defaults once HR has set them. */
+function demoRoster(): CoachMember[] {
+  const hr = readJson<{ members?: HrRaw[] }>('meridia.hr.members.v1')?.members ?? [];
+  return COACH_DEMO_ROSTER.map((m) => { const h = hr.find((x) => x.nickname === m.name && x.function === 'MARCOM' && Array.isArray(x.marcom_sub_roles)); return h?.marcom_sub_roles ? { ...m, marcom_sub_roles: h.marcom_sub_roles } : m; });
+}
+export const rosterFor = (demo: boolean) => (demo ? demoRoster() : liveRoster());
 
 /* ---------- live store ---------- */
 function loadLive(): CoachingTask[] { const v = readJson<CoachingTask[]>(COACHING_KEY); return Array.isArray(v) ? v : []; }

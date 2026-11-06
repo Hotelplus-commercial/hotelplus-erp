@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import type { ServicingReport, ServicingRow, PhaseTimeRow } from "./servicing-dashboard-types";
 import type { StallCandidate } from './servicing-stall';
-import { phaseConfig, servicingLanes } from './servicing-time';
+import { servicingLanes } from './servicing-time';
 
 /** Reads only the granted v_servicing_stage_cards projection (empty + pending until seed+C5). */
 export const readServicingDashboard = createServerFn({ method: "GET" }).handler(async (): Promise<ServicingReport> => {
@@ -54,7 +54,7 @@ export const readServicingBotSignals = createServerFn({method:'GET'}).handler(as
   for(const hit of page){
    if(!hit.card_id||!hit.hotel_id||!['P1','P2','P3'].includes(hit.phase??'')||!['AE','Specialist','ORM','Marcom'].includes(hit.lane??'')||hit.d==null)continue;
    const phase=hit.phase as 'P1'|'P2'|'P3',lane=hit.lane as 'AE'|'Specialist'|'ORM'|'Marcom';
-   if(hit.d<=phaseConfig(phase).sla)continue;
+   // OB-O1 (DF1): no server-side SLA cut — the BOT re-tones each candidate with the SLA On-board versions (browser).
    const row:ServicingRow={card_id:hit.card_id,hotel_id:hit.hotel_id,hotel_name:hit.hotel_name??hit.hotel_id,service_line:hit.service_line==='ORM'?'ORM':'MARCOM',service_variant:hit.service_variant,current_stage:hit.current_stage??'',created_at:'',stage_entered_at:null,go_live_at:null,progress_done:0,progress_total:0,last_updated:null,ae_owner_id:lane==='AE'?hit.owner_id:null,specialist_id:lane==='Specialist'?hit.owner_id:null,orm_team:lane==='ORM'?hit.owner_id:null,marcom_owner_id:lane==='Marcom'?hit.owner_id:null};
    out.push({row,lane:{phase,lane,state:'running',tone:'red',d:hit.d,start_at:null,end_at:null,wait_until:null}});
   }
