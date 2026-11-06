@@ -5,7 +5,6 @@ import type { ReactNode } from "react";
 import { useMenuRole } from "@/lib/menu-role";
 import { landingOf, visibleApps, type AppKey } from "@/lib/sidebar-registry";
 import { thShort } from "@/lib/card-compare";
-import { MA_TILES } from "@/lib/bd/meeting-analyzer-sample";
 import { TM_TARGET, TM_PEOPLE, TM_TODAY } from "@/lib/suite-dashboards/bd-dashboard-sample";
 import { AUTO_TILES, AUTO_SAMPLE_SOURCE } from "@/lib/suite-dashboards/auto-dashboard-sample";
 import { COMMISSION_PENDING, HR_KPI_ROUND, HR_SAMPLE_SOURCE } from "@/lib/suite-dashboards/hr-dashboard-sample";
@@ -16,7 +15,7 @@ import {
 } from "./sources";
 import { cn } from "@/lib/utils";
 
-const DOT: Record<AppKey, string> = { BD: "bg-primary", PS: "bg-success", ORM: "bg-info", MARCOM: "bg-destructive/70", AC: "bg-warning", HR: "bg-secondary-foreground", AUTO: "bg-muted-foreground", OFFICE: "bg-foreground" };
+const DOT: Record<AppKey, string> = { BD: "bg-primary", PS: "bg-success", ORM: "bg-primary/60", MARCOM: "bg-destructive/70", AC: "bg-warning", HR: "bg-secondary-foreground", AUTO: "bg-muted-foreground", OFFICE: "bg-foreground" };
 type Hi = { label: string; value: ReactNode; sample?: string };
 
 export function SuiteOverviewPage() {
@@ -113,7 +112,6 @@ function Body({ demo }: { demo: boolean }) {
           );
         })}
       </div>
-      {!!MA_TILES && null}
     </div>
   );
 }
