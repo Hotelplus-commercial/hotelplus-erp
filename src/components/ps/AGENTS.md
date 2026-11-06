@@ -5,7 +5,7 @@
 > | Before editing | Open |
 > |---|---|
 > | ps-tab-r1, contract-inout-card, contract-health-card, contract-signal-dialog, contract-tab-r1* | RULES_TAB_R1.md |
-> | renewal-card-r2, renewal-reason-picker, renewal-r2*, renewal-scan | RULES_TAB_R2.md |
+> | renewal-card-r2, renewal-reason-picker, renewal-r2*, renewal-scan, renewal-package* | RULES_TAB_R2.md |
 > | contract-lifetime-card, use-contract-age, contract-age*, welcome-back*, bd-workspace-page | RULES_TAB_R3.md |
 > | setup-duration-card, setup-queue-table, duration-sticky-bar, use-setup-timing, setup-* | RULES_TAB_R4.md |
 > | renewal-offer-r5, renewal-offer-section, renewal-r5*, contract-state, past-due / Q58 | RULES_TAB_R5_Q58.md |
