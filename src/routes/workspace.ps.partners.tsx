@@ -19,7 +19,7 @@ import { DEMO_DAY } from "@/lib/demo-session";
 import { setTicketDemo, useTickets } from "@/lib/tickets-l0";
 import type { Partner, PartnerData, PartnerDeal } from "@/lib/debt-partner-types";
 import { cn } from "@/lib/utils";
-import { signedPackageSwitches, useRenewalStore } from "@/lib/renewal-store";
+import { setRenewalDemo, signedPackageSwitches, useRenewalStore } from "@/lib/renewal-store";
 
 export const Route = createFileRoute("/workspace/ps/partners")({
   validateSearch: (s: Record<string, unknown>) => ({ demo: s["demo"] === "1" || s["demo"] === 1 ? 1 : undefined }),
@@ -50,7 +50,7 @@ function HotelLink({ pid, name, demo, children, testid }: { pid: string; name?: 
 function PartnerPage() {
   const { demo } = Route.useSearch();
   const [ready, setReady] = useState(false);
-  useEffect(() => { setPartnerDemo(!!demo); setTicketDemo(!!demo); setReady(true); }, [demo]);
+  useEffect(() => { setPartnerDemo(!!demo); setTicketDemo(!!demo); setRenewalDemo(!!demo); setReady(true); }, [demo]);
   const [view, setView] = useState<PartnerView>({ v: "overview" });
   const [focus, setFocus] = useState<Focus>({});
   useEffect(() => {
