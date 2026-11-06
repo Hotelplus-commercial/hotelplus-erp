@@ -288,3 +288,11 @@ export const canEditReason = (a: Actor, ae: string | null | undefined, rec: { ed
 /** Early create: owning AE only, stage ยังไม่เริ่ม. */
 export const canEarlyCreate = (a: Actor, i: RenewalItem) => i.stage === 'NOT_STARTED' && isOwningAe(a, i.ae);
 export const daysLeftToEdit = (rec: { editable_until: string }, now: string) => Math.max(0, Math.ceil((Date.parse(rec.editable_until) - Date.parse(now)) / 864e5));
+
+/** B.1: renewed % of the quarter containing `today`, as of today — the renewal card's default KPI (shared read-only helper). */
+export function quarterRenewalStats(items: RenewalItem[], today: string): { renewed: number; decided: number; pct: number | null } {
+  const range = periodOf('quarter', today);
+  const win = compareOf('quarter', range, today, null);
+  const s = windowStats(items, range, win.cutA, today);
+  return { renewed: s.renewed, decided: s.decided, pct: s.renewedPct };
+}
