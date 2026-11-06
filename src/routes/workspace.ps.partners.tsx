@@ -19,6 +19,7 @@ import { DEMO_DAY } from "@/lib/demo-session";
 import { setTicketDemo, useTickets } from "@/lib/tickets-l0";
 import type { Partner, PartnerData, PartnerDeal } from "@/lib/debt-partner-types";
 import { cn } from "@/lib/utils";
+import { mainContracts } from "@/lib/main-contract-store";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PropertySystemBlock } from "@/components/ps/partner-system-ui";
 import { setRenewalDemo, signedPackageSwitches, useRenewalStore } from "@/lib/renewal-store";
@@ -43,7 +44,8 @@ type Focus = { req?: string | null; ans?: string | null; quick?: string | null }
 
 /** property_id → hotel name (Partner contracts, then the DEMO extra hotels). */
 function hotelNameOf(contracts: Contracts, pid: string) {
-  return contracts.find((c) => c.property_id === pid)?.hotel ?? PARTNER_DEMO_EXTRA_HOTELS.find((h) => h.property_id === pid)?.hotel ?? pid;
+  return contracts.find((c) => c.property_id === pid)?.hotel ?? PARTNER_DEMO_EXTRA_HOTELS.find((h) => h.property_id === pid)?.hotel
+    ?? mainContracts().find((c) => c.hotel_id === pid)?.customer_snapshot.hotel_name ?? pid; // main store (DEMO state in DEMO)
 }
 function HotelLink({ pid, name, demo, children, testid }: { pid: string; name?: string; demo: boolean; children?: React.ReactNode; testid?: string }) {
   return <Link to="/ps/property-content/$hotelId" params={{ hotelId: pid }} search={{ ...(demo ? { demo: 1 as const } : {}) }} hash="orm" className="text-primary hover:underline" data-testid={testid}>{children ?? name}</Link>;

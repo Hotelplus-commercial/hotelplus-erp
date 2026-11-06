@@ -5,6 +5,8 @@ import { propertySystemOn } from './debt-partner-calc';
 import type { PartnerData } from './debt-partner-types';
 import { ormTierOf, type PkgLine } from './renewal-package';
 
+/** Same `1 Dec 26` format as จัดการ Partner (dDMY in partner-section). */
+const dDMY = (iso: string) => new Date(`${iso.slice(0, 10)}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit', timeZone: 'UTC' });
 export type PkgSwitchTo = 'LITE' | 'FULL';
 export type PkgSwitch = { contract_id: string; hotel_id: string; hotel: string; to: PkgSwitchTo; start: string; signed_at: string };
 export const PKG_SWITCH_LABEL: Record<PkgSwitchTo, string> = { LITE: 'ORM Lite', FULL: 'ORM เต็ม' };
@@ -39,7 +41,7 @@ export function packageSwitchTodos(d: PartnerData, switches: PkgSwitch[], today:
     return {
       kind: 'E' as const, id: `E-${s.contract_id}`, trigger: s.signed_at.slice(0, 10), partner_id: cur?.partner_id ?? null, property_id: s.hotel_id, effective_from: s.start,
       title: `${pkgSwitchTitle(s)} · ${s.hotel}`,
-      sub: `ระบบปัจจุบัน: ${cur ? `${pName(cur.partner_id)} · ${cur.system_name}` : 'ยังไม่ระบุระบบ'} · มีผล ${s.start}`,
+      sub: `ระบบปัจจุบัน: ${cur ? `${pName(cur.partner_id)} · ${cur.system_name}` : 'ยังไม่ระบุระบบ'} · มีผล ${dDMY(s.start)}`,
       due_relative: '', route_target: `/ps/property-content/${s.hotel_id}${demo ? '?demo=1' : ''}#orm`,
     };
   });

@@ -102,7 +102,7 @@ describe('O-26 signing', () => {
     const todos = W.partnerTodoItems(empty, [], '2026-11-25', 'today', 'PM', sw, true).filter((t) => t.kind === 'E');
     expect(todos.length).toBe(1);
     expect(todos[0]!.title).toBe('เปลี่ยนระบบ Partner ให้ตรงแพ็กเกจ ORM Lite · Chiang Rai Hill Lodge');
-    expect(todos[0]!.sub).toContain('ระบบปัจจุบัน: ยังไม่ระบุระบบ · มีผล 2026-12-01');
+    expect(todos[0]!.sub).toContain('ระบบปัจจุบัน: ยังไม่ระบุระบบ · มีผล 1 Dec 26');
     expect(W.partnerTodoItems(empty, [], '2026-11-25', 'today', 'AE', sw, true).length).toBe(0);
     const bells = () => Bell.bellItems.all(true).filter((b) => b.key === `PKGSYS:${sw[0]!.contract_id}:2026-12-01`);
     expect(bells().length).toBe(1); expect(bells()[0]!.target_id).toBe('PM');
