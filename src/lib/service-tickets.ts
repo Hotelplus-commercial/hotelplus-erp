@@ -246,7 +246,7 @@ export function sendFollowUp(row: ServiceTicketRow, actor: SvcActor, o: { demo: 
   const note = o.note?.trim() || null; if (note && note.length > 300) return fail('ข้อความยาวเกิน 300 ตัวอักษร');
   const at = o.at ?? stamp(o.demo); const day = bkkDate(at);
   const rows = ticketFollowups.all(o.demo);
-  if (rows.some((f) => f.ticket_store === row.ticket_store && f.ticket_id === row.ticket_id && f.sent_date_bkk === day)) return fail(FOLLOWUP_DUP_TH);
+  if (rows.some((f) => f.kind !== 'PROGRESS' && f.ticket_store === row.ticket_store && f.ticket_id === row.ticket_id && f.sent_date_bkk === day)) return fail(FOLLOWUP_DUP_TH);
   const head = HEAD_OF[row.dept];
   const accepted = row.accepted && !!row.assignee_id;
   const sender = `${nameOf(actor)} (${role})`;
