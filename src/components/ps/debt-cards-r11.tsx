@@ -15,6 +15,7 @@ import {
 } from "@/lib/debt-cards";
 import { demoDebtRows, demoDebtTickets, demoGradeAt, demoGradeRows, demoPaidInvoices, onDemoInvoiceChange } from "@/lib/debt-cards-demo";
 import { cn } from "@/lib/utils";
+import { GradeDefs, CollectionDefs, DEF_UNIT_GRADE, DEF_READONLY } from "./ac-definitions";
 
 const thb = (n: number) => `฿${Math.round(n).toLocaleString("en-US")}`;
 const GRADES: Grade[] = ["A", "B", "C", "D"];
@@ -123,6 +124,7 @@ export function PaidGradeCard({ demo, initialOpen = false }: { demo: boolean; in
         source: "AC App · ใบแจ้งหนี้ (status = paid / paid_at) · เกรดจาก AC App",
         count: "ชำระแล้ว = สัญญาที่บิลงวดล่าสุดชำระแล้ว อ่านสถานะ real-time จาก AC App · เกรดคิดราย customer ที่ AC App (เฉพาะบิล recurring) สัญญาทุกฉบับของ customer เดียวกันใช้เกรดเดียวกัน · นับเป็นสัญญาบริการ (ORM 1 · Marcom 1) · เทียบกับวันเดียวกันของช่วงก่อน (HR5)",
         read: "สัญญาขาดอายุ รอผล ที่ยังมีบิลงวดล่าสุดยังนับในการ์ดนี้ (ติดป้าย ขาดอายุ รอผล)",
+        extra: [{ label: "เกรดการชำระ", body: <GradeDefs /> }, { label: "หน่วยนับ", body: <>{DEF_UNIT_GRADE} · {DEF_READONLY}</> }],
       }}
       question="สัญญาไหนจ่ายตรงเวลา และสัดส่วนดีขึ้นหรือแย่ลง?"
       answer={h ? `ชำระแล้ว ${h.now.paid} สัญญา` : "—"}
