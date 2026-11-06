@@ -1,8 +1,11 @@
-import { describe, expect, test } from 'bun:test';
-import { confirmPayment, invoiceGrade, runDailyBilling, recomputeAccounting, collectionStatus, manualCollection, paymentSummary } from '../src/lib/ac-v2-engine';
-import { resolveContractHotel, stampInvoiceHotel, attributedOwner } from '../src/lib/ac-attribution';
-import { detectStatus } from '../src/lib/hotel-profile';
-import { seedContracts, seedCustomers, seedProducts, seedInvoices, seedReports, seedInvRequests, seedLiveLinks } from '../src/lib/crm-seed';
+import { describe, expect, test, setSystemTime, afterAll } from 'bun:test';
+// DF8: fixtures in crm-seed are built from "now" at import time and expect a September 2026 clock. Test-only freeze; engine unchanged.
+setSystemTime(new Date('2026-09-20T05:00:00Z'));
+afterAll(() => setSystemTime());
+const { confirmPayment, invoiceGrade, runDailyBilling, recomputeAccounting, collectionStatus, manualCollection, paymentSummary } = await import('../src/lib/ac-v2-engine');
+const { resolveContractHotel, stampInvoiceHotel, attributedOwner } = await import('../src/lib/ac-attribution');
+const { detectStatus } = await import('../src/lib/hotel-profile');
+const { seedContracts, seedCustomers, seedProducts, seedInvoices, seedReports, seedInvRequests, seedLiveLinks } = await import('../src/lib/crm-seed');
 
 const base = () => ({contracts:seedContracts.map(c=>({...c,status:'contract_completed' as const,start_date:'2026-01-01',duration_months:24})),customers:seedCustomers,products:seedProducts,invoices:seedInvoices,reports:seedReports,invRequests:seedInvRequests,liveLinks:seedLiveLinks,taxReceipts:[]});
 describe('AC v2 canonical accounting',()=>{
