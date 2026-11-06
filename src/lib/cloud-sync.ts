@@ -54,7 +54,9 @@ function log(event: string, key: string, detail: Record<string, unknown> = {}) {
 function emit(patch: Partial<SyncSnapshot>) {
   const conflicts = [...docs.values()].flatMap((d) => (d.conflict ? [d.conflict] : []));
   snapshot = { ...snapshot, ...patch, conflicts, docs: docs.size };
-  listeners.forEach((l) => l());
+  // DF7: stores may stage docs while another component renders; notify after the current
+  // render (microtask) so CloudSyncControl never updates during someone else's render.
+  queueMicrotask(() => listeners.forEach((l) => l()));
 }
 const dirty = (d: Doc) => !d.conflict && d.hash !== d.pushedHash;
 
