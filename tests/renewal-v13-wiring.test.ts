@@ -58,7 +58,7 @@ describe('v1.3 §3 · on SIGNED → new contract in the main store', () => {
     const base = M.demoAccountingData();
     const old = M.mainContractById('CT-HTL0118')!; const sku = old.lines[0]!.sku_snapshot;
     const prior = { invoice_id: 'INV-PRIOR', invoice_type: 'RECURRING', contract_ids: ['CT-HTL0118'], customer_snapshot: old.customer_snapshot, status: 'paid', lines: [], totals: { subtotal: 0, vat: 0, wht: 0, total: 0 }, billing_period_start: '2026-09-01', billing_period_end: '2026-09-30' } as unknown as Invoice;
-    const data = { ...base, invoices: [prior], reports: [report('CT-HTL0118', sku, 2026, 10), report(newId, sku, 2026, 11)] };
+    const data = { ...base, invoices: [prior], reports: [report('CT-HTL0118', sku, 2026, 9), report('CT-HTL0118', sku, 2026, 10), report(newId, sku, 2026, 11)] }; // PR-O1: invoice of month M+1 charges service month M
     const bill = (t: string, cid: string) => runDailyBilling(data, t).invoices.find((i) => i.contract_ids.includes(cid) && i.billing_period_start.startsWith(t.slice(0, 7)));
     expect(bill('2026-10-05', 'CT-HTL0118')?.lines[0]?.unit_price).toBe(25000);
     expect(bill('2026-10-05', newId)).toBeUndefined();

@@ -5,8 +5,9 @@ import { runDailyBilling } from './ac-v2-engine';
 import type { Contract, Invoice, ProductionReport } from './crm-types';
 import { seedContracts } from './crm-seed';
 
-/** Billing period of the examples (Sep 2026) and the DEMO run date after the 3 Oct drop deadline. */
-export const G_DEMO_PERIOD = '2026-09-01';
+/** PR-O1: the October invoice (made 5 Oct) charges service month September; DEMO run after the 3 Oct cut-off. */
+export const G_DEMO_PERIOD = '2026-10-01';
+export const G_DEMO_SERVICE_MONTH = '2026-09';
 export const G_DEMO_RUN_DAY = '2026-10-05';
 const GUARANTEE = 10_000;
 

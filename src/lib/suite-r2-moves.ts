@@ -3,6 +3,8 @@ export const R2_MOVES: Record<string, { to: string; set?: Record<string, string>
   '/ps/production': { to: '/ac/production-report' },
   '/orm/production-report': { to: '/ac/production-report', set: { mode: 'drop' } },
   '/marcom/production-report': { to: '/ac/production-report', set: { mode: 'drop' } },
+  '/orm/snapshot-report': { to: '/ps/report-automation' },
+  '/marcom/sync-up-report': { to: '/ps/report-automation' },
   '/the-office-app/orm-bonus': { to: '/orm/orm-tier' },
   '/the-office-app/bd-ac': { to: '/the-office-app/dashboard', set: { tab: 'bd-ac' } },
   '/office/bd-ac': { to: '/the-office-app/dashboard', set: { tab: 'bd-ac' } },

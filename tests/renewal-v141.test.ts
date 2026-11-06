@@ -69,7 +69,7 @@ describe('AC Billing: runDailyBilling() with renewal contracts', () => {
     const old = { ...SEED.seedContracts[0]!, contract_id: 'OLD-1', customer_snapshot: { ...SEED.seedContracts[0]!.customer_snapshot, customer_id: 'CUS-RNW' }, status: 'contract_completed' as const, start_date: '2025-10-01', duration_months: 12 };
     const neu = { ...old, contract_id: 'OLD-1-R1', renewal_of: 'OLD-1', start_date: '2026-10-01', duration_months: 12, billing_status: 'ACTIVE' as const, billing_model: 'COMMISSION_GUARANTEE' as const, guarantee_fee: 22500,
       lines: [{ line_id: 'L1', sku_snapshot: 'ORM-MTH-FULL', name_snapshot: 'ORM Full', package_snapshot: null, billing: 'monthly' as const, unit_price: null, commission_rate: 0.15, quantity: 1 }] };
-    const report = { ...SEED.seedReports[0]!, report_id: 'PR-RNW', contract_id: 'OLD-1-R1', sku: 'ORM-MTH-FULL', period_year: 2026, period_month: 11, commission_thb: 18000 };
+    const report = { ...SEED.seedReports[0]!, report_id: 'PR-RNW', contract_id: 'OLD-1-R1', sku: 'ORM-MTH-FULL', period_year: 2026, period_month: 10, commission_thb: 18000 };
     const invoices = prevInvoice ? [{ ...inv, invoice_id: 'INV-OLD', contract_ids: ['OLD-1'], customer_snapshot: { ...inv.customer_snapshot, customer_id: 'CUS-RNW' }, status: 'paid' as const }] : [];
     return { contracts: [old, neu], customers: SEED.seedCustomers, products: SEED.seedProducts, invoices, reports: [report], invRequests: [], liveLinks: [], taxReceipts: [] } as any;
   };

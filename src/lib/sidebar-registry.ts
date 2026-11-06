@@ -40,6 +40,9 @@ const MA = 'วิเคราะห์การประชุม';
 const PAY = 'ยอดผลตอบแทนรายรอบ';
 /** R2 A: Production Report lives once, in AC App. */
 export const PROD_REPORT = '/ac/production-report';
+/** PR-O1 PR-Q1: Report Automation (placeholder until its spec). */
+export const REPORT_AUTOMATION = '/ps/report-automation';
+const REPORT_AUTOMATION_PURPOSE = 'รวมรายงานรายเดือนที่ส่งให้ลูกค้า (ORM Snapshot · Marcom Sync Up) สำหรับ AE';
 
 /* ---------- BD APP ---------- */
 const BD_ALL = A('TM', 'BD', 'BDM', 'HOC', 'MD');
@@ -89,6 +92,8 @@ const ps: AppDef = {
       { kind: 'page', key: 'property', label: 'Property Content', route: '/ps/property-content', access: PS_ALL },
     ] },
     { kind: 'group', label: 'ดูแลลูกค้ารายเดือน', children: [
+      // PR-O1 PR-Q1: Snapshot (ORM) / Sync Up (Marcom) link-outs land here; ORM / MKT roles reach it only through those links.
+      P('ps', 'report-automation', 'Report Automation', A('AE', 'PM', 'OBS', 'HOC', 'MD', 'ORM', 'ORM_LEAD', 'GRM', 'MKT', 'MKT_LEAD'), REPORT_AUTOMATION_PURPOSE),
     ] },
     { kind: 'group', label: 'ผลงานของฉัน', children: [
       { kind: 'subheader', label: 'KPI', children: [P('ps', 'my-kpi', 'My KPI', M(S('own', 'AE', 'OBS'), S('all', 'PM', 'HOC', 'MD')), 'ผลงานของฉันเทียบ KPI บริษัท')] },
@@ -119,8 +124,8 @@ const orm: AppDef = {
       P('orm', 'revplus-meeting-analyzer', 'RevPlus+ / Rate Structure Meeting Analyzer', ORM_OWN, MA),
     ] },
     { kind: 'group', label: 'ส่งงานรายเดือน (Monthly Delivery)', children: [
-      // R2 A.4: the Snapshot Report link-out pointed at the moved page; it becomes a placeholder until it gets its own page.
-      P('orm', 'snapshot-report', 'Snapshot Report', ORM_HOT),
+      // PR-O1 PR-Q1: Snapshot Report goes to PS App › Report Automation (old /orm/snapshot-report redirects there).
+      { kind: 'link_out', key: 'snapshot-report', label: 'Snapshot Report', target: { app: 'PS', route: REPORT_AUTOMATION }, access: ORM_HOT },
       { kind: 'link_out', key: 'production-report', label: 'Production Report', target: { app: 'AC', route: PROD_REPORT, mode: 'drop_file' }, access: ORM_HOT },
       P('orm', 'snapshot-meeting-analyzer', 'Snapshot Meeting Analyzer', ORM_OWN, MA),
     ] },
@@ -161,7 +166,7 @@ const marcom: AppDef = {
       P('marcom', 'upsell-management', 'Upsell Management', MK_HOT, 'ดำเนินการ upsell · ส่งเรื่องให้ PS ยืนยัน'),
     ] },
     { kind: 'group', label: 'ส่งงานรายเดือน (Monthly Delivery)', children: [
-      P('marcom', 'sync-up-report', 'Sync Up Report', MK_HOT),
+      { kind: 'link_out', key: 'sync-up-report', label: 'Sync Up Report', target: { app: 'PS', route: REPORT_AUTOMATION }, access: MK_HOT },
       { kind: 'link_out', key: 'production-report', label: 'Production Report', target: { app: 'AC', route: PROD_REPORT, mode: 'drop_file' }, access: MK_HOT },
       P('marcom', 'graphic-summary', 'สรุปชิ้นงานกราฟฟิก', MK_HOT, 'สรุปจำนวนชิ้นงานจาก Content Plan · ยืนยันก่อนส่ง AC'),
       P('marcom', 'sync-up-meeting-analyzer', 'Sync Up Meeting Analyzer', MK_OWN, MA),

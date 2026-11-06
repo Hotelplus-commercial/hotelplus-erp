@@ -19,6 +19,7 @@ import {
   seedReports,
   seedTemplates,
 } from "@/lib/crm-seed";
+import { liveDropReports } from "@/lib/pr-drop-store";
 import {
   computeTotals,
   emptyTotals,
@@ -46,6 +47,11 @@ import type {
   QuoteLine,
   TaxReceipt,
 } from "@/lib/crm-types";
+
+/** PR-O1 PR18: ready Production Report drop items join the billing run as reports (drop wins over AC's manual report). */
+function withDrops<T extends { contracts: Contract[]; invoices: Invoice[] }>(d: T): T & { prDropReports: ProductionReport[] } {
+  return { ...d, prDropReports: liveDropReports(d.contracts, d.invoices, bangkokDate()) };
+}
 
 export { lastPeriod };
 
@@ -219,7 +225,7 @@ export function CrmStoreProvider({ children }: { children: React.ReactNode }) {
         return next===d?d:{...next,audit:log(d,'payment.confirm',invoiceId)};
       }),
       collectionAction:(customerId,event,note)=>upd(d=>manualCollection(d,customerId,event,note,d.actor)),
-      runDaily: () => { const next = runDailyBilling(data); setData(next); return next; },
+      runDaily: () => { const next = runDailyBilling(withDrops(data)); setData(next); return next; },
       hydrated,
       setActor: (email) => upd((d) => ({ ...d, actor: email })),
       reset: () => {
@@ -404,7 +410,7 @@ export function CrmStoreProvider({ children }: { children: React.ReactNode }) {
       },
 
       addReports: (list) =>
-        upd((d) => runDailyBilling({
+        upd((d) => runDailyBilling(withDrops({
           ...d,
           reports: [
             ...list,
@@ -420,7 +426,7 @@ export function CrmStoreProvider({ children }: { children: React.ReactNode }) {
             ),
           ],
           audit: log(d, "production.upload", `${list.length} รายการ`),
-        })),
+        }))),
 
       createInvoice: (caseNumber, lines, period) => {
         const id = nextInvoiceId(data.invoices.map((i) => i.invoice_id));
