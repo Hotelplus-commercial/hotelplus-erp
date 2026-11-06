@@ -44,7 +44,7 @@ export function useOnbFeed(demoOverride?: boolean): Feed | undefined {
   const real = useQuery({ queryKey: ['servicing-dashboard-views-v2'], queryFn: () => read(), enabled: ready && !demo, staleTime: 60_000 });
   const versions = useSetupKpiVersions(demo);
   return useMemo(() => {
-    if (!ready) return undefined;
+    if (!ready && !demo) return undefined; // DEMO needs no fetch: renders on the server too
     const term = filter.search.trim().toLowerCase();
     const members = demo ? demoHrOverlay(hr.members) : hr.members;
     const today = demo ? ONB_DEMO_TODAY : bkkDate(new Date().toISOString());
