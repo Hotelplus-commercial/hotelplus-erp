@@ -17,6 +17,7 @@ import { Route as HotelProfileRouteImport } from './routes/hotel-profile'
 import { Route as HrRouteImport } from './routes/hr'
 import { Route as MarcomRouteImport } from './routes/marcom'
 import { Route as OrmRouteImport } from './routes/orm'
+import { Route as OverviewLegacyRouteImport } from './routes/overview-legacy'
 import { Route as PsRouteImport } from './routes/ps'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SystemCostRouteImport } from './routes/system-cost'
@@ -31,7 +32,9 @@ import { Route as AcProductionReportRouteImport } from './routes/ac.production-r
 import { Route as AcProductsRouteImport } from './routes/ac.products'
 import { Route as AcSystemCostRouteImport } from './routes/ac.system-cost'
 import { Route as AcSplatRouteImport } from './routes/ac_.$'
+import { Route as AcDashboardRouteImport } from './routes/ac_.dashboard'
 import { Route as AutomationSplatRouteImport } from './routes/automation_.$'
+import { Route as AutomationDashboardRouteImport } from './routes/automation_.dashboard'
 import { Route as BdIndexRouteImport } from './routes/bd.index'
 import { Route as BdCalculatorRouteImport } from './routes/bd.calculator'
 import { Route as BdDealsRouteImport } from './routes/bd.deals'
@@ -41,6 +44,7 @@ import { Route as BdRegisterDealRouteImport } from './routes/bd.register-deal'
 import { Route as BdTicketsRouteImport } from './routes/bd.tickets'
 import { Route as BdSplatRouteImport } from './routes/bd_.$'
 import { Route as BdAdrCalculatorRouteImport } from './routes/bd_.adr-calculator'
+import { Route as BdDashboardRouteImport } from './routes/bd_.dashboard'
 import { Route as BdDemandCalendarRouteImport } from './routes/bd_.demand-calendar'
 import { Route as BdMeetingAnalyzerRouteImport } from './routes/bd_.meeting-analyzer'
 import { Route as BdPackageCalculatorRouteImport } from './routes/bd_.package-calculator'
@@ -157,6 +161,11 @@ const OrmRoute = OrmRouteImport.update({
   path: '/orm',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OverviewLegacyRoute = OverviewLegacyRouteImport.update({
+  id: '/overview-legacy',
+  path: '/overview-legacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PsRoute = PsRouteImport.update({
   id: '/ps',
   path: '/ps',
@@ -227,9 +236,19 @@ const AcSplatRoute = AcSplatRouteImport.update({
   path: '/ac/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AcDashboardRoute = AcDashboardRouteImport.update({
+  id: '/ac_/dashboard',
+  path: '/ac/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AutomationSplatRoute = AutomationSplatRouteImport.update({
   id: '/automation_/$',
   path: '/automation/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AutomationDashboardRoute = AutomationDashboardRouteImport.update({
+  id: '/automation_/dashboard',
+  path: '/automation/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BdIndexRoute = BdIndexRouteImport.update({
@@ -275,6 +294,11 @@ const BdSplatRoute = BdSplatRouteImport.update({
 const BdAdrCalculatorRoute = BdAdrCalculatorRouteImport.update({
   id: '/bd_/adr-calculator',
   path: '/bd/adr-calculator',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BdDashboardRoute = BdDashboardRouteImport.update({
+  id: '/bd_/dashboard',
+  path: '/bd/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BdDemandCalendarRoute = BdDemandCalendarRouteImport.update({
@@ -667,6 +691,7 @@ export interface FileRoutesByFullPath {
   '/hr': typeof HrRouteWithChildren
   '/marcom': typeof MarcomRouteWithChildren
   '/orm': typeof OrmRouteWithChildren
+  '/overview-legacy': typeof OverviewLegacyRoute
   '/ps': typeof PsRouteWithChildren
   '/settings': typeof SettingsRoute
   '/system-cost': typeof SystemCostRoute
@@ -680,7 +705,9 @@ export interface FileRoutesByFullPath {
   '/ac/products': typeof AcProductsRoute
   '/ac/system-cost': typeof AcSystemCostRoute
   '/ac/$': typeof AcSplatRoute
+  '/ac/dashboard': typeof AcDashboardRoute
   '/automation/$': typeof AutomationSplatRoute
+  '/automation/dashboard': typeof AutomationDashboardRoute
   '/bd/calculator': typeof BdCalculatorRouteWithChildren
   '/bd/deals': typeof BdDealsRoute
   '/bd/quotations': typeof BdQuotationsRouteWithChildren
@@ -689,6 +716,7 @@ export interface FileRoutesByFullPath {
   '/bd/tickets': typeof BdTicketsRoute
   '/bd/$': typeof BdSplatRoute
   '/bd/adr-calculator': typeof BdAdrCalculatorRoute
+  '/bd/dashboard': typeof BdDashboardRoute
   '/bd/demand-calendar': typeof BdDemandCalendarRoute
   '/bd/meeting-analyzer': typeof BdMeetingAnalyzerRoute
   '/bd/package-calculator': typeof BdPackageCalculatorRoute
@@ -773,6 +801,7 @@ export interface FileRoutesByTo {
   '/hotel-profile': typeof HotelProfileRoute
   '/marcom': typeof MarcomRouteWithChildren
   '/orm': typeof OrmRouteWithChildren
+  '/overview-legacy': typeof OverviewLegacyRoute
   '/settings': typeof SettingsRoute
   '/system-cost': typeof SystemCostRoute
   '/ac/billing': typeof AcBillingRoute
@@ -784,12 +813,15 @@ export interface FileRoutesByTo {
   '/ac/products': typeof AcProductsRoute
   '/ac/system-cost': typeof AcSystemCostRoute
   '/ac/$': typeof AcSplatRoute
+  '/ac/dashboard': typeof AcDashboardRoute
   '/automation/$': typeof AutomationSplatRoute
+  '/automation/dashboard': typeof AutomationDashboardRoute
   '/bd/deals': typeof BdDealsRoute
   '/bd/register-deal': typeof BdRegisterDealRoute
   '/bd/tickets': typeof BdTicketsRoute
   '/bd/$': typeof BdSplatRoute
   '/bd/adr-calculator': typeof BdAdrCalculatorRoute
+  '/bd/dashboard': typeof BdDashboardRoute
   '/bd/demand-calendar': typeof BdDemandCalendarRoute
   '/bd/meeting-analyzer': typeof BdMeetingAnalyzerRoute
   '/bd/package-calculator': typeof BdPackageCalculatorRoute
@@ -875,6 +907,7 @@ export interface FileRoutesById {
   '/hr': typeof HrRouteWithChildren
   '/marcom': typeof MarcomRouteWithChildren
   '/orm': typeof OrmRouteWithChildren
+  '/overview-legacy': typeof OverviewLegacyRoute
   '/ps': typeof PsRouteWithChildren
   '/settings': typeof SettingsRoute
   '/system-cost': typeof SystemCostRoute
@@ -888,7 +921,9 @@ export interface FileRoutesById {
   '/ac/products': typeof AcProductsRoute
   '/ac/system-cost': typeof AcSystemCostRoute
   '/ac_/$': typeof AcSplatRoute
+  '/ac_/dashboard': typeof AcDashboardRoute
   '/automation_/$': typeof AutomationSplatRoute
+  '/automation_/dashboard': typeof AutomationDashboardRoute
   '/bd/calculator': typeof BdCalculatorRouteWithChildren
   '/bd/deals': typeof BdDealsRoute
   '/bd/quotations': typeof BdQuotationsRouteWithChildren
@@ -897,6 +932,7 @@ export interface FileRoutesById {
   '/bd/tickets': typeof BdTicketsRoute
   '/bd_/$': typeof BdSplatRoute
   '/bd_/adr-calculator': typeof BdAdrCalculatorRoute
+  '/bd_/dashboard': typeof BdDashboardRoute
   '/bd_/demand-calendar': typeof BdDemandCalendarRoute
   '/bd_/meeting-analyzer': typeof BdMeetingAnalyzerRoute
   '/bd_/package-calculator': typeof BdPackageCalculatorRoute
@@ -986,6 +1022,7 @@ export interface FileRouteTypes {
     | '/hr'
     | '/marcom'
     | '/orm'
+    | '/overview-legacy'
     | '/ps'
     | '/settings'
     | '/system-cost'
@@ -999,7 +1036,9 @@ export interface FileRouteTypes {
     | '/ac/products'
     | '/ac/system-cost'
     | '/ac/$'
+    | '/ac/dashboard'
     | '/automation/$'
+    | '/automation/dashboard'
     | '/bd/calculator'
     | '/bd/deals'
     | '/bd/quotations'
@@ -1008,6 +1047,7 @@ export interface FileRouteTypes {
     | '/bd/tickets'
     | '/bd/$'
     | '/bd/adr-calculator'
+    | '/bd/dashboard'
     | '/bd/demand-calendar'
     | '/bd/meeting-analyzer'
     | '/bd/package-calculator'
@@ -1092,6 +1132,7 @@ export interface FileRouteTypes {
     | '/hotel-profile'
     | '/marcom'
     | '/orm'
+    | '/overview-legacy'
     | '/settings'
     | '/system-cost'
     | '/ac/billing'
@@ -1103,12 +1144,15 @@ export interface FileRouteTypes {
     | '/ac/products'
     | '/ac/system-cost'
     | '/ac/$'
+    | '/ac/dashboard'
     | '/automation/$'
+    | '/automation/dashboard'
     | '/bd/deals'
     | '/bd/register-deal'
     | '/bd/tickets'
     | '/bd/$'
     | '/bd/adr-calculator'
+    | '/bd/dashboard'
     | '/bd/demand-calendar'
     | '/bd/meeting-analyzer'
     | '/bd/package-calculator'
@@ -1193,6 +1237,7 @@ export interface FileRouteTypes {
     | '/hr'
     | '/marcom'
     | '/orm'
+    | '/overview-legacy'
     | '/ps'
     | '/settings'
     | '/system-cost'
@@ -1206,7 +1251,9 @@ export interface FileRouteTypes {
     | '/ac/products'
     | '/ac/system-cost'
     | '/ac_/$'
+    | '/ac_/dashboard'
     | '/automation_/$'
+    | '/automation_/dashboard'
     | '/bd/calculator'
     | '/bd/deals'
     | '/bd/quotations'
@@ -1215,6 +1262,7 @@ export interface FileRouteTypes {
     | '/bd/tickets'
     | '/bd_/$'
     | '/bd_/adr-calculator'
+    | '/bd_/dashboard'
     | '/bd_/demand-calendar'
     | '/bd_/meeting-analyzer'
     | '/bd_/package-calculator'
@@ -1303,14 +1351,18 @@ export interface RootRouteChildren {
   HrRoute: typeof HrRouteWithChildren
   MarcomRoute: typeof MarcomRouteWithChildren
   OrmRoute: typeof OrmRouteWithChildren
+  OverviewLegacyRoute: typeof OverviewLegacyRoute
   PsRoute: typeof PsRouteWithChildren
   SettingsRoute: typeof SettingsRoute
   SystemCostRoute: typeof SystemCostRoute
   TheOfficeAppRoute: typeof TheOfficeAppRouteWithChildren
   AcSplatRoute: typeof AcSplatRoute
+  AcDashboardRoute: typeof AcDashboardRoute
   AutomationSplatRoute: typeof AutomationSplatRoute
+  AutomationDashboardRoute: typeof AutomationDashboardRoute
   BdSplatRoute: typeof BdSplatRoute
   BdAdrCalculatorRoute: typeof BdAdrCalculatorRoute
+  BdDashboardRoute: typeof BdDashboardRoute
   BdDemandCalendarRoute: typeof BdDemandCalendarRoute
   BdMeetingAnalyzerRoute: typeof BdMeetingAnalyzerRoute
   BdPackageCalculatorRoute: typeof BdPackageCalculatorRoute
@@ -1387,6 +1439,13 @@ declare module '@tanstack/react-router' {
       path: '/orm'
       fullPath: '/orm'
       preLoaderRoute: typeof OrmRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/overview-legacy': {
+      id: '/overview-legacy'
+      path: '/overview-legacy'
+      fullPath: '/overview-legacy'
+      preLoaderRoute: typeof OverviewLegacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/ps': {
@@ -1487,11 +1546,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AcSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ac_/dashboard': {
+      id: '/ac_/dashboard'
+      path: '/ac/dashboard'
+      fullPath: '/ac/dashboard'
+      preLoaderRoute: typeof AcDashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/automation_/$': {
       id: '/automation_/$'
       path: '/automation/$'
       fullPath: '/automation/$'
       preLoaderRoute: typeof AutomationSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/automation_/dashboard': {
+      id: '/automation_/dashboard'
+      path: '/automation/dashboard'
+      fullPath: '/automation/dashboard'
+      preLoaderRoute: typeof AutomationDashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/bd/': {
@@ -1555,6 +1628,13 @@ declare module '@tanstack/react-router' {
       path: '/bd/adr-calculator'
       fullPath: '/bd/adr-calculator'
       preLoaderRoute: typeof BdAdrCalculatorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bd_/dashboard': {
+      id: '/bd_/dashboard'
+      path: '/bd/dashboard'
+      fullPath: '/bd/dashboard'
+      preLoaderRoute: typeof BdDashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/bd_/demand-calendar': {
@@ -2358,14 +2438,18 @@ const rootRouteChildren: RootRouteChildren = {
   HrRoute: HrRouteWithChildren,
   MarcomRoute: MarcomRouteWithChildren,
   OrmRoute: OrmRouteWithChildren,
+  OverviewLegacyRoute: OverviewLegacyRoute,
   PsRoute: PsRouteWithChildren,
   SettingsRoute: SettingsRoute,
   SystemCostRoute: SystemCostRoute,
   TheOfficeAppRoute: TheOfficeAppRouteWithChildren,
   AcSplatRoute: AcSplatRoute,
+  AcDashboardRoute: AcDashboardRoute,
   AutomationSplatRoute: AutomationSplatRoute,
+  AutomationDashboardRoute: AutomationDashboardRoute,
   BdSplatRoute: BdSplatRoute,
   BdAdrCalculatorRoute: BdAdrCalculatorRoute,
+  BdDashboardRoute: BdDashboardRoute,
   BdDemandCalendarRoute: BdDemandCalendarRoute,
   BdMeetingAnalyzerRoute: BdMeetingAnalyzerRoute,
   BdPackageCalculatorRoute: BdPackageCalculatorRoute,
