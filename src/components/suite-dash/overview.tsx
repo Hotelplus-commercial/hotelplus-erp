@@ -10,7 +10,7 @@ import { AUTO_TILES, AUTO_SAMPLE_SOURCE } from "@/lib/suite-dashboards/auto-dash
 import { COMMISSION_PENDING, HR_KPI_ROUND, HR_SAMPLE_SOURCE } from "@/lib/suite-dashboards/hr-dashboard-sample";
 import { SAMPLE_TAG, demoSearch, suiteToday, thb, useSuiteDemo } from "./kit";
 import {
-  SuiteDashProvider, useAllOverdueTickets, useAutoTicketsOpen, useBdacNumbers, useCategoryRequestsPending, useDebtHeadline,
+  SuiteDashProvider, useAllOverdueTickets, useRenewalRate, useAutoTicketsOpen, useBdacNumbers, useCategoryRequestsPending, useDebtHeadline,
   useFunnelNumbers, useOrmSignals, usePartnerBillNumbers, usePsHeadline, useRoster, useWelcomeBackPending,
 } from "./sources";
 import { cn } from "@/lib/utils";
@@ -31,6 +31,7 @@ function Body({ demo }: { demo: boolean }) {
   const bdac = useBdacNumbers(demo);
   const wb = useWelcomeBackPending(demo);
   const overdue = useAllOverdueTickets();
+  const rr = useRenewalRate(demo);
   const fun = useFunnelNumbers();
   const sig = useOrmSignals(demo);
   const debt = useDebtHeadline(demo);
@@ -49,7 +50,7 @@ function Body({ demo }: { demo: boolean }) {
     ], today: `Welcome Back รอ BDM มอบหมาย ${wb}` },
     PS: { hi: [
       { label: "สัญญาใช้งาน ORM / Marcom", value: `${ps.orm.active} / ${ps.marcom.active}` },
-      { label: "อัตราต่อสัญญา (ไตรมาส)", value: "—", sample: "รอยืนยันแหล่งข้อมูล (PS › ต่อสัญญา)" },
+      { label: "อัตราต่อสัญญา (ไตรมาส)", value: rr.pct == null ? "—" : `${rr.pct.toFixed(1)}% · ${rr.renewed} จาก ${rr.decided}` },
       { label: "เวลา Go Live (ฐานนิยม) ORM", value: g(ps.orm.golive.mode) },
     ], today: `ขาดอายุ รอผล ${ps.lapsed} · ticket เลยกำหนด ${overdue}` },
     ORM: { hi: [

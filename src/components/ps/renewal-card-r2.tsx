@@ -19,7 +19,7 @@ import {
   KNOWN_STAGES, NO_HIGHLIGHT, OPEN_STAGES, STAGE_ORDER, TH_MON_FULL, TILE_KEYS, activityDays, addDaysIso, addMonthsIso, boardSort, byOwner, canEarlyCreate, canEditReason,
   canRecordReason, churnTone, compareOf, countdown, daysLeftToEdit, groupBars, highlightActive, highlightHit, inPeriod, isEarlyRequest, isEarlySigned, isOpen, isPastDue,
   ownerClick, pendingDays, periodDate, periodLabel, periodOf, rangeText, reasonLabel, shiftAnchor, slaTone, stageDays, stageOf, stageTone, stagesWithHits, stepBounds,
-  thShort, topLabels, urgentLists, validPick, windowStats, RENEWAL_SLA, CHURN_PILL,
+  thShort, topLabels, urgentLists, validPick, windowStats, quarterRenewalStats, RENEWAL_SLA, CHURN_PILL,
   type Actor, type Highlight, type OwnerView, type PKind, type Range, type RenewalItem, type Stage, type TileKey, type WindowStats,
 } from "@/lib/renewal-r2";
 import { RN2, RN2_OUTCOME_TH, RN2_STAGE_TH, RN2_ZONE_TH, RENEWAL_OWNER_ONLY_HINT, RENEWAL_OWNER_ONLY_TOOLTIP, RENEWAL_TEST_BANNER, RENEWAL_TEST_SWITCH, aeNameTh } from "@/lib/ps-glossary";
@@ -128,6 +128,30 @@ function Delta({ a, b, goodUp, unit = "" }: { a: number | null; b: number | null
   return <span className={cn("rn2-delta", good === true && "is-good", good === false && "is-bad")}>{d > 0 ? "▲" : "▼"} {unit ? Math.abs(d).toFixed(1) : Math.abs(d)}{unit}</span>;
 }
 
+/** Board items of this card (read only; shared with the Suite Overview via useRenewalRateQuarter). */
+export function renewalBoardItems(data: TabR1Data | undefined, cards: RenewalCard[], requests: RenewalRequest[], sim?: RenewalItem[]): RenewalItem[] {
+  if (!data) return [];
+  if (!data.demo) return liveItems(data, cards, requests);
+  // DEMO: R2 demo additions + any card made this session through the create path (early create / scan).
+  const latest = (id: string) => [...requests].reverse().find((r) => r.renewal_card_id === id) ?? null;
+  const base = renewalR2DemoItems().map((i) => { const c = cards.find((k) => k.id === cardIdFor(i.contract_id)); return c ? withCard({ ...i, last_activity: i.last_activity }, c, latest(c.id)) : i; });
+  // Tab R5 §6: v1.4 demo contracts + decided ต.ค. 69 offer cards (added, DEMO only).
+  const r5 = [...v14BoardItems(requests), ...renewalR5DemoItems()];
+  return sim ? [...base, ...r5, ...sim] : [...base, ...r5];
+}
+
+/** Read-only hook: renewed % of the current quarter, exactly the card's default KPI (quarter, as of today). */
+export function useRenewalRateQuarter(data: TabR1Data | undefined) {
+  const cards = usePsRenewalCards();
+  const store = useRenewalStore();
+  const demo = !!data?.demo;
+  useEffect(() => { setRenewalDemo(demo); }, [demo]);
+  return useMemo(() => {
+    const today = data?.today ?? new Date().toISOString().slice(0, 10);
+    return quarterRenewalStats(renewalBoardItems(data, cards, store.requests), today);
+  }, [data, cards, store.requests]);
+}
+
 /* ---------------- main card ---------------- */
 export function RenewalCardR2({ data }: { data: TabR1Data | undefined }) {
   const today = data?.today ?? new Date().toISOString().slice(0, 10);
@@ -141,16 +165,7 @@ export function RenewalCardR2({ data }: { data: TabR1Data | undefined }) {
   const stored = useRenewalReasons();
   const [sim, setSim] = useState(false);
   const simData = useMemo(() => (demo && sim ? renewalR2Sim(120, today) : null), [demo, sim, today]);
-  const items = useMemo(() => {
-    if (!data) return [] as RenewalItem[];
-    if (!demo) return liveItems(data, cards, store.requests);
-    // DEMO: R2 demo additions + any card made this session through the create path (early create / scan).
-    const latest = (id: string) => [...store.requests].reverse().find((r) => r.renewal_card_id === id) ?? null;
-    const base = renewalR2DemoItems().map((i) => { const c = cards.find((k) => k.id === cardIdFor(i.contract_id)); return c ? withCard({ ...i, last_activity: i.last_activity }, c, latest(c.id)) : i; });
-    // Tab R5 §6: v1.4 demo contracts + decided ต.ค. 69 offer cards (added, DEMO only).
-    const r5 = [...v14BoardItems(store.requests), ...renewalR5DemoItems()];
-    return simData ? [...base, ...r5, ...simData.items] : [...base, ...r5];
-  }, [data, demo, cards, store.requests, simData]);
+  const items = useMemo(() => renewalBoardItems(data, cards, store.requests, simData?.items), [data, cards, store.requests, simData]);
   const reasons = useMemo(() => { const r5 = demo ? renewalR5DemoReasons() : []; return [...stored, ...r5, ...(simData?.reasons ?? [])]; }, [stored, simData, demo]);
   /* Tab R5 — offer info per card (read only; v1.4 engine or the request's snapshot) */
   const offers = useMemo(() => {

@@ -127,3 +127,13 @@ describe('Mounted dashboards (DEMO)', () => {
     expect(div.querySelector('[data-testid="orm-dashboard"]')!.textContent).not.toContain('เดือนนี้ ·');
   }, 30000);
 });
+
+describe('B.1 shared renewal rate', () => {
+  test('quarter renewed % in DEMO = card default KPI (7 of 11 = 63.6%)', async () => {
+    const { quarterRenewalStats } = await import('../src/lib/renewal-r2');
+    const { renewalR2DemoItems } = await import('../src/lib/renewal-r2-demo');
+    const { renewalR5DemoItems } = await import('../src/lib/renewal-r5-demo');
+    const r = quarterRenewalStats([...renewalR2DemoItems(), ...renewalR5DemoItems()], '2026-10-28');
+    expect(r.renewed).toBe(7); expect(r.decided).toBe(11); expect(r.pct?.toFixed(1)).toBe('63.6');
+  });
+});

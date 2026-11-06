@@ -1,4 +1,5 @@
 /* Patch B DB6 / DB7 / DB8 — AC, HR (top section) and AUTO Dashboards. Read only. */
+import { InfoTip } from "./kit";
 import type { ReactNode } from "react";
 import { DebtorCardR11, PaidGradeCard } from "@/components/ps/debt-cards-r11";
 import { PartnerBillCostCard } from "@/components/ac/partner-bills-page";
@@ -30,7 +31,7 @@ function AcBody({ demo }: { demo: boolean }) {
         <Tile label="ลูกหนี้คงค้าง ฿ (ไม่รวมตัดสูญ)" value={debt.empty ? "—" : thb(debt.debtTotal)} sub={debt.empty ? undefined : `${debt.debtN} สัญญา`} now testId="ac-tile-debt" />
         <Tile label="% ชำระตรงเกรด A+B (รอบล่าสุด)" value={debt.abPct == null ? "—" : `${debt.abPct}%`} sub={debt.gradeTotal ? `จาก ${debt.gradeTotal} สัญญา` : undefined} now testId="ac-tile-ab" />
         <Tile label="บิล Partner รอจ่าย ฿" value={thb(pb.pendingThb)} sub={pb.overdueN ? `เลยกำหนด ${pb.overdueN} ใบ` : undefined} now testId="ac-tile-pb" />
-        <Tile label="ใบแจ้งหนี้รอ Production Report" value="—" sub="รอระบุแหล่งข้อมูล (AC Billing ยังไม่มีสถานะนี้)" now testId="ac-tile-pr" />
+        <Tile label="ใบแจ้งหนี้รอ Production Report" value="—" sub={<span title="รอหน้าส่งไฟล์ Production Report" className="inline-flex items-center gap-1">รอหน้าส่งไฟล์ Production Report <InfoTip text="รอหน้าส่งไฟล์ Production Report" /></span>} now testId="ac-tile-pr" />
       </TileStrip>
       <CardGrid>
         <div data-testid="dash-mounted-grade"><PaidGradeCard demo={demo} /></div>
