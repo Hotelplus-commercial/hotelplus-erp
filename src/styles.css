@@ -2100,3 +2100,25 @@ textarea.r1-input{height:auto;padding:6px 8px;resize:vertical;}
 .onb-savebar{position:sticky;bottom:0;display:flex;gap:10px;align-items:center;justify-content:flex-end;border:1px solid var(--border);border-radius:10px;padding:10px 14px;background:var(--card);box-shadow:0 -4px 16px color-mix(in srgb,var(--foreground) 8%,transparent);}
 .onb-savebar>span{margin-right:auto;font-size:13px;}
 .onb-hist{display:flex;flex-direction:column;gap:6px;font-size:13px;}
+
+/* UAT polish UP10 — Funnel drawing (Meeting & Survey card ①): 104px label · bars · 150px result; dark → light down the funnel. */
+.ms-funnel{gap:0;}
+.ms-funnel .ms-f-row{grid-template-columns:104px 1fr 150px;}
+.ms-funnel .ms-f-label{text-align:right;color:var(--text-secondary);}
+.ms-funnel .ms-f-track{min-height:48px;}
+.ms-funnel .lv0{--lv:color-mix(in srgb,var(--svc) 100%,black 25%);}
+.ms-funnel .lv1{--lv:var(--svc);}
+.ms-funnel .lv2{--lv:color-mix(in srgb,var(--svc) 60%,white);}
+.ms-funnel .ms-f-bar{height:40px;border-radius:3px;opacity:1;display:flex;align-items:center;justify-content:center;
+  background:repeating-linear-gradient(45deg,color-mix(in srgb,var(--lv) 55%,white) 0 3px,var(--lv) 3px 7px);}
+.ms-funnel.is-mc .ms-f-bar{background:var(--lv);}
+.ms-funnel .ms-f-solid{background:var(--lv);}
+.ms-funnel .ms-f-num{color:#fff;}
+.ms-funnel .ms-f-num b{font-size:14px;} .ms-funnel .ms-f-num small{font-size:11px;font-weight:600;}
+.ms-funnel .ms-quota-frame{top:0;bottom:0;border-radius:6px;}
+.ms-funnel .ms-quota-frame span{top:-17px;}
+.ms-f-connrow .ms-f-conn{height:22px;width:100%;background:var(--lv);opacity:.4;}
+.ms-f-pct{font-size:15px;font-weight:700;}
+.ms-f-sumitem{margin-right:14px;} .ms-f-sumitem b{color:var(--text-primary);}
+.ms-f-sumitem b.ms-low-t{color:var(--grade-action);}
+.ms-funnel .ms-f-summary{margin-top:10px;}
