@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { MA_TILES, MA_TOPICS, filterFlags, filterLatest, inPeriod, sessionsOf } from "./meeting-analyzer-sample";
+import { describe, expect, it } from "bun:test";
+import { MA_TILES, MA_TOPICS, filterFlags, filterLatest, inPeriod, sessionsOf } from "../src/lib/bd/meeting-analyzer-sample";
 
 describe("SP9 BD Meeting Analyzer sample (IMG-7)", () => {
   it("tiles match IMG-7", () => expect(MA_TILES).toEqual({ sessions: 326, teamAvg: 59, flags: 461, processing: 0 }));
