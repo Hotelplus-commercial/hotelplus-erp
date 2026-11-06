@@ -15,7 +15,7 @@ import { RENEWAL_LABEL_TH as L, renewalReqStatusTh } from "@/lib/ps-glossary";
 import { usePsRenewal } from "@/lib/ps-renewal";
 import { RenewalPackageCard, PackageChangeChip } from "@/components/ps/renewal-package-card";
 import { packageReasonValid } from "@/lib/renewal-package";
-import { REASON_CODES, evaluate, reasonValid, requestReasonOk, rollDates, type ReasonCode, type Terms } from "@/lib/renewal-rules";
+import { REASON_CODES, evaluate, requestReasonOk, rollDates, type ReasonCode, type Terms } from "@/lib/renewal-rules";
 import {
   DEMO_EXTRA_CARDS, cancelRequest, entityClosed, openRequestFor, raiseEntityChange, renewalConfig, setRenewalDemo, sourceContractById,
   createAndSendLink, renewalPreviewPath, startRenewal, submitRequest, updateReason, updateTerms, useRenewalStore, wizardCardFor,
