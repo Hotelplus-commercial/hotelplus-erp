@@ -19,7 +19,6 @@ const React = await import('react');
 const { RenewalPackageCard, PackageChangeChip } = await import('../src/components/ps/renewal-package-card');
 
 S.setRenewalDemo(true);
-const reqOf = (card: string) => S.useRenewalStore && [...(S as any).latestRequestFor(card) ? [S.latestRequestFor(card)!] : []][0]!;
 const terms = (o: Partial<import('../src/lib/renewal-rules').Terms> = {}) => ({ fee_amount: 10000, commission_pct: 0, term_months: 12, package: 'ORM Full', start_date: '2026-01-01', end_date: '2026-12-31', ...o });
 const reco = { type: 'KEEP' as const, band_min_pct: null, band_max_pct: null, reasons: [], inputs: {}, computed_at: '2026-10-28T00:00:00Z' };
 
