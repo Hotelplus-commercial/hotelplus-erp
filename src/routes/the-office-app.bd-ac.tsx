@@ -1,19 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
-import { OfficeBdacPage } from "@/components/office/office-bdac-page";
+import { movedHref } from "@/lib/suite-r2-moves";
 
-const description = "ดีลจาก BD ถึง AC · Approved QT → WON · การเงินจาก AC";
-
+/* Suite Sidebar R2: old address → new page, query (incl. ?demo=1) kept. */
 export const Route = createFileRoute("/the-office-app/bd-ac")({
-  head: () => ({
-    meta: [
-      { title: "BD-AC | The Office APP" },
-      { name: "description", content: description },
-      { property: "og:title", content: "BD-AC | The Office APP" },
-      { property: "og:description", content: description },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-  }),
-  component: OfficeBdacPage,
+  beforeLoad: ({ location }) => {
+    throw redirect({ href: movedHref("/the-office-app/bd-ac", location.searchStr), replace: true });
+  },
 });

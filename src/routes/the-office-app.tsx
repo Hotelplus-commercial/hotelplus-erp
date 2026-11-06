@@ -3,11 +3,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ModuleLayout } from "@/components/hotel/module-layout";
 
 const description =
-  "The Office APP — งานส่วนกลางของสำนักงาน: BD-AC, ORM Bonus tier classification และรายงานสำหรับ MD / HOC / AC / HR / OGM";
+  "The Office APP — งานส่วนกลางของสำนักงาน: The Office Dashboard (BD-AC) และรายงานสำหรับ MD / HOC / AC / HR / OGM";
 
 export const officeTabs = [
-  { label: "BD-AC", to: "/the-office-app/bd-ac" },
-  { label: "ORM Bonus", to: "/the-office-app/orm-bonus" },
+  { label: "The Office Dashboard", to: "/the-office-app/dashboard" },
 ];
 
 export const Route = createFileRoute("/the-office-app")({

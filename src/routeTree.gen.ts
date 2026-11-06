@@ -27,6 +27,7 @@ import { Route as AcCustomersRouteImport } from './routes/ac.customers'
 import { Route as AcHotelProfileRouteImport } from './routes/ac.hotel-profile'
 import { Route as AcOperationsRouteImport } from './routes/ac.operations'
 import { Route as AcPartnerBillsRouteImport } from './routes/ac.partner-bills'
+import { Route as AcProductionReportRouteImport } from './routes/ac.production-report'
 import { Route as AcProductsRouteImport } from './routes/ac.products'
 import { Route as AcSystemCostRouteImport } from './routes/ac.system-cost'
 import { Route as AcSplatRouteImport } from './routes/ac_.$'
@@ -45,10 +46,13 @@ import { Route as HrMembersRouteImport } from './routes/hr.members'
 import { Route as HrSplatRouteImport } from './routes/hr_.$'
 import { Route as LTokenRouteImport } from './routes/l.$token'
 import { Route as MarcomDashboardRouteImport } from './routes/marcom.dashboard'
+import { Route as MarcomProductionReportRouteImport } from './routes/marcom.production-report'
 import { Route as MarcomSplatRouteImport } from './routes/marcom_.$'
 import { Route as OfficeBdAcRouteImport } from './routes/office.bd-ac'
 import { Route as OrmActionARouteImport } from './routes/orm.action-a'
 import { Route as OrmDashboardRouteImport } from './routes/orm.dashboard'
+import { Route as OrmOrmTierRouteImport } from './routes/orm.orm-tier'
+import { Route as OrmProductionReportRouteImport } from './routes/orm.production-report'
 import { Route as OrmSplatRouteImport } from './routes/orm_.$'
 import { Route as PsIndexRouteImport } from './routes/ps.index'
 import { Route as PsAeWorkspaceRouteImport } from './routes/ps.ae-workspace'
@@ -64,6 +68,7 @@ import { Route as PsWorkspaceRouteImport } from './routes/ps.workspace'
 import { Route as PsSplatRouteImport } from './routes/ps_.$'
 import { Route as TheOfficeAppIndexRouteImport } from './routes/the-office-app.index'
 import { Route as TheOfficeAppBdAcRouteImport } from './routes/the-office-app.bd-ac'
+import { Route as TheOfficeAppDashboardRouteImport } from './routes/the-office-app.dashboard'
 import { Route as TheOfficeAppOrmBonusRouteImport } from './routes/the-office-app.orm-bonus'
 import { Route as TheOfficeAppSplatRouteImport } from './routes/the-office-app_.$'
 import { Route as WorkspaceDeptRouteImport } from './routes/workspace.$dept'
@@ -196,6 +201,11 @@ const AcPartnerBillsRoute = AcPartnerBillsRouteImport.update({
   path: '/partner-bills',
   getParentRoute: () => AcRoute,
 } as any)
+const AcProductionReportRoute = AcProductionReportRouteImport.update({
+  id: '/production-report',
+  path: '/production-report',
+  getParentRoute: () => AcRoute,
+} as any)
 const AcProductsRoute = AcProductsRouteImport.update({
   id: '/products',
   path: '/products',
@@ -286,6 +296,11 @@ const MarcomDashboardRoute = MarcomDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => MarcomRoute,
 } as any)
+const MarcomProductionReportRoute = MarcomProductionReportRouteImport.update({
+  id: '/production-report',
+  path: '/production-report',
+  getParentRoute: () => MarcomRoute,
+} as any)
 const MarcomSplatRoute = MarcomSplatRouteImport.update({
   id: '/marcom_/$',
   path: '/marcom/$',
@@ -304,6 +319,16 @@ const OrmActionARoute = OrmActionARouteImport.update({
 const OrmDashboardRoute = OrmDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => OrmRoute,
+} as any)
+const OrmOrmTierRoute = OrmOrmTierRouteImport.update({
+  id: '/orm-tier',
+  path: '/orm-tier',
+  getParentRoute: () => OrmRoute,
+} as any)
+const OrmProductionReportRoute = OrmProductionReportRouteImport.update({
+  id: '/production-report',
+  path: '/production-report',
   getParentRoute: () => OrmRoute,
 } as any)
 const OrmSplatRoute = OrmSplatRouteImport.update({
@@ -379,6 +404,11 @@ const TheOfficeAppIndexRoute = TheOfficeAppIndexRouteImport.update({
 const TheOfficeAppBdAcRoute = TheOfficeAppBdAcRouteImport.update({
   id: '/bd-ac',
   path: '/bd-ac',
+  getParentRoute: () => TheOfficeAppRoute,
+} as any)
+const TheOfficeAppDashboardRoute = TheOfficeAppDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => TheOfficeAppRoute,
 } as any)
 const TheOfficeAppOrmBonusRoute = TheOfficeAppOrmBonusRouteImport.update({
@@ -610,6 +640,7 @@ export interface FileRoutesByFullPath {
   '/ac/hotel-profile': typeof AcHotelProfileRoute
   '/ac/operations': typeof AcOperationsRoute
   '/ac/partner-bills': typeof AcPartnerBillsRoute
+  '/ac/production-report': typeof AcProductionReportRoute
   '/ac/products': typeof AcProductsRoute
   '/ac/system-cost': typeof AcSystemCostRoute
   '/ac/$': typeof AcSplatRoute
@@ -626,10 +657,13 @@ export interface FileRoutesByFullPath {
   '/hr/$': typeof HrSplatRoute
   '/l/$token': typeof LTokenRoute
   '/marcom/dashboard': typeof MarcomDashboardRoute
+  '/marcom/production-report': typeof MarcomProductionReportRoute
   '/marcom/$': typeof MarcomSplatRoute
   '/office/bd-ac': typeof OfficeBdAcRoute
   '/orm/action-a': typeof OrmActionARouteWithChildren
   '/orm/dashboard': typeof OrmDashboardRoute
+  '/orm/orm-tier': typeof OrmOrmTierRoute
+  '/orm/production-report': typeof OrmProductionReportRoute
   '/orm/$': typeof OrmSplatRoute
   '/ps/ae-workspace': typeof PsAeWorkspaceRouteWithChildren
   '/ps/contract-dashboard': typeof PsContractDashboardRoute
@@ -643,6 +677,7 @@ export interface FileRoutesByFullPath {
   '/ps/workspace': typeof PsWorkspaceRoute
   '/ps/$': typeof PsSplatRoute
   '/the-office-app/bd-ac': typeof TheOfficeAppBdAcRoute
+  '/the-office-app/dashboard': typeof TheOfficeAppDashboardRoute
   '/the-office-app/orm-bonus': typeof TheOfficeAppOrmBonusRoute
   '/the-office-app/$': typeof TheOfficeAppSplatRoute
   '/workspace/$dept': typeof WorkspaceDeptRoute
@@ -703,6 +738,7 @@ export interface FileRoutesByTo {
   '/ac/hotel-profile': typeof AcHotelProfileRoute
   '/ac/operations': typeof AcOperationsRoute
   '/ac/partner-bills': typeof AcPartnerBillsRoute
+  '/ac/production-report': typeof AcProductionReportRoute
   '/ac/products': typeof AcProductsRoute
   '/ac/system-cost': typeof AcSystemCostRoute
   '/ac/$': typeof AcSplatRoute
@@ -717,9 +753,12 @@ export interface FileRoutesByTo {
   '/hr/$': typeof HrSplatRoute
   '/l/$token': typeof LTokenRoute
   '/marcom/dashboard': typeof MarcomDashboardRoute
+  '/marcom/production-report': typeof MarcomProductionReportRoute
   '/marcom/$': typeof MarcomSplatRoute
   '/office/bd-ac': typeof OfficeBdAcRoute
   '/orm/dashboard': typeof OrmDashboardRoute
+  '/orm/orm-tier': typeof OrmOrmTierRoute
+  '/orm/production-report': typeof OrmProductionReportRoute
   '/orm/$': typeof OrmSplatRoute
   '/ps/contract-dashboard': typeof PsContractDashboardRoute
   '/ps/contracts': typeof PsContractsRoute
@@ -731,6 +770,7 @@ export interface FileRoutesByTo {
   '/ps/workspace': typeof PsWorkspaceRoute
   '/ps/$': typeof PsSplatRoute
   '/the-office-app/bd-ac': typeof TheOfficeAppBdAcRoute
+  '/the-office-app/dashboard': typeof TheOfficeAppDashboardRoute
   '/the-office-app/orm-bonus': typeof TheOfficeAppOrmBonusRoute
   '/the-office-app/$': typeof TheOfficeAppSplatRoute
   '/workspace/$dept': typeof WorkspaceDeptRoute
@@ -797,6 +837,7 @@ export interface FileRoutesById {
   '/ac/hotel-profile': typeof AcHotelProfileRoute
   '/ac/operations': typeof AcOperationsRoute
   '/ac/partner-bills': typeof AcPartnerBillsRoute
+  '/ac/production-report': typeof AcProductionReportRoute
   '/ac/products': typeof AcProductsRoute
   '/ac/system-cost': typeof AcSystemCostRoute
   '/ac_/$': typeof AcSplatRoute
@@ -813,10 +854,13 @@ export interface FileRoutesById {
   '/hr_/$': typeof HrSplatRoute
   '/l/$token': typeof LTokenRoute
   '/marcom/dashboard': typeof MarcomDashboardRoute
+  '/marcom/production-report': typeof MarcomProductionReportRoute
   '/marcom_/$': typeof MarcomSplatRoute
   '/office/bd-ac': typeof OfficeBdAcRoute
   '/orm/action-a': typeof OrmActionARouteWithChildren
   '/orm/dashboard': typeof OrmDashboardRoute
+  '/orm/orm-tier': typeof OrmOrmTierRoute
+  '/orm/production-report': typeof OrmProductionReportRoute
   '/orm_/$': typeof OrmSplatRoute
   '/ps/ae-workspace': typeof PsAeWorkspaceRouteWithChildren
   '/ps/contract-dashboard': typeof PsContractDashboardRoute
@@ -830,6 +874,7 @@ export interface FileRoutesById {
   '/ps/workspace': typeof PsWorkspaceRoute
   '/ps_/$': typeof PsSplatRoute
   '/the-office-app/bd-ac': typeof TheOfficeAppBdAcRoute
+  '/the-office-app/dashboard': typeof TheOfficeAppDashboardRoute
   '/the-office-app/orm-bonus': typeof TheOfficeAppOrmBonusRoute
   '/the-office-app_/$': typeof TheOfficeAppSplatRoute
   '/workspace/$dept': typeof WorkspaceDeptRoute
@@ -897,6 +942,7 @@ export interface FileRouteTypes {
     | '/ac/hotel-profile'
     | '/ac/operations'
     | '/ac/partner-bills'
+    | '/ac/production-report'
     | '/ac/products'
     | '/ac/system-cost'
     | '/ac/$'
@@ -913,10 +959,13 @@ export interface FileRouteTypes {
     | '/hr/$'
     | '/l/$token'
     | '/marcom/dashboard'
+    | '/marcom/production-report'
     | '/marcom/$'
     | '/office/bd-ac'
     | '/orm/action-a'
     | '/orm/dashboard'
+    | '/orm/orm-tier'
+    | '/orm/production-report'
     | '/orm/$'
     | '/ps/ae-workspace'
     | '/ps/contract-dashboard'
@@ -930,6 +979,7 @@ export interface FileRouteTypes {
     | '/ps/workspace'
     | '/ps/$'
     | '/the-office-app/bd-ac'
+    | '/the-office-app/dashboard'
     | '/the-office-app/orm-bonus'
     | '/the-office-app/$'
     | '/workspace/$dept'
@@ -990,6 +1040,7 @@ export interface FileRouteTypes {
     | '/ac/hotel-profile'
     | '/ac/operations'
     | '/ac/partner-bills'
+    | '/ac/production-report'
     | '/ac/products'
     | '/ac/system-cost'
     | '/ac/$'
@@ -1004,9 +1055,12 @@ export interface FileRouteTypes {
     | '/hr/$'
     | '/l/$token'
     | '/marcom/dashboard'
+    | '/marcom/production-report'
     | '/marcom/$'
     | '/office/bd-ac'
     | '/orm/dashboard'
+    | '/orm/orm-tier'
+    | '/orm/production-report'
     | '/orm/$'
     | '/ps/contract-dashboard'
     | '/ps/contracts'
@@ -1018,6 +1072,7 @@ export interface FileRouteTypes {
     | '/ps/workspace'
     | '/ps/$'
     | '/the-office-app/bd-ac'
+    | '/the-office-app/dashboard'
     | '/the-office-app/orm-bonus'
     | '/the-office-app/$'
     | '/workspace/$dept'
@@ -1083,6 +1138,7 @@ export interface FileRouteTypes {
     | '/ac/hotel-profile'
     | '/ac/operations'
     | '/ac/partner-bills'
+    | '/ac/production-report'
     | '/ac/products'
     | '/ac/system-cost'
     | '/ac_/$'
@@ -1099,10 +1155,13 @@ export interface FileRouteTypes {
     | '/hr_/$'
     | '/l/$token'
     | '/marcom/dashboard'
+    | '/marcom/production-report'
     | '/marcom_/$'
     | '/office/bd-ac'
     | '/orm/action-a'
     | '/orm/dashboard'
+    | '/orm/orm-tier'
+    | '/orm/production-report'
     | '/orm_/$'
     | '/ps/ae-workspace'
     | '/ps/contract-dashboard'
@@ -1116,6 +1175,7 @@ export interface FileRouteTypes {
     | '/ps/workspace'
     | '/ps_/$'
     | '/the-office-app/bd-ac'
+    | '/the-office-app/dashboard'
     | '/the-office-app/orm-bonus'
     | '/the-office-app_/$'
     | '/workspace/$dept'
@@ -1324,6 +1384,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AcPartnerBillsRouteImport
       parentRoute: typeof AcRoute
     }
+    '/ac/production-report': {
+      id: '/ac/production-report'
+      path: '/production-report'
+      fullPath: '/ac/production-report'
+      preLoaderRoute: typeof AcProductionReportRouteImport
+      parentRoute: typeof AcRoute
+    }
     '/ac/products': {
       id: '/ac/products'
       path: '/products'
@@ -1450,6 +1517,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MarcomDashboardRouteImport
       parentRoute: typeof MarcomRoute
     }
+    '/marcom/production-report': {
+      id: '/marcom/production-report'
+      path: '/production-report'
+      fullPath: '/marcom/production-report'
+      preLoaderRoute: typeof MarcomProductionReportRouteImport
+      parentRoute: typeof MarcomRoute
+    }
     '/marcom_/$': {
       id: '/marcom_/$'
       path: '/marcom/$'
@@ -1476,6 +1550,20 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/orm/dashboard'
       preLoaderRoute: typeof OrmDashboardRouteImport
+      parentRoute: typeof OrmRoute
+    }
+    '/orm/orm-tier': {
+      id: '/orm/orm-tier'
+      path: '/orm-tier'
+      fullPath: '/orm/orm-tier'
+      preLoaderRoute: typeof OrmOrmTierRouteImport
+      parentRoute: typeof OrmRoute
+    }
+    '/orm/production-report': {
+      id: '/orm/production-report'
+      path: '/production-report'
+      fullPath: '/orm/production-report'
+      preLoaderRoute: typeof OrmProductionReportRouteImport
       parentRoute: typeof OrmRoute
     }
     '/orm_/$': {
@@ -1581,6 +1669,13 @@ declare module '@tanstack/react-router' {
       path: '/bd-ac'
       fullPath: '/the-office-app/bd-ac'
       preLoaderRoute: typeof TheOfficeAppBdAcRouteImport
+      parentRoute: typeof TheOfficeAppRoute
+    }
+    '/the-office-app/dashboard': {
+      id: '/the-office-app/dashboard'
+      path: '/dashboard'
+      fullPath: '/the-office-app/dashboard'
+      preLoaderRoute: typeof TheOfficeAppDashboardRouteImport
       parentRoute: typeof TheOfficeAppRoute
     }
     '/the-office-app/orm-bonus': {
@@ -1879,6 +1974,7 @@ interface AcRouteChildren {
   AcHotelProfileRoute: typeof AcHotelProfileRoute
   AcOperationsRoute: typeof AcOperationsRoute
   AcPartnerBillsRoute: typeof AcPartnerBillsRoute
+  AcProductionReportRoute: typeof AcProductionReportRoute
   AcProductsRoute: typeof AcProductsRoute
   AcSystemCostRoute: typeof AcSystemCostRoute
   AcIndexRoute: typeof AcIndexRoute
@@ -1890,6 +1986,7 @@ const AcRouteChildren: AcRouteChildren = {
   AcHotelProfileRoute: AcHotelProfileRoute,
   AcOperationsRoute: AcOperationsRoute,
   AcPartnerBillsRoute: AcPartnerBillsRoute,
+  AcProductionReportRoute: AcProductionReportRoute,
   AcProductsRoute: AcProductsRoute,
   AcSystemCostRoute: AcSystemCostRoute,
   AcIndexRoute: AcIndexRoute,
@@ -1977,10 +2074,12 @@ const HrRouteWithChildren = HrRoute._addFileChildren(HrRouteChildren)
 
 interface MarcomRouteChildren {
   MarcomDashboardRoute: typeof MarcomDashboardRoute
+  MarcomProductionReportRoute: typeof MarcomProductionReportRoute
 }
 
 const MarcomRouteChildren: MarcomRouteChildren = {
   MarcomDashboardRoute: MarcomDashboardRoute,
+  MarcomProductionReportRoute: MarcomProductionReportRoute,
 }
 
 const MarcomRouteWithChildren =
@@ -2009,11 +2108,15 @@ const OrmActionARouteWithChildren = OrmActionARoute._addFileChildren(
 interface OrmRouteChildren {
   OrmActionARoute: typeof OrmActionARouteWithChildren
   OrmDashboardRoute: typeof OrmDashboardRoute
+  OrmOrmTierRoute: typeof OrmOrmTierRoute
+  OrmProductionReportRoute: typeof OrmProductionReportRoute
 }
 
 const OrmRouteChildren: OrmRouteChildren = {
   OrmActionARoute: OrmActionARouteWithChildren,
   OrmDashboardRoute: OrmDashboardRoute,
+  OrmOrmTierRoute: OrmOrmTierRoute,
+  OrmProductionReportRoute: OrmProductionReportRoute,
 }
 
 const OrmRouteWithChildren = OrmRoute._addFileChildren(OrmRouteChildren)
@@ -2111,12 +2214,14 @@ const PsRouteWithChildren = PsRoute._addFileChildren(PsRouteChildren)
 
 interface TheOfficeAppRouteChildren {
   TheOfficeAppBdAcRoute: typeof TheOfficeAppBdAcRoute
+  TheOfficeAppDashboardRoute: typeof TheOfficeAppDashboardRoute
   TheOfficeAppOrmBonusRoute: typeof TheOfficeAppOrmBonusRoute
   TheOfficeAppIndexRoute: typeof TheOfficeAppIndexRoute
 }
 
 const TheOfficeAppRouteChildren: TheOfficeAppRouteChildren = {
   TheOfficeAppBdAcRoute: TheOfficeAppBdAcRoute,
+  TheOfficeAppDashboardRoute: TheOfficeAppDashboardRoute,
   TheOfficeAppOrmBonusRoute: TheOfficeAppOrmBonusRoute,
   TheOfficeAppIndexRoute: TheOfficeAppIndexRoute,
 }

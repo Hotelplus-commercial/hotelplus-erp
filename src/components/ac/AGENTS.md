@@ -1,0 +1,15 @@
+# AC App rules (moved word for word from src/components/ps/AGENTS.md)
+
+## AC App · บิล Partner + ขอปิด / เปิดระบบ v1.0 (AX1–AX15)
+- AX1/AX4: AC App menu บิล Partner (/ac/partner-bills, after Invoice & ใบเสร็จ); card ค่าระบบ Partner = system cost H+ pays the Partners (payables), never hotel invoices. `SYSTEM_FEE` hotel invoices are untouched (AX3).
+- AX2/AX5: AC keys Partner bills (email ingestion still future). partner_bills = browser collection meridia.partner_bills.v1 + one-way Cloud doc partner:partner_bills; unique (partner_id, bill_no). Bill files reuse the on-device Partner file store (attachment_url `file:<ref>`; delivery only via deliverBillFile(); link fallback).
+- AX6/AX7: lines pre-filled by prefillLines() (src/lib/partner-bills.ts) from resolveSystem + getContractSystemCost; expected = monthly net × months, prorated by day only when the contract starts inside the period (an end inside the period is billed in full; the over-paid months become a keep-credit). Any difference → amber warning, save allowed.
+- AX8: บันทึกว่าจ่ายแล้ว sets bill PAID + paid_at and paid_at on its lines; จ่ายล่วงหน้าถึง (getPrepaidUntil) reads those lines.
+- AX9: credit use = APPROVED, same Partner, not expired, ≤ remaining (approved − usage of non-VOID bills) and ≤ bill total; ⑤ ใช้ไปแล้ว counts usage once its bill is PAID (rows without bill_id count; VOID ignored).
+- AX10/AX11: ขอปิดระบบ (AC, collection SUSPENDED only; AC hotel profile row + บิล Partner list) → 2 linked SYSTEM_SHUTOFF (ORM or MARCOM + PS, source AC_APP) via requestShutoff(). The CRM store listens to the existing automatic SUSPENDED → REACTIVATED event (newReactivations / onReactivated in src/lib/partner-shutoff-ac.ts): open shut-offs of that suspension are cancelled with note ลูกค้าชำระครบ ยกเลิกคำขอปิดระบบ and 2 SYSTEM_REACTIVATE open; no shut-off → nothing. Collection logic unchanged.
+- AX12: PARTNER_DEAL_NOTICE / SYSTEM_CREDIT_NOTICE in AC Workspace have one button รับทราบ = acknowledgeNotice() NEW → DONE with audit note รับทราบ (no ACK step); PS Dashboard / PM Workspace show AC รับทราบ for any non-NEW status.
+- AX13: tab Cashback rows = getCashbackExpected eligibility; tick → one receipt (amount, currency, received_at); untick deletes only rows made by this UI (id CBR-).
+- AX14: AC payment confirm writes invoice status + paid_at in the same action (confirmPayment); PS Dashboard ① shows อัปเดตจาก AC App = latest payment-confirm / paid_at time of the period.
+- AX15: only AC writes on this page (testing role switcher, simulation); PS / PM read via PS Dashboard and PM Workspace; Partner management stays in PM Workspace.
+- DEMO: one shared state (src/lib/demo-session.ts) for PS Dashboard and every Workspace (DemoSwitch link ?demo=1 / ?demo=0 works before load). Bills DEMO overlay in debt-partner-demo.ts withBillsDemo(); tickets via seedAcBillsDemo(). DEMO Layer 0 tickets persist for the browser session inside the existing DEMO session key (field l0, cleared with DEMO off) so every page reads one DEMO ticket store; seeded notices carry payload.demo_ref = the demo deal / credit ac_ticket_id.
+- Open: AC-G1 Guarantee minimum in AC billing — not built.
