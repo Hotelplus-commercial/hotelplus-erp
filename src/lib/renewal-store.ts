@@ -17,7 +17,7 @@ import type { Contract, ContractLine } from './crm-types';
 import { RENEWAL_NEW_CONTRACT_FAILED, RENEWAL_SOURCE_NOT_FOUND } from './ps-glossary';
 import { addMainContract, mainContractById, mainContracts, setMainContractDemo } from './main-contract-store';
 import { buildRenewedContract, contractFromSource, svcOfPackage } from './renewal-contract';
-import { firstMonthEnd, isOrmFullToLite, isPackageChanged, linesOfContract, monthlySum, ormLiteDefaults, ormTierOf, packageLabel, type PkgLine } from './renewal-package';
+import { firstMonthEnd, isOrmFullToLite, isPackageChanged, linesOfContract, monthlySum, ormLiteDefaults, ormTierOf, packageLabel, validatePackage, type PkgLine } from './renewal-package';
 import { mainCatalogProducts } from './main-contract-store';
 import { PK_DEMO_CASES, PK_DEMO_CONTRACTS } from './renewal-package-demo';
 import { RO } from './ps-glossary';
@@ -483,6 +483,7 @@ export function oldPackageLines(r: Pick<RenewalRequest, 'source_contract_id' | '
 export function updatePackage(id: string, newLines: PkgLine[] | null, opts: { setup?: PkgLine[]; terms?: Partial<Terms> } = {}): Out {
   return apply(id, (r) => {
     const svc = svcOfPackage(r.old_terms.package); const oldL = r.old_lines ?? oldPackageLines(r);
+    if (newLines) { const err = validatePackage(svc, mainCatalogProducts(), oldL, newLines); if (err) return { ok: false, error: err }; }
     const changed = !!newLines && isPackageChanged(oldL, newLines);
     const keep = { ...r, package_changed: changed, old_lines: changed ? oldL : r.old_lines ?? null, new_lines: changed ? newLines : null, setup_lines: changed ? opts.setup ?? [] : null,
       package_change_reason: changed ? r.package_change_reason ?? null : null };
