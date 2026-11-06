@@ -15,7 +15,7 @@ export const laneSla = (phase: 'P1' | 'P2' | 'P3', lane: 'AE' | 'Specialist' | '
   versionFor(versions, createdAt ? bkk(createdAt) : '9999-12-31').values[laneSlaKey(phase, lane, variant)];
 export const slaTone = (d: number, thr: { ok: number; due: number }): 'ok' | 'amber' | 'red' => (d <= thr.ok ? 'ok' : d <= thr.due ? 'amber' : 'red');
 /** Same words as statusText, thresholds from SLA On-board. */
-export function slaStatusText(d: number, thr: { ok: number; due: number }) { const tone = slaTone(d, thr), left = thr.due - d; return tone === 'ok' ? 'เร็วกว่า SLA' : tone === 'red' ? `เกิน SLA แล้ว ${-left} วัน` : left === 0 ? 'ครบ SLA วันนี้' : `เหลือ ${left} วันก่อนเกิน SLA`; }
+export function slaStatusText(d: number, thr: { ok: number; due: number }) { const tone = slaTone(d, thr), left = thr.due - d; return tone === 'ok' ? 'เร็วกว่า SLA' : tone === 'red' ? `เกิน SLA แล้ว ${-left} วัน` : left === 0 ? 'ครบ SLA วันนี้' : `เหลือเวลาอีก ${left} วันของ SLA`; }
 
 export const servicing_sla_config = { p1: { ok_max: 5, sla: 7 }, p2: { ok_max: 5, sla: 7 }, p3: { ok_max: 3, target: 3, sla: 7 }, unit: 'calendar_day', tz: 'Asia/Bangkok' } as const;
 export type Phase = 'P1' | 'P2' | 'P3';
