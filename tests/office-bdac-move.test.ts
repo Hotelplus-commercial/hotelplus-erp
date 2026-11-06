@@ -12,24 +12,20 @@ describe('BD-AC move to The Office APP (v1.0)', () => {
     expect(DASHBOARD_TABS.some(([k, l]) => k === 'bdac' || l === 'BD-AC')).toBe(false);
     expect(DASHBOARD_TABS[0]![1]).toBe('สัญญา & ราคา');
   });
-  test('old PS Dashboard links redirect to the new page, other params kept', () => {
-    expect(OFFICE_BDAC_PATH).toBe('/the-office-app/bd-ac');
-    expect(bdacRedirectHref('?tab=bdac&demo=1')).toBe('/the-office-app/bd-ac?demo=1');
-    expect(bdacRedirectHref('?tab=bd-ac')).toBe('/the-office-app/bd-ac');
-    expect(bdacRedirectHref('?tab=BD-AC&demo=1')).toBe('/the-office-app/bd-ac?demo=1');
-    expect(bdacRedirectHref('?demo=1', '#bdac')).toBe('/the-office-app/bd-ac?demo=1');
+  test('old PS Dashboard links redirect to The Office Dashboard tab BD-AC (R2 C), other params kept', () => {
+    expect(OFFICE_BDAC_PATH).toBe('/the-office-app/dashboard');
+    expect(bdacRedirectHref('?tab=bdac&demo=1')).toBe('/the-office-app/dashboard?tab=bd-ac&demo=1');
+    expect(bdacRedirectHref('?tab=bd-ac')).toBe('/the-office-app/dashboard?tab=bd-ac');
+    expect(bdacRedirectHref('?tab=BD-AC&demo=1')).toBe('/the-office-app/dashboard?tab=bd-ac&demo=1');
+    expect(bdacRedirectHref('?demo=1', '#bdac')).toBe('/the-office-app/dashboard?demo=1&tab=bd-ac');
     expect(bdacRedirectHref('?tab=ps&demo=1')).toBeNull();
     expect(bdacRedirectHref('')).toBeNull();
   });
-  test('The Office APP: BD-AC is item 1, ORM Bonus keeps its route after it', () => {
-    const src = readFileSync('src/routes/the-office-app.tsx', 'utf8');
-    expect(src.indexOf('"/the-office-app/bd-ac"')).toBeGreaterThan(-1);
-    expect(src.indexOf('"/the-office-app/bd-ac"')).toBeLessThan(src.indexOf('"/the-office-app/orm-bonus"'));
-    // Suite Sidebar R1 §4.8: the Office menu comes from SIDEBAR_REGISTRY; BD-AC then ORM Bonus stay at the end until R2.
+  test('Suite Sidebar R2 C supersedes G4: BD-AC is no longer an Office sub menu; it is tab 1 of The Office Dashboard', () => {
     const reg = readFileSync('src/lib/sidebar-registry.ts', 'utf8');
     const office = reg.slice(reg.indexOf("key: 'OFFICE'"));
-    expect(office.indexOf("label: 'BD-AC', route")).toBeGreaterThan(office.indexOf("'HOD Meeting Minutes'"));
-    expect(office.indexOf("label: 'BD-AC', route")).toBeLessThan(office.indexOf("label: 'ORM Bonus', route: '/the-office-app"));
+    expect(office.includes("label: 'BD-AC', route")).toBe(false);
+    expect(office.indexOf("{ key: 'bd-ac', label: 'BD-AC' }")).toBeGreaterThan(office.indexOf("label: 'The Office Dashboard'"));
   });
   test('exactly one copy of each BD-AC component (no fork)', () => {
     const files: string[] = [];
