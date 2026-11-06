@@ -55,10 +55,10 @@ const bd: AppDef = {
       P('bd', 'call-script', 'Call Script', A('TM', 'BDM', 'HOC', 'MD'), 'บทพูดของ TM ตามชุดและประเภท lead'),
     ] },
     { kind: 'group', label: 'ประชุม & เสนอราคา (Pitch)', children: [
-      P('bd', 'demand-calendar', 'Demand Calendar', A('BD', 'BDM', 'HOC', 'MD')),
-      P('bd', 'adr-calculator', 'ADR Calculator', A('BD', 'BDM', 'HOC', 'MD'), 'คำนวณ ADR ก่อนเข้าประชุม'),
-      { kind: 'page', key: 'package-calculator', label: 'Package Calculator', route: '/bd/calculator', access: A('BD', 'BDM', 'HOC', 'MD') },
-      P('bd', 'quotation', 'ใบเสนอราคา', A('BD', 'BDM', 'HOC', 'MD'), 'สร้างและส่งใบเสนอราคา · ขอ Special Deal'),
+      { kind: 'page', key: 'demand-calendar', label: 'Demand Calendar', route: '/bd/demand-calendar', access: A('BD', 'BDM', 'HOC', 'MD') },
+      { kind: 'page', key: 'adr-calculator', label: 'ADR Calculator', route: '/bd/adr-calculator', access: A('BD', 'BDM', 'HOC', 'MD') },
+      { kind: 'page', key: 'package-calculator', label: 'Package Calculator', route: '/bd/package-calculator', also: ['/bd/calculator'], access: A('BD', 'BDM', 'HOC', 'MD') },
+      { kind: 'page', key: 'quotation', label: 'ใบเสนอราคา', route: '/bd/quotation', access: A('BD', 'BDM', 'HOC', 'MD') },
       { kind: 'link_out', key: 'contract-dashboard', label: 'Contract Dashboard', target: { app: 'PS', route: '/ps/contract-dashboard' }, access: A('BD', 'BDM', 'HOC', 'MD') },
     ] },
     { kind: 'group', label: 'ผลงานของฉัน', children: [
