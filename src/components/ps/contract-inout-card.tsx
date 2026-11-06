@@ -98,7 +98,7 @@ function InOutPanel({ svc, active, s, today, view }: { svc: Svc; active: number;
       <div className="r1-io-endrow">
         <span className="r1-io-endlabel">{R1_INOUT.endRow}</span>
         <div className="r1-io-cols">
-          {ms.map((m) => <span key={m.month} className={cn("r1-net-pill tabular-nums", m.net > 0 ? "is-up" : m.net < 0 ? "is-down" : "is-flat")}>{netPill(m.net)}</span>)}
+          {ms.map((m) => <span key={m.month} data-testid={`r1-net-${view}`} className={cn("r1-net-pill tabular-nums", m.net > 0 ? "is-up" : m.net < 0 ? "is-down" : "is-flat", m.current && "is-current")}>{netPill(m.net)}</span>)}
         </div>
       </div>
       <div className="r1-io-list">
