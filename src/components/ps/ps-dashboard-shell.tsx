@@ -382,7 +382,7 @@ function HeaderR2({ raw, filter, demo, onChange, onDemo }: { raw: PsReport | und
   return (
     <>
       <PsHeaderFilters value={filter} onChange={onChange} demo={demo} onDemo={onDemo} options={options} />
-      {demo && <p className="text-xs font-semibold text-warning-foreground">DEMO · 28 Oct 2026 (ส่วนหัว)</p>}
+      {demo && <p className="text-xs font-semibold text-warning-foreground">DEMO · {demoDateTh()} (ส่วนหัว)</p>}
       <CustomerJourneyScorecard input={h.journey} sel={sel} aliases={aliases} />
       <ActivePortfolio today={h.today} total={active.length} active={active} contracts={h.portfolio.contracts} prices={h.portfolio.prices} marcom={h.marcom} sel={sel} aliases={aliases} />
     </>
