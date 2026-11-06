@@ -23,19 +23,19 @@ export const PK_DEMO_CONTRACTS: Contract[] = [
 ];
 
 const pl = (sku: string, name: string, price: number | null): PkgLine => ({ sku, name, unit_price: price, commission_rate: null, billing: 'monthly' });
-export type PkDemoCase = { card_id: string; contract_id: string; hotel_id: string; hotel: string; service: 'ORM' | 'Marcom'; contractEnd: string; daysLeft: number; contact: string;
+export type PkDemoCase = { card_id: string; contract_id: string; hotel_id: string; hotel: string; service: 'ORM' | 'Marcom'; contractEnd: string; end: string; daysLeft: number; contact: string;
   new_lines: PkgLine[]; setup?: PkgLine[]; reason: { code: string; text: string }; status: 'PENDING_APPROVAL' | 'SIGNED'; overdueDays?: number;
   at: { sub: string; app?: string; link?: string; signed?: string } };
 export const PK_DEMO_CASES: PkDemoCase[] = [
-  { card_id: 'RN-PK-ORM1', contract_id: 'CT-PK-ORM1', hotel_id: 'HTL0451', hotel: 'Chiang Rai Hill Lodge', service: 'ORM', contractEnd: '30 Nov 2026', daysLeft: 33, contact: 'คุณอรุณ ดอยงาม',
+  { card_id: 'RN-PK-ORM1', contract_id: 'CT-PK-ORM1', hotel_id: 'HTL0451', hotel: 'Chiang Rai Hill Lodge', service: 'ORM', contractEnd: '30 Nov 2026', end: '2026-11-30', daysLeft: 33, contact: 'คุณอรุณ ดอยงาม',
     new_lines: [pl('ORM-MTH-LITE', 'ORM Lite Service', 3900)], reason: { code: 'ค้างชำระ', text: 'ค้างชำระ 2 รอบ · เสนอ ORM Lite เพื่อรักษาลูกค้า' }, status: 'PENDING_APPROVAL', overdueDays: 24,
     at: { sub: '2026-10-27' } },
-  { card_id: 'RN-PK-MC1', contract_id: 'CT-PK-MC1', hotel_id: 'HTL0452', hotel: 'Pattaya Beach Loft', service: 'Marcom', contractEnd: '15 Oct 2026', daysLeft: 0, contact: 'คุณชายหาด สมใจ',
+  { card_id: 'RN-PK-MC1', contract_id: 'CT-PK-MC1', hotel_id: 'HTL0452', hotel: 'Pattaya Beach Loft', service: 'Marcom', contractEnd: '15 Oct 2026', end: '2026-10-15', daysLeft: 0, contact: 'คุณชายหาด สมใจ',
     new_lines: [pl('MARCOM-MTH-META-LITE-CONTENT', 'Meta Lite — Content Posts', 4000), pl('MARCOM-MTH-META-LITE-ADS', 'Meta Lite — Ads Management', 4000), pl('MARCOM-MTH-TIKTOK-LITE', 'TikTok Lite Basic', 4000)],
     setup: [{ sku: 'MARCOM-SETUP-TIKTOK', name: 'Register TikTok', unit_price: 3000, commission_rate: null, billing: 'one_time' }],
     reason: { code: 'เพิ่มช่องทาง / ขยายบริการ', text: 'ลูกค้าต้องการเพิ่ม TikTok' }, status: 'SIGNED',
     at: { sub: '2026-10-01', app: '2026-10-02', link: '2026-10-03', signed: '2026-10-10' } },
-  { card_id: 'RN-PK-MC2', contract_id: 'CT-PK-MC2', hotel_id: 'HTL0453', hotel: 'Hat Yai Central Hotel', service: 'Marcom', contractEnd: '10 Dec 2026', daysLeft: 43, contact: 'คุณสงขลา ใจดี',
+  { card_id: 'RN-PK-MC2', contract_id: 'CT-PK-MC2', hotel_id: 'HTL0453', hotel: 'Hat Yai Central Hotel', service: 'Marcom', contractEnd: '10 Dec 2026', end: '2026-12-10', daysLeft: 43, contact: 'คุณสงขลา ใจดี',
     new_lines: [pl('MARCOM-MTH-META-LITE-CONTENT', 'Meta Lite — Content Posts', 4000), pl('MARCOM-MTH-GMB', 'Google My Business + IBE', 3000)],
     reason: { code: 'ลูกค้าใช้บริการไม่ครบ', text: 'ลูกค้าไม่ได้ใช้ TikTok 6 เดือน' }, status: 'PENDING_APPROVAL', at: { sub: '2026-10-26' } },
 ];
