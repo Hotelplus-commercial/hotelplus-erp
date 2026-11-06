@@ -21,7 +21,12 @@ import {
   type ChartLane, type GoLivePeriod, type LaneKey, type SetupDot, type SetupStatus, type SetupStatusResult, type SetupTab, type SetupTiming,
 } from '@/lib/setup-timing';
 import { cn } from '@/lib/utils';
+import { Link } from '@tanstack/react-router';
+import { dayLeft, doneStatus, totalLeft } from '@/lib/onboard-tab';
+import { dayMonth } from '@/lib/setup-timing';
 
+/** On-board R1 §14: the R4 inline PM panel is replaced by Settings › SLA On-board (kept, unmounted). */
+const LEGACY_PM_PANEL = false;
 const SVC_COLOR = { ORM: 'var(--svc-orm)', Marcom: 'var(--svc-marcom)' } as const;
 const ST_COLOR: Record<SetupStatus, string> = { ok: 'var(--grade-good)', near: 'var(--grade-watch)', late: 'var(--grade-action)' };
 const R = 5.5;
