@@ -17,6 +17,8 @@ import { demoDebtRows, demoDebtTickets, demoGradeAt, demoGradeRows, demoPaidInvo
 import { cn } from "@/lib/utils";
 import { GradeDefs, CollectionDefs, DEF_UNIT_GRADE, DEF_READONLY } from "./ac-definitions";
 
+/** UP8 segment label. */
+export const debtSegFull = (status: string, n: number, amount: string) => `${status} ${n} สัญญา · มูลค่า ${amount}`;
 const thb = (n: number) => `฿${Math.round(n).toLocaleString("en-US")}`;
 const GRADES: Grade[] = ["A", "B", "C", "D"];
 const STATUS_KEY: Record<DebtStatus, keyof typeof COLLECTION_META> = { LEGAL: "LEGAL", SUSPENDED: "SUSPENDED", OVERDUE: "OVERDUE", WRITTEN_OFF: "WRITTEN_OFF", PAUSED: "PAUSED" };
@@ -217,8 +219,9 @@ export function DebtorCardR11({ demo }: { demo: boolean }) {
         <div className="flex min-w-0 flex-col gap-3" data-testid="dp-card2">
           <div className="dp-bar" role="group" aria-label="ยอดค้างตามสถานะ">
             {s.segments.filter((x) => x.amount).map((x) => (
-              <button key={x.status} type="button" data-seg={x.status} data-amount={x.amount} aria-pressed={f === x.status} onClick={() => pick(x.status)} className={cn("dp-seg", f && f !== x.status && "opacity-40")} style={{ flexGrow: x.amount, background: COLLECTION_META[STATUS_KEY[x.status]].bar }}>
-                {x.pct > 12 ? `${DEBT_TH[x.status]} ${thb(x.amount)} · ${x.n}` : ""}
+              <button key={x.status} type="button" data-seg={x.status} data-amount={x.amount} aria-pressed={f === x.status} onClick={() => pick(x.status)} className={cn("dp-seg", f && f !== x.status && "opacity-40")} title={debtSegFull(DEBT_TH[x.status], x.n, thb(x.amount))} style={{ flexGrow: x.amount, background: COLLECTION_META[STATUS_KEY[x.status]].bar }}>
+                {/* UAT polish UP8: full label when wide, short `{status} {n}` when narrow (full text in tooltip). */}
+                {x.pct > 30 ? debtSegFull(DEBT_TH[x.status], x.n, thb(x.amount)) : x.pct > 12 ? `${DEBT_TH[x.status]} ${x.n}` : ""}
               </button>
             ))}
           </div>
