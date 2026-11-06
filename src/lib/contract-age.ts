@@ -108,7 +108,7 @@ export function vPsContractAge(src: AgeContractSource[], ctx: { today: string; l
     const status: AgeStatus = ended ? 'ENDED' : live ? 'ACTIVE' : 'SETUP';
     const age = !live ? null : ended ? Math.max(0, dayDiff(fgl!, last.ended_at!)) : Math.max(0, dayDiff(fgl!, ctx.today));
     const ids = chain.map((c) => c.contract_id);
-    const renewalRows = (ctx.history ?? []).filter((h) => h.source === 'RENEWAL' && ids.includes(h.contract_id)).length;
+    const renewalRows = (ctx.history ?? []).filter((h) => (h.source === 'RENEWAL' || h.source === 'PACKAGE_CHANGE') && ids.includes(h.contract_id)).length;
     rows.push({
       contract_id: last.contract_id, chain_root_contract_id: root.contract_id, chain_ids: ids,
       hotel_id: last.hotel_id, hotel_name_en: last.hotel_name_en ?? root.hotel_name_en, hotel_name_th: last.hotel_name_th ?? root.hotel_name_th, service_line: last.service,
@@ -399,7 +399,7 @@ export function timelineOf(r: ContractAgeRow, ctx: { history: PriceHistoryRow[];
   if (r.signed_at) ev.push({ at: r.signed_at.slice(0, 10), text: 'เซ็นสัญญา', tone: 'neutral' });
   if (r.first_go_live_at) ev.push({ at: r.first_go_live_at.slice(0, 10), text: 'Go Live', tone: 'green' });
   if (ctx.firstMeeting) ev.push({ at: ctx.firstMeeting.slice(0, 10), text: 'ประชุม / รายงานรายเดือนครั้งแรก', tone: 'neutral' });
-  ctx.history.filter((h) => h.source === 'RENEWAL' && r.chain_ids.includes(h.contract_id)).forEach((h, i) => ev.push({ at: h.effective_from, text: `ต่อสัญญาครั้งที่ ${i + 1}`, tone: 'green' }));
+  ctx.history.filter((h) => (h.source === 'RENEWAL' || h.source === 'PACKAGE_CHANGE') && r.chain_ids.includes(h.contract_id)).forEach((h, i) => ev.push({ at: h.effective_from, text: `ต่อสัญญาครั้งที่ ${i + 1}`, tone: 'green' }));
   for (const t of ctx.tickets) if (r.chain_ids.some((id) => t.subject_ref.contract_id === id || t.payload.contract_id === id)) ev.push({ at: t.created_at.slice(0, 10), text: `Ticket #${t.ticket_id} · ${ctx.typeLabel(t)}`, tone: 'amber' });
   for (const s of ctx.lowSurveys ?? []) ev.push({ at: s.at.slice(0, 10), text: `คะแนนบริการต่ำ ${s.score}`, tone: 'amber' });
   if (r.notice_at) ev.push({ at: r.notice_at.slice(0, 10), text: r.outcome === 'LOST' ? 'แจ้งยกเลิก' : 'แจ้งไม่ต่อ', tone: 'red' });

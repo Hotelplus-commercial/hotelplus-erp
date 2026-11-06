@@ -1,6 +1,6 @@
 /** R1.2 §3.4 — old → new price per term from contract_price_history (previous cycle → RENEWAL cycle).
  *  Pure display helper: empty terms are hidden (never shown as 0). */
-export type PriceCycle = { contract_id: string; cycle_no: number; fee_amount?: number | null; commission_pct?: number | null; guarantee_amount?: number | null; source: 'INITIAL' | 'RENEWAL' };
+export type PriceCycle = { contract_id: string; cycle_no: number; fee_amount?: number | null; commission_pct?: number | null; guarantee_amount?: number | null; source: 'INITIAL' | 'RENEWAL' | 'PACKAGE_CHANGE' };
 export type TermKey = 'fee' | 'commission' | 'guarantee';
 export type TermDiff = { key: TermKey; label: string; old: number | null; next: number | null; dir: 'up' | 'down' | 'same' };
 export const TERM_LABEL: Record<TermKey, string> = { fee: 'ค่าบริการ', commission: 'ค่าคอม', guarantee: 'Guarantee' };
@@ -9,7 +9,7 @@ const present = (v: number | null | undefined): v is number => typeof v === 'num
 
 export function priceDiff(history: PriceCycle[], contractId: string): { status: 'NO_RENEWAL' } | { status: 'OK'; terms: TermDiff[] } {
   const rows = history.filter(h => h.contract_id === contractId).sort((a, b) => a.cycle_no - b.cycle_no);
-  const renewal = [...rows].reverse().find(r => r.source === 'RENEWAL');
+  const renewal = [...rows].reverse().find(r => r.source === 'RENEWAL' || r.source === 'PACKAGE_CHANGE');
   if (!renewal) return { status: 'NO_RENEWAL' };
   const prev = [...rows].reverse().find(r => r.cycle_no < renewal.cycle_no);
   const terms = (['fee', 'commission', 'guarantee'] as TermKey[]).flatMap(key => {

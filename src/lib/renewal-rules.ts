@@ -203,7 +203,7 @@ export function mainStoreInitialRows(list: MainContract[], existing: PriceHistor
     for (const g of groups.length ? groups : [{ svc: null, lines: [] as MainLine[] }]) {
       const pkgName = g.lines[0] ? (g.lines[0].name_snapshot || g.lines[0].sku_snapshot) : '';
       const pkg = g.svc && !pkgName.startsWith(g.svc) ? `${g.svc} ${pkgName}` : pkgName;
-      const has = existing.concat(out).some((h) => h.contract_id === c.contract_id && (h.source === 'RENEWAL' || !g.svc || svcOfPkg(h.package) === g.svc));
+      const has = existing.concat(out).some((h) => h.contract_id === c.contract_id && ((h.source === 'RENEWAL' || h.source === 'PACKAGE_CHANGE') || !g.svc || svcOfPkg(h.package) === g.svc));
       if (has) continue;
       const priced = g.lines.filter((l) => l.unit_price != null && l.unit_price > 0);
       const comm = g.lines.find((l) => l.commission_rate != null)?.commission_rate;
