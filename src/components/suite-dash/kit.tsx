@@ -90,7 +90,7 @@ export function DashHeader({ app, title, period, control, demo, extra }: { app: 
   );
 }
 
-export type TileProps = { label: string; value: ReactNode; sub?: ReactNode; sample?: string; now?: boolean; tone?: "bad" | "good"; testId?: string };
+export type TileProps = { label: string; value: ReactNode; sub?: ReactNode | undefined; sample?: string | undefined; now?: boolean; tone?: "bad" | "good" | undefined; testId?: string };
 export function Tile({ label, value, sub, sample, now, tone, testId }: TileProps) {
   return (
     <div className="flex flex-col gap-1 rounded-xl border bg-card p-4" data-testid={testId ?? "dash-tile"}>
