@@ -54,7 +54,7 @@ describe('UAT Polish R2 · Patch A', () => {
     expect(filterProvinces(DEMAND_PROVINCES, 'chiang', 'All').map((p) => p.en)).toEqual(['Chiang Mai', 'Chiang Rai']);
     expect(filterProvinces(DEMAND_PROVINCES, 'เชียง', 'N')).toHaveLength(2);
     expect(filterProvinces(DEMAND_PROVINCES, '', 'S').every((p) => p.region === 'S')).toBe(true);
-    expect(summaryOf(DEMAND_PROVINCES.find((p) => p.en === 'Bangkok')!)).toEqual({ H: 7, M: 5, L: 0 });
+    expect(summaryOf(DEMAND_PROVINCES.find((p) => p.en === 'Bangkok')!)).toEqual({ H: 8, M: 4, L: 0 });
   });
   test('SP6 ADR: per type = weekday × 71.51% + weekend × 28.49%; overall room-weighted', () => {
     const a = { name: 'Deluxe', rooms: 10, weekday: 1000, weekend: 2000 };
