@@ -1,30 +1,8 @@
-import { Link, useRouterState } from "@tanstack/react-router";
-import { Fragment } from "react";
-import {
-  FolderOpen,
-  BarChart3,
-  BuildingIcon,
-  Calculator,
-  CalendarCheck,
-  ClipboardCheck,
-  Crown,
-  Trophy,
-  Ticket,
-
-
-  Megaphone,
-  FileSignature,
-  FileText,
-  Handshake,
-  Hotel,
-  LayoutDashboard,
-  LifeBuoy,
-  Package,
-  Receipt,
-  Server,
-  Settings,
-  Users,
-} from "lucide-react";
+import { Crown } from "lucide-react";
+import { modules } from "@/lib/erp-data";
+import { Link, useRouter, useRouterState } from "@tanstack/react-router";
+import { Fragment, useEffect, useState, type ReactNode } from "react";
+import { ArrowUpRight, ExternalLink, Flag, Hotel, LayoutDashboard, LifeBuoy, Server, Settings } from "lucide-react";
 
 import {
   Sidebar,
@@ -42,58 +20,80 @@ import {
   SidebarMenuSubItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { modules } from "@/lib/erp-data";
-import { useMeetingMgmt } from "@/lib/orm-meeting";
-import { HOST_OF_MODULE, workspacesFor, workspaceByDept, psAppMenu } from "@/lib/workspace-registry";
+import { ROLE_KEYS, ROLE_LABEL, hydrateMenuRole, setMenuRole, useMenuRole, type RoleKey } from "@/lib/menu-role";
+import { SUITE_ITEMS, appOfPath, guardTarget, landingOf, matchRoute, visibleApps, visibleNodes, withDemo, type SidebarItem, type SidebarNode } from "@/lib/sidebar-registry";
+import { psDemoOn } from "@/lib/demo-session";
 
-const moduleChildren: Record<string, { title: string; url: string; icon: typeof BuildingIcon }[]> = {
-  bd: [
-    { title: "Quotes", url: "/bd/quotes", icon: FileText },
-    { title: "Calculator · ORM", url: "/bd/calculator/orm", icon: Calculator },
-    { title: "Calculator · Marcom", url: "/bd/calculator/marcom", icon: Megaphone },
-    { title: "Register Deal", url: "/bd/register-deal", icon: Handshake },
-  ],
-
-  orm: [
-    { title: "Action A · Hotel Plus ORM", url: "/orm/action-a", icon: BarChart3 },
-    { title: "ORM Dashboard", url: "/orm/dashboard", icon: LayoutDashboard },
-  ],
-  marcom: [
-    { title: "Marcom Dashboard", url: "/marcom/dashboard", icon: LayoutDashboard },
-  ],
-  hr: [
-    { title: "HR Overview", url: "/hr", icon: LayoutDashboard },
-    { title: "Members", url: "/hr/members", icon: Users },
-  ],
-  ac: [
-    { title: "Hotel Profile", url: "/ac/hotel-profile", icon: BuildingIcon },
-    { title: "ต้นทุนค่าระบบ", url: "/ac/system-cost", icon: Server },
-    { title: "Product Catalog", url: "/ac/products", icon: Package },
-    { title: "Customer Master", url: "/ac/customers", icon: Users },
-    { title: "Invoice & ใบเสร็จ", url: "/ac/billing", icon: Receipt },
-  ],
-
-};
-
-
-const PS_ICON: Record<string, typeof BuildingIcon> = { workspace: Ticket, dashboard: LayoutDashboard, "contract-dashboard": LayoutDashboard, onboard: ClipboardCheck, contracts: FileSignature, property: FolderOpen, production: BarChart3, settings: Settings };
-
-const systemItems = [
-  { title: "Configuration", url: "/settings", icon: Settings },
-  { title: "Support", url: "/settings", icon: LifeBuoy },
-];
+/* Suite Sidebar R1: every app's menu renders from SIDEBAR_REGISTRY. The menu role ("บทบาทเมนู (ทดสอบ)") only decides
+ * visibility, landings and S10 redirects; in-page switchers stay where they are. Links and redirects keep DEMO. */
+const SUITE_ICON = { overview: LayoutDashboard, "system-cost": Server, configuration: Settings, support: LifeBuoy } as const;
+const demoSearch = (demo: boolean, extra: Record<string, string> = {}) => ({ ...(demo ? { demo: 1 } : {}), ...extra }) as never;
 
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
-  const pathname = useRouterState({ select: (r) => r.location.pathname });
-  const ticketDemo = useRouterState({ select: (r) => new URLSearchParams(r.location.searchStr).get("demo") === "1" });
-  const { role } = useMeetingMgmt();
+  const router = useRouter();
+  const { pathname, searchStr } = useRouterState({ select: (r) => ({ pathname: r.location.pathname, searchStr: r.location.searchStr }) });
+  const urlDemo = new URLSearchParams(searchStr).get("demo") === "1";
+  const role = useMenuRole();
+  useEffect(() => { hydrateMenuRole(); }, []);
+  const [sharedDemo, setSharedDemo] = useState(false);
+  useEffect(() => { setSharedDemo(psDemoOn()); }, [pathname, searchStr]);
+  const demo = urlDemo || sharedDemo;
+  // S10 + role switch: a hidden page replace-redirects to the app landing for the role, keeping ?demo=1 / shared DEMO.
+  useEffect(() => {
+    const t = guardTarget(pathname, role);
+    if (t && t !== pathname) router.navigate({ href: withDemo(t, searchStr, psDemoOn()), replace: true });
+  }, [pathname, role]); // eslint-disable-line react-hooks/exhaustive-deps
+  const activeApp = appOfPath(pathname);
+  const activeItem = matchRoute(pathname)?.item;
+  const apps = visibleApps(role);
 
-  const hiddenUrls = new Set<string>();
-  if (role === "On-boarding Specialist" || role === "ORM" || role === "GRM") {
-    hiddenUrls.add("/ps/ae-workspace/dashboard");
-  }
+  const renderItem = (i: SidebarItem, depth: number) => {
+    const pad = depth > 1 ? "pl-3" : "";
+    if (i.kind === "report_issue") return null;
+    if (i.kind === "external") {
+      const empty = !i.url;
+      return (
+        <SidebarMenuSubItem key={i.key} className={pad}>
+          <SidebarMenuSubButton asChild isActive={pathname === i.fallback}>
+            {empty ? <Link to={i.fallback as never} search={demoSearch(demo)}><span className="truncate">{i.label}</span><ExternalLink className="size-3 shrink-0 opacity-70" /></Link>
+              : <a href={i.url} target="_blank" rel="noreferrer"><span className="truncate">{i.label}</span><ExternalLink className="size-3 shrink-0 opacity-70" /></a>}
+          </SidebarMenuSubButton>
+        </SidebarMenuSubItem>
+      );
+    }
+    if (i.kind === "link_out") {
+      const extra = i.target.mode === "drop_file" ? { mode: "drop" } : {};
+      return (
+        <SidebarMenuSubItem key={i.key} className={pad}>
+          <SidebarMenuSubButton asChild>
+            <Link to={i.target.route as never} search={demoSearch(demo, extra)} data-testid={`sb-link-out-${i.key}`}>
+              <span className="truncate">{i.label}</span><ArrowUpRight className="size-3.5 shrink-0 opacity-70" aria-label="เปิดในแอปเจ้าของ" />
+            </Link>
+          </SidebarMenuSubButton>
+        </SidebarMenuSubItem>
+      );
+    }
+    return (
+      <SidebarMenuSubItem key={i.key} className={pad}>
+        <SidebarMenuSubButton asChild isActive={activeItem === i}>
+          <Link to={i.route as never} search={demoSearch(demo)} data-testid={`sb-item-${i.key}`}><span className="truncate">{i.label}</span></Link>
+        </SidebarMenuSubButton>
+      </SidebarMenuSubItem>
+    );
+  };
+  const renderNodes = (ns: (SidebarNode | SidebarItem)[], depth: number): ReactNode => ns.map((n, idx) => {
+    if (n.kind === "group" || n.kind === "subheader") {
+      return (
+        <Fragment key={`${n.label}-${idx}`}>
+          <li aria-hidden="true" className={n.kind === "group" ? "px-2 pb-0.5 pt-2 text-[10.5px] font-semibold uppercase tracking-wide text-sidebar-foreground/60" : "pl-4 pr-2 pt-1 text-[10.5px] font-medium text-sidebar-foreground/60"}>{n.label}</li>
+          {renderNodes(n.children, depth + 1)}
+        </Fragment>
+      );
+    }
+    return renderItem(n, depth);
+  });
 
   return (
     <Sidebar collapsible="icon" className="border-sidebar-border">
@@ -112,140 +112,31 @@ export function AppSidebar() {
           )}
         </div>
       </SidebarHeader>
+      {!collapsed && (
+        <div className="border-b border-sidebar-border/60 px-3 py-2">
+          <label className="block text-[11px] font-medium text-sidebar-foreground/80">บทบาทเมนู (ทดสอบ)
+            <select aria-label="บทบาทเมนู (ทดสอบ)" data-testid="menu-role" className="mt-1 w-full rounded-md border border-sidebar-border bg-sidebar px-2 py-1 text-xs text-sidebar-accent-foreground"
+              value={role} onChange={(e) => setMenuRole(e.target.value as RoleKey)}>
+              {ROLE_KEYS.map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
+            </select>
+          </label>
+          <p className="mt-1 text-[10.5px] leading-snug text-sidebar-foreground/60">มีผลกับเมนูและหน้าที่เปิดได้เท่านั้น · บทบาทในหน้ายังเลือกที่ตัวเลือกของแต่ละหน้า</p>
+        </div>
+      )}
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Overview</SidebarGroupLabel>
+          <SidebarGroupLabel>Suite</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={pathname === "/"} tooltip="Overview">
-                  <Link to="/" className="flex items-center gap-2">
-                    <LayoutDashboard className="size-4 shrink-0" />
-                    <span className="truncate">Overview Dashboard</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel>Modules</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {modules.map((m) => {
-                const children = (moduleChildren[m.slug] ?? []).filter((c) => !hiddenUrls.has(c.url));
-                const host = HOST_OF_MODULE[m.slug];
-                const psMenu = m.slug === "ps" ? psAppMenu() : null;
-                const extraWs = host && !psMenu ? workspacesFor(host).filter((w) => !children.some((c) => c.url === w.path)) : [];
-                const psMatch = (it: { url: string; also: string[] }) => pathname === it.url || (it.url !== "/ps" && pathname.startsWith(`${it.url}/`)) || it.also.some((a) => pathname === a || pathname.startsWith(`${a}/`));
-                const inSection = pathname === m.to || pathname.startsWith(`${m.to}/`) || extraWs.some((w) => w.path === pathname) || children.some((c) => c.url === pathname) || (!!psMenu && psMenu.some((g) => g.items.some(psMatch)));
-                const officeWs = workspaceByDept("OFFICE");
-                const officeActive = pathname.startsWith("/the-office-app") || pathname === officeWs.path;
+              {SUITE_ITEMS.map((s) => {
+                const I = SUITE_ICON[s.key];
                 return (
-                  <Fragment key={m.slug}>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={pathname === m.to}
-                      tooltip={`${m.code} App`}
-                    >
-                      <Link to={m.to} search={{ demo: ticketDemo ? 1 : undefined }} className="flex items-center gap-2">
-                        <m.icon className="size-4 shrink-0" />
-                        <span className="truncate">{m.code} App</span>
-                      </Link>
+                  <SidebarMenuItem key={s.key}>
+                    <SidebarMenuButton asChild isActive={pathname === s.route && s.key !== "support"} tooltip={s.label}>
+                      <Link to={s.route} search={demoSearch(demo)} className="flex items-center gap-2"><I className="size-4 shrink-0" /><span className="truncate">{s.label}</span></Link>
                     </SidebarMenuButton>
-                    {!collapsed && psMenu && inSection && (
-                      <SidebarMenuSub>
-                        {psMenu.map((g) => (
-                          <Fragment key={g.group}>
-                            <li className="px-2 pb-0.5 pt-2 text-[10.5px] font-semibold uppercase tracking-wide text-sidebar-foreground/60" aria-hidden="true">{g.group}</li>
-                            {g.items.map((c) => (
-                              <SidebarMenuSubItem key={c.key}>
-                                <SidebarMenuSubButton asChild isActive={psMatch(c)}>
-                                  <Link to={c.url} search={{ demo: ticketDemo ? 1 : undefined }} className="flex items-center gap-2">
-                                    {(() => { const I = PS_ICON[c.key] ?? Ticket; return <I className="size-3.5 shrink-0" />; })()}
-                                    <span className="truncate">{c.title}</span>
-                                  </Link>
-                                </SidebarMenuSubButton>
-                              </SidebarMenuSubItem>
-                            ))}
-                          </Fragment>
-                        ))}
-                      </SidebarMenuSub>
-                    )}
-                    {!collapsed && !psMenu && (children.length > 0 || extraWs.length > 0) && inSection && (
-                      <SidebarMenuSub>
-                        {children.map((c) => (
-                          <SidebarMenuSubItem key={c.url}>
-                            <SidebarMenuSubButton asChild isActive={pathname === c.url}>
-                              <Link to={c.url} search={{ demo: ticketDemo ? 1 : undefined }} className="flex items-center gap-2">
-                                <c.icon className="size-3.5 shrink-0" />
-                                <span className="truncate">{c.title}</span>
-                              </Link>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        ))}
-                        {extraWs.map((w) => (
-                          <SidebarMenuSubItem key={w.path}>
-                            <SidebarMenuSubButton asChild isActive={pathname === w.path}>
-                              <Link to={w.path} search={{ demo: ticketDemo ? 1 : undefined, ticket: undefined }} className="flex items-center gap-2">
-                                <Ticket className="size-3.5 shrink-0" />
-                                <span className="truncate">{w.label}</span>
-                              </Link>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        ))}
-                      </SidebarMenuSub>
-                    )}
                   </SidebarMenuItem>
-                  {m.slug === "marcom" && (
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={officeActive}
-                        tooltip="The Office APP"
-                      >
-                        <Link to="/the-office-app/bd-ac" search={{ demo: ticketDemo ? 1 : undefined }} className="flex items-center gap-2">
-                          <Crown className="size-4 shrink-0" />
-                          <span className="truncate">The Office APP</span>
-                        </Link>
-                      </SidebarMenuButton>
-                      {!collapsed && officeActive && (
-                        <SidebarMenuSub>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton asChild isActive={pathname === "/the-office-app/bd-ac"}>
-                              <Link to="/the-office-app/bd-ac" search={{ demo: ticketDemo ? 1 : undefined }} className="flex items-center gap-2">
-                                <BarChart3 className="size-3.5 shrink-0" />
-                                <span className="truncate">BD-AC</span>
-                              </Link>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={pathname === "/the-office-app/orm-bonus"}
-                            >
-                              <Link to="/the-office-app/orm-bonus" className="flex items-center gap-2">
-                                <Trophy className="size-3.5 shrink-0" />
-                                <span className="truncate">ORM Bonus</span>
-                              </Link>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton asChild isActive={pathname === officeWs.path}>
-                              <Link to={officeWs.path} search={{ demo: ticketDemo ? 1 : undefined, ticket: undefined }} className="flex items-center gap-2">
-                                <Ticket className="size-3.5 shrink-0" />
-                                <span className="truncate">{officeWs.label}</span>
-                              </Link>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        </SidebarMenuSub>
-                      )}
-                    </SidebarMenuItem>
-                  )}
-                  </Fragment>
                 );
               })}
             </SidebarMenu>
@@ -253,39 +144,41 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>Shared</SidebarGroupLabel>
+          <SidebarGroupLabel>Apps</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={pathname === "/system-cost"}
-                  tooltip="ต้นทุนค่าระบบ (ภาพรวม)"
-                >
-                  <Link to="/system-cost" className="flex items-center gap-2">
-                    <Server className="size-4 shrink-0" />
-                    <span className="truncate">ต้นทุนค่าระบบ (ภาพรวม)</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel>System</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {systemItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild tooltip={item.title}>
-                    <Link to={item.url} className="flex items-center gap-2">
-                      <item.icon className="size-4 shrink-0" />
-                      <span className="truncate">{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {apps.map((a) => {
+                const mod = modules.find((m) => m.slug === (a.key === "AUTO" ? "automation" : a.key.toLowerCase()));
+                const Icon = mod?.icon ?? Crown;
+                const open = activeApp?.key === a.key;
+                const nodes = visibleNodes(a.nodes, role);
+                const issue = nodes.find((n) => n.kind === "report_issue") as SidebarItem | undefined;
+                const landing = landingOf(a, role) ?? `/${a.prefix}`;
+                return (
+                  <SidebarMenuItem key={a.key} data-testid={`sb-app-${a.key}`}>
+                    <SidebarMenuButton asChild isActive={open} tooltip={a.label}>
+                      <Link to={landing as never} search={demoSearch(demo)} className="flex items-center gap-2">
+                        <Icon className="size-4 shrink-0" /><span className="truncate">{a.label}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                    {!collapsed && open && (
+                      <SidebarMenuSub>
+                        {renderNodes(nodes.filter((n) => n.kind !== "report_issue"), 1)}
+                        {issue && issue.kind === "report_issue" && (
+                          <>
+                            <li aria-hidden="true" className="my-1 border-t border-sidebar-border/60" />
+                            <SidebarMenuSubItem>
+                              <SidebarMenuSubButton asChild isActive={pathname === issue.route}>
+                                <Link to={issue.route as never} search={demoSearch(demo)} data-testid="sb-report-issue"><Flag className="size-3.5 shrink-0" /><span className="truncate">แจ้งปัญหา</span></Link>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          </>
+                        )}
+                      </SidebarMenuSub>
+                    )}
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

@@ -504,7 +504,7 @@ function HeadlineStrip({ summaryOnly = false }: { summaryOnly?: boolean }) {
                     "ยอดย่อยรวมมากกว่า total ได้",
                   ]
                 : ["รอข้อมูล"],
-              { source: "สัญญา & บริการ", count: "โรงแรมที่มีสัญญาสถานะใช้งาน ณ วันนี้ (สถานะปัจจุบัน ไม่ย้อนตามช่วง) · โรงแรมที่ใช้ทั้ง ORM และ Marcom นับ 1" },
+              { source: "Contract & Service Manager", count: "โรงแรมที่มีสัญญาสถานะใช้งาน ณ วันนี้ (สถานะปัจจุบัน ไม่ย้อนตามช่วง) · โรงแรมที่ใช้ทั้ง ORM และ Marcom นับ 1" },
             )}
           </div>
         </div>
@@ -545,7 +545,7 @@ function HeadlineStrip({ summaryOnly = false }: { summaryOnly?: boolean }) {
                       return `${line} ${ratio(rows, "out_count", "active_at_start")?.toFixed(1) ?? "—"}% (${n}/${base} โรงแรม)`;
                     })
                 : ["รอข้อมูล"],
-              { source: "สัญญา & บริการ (วันที่สัญญาสิ้นสุด)", count: "โรงแรมที่หลุดอย่างน้อย 1 บริการในเดือน ÷ โรงแรมที่ใช้งานต้นเดือน (เดือนล่าสุดของช่วง)" },
+              { source: "Contract & Service Manager (วันที่สัญญาสิ้นสุด)", count: "โรงแรมที่หลุดอย่างน้อย 1 บริการในเดือน ÷ โรงแรมที่ใช้งานต้นเดือน (เดือนล่าสุดของช่วง)" },
             )}
             {tile("คะแนนบริการ", "—", <Delta a={null} b={null} />, "รอข้อมูล", [
               "รอข้อมูลคะแนนบริการ / 5",

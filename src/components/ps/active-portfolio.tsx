@@ -58,7 +58,7 @@ export function ActivePortfolio({ today, total, active, contracts: all, prices, 
   const mb = (k: "content" | "ads" | "kol", c: CardCompare, feed: MarcomRecord[] | null) => ({ a: marcomBox(contracts, k, c.asOfA, c.a, feed), b: marcomBox(contracts, k, c.asOfB, c.b, feed) });
   const ct = mb("content", content, marcom.posts), ad = mb("ads", ads, marcom.ads), kl = mb("kol", kol, marcom.kol);
   const pct = (v: number | null) => (v == null ? "—" : `${fmt(v)}%`);
-  const ormSrc = "สัญญา & บริการ (SKU) + ประวัติราคาสัญญา";
+  const ormSrc = "Contract & Service Manager (SKU) + ประวัติราคาสัญญา";
   const marcomSrc = "สัญญา (โควตา) + Marcom App (ยังไม่เชื่อมต่อ)";
   const sec = (from: number) => `จาก ${fmt(from)} สัญญา`;
   const nc = (x: { value: number | null }) => x.value == null;

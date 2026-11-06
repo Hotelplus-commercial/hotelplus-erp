@@ -29,6 +29,8 @@ import { Route as AcOperationsRouteImport } from './routes/ac.operations'
 import { Route as AcPartnerBillsRouteImport } from './routes/ac.partner-bills'
 import { Route as AcProductsRouteImport } from './routes/ac.products'
 import { Route as AcSystemCostRouteImport } from './routes/ac.system-cost'
+import { Route as AcSplatRouteImport } from './routes/ac_.$'
+import { Route as AutomationSplatRouteImport } from './routes/automation_.$'
 import { Route as BdIndexRouteImport } from './routes/bd.index'
 import { Route as BdCalculatorRouteImport } from './routes/bd.calculator'
 import { Route as BdDealsRouteImport } from './routes/bd.deals'
@@ -36,14 +38,18 @@ import { Route as BdQuotationsRouteImport } from './routes/bd.quotations'
 import { Route as BdQuotesRouteImport } from './routes/bd.quotes'
 import { Route as BdRegisterDealRouteImport } from './routes/bd.register-deal'
 import { Route as BdTicketsRouteImport } from './routes/bd.tickets'
+import { Route as BdSplatRouteImport } from './routes/bd_.$'
 import { Route as FTokenRouteImport } from './routes/f.$token'
 import { Route as HrIndexRouteImport } from './routes/hr.index'
 import { Route as HrMembersRouteImport } from './routes/hr.members'
+import { Route as HrSplatRouteImport } from './routes/hr_.$'
 import { Route as LTokenRouteImport } from './routes/l.$token'
 import { Route as MarcomDashboardRouteImport } from './routes/marcom.dashboard'
+import { Route as MarcomSplatRouteImport } from './routes/marcom_.$'
 import { Route as OfficeBdAcRouteImport } from './routes/office.bd-ac'
 import { Route as OrmActionARouteImport } from './routes/orm.action-a'
 import { Route as OrmDashboardRouteImport } from './routes/orm.dashboard'
+import { Route as OrmSplatRouteImport } from './routes/orm_.$'
 import { Route as PsIndexRouteImport } from './routes/ps.index'
 import { Route as PsAeWorkspaceRouteImport } from './routes/ps.ae-workspace'
 import { Route as PsContractDashboardRouteImport } from './routes/ps.contract-dashboard'
@@ -55,9 +61,11 @@ import { Route as PsServicingTimelineRouteImport } from './routes/ps.servicing-t
 import { Route as PsSettingsRouteImport } from './routes/ps.settings'
 import { Route as PsSystemCostRouteImport } from './routes/ps.system-cost'
 import { Route as PsWorkspaceRouteImport } from './routes/ps.workspace'
+import { Route as PsSplatRouteImport } from './routes/ps_.$'
 import { Route as TheOfficeAppIndexRouteImport } from './routes/the-office-app.index'
 import { Route as TheOfficeAppBdAcRouteImport } from './routes/the-office-app.bd-ac'
 import { Route as TheOfficeAppOrmBonusRouteImport } from './routes/the-office-app.orm-bonus'
+import { Route as TheOfficeAppSplatRouteImport } from './routes/the-office-app_.$'
 import { Route as WorkspaceDeptRouteImport } from './routes/workspace.$dept'
 import { Route as WorkspaceAeRouteImport } from './routes/workspace.ae'
 import { Route as ApiPublicAcBillingDailyRouteImport } from './routes/api/public/ac-billing-daily'
@@ -198,6 +206,16 @@ const AcSystemCostRoute = AcSystemCostRouteImport.update({
   path: '/system-cost',
   getParentRoute: () => AcRoute,
 } as any)
+const AcSplatRoute = AcSplatRouteImport.update({
+  id: '/ac_/$',
+  path: '/ac/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AutomationSplatRoute = AutomationSplatRouteImport.update({
+  id: '/automation_/$',
+  path: '/automation/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BdIndexRoute = BdIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -233,6 +251,11 @@ const BdTicketsRoute = BdTicketsRouteImport.update({
   path: '/tickets',
   getParentRoute: () => BdRoute,
 } as any)
+const BdSplatRoute = BdSplatRouteImport.update({
+  id: '/bd_/$',
+  path: '/bd/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FTokenRoute = FTokenRouteImport.update({
   id: '/f/$token',
   path: '/f/$token',
@@ -248,6 +271,11 @@ const HrMembersRoute = HrMembersRouteImport.update({
   path: '/members',
   getParentRoute: () => HrRoute,
 } as any)
+const HrSplatRoute = HrSplatRouteImport.update({
+  id: '/hr_/$',
+  path: '/hr/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LTokenRoute = LTokenRouteImport.update({
   id: '/l/$token',
   path: '/l/$token',
@@ -257,6 +285,11 @@ const MarcomDashboardRoute = MarcomDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
   getParentRoute: () => MarcomRoute,
+} as any)
+const MarcomSplatRoute = MarcomSplatRouteImport.update({
+  id: '/marcom_/$',
+  path: '/marcom/$',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const OfficeBdAcRoute = OfficeBdAcRouteImport.update({
   id: '/office/bd-ac',
@@ -272,6 +305,11 @@ const OrmDashboardRoute = OrmDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
   getParentRoute: () => OrmRoute,
+} as any)
+const OrmSplatRoute = OrmSplatRouteImport.update({
+  id: '/orm_/$',
+  path: '/orm/$',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const PsIndexRoute = PsIndexRouteImport.update({
   id: '/',
@@ -328,6 +366,11 @@ const PsWorkspaceRoute = PsWorkspaceRouteImport.update({
   path: '/workspace',
   getParentRoute: () => PsRoute,
 } as any)
+const PsSplatRoute = PsSplatRouteImport.update({
+  id: '/ps_/$',
+  path: '/ps/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TheOfficeAppIndexRoute = TheOfficeAppIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -342,6 +385,11 @@ const TheOfficeAppOrmBonusRoute = TheOfficeAppOrmBonusRouteImport.update({
   id: '/orm-bonus',
   path: '/orm-bonus',
   getParentRoute: () => TheOfficeAppRoute,
+} as any)
+const TheOfficeAppSplatRoute = TheOfficeAppSplatRouteImport.update({
+  id: '/the-office-app_/$',
+  path: '/the-office-app/$',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const WorkspaceDeptRoute = WorkspaceDeptRouteImport.update({
   id: '/workspace/$dept',
@@ -564,19 +612,25 @@ export interface FileRoutesByFullPath {
   '/ac/partner-bills': typeof AcPartnerBillsRoute
   '/ac/products': typeof AcProductsRoute
   '/ac/system-cost': typeof AcSystemCostRoute
+  '/ac/$': typeof AcSplatRoute
+  '/automation/$': typeof AutomationSplatRoute
   '/bd/calculator': typeof BdCalculatorRouteWithChildren
   '/bd/deals': typeof BdDealsRoute
   '/bd/quotations': typeof BdQuotationsRouteWithChildren
   '/bd/quotes': typeof BdQuotesRouteWithChildren
   '/bd/register-deal': typeof BdRegisterDealRoute
   '/bd/tickets': typeof BdTicketsRoute
+  '/bd/$': typeof BdSplatRoute
   '/f/$token': typeof FTokenRoute
   '/hr/members': typeof HrMembersRoute
+  '/hr/$': typeof HrSplatRoute
   '/l/$token': typeof LTokenRoute
   '/marcom/dashboard': typeof MarcomDashboardRoute
+  '/marcom/$': typeof MarcomSplatRoute
   '/office/bd-ac': typeof OfficeBdAcRoute
   '/orm/action-a': typeof OrmActionARouteWithChildren
   '/orm/dashboard': typeof OrmDashboardRoute
+  '/orm/$': typeof OrmSplatRoute
   '/ps/ae-workspace': typeof PsAeWorkspaceRouteWithChildren
   '/ps/contract-dashboard': typeof PsContractDashboardRoute
   '/ps/contract-wizard': typeof PsContractWizardRouteWithChildren
@@ -587,8 +641,10 @@ export interface FileRoutesByFullPath {
   '/ps/settings': typeof PsSettingsRoute
   '/ps/system-cost': typeof PsSystemCostRoute
   '/ps/workspace': typeof PsWorkspaceRoute
+  '/ps/$': typeof PsSplatRoute
   '/the-office-app/bd-ac': typeof TheOfficeAppBdAcRoute
   '/the-office-app/orm-bonus': typeof TheOfficeAppOrmBonusRoute
+  '/the-office-app/$': typeof TheOfficeAppSplatRoute
   '/workspace/$dept': typeof WorkspaceDeptRoute
   '/workspace/ae': typeof WorkspaceAeRoute
   '/ac/': typeof AcIndexRoute
@@ -649,16 +705,22 @@ export interface FileRoutesByTo {
   '/ac/partner-bills': typeof AcPartnerBillsRoute
   '/ac/products': typeof AcProductsRoute
   '/ac/system-cost': typeof AcSystemCostRoute
+  '/ac/$': typeof AcSplatRoute
+  '/automation/$': typeof AutomationSplatRoute
   '/bd/calculator': typeof BdCalculatorRouteWithChildren
   '/bd/deals': typeof BdDealsRoute
   '/bd/register-deal': typeof BdRegisterDealRoute
   '/bd/tickets': typeof BdTicketsRoute
+  '/bd/$': typeof BdSplatRoute
   '/f/$token': typeof FTokenRoute
   '/hr/members': typeof HrMembersRoute
+  '/hr/$': typeof HrSplatRoute
   '/l/$token': typeof LTokenRoute
   '/marcom/dashboard': typeof MarcomDashboardRoute
+  '/marcom/$': typeof MarcomSplatRoute
   '/office/bd-ac': typeof OfficeBdAcRoute
   '/orm/dashboard': typeof OrmDashboardRoute
+  '/orm/$': typeof OrmSplatRoute
   '/ps/contract-dashboard': typeof PsContractDashboardRoute
   '/ps/contracts': typeof PsContractsRoute
   '/ps/onboarding-process': typeof PsOnboardingProcessRoute
@@ -667,8 +729,10 @@ export interface FileRoutesByTo {
   '/ps/settings': typeof PsSettingsRoute
   '/ps/system-cost': typeof PsSystemCostRoute
   '/ps/workspace': typeof PsWorkspaceRoute
+  '/ps/$': typeof PsSplatRoute
   '/the-office-app/bd-ac': typeof TheOfficeAppBdAcRoute
   '/the-office-app/orm-bonus': typeof TheOfficeAppOrmBonusRoute
+  '/the-office-app/$': typeof TheOfficeAppSplatRoute
   '/workspace/$dept': typeof WorkspaceDeptRoute
   '/workspace/ae': typeof WorkspaceAeRoute
   '/ac': typeof AcIndexRoute
@@ -735,19 +799,25 @@ export interface FileRoutesById {
   '/ac/partner-bills': typeof AcPartnerBillsRoute
   '/ac/products': typeof AcProductsRoute
   '/ac/system-cost': typeof AcSystemCostRoute
+  '/ac_/$': typeof AcSplatRoute
+  '/automation_/$': typeof AutomationSplatRoute
   '/bd/calculator': typeof BdCalculatorRouteWithChildren
   '/bd/deals': typeof BdDealsRoute
   '/bd/quotations': typeof BdQuotationsRouteWithChildren
   '/bd/quotes': typeof BdQuotesRouteWithChildren
   '/bd/register-deal': typeof BdRegisterDealRoute
   '/bd/tickets': typeof BdTicketsRoute
+  '/bd_/$': typeof BdSplatRoute
   '/f/$token': typeof FTokenRoute
   '/hr/members': typeof HrMembersRoute
+  '/hr_/$': typeof HrSplatRoute
   '/l/$token': typeof LTokenRoute
   '/marcom/dashboard': typeof MarcomDashboardRoute
+  '/marcom_/$': typeof MarcomSplatRoute
   '/office/bd-ac': typeof OfficeBdAcRoute
   '/orm/action-a': typeof OrmActionARouteWithChildren
   '/orm/dashboard': typeof OrmDashboardRoute
+  '/orm_/$': typeof OrmSplatRoute
   '/ps/ae-workspace': typeof PsAeWorkspaceRouteWithChildren
   '/ps/contract-dashboard': typeof PsContractDashboardRoute
   '/ps/contract-wizard': typeof PsContractWizardRouteWithChildren
@@ -758,8 +828,10 @@ export interface FileRoutesById {
   '/ps/settings': typeof PsSettingsRoute
   '/ps/system-cost': typeof PsSystemCostRoute
   '/ps/workspace': typeof PsWorkspaceRoute
+  '/ps_/$': typeof PsSplatRoute
   '/the-office-app/bd-ac': typeof TheOfficeAppBdAcRoute
   '/the-office-app/orm-bonus': typeof TheOfficeAppOrmBonusRoute
+  '/the-office-app_/$': typeof TheOfficeAppSplatRoute
   '/workspace/$dept': typeof WorkspaceDeptRoute
   '/workspace/ae': typeof WorkspaceAeRoute
   '/ac/': typeof AcIndexRoute
@@ -827,19 +899,25 @@ export interface FileRouteTypes {
     | '/ac/partner-bills'
     | '/ac/products'
     | '/ac/system-cost'
+    | '/ac/$'
+    | '/automation/$'
     | '/bd/calculator'
     | '/bd/deals'
     | '/bd/quotations'
     | '/bd/quotes'
     | '/bd/register-deal'
     | '/bd/tickets'
+    | '/bd/$'
     | '/f/$token'
     | '/hr/members'
+    | '/hr/$'
     | '/l/$token'
     | '/marcom/dashboard'
+    | '/marcom/$'
     | '/office/bd-ac'
     | '/orm/action-a'
     | '/orm/dashboard'
+    | '/orm/$'
     | '/ps/ae-workspace'
     | '/ps/contract-dashboard'
     | '/ps/contract-wizard'
@@ -850,8 +928,10 @@ export interface FileRouteTypes {
     | '/ps/settings'
     | '/ps/system-cost'
     | '/ps/workspace'
+    | '/ps/$'
     | '/the-office-app/bd-ac'
     | '/the-office-app/orm-bonus'
+    | '/the-office-app/$'
     | '/workspace/$dept'
     | '/workspace/ae'
     | '/ac/'
@@ -912,16 +992,22 @@ export interface FileRouteTypes {
     | '/ac/partner-bills'
     | '/ac/products'
     | '/ac/system-cost'
+    | '/ac/$'
+    | '/automation/$'
     | '/bd/calculator'
     | '/bd/deals'
     | '/bd/register-deal'
     | '/bd/tickets'
+    | '/bd/$'
     | '/f/$token'
     | '/hr/members'
+    | '/hr/$'
     | '/l/$token'
     | '/marcom/dashboard'
+    | '/marcom/$'
     | '/office/bd-ac'
     | '/orm/dashboard'
+    | '/orm/$'
     | '/ps/contract-dashboard'
     | '/ps/contracts'
     | '/ps/onboarding-process'
@@ -930,8 +1016,10 @@ export interface FileRouteTypes {
     | '/ps/settings'
     | '/ps/system-cost'
     | '/ps/workspace'
+    | '/ps/$'
     | '/the-office-app/bd-ac'
     | '/the-office-app/orm-bonus'
+    | '/the-office-app/$'
     | '/workspace/$dept'
     | '/workspace/ae'
     | '/ac'
@@ -997,19 +1085,25 @@ export interface FileRouteTypes {
     | '/ac/partner-bills'
     | '/ac/products'
     | '/ac/system-cost'
+    | '/ac_/$'
+    | '/automation_/$'
     | '/bd/calculator'
     | '/bd/deals'
     | '/bd/quotations'
     | '/bd/quotes'
     | '/bd/register-deal'
     | '/bd/tickets'
+    | '/bd_/$'
     | '/f/$token'
     | '/hr/members'
+    | '/hr_/$'
     | '/l/$token'
     | '/marcom/dashboard'
+    | '/marcom_/$'
     | '/office/bd-ac'
     | '/orm/action-a'
     | '/orm/dashboard'
+    | '/orm_/$'
     | '/ps/ae-workspace'
     | '/ps/contract-dashboard'
     | '/ps/contract-wizard'
@@ -1020,8 +1114,10 @@ export interface FileRouteTypes {
     | '/ps/settings'
     | '/ps/system-cost'
     | '/ps/workspace'
+    | '/ps_/$'
     | '/the-office-app/bd-ac'
     | '/the-office-app/orm-bonus'
+    | '/the-office-app_/$'
     | '/workspace/$dept'
     | '/workspace/ae'
     | '/ac/'
@@ -1081,9 +1177,17 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   SystemCostRoute: typeof SystemCostRoute
   TheOfficeAppRoute: typeof TheOfficeAppRouteWithChildren
+  AcSplatRoute: typeof AcSplatRoute
+  AutomationSplatRoute: typeof AutomationSplatRoute
+  BdSplatRoute: typeof BdSplatRoute
   FTokenRoute: typeof FTokenRoute
+  HrSplatRoute: typeof HrSplatRoute
   LTokenRoute: typeof LTokenRoute
+  MarcomSplatRoute: typeof MarcomSplatRoute
   OfficeBdAcRoute: typeof OfficeBdAcRoute
+  OrmSplatRoute: typeof OrmSplatRoute
+  PsSplatRoute: typeof PsSplatRoute
+  TheOfficeAppSplatRoute: typeof TheOfficeAppSplatRoute
   WorkspaceDeptRoute: typeof WorkspaceDeptRoute
   WorkspaceAeRoute: typeof WorkspaceAeRoute
   ApiPublicAcBillingDailyRoute: typeof ApiPublicAcBillingDailyRoute
@@ -1234,6 +1338,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AcSystemCostRouteImport
       parentRoute: typeof AcRoute
     }
+    '/ac_/$': {
+      id: '/ac_/$'
+      path: '/ac/$'
+      fullPath: '/ac/$'
+      preLoaderRoute: typeof AcSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/automation_/$': {
+      id: '/automation_/$'
+      path: '/automation/$'
+      fullPath: '/automation/$'
+      preLoaderRoute: typeof AutomationSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/bd/': {
       id: '/bd/'
       path: '/'
@@ -1283,6 +1401,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BdTicketsRouteImport
       parentRoute: typeof BdRoute
     }
+    '/bd_/$': {
+      id: '/bd_/$'
+      path: '/bd/$'
+      fullPath: '/bd/$'
+      preLoaderRoute: typeof BdSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/f/$token': {
       id: '/f/$token'
       path: '/f/$token'
@@ -1304,6 +1429,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HrMembersRouteImport
       parentRoute: typeof HrRoute
     }
+    '/hr_/$': {
+      id: '/hr_/$'
+      path: '/hr/$'
+      fullPath: '/hr/$'
+      preLoaderRoute: typeof HrSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/l/$token': {
       id: '/l/$token'
       path: '/l/$token'
@@ -1317,6 +1449,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/marcom/dashboard'
       preLoaderRoute: typeof MarcomDashboardRouteImport
       parentRoute: typeof MarcomRoute
+    }
+    '/marcom_/$': {
+      id: '/marcom_/$'
+      path: '/marcom/$'
+      fullPath: '/marcom/$'
+      preLoaderRoute: typeof MarcomSplatRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/office/bd-ac': {
       id: '/office/bd-ac'
@@ -1338,6 +1477,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/orm/dashboard'
       preLoaderRoute: typeof OrmDashboardRouteImport
       parentRoute: typeof OrmRoute
+    }
+    '/orm_/$': {
+      id: '/orm_/$'
+      path: '/orm/$'
+      fullPath: '/orm/$'
+      preLoaderRoute: typeof OrmSplatRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/ps/': {
       id: '/ps/'
@@ -1416,6 +1562,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PsWorkspaceRouteImport
       parentRoute: typeof PsRoute
     }
+    '/ps_/$': {
+      id: '/ps_/$'
+      path: '/ps/$'
+      fullPath: '/ps/$'
+      preLoaderRoute: typeof PsSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/the-office-app/': {
       id: '/the-office-app/'
       path: '/'
@@ -1436,6 +1589,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/the-office-app/orm-bonus'
       preLoaderRoute: typeof TheOfficeAppOrmBonusRouteImport
       parentRoute: typeof TheOfficeAppRoute
+    }
+    '/the-office-app_/$': {
+      id: '/the-office-app_/$'
+      path: '/the-office-app/$'
+      fullPath: '/the-office-app/$'
+      preLoaderRoute: typeof TheOfficeAppSplatRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/workspace/$dept': {
       id: '/workspace/$dept'
@@ -1978,9 +2138,17 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   SystemCostRoute: SystemCostRoute,
   TheOfficeAppRoute: TheOfficeAppRouteWithChildren,
+  AcSplatRoute: AcSplatRoute,
+  AutomationSplatRoute: AutomationSplatRoute,
+  BdSplatRoute: BdSplatRoute,
   FTokenRoute: FTokenRoute,
+  HrSplatRoute: HrSplatRoute,
   LTokenRoute: LTokenRoute,
+  MarcomSplatRoute: MarcomSplatRoute,
   OfficeBdAcRoute: OfficeBdAcRoute,
+  OrmSplatRoute: OrmSplatRoute,
+  PsSplatRoute: PsSplatRoute,
+  TheOfficeAppSplatRoute: TheOfficeAppSplatRoute,
   WorkspaceDeptRoute: WorkspaceDeptRoute,
   WorkspaceAeRoute: WorkspaceAeRoute,
   ApiPublicAcBillingDailyRoute: ApiPublicAcBillingDailyRoute,

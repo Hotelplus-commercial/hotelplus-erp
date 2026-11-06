@@ -52,9 +52,9 @@ function PropertyInfoInternal() {
   const demoHotel = demo ? partnerDemoHotel(hotelId) : null;
   if (!property && demoHotel) return (
     <div className="flex flex-col gap-4" data-testid="hp-demo-hotel">
-      <PageHeader eyebrow="PS App · ข้อมูลโรงแรม · Property Info (ทีม) · ข้อมูลสาธิต" title={demoHotel}
+      <PageHeader eyebrow="PS App · Property Content · Property Info (ทีม) · ข้อมูลสาธิต" title={demoHotel}
         description={`Hotel ID: ${hotelId} · โรงแรมตัวอย่างของข้อมูล Partner (DEMO) · ไม่บันทึก`}
-        actions={<Button asChild variant="outline" size="sm"><Link to="/ps/property-content" search={{ demo: 1 }}>← ข้อมูลโรงแรม</Link></Button>} />
+        actions={<Button asChild variant="outline" size="sm"><Link to="/ps/property-content" search={{ demo: 1 }}>← Property Content</Link></Button>} />
       <Button size="sm" variant="default" className="w-fit">ORM</Button>
       <PropertySystemBlock propertyId={hotelId} isPm={s.role === "pm"} />
     </div>
@@ -90,10 +90,10 @@ function PropertyInfoInternal() {
 
   return (
     <div className="flex flex-col gap-4">
-      <PageHeader eyebrow="PS App · ข้อมูลโรงแรม · Property Info (ทีม)" title={property.hotel_name_th}
+      <PageHeader eyebrow="PS App · Property Content · Property Info (ทีม)" title={property.hotel_name_th}
         description={`Hotel ID: ${property.hotel_id} · Start year: ${property.start_year ?? "—"} · Owner AE: ${property.owner_ae ?? "—"}`}
         actions={<div className="flex gap-2">
-          <Button asChild variant="outline" size="sm"><Link to="/ps/property-content" search={demo ? { demo: 1 } : {}}>← ข้อมูลโรงแรม</Link></Button>
+          <Button asChild variant="outline" size="sm"><Link to="/ps/property-content" search={demo ? { demo: 1 } : {}}>← Property Content</Link></Button>
           {cardId && <Button asChild variant="outline" size="sm"><Link to="/ps/onboarding-process" hash={`servicing-card-${cardId}`}>↩ Back to card</Link></Button>}
         </div>} />
       <div className="flex flex-wrap gap-2">

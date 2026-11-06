@@ -10,8 +10,8 @@ export const psTabs = [
   { label: "PS Dashboard", to: "/ps" },
   { label: "Contract Dashboard", to: "/ps/contract-dashboard" },
   { label: "On-board", to: "/ps/onboarding-process" },
-  { label: "สัญญา & บริการ", to: "/ps/contracts" },
-  { label: "ข้อมูลโรงแรม", to: "/ps/property-content" },
+  { label: "Contract & Service Manager", to: "/ps/contracts" },
+  { label: "Property Content", to: "/ps/property-content" },
   { label: "Production Report", to: "/ps/production" },
   { label: "ตั้งค่า", to: "/ps/settings" },
 ];

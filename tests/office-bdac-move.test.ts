@@ -25,9 +25,11 @@ describe('BD-AC move to The Office APP (v1.0)', () => {
     const src = readFileSync('src/routes/the-office-app.tsx', 'utf8');
     expect(src.indexOf('"/the-office-app/bd-ac"')).toBeGreaterThan(-1);
     expect(src.indexOf('"/the-office-app/bd-ac"')).toBeLessThan(src.indexOf('"/the-office-app/orm-bonus"'));
-    const side = readFileSync('src/components/app-sidebar.tsx', 'utf8');
-    expect(side.indexOf('<span className="truncate">BD-AC</span>')).toBeLessThan(side.indexOf('<span className="truncate">ORM Bonus</span>'));
-    expect(side.indexOf('<span className="truncate">ORM Bonus</span>')).toBeLessThan(side.indexOf('{officeWs.label}'));
+    // Suite Sidebar R1 §4.8: the Office menu comes from SIDEBAR_REGISTRY; BD-AC then ORM Bonus stay at the end until R2.
+    const reg = readFileSync('src/lib/sidebar-registry.ts', 'utf8');
+    const office = reg.slice(reg.indexOf("key: 'OFFICE'"));
+    expect(office.indexOf("label: 'BD-AC', route")).toBeGreaterThan(office.indexOf("'HOD Meeting Minutes'"));
+    expect(office.indexOf("label: 'BD-AC', route")).toBeLessThan(office.indexOf("label: 'ORM Bonus', route: '/the-office-app"));
   });
   test('exactly one copy of each BD-AC component (no fork)', () => {
     const files: string[] = [];
