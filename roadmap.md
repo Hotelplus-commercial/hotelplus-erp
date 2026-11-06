@@ -391,3 +391,8 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 ## Decisions & Fix R1 — open
 - [ ] Old `servicing_sla_config` still in code (unused) — remove once SLA On-board is confirmed as the only source.
 - [ ] Marcom per-hotel override set via Assign is live-only; DEMO uses the seeded HTL0503 example.
+
+# PR-O1 · Production Report drop view
+- [ ] Month-rule report: next commission service month old vs new, flag double/skip (wait only if flagged).
+- [ ] Build PR1–PR18 + Report Automation placeholder + Overview AC count; tests; UAT ORM/ORM_LEAD/MKT_LEAD/AC; rules; close PR-O1.
+- [ ] Report Automation page — needs a spec (open).
