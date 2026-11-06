@@ -101,6 +101,9 @@ export function OnboardTab() {
   const [stageSel, setStageSel] = useState<{ svc: SetupSvc; stage: StageKey } | null>(null);
   const [goLiveSvc, setGoLiveSvc] = useState<{ svc: SetupSvc; n: number } | null>(null);
   const [demoTickets, setDemoTickets] = useState<string[]>([]);
+  // queue table (the only place with phase codes besides card ⑤) renders after mount, as the R4 table did
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   useEffect(() => { setDemoTickets([]); setStageSel(null); }, [demo]);
   if (!feed) return <p className="dash-empty">กำลังโหลด…</p>;
   const { cards, today } = feed;
@@ -148,7 +151,7 @@ export function OnboardTab() {
             else setStageSel((s) => (s && s.svc === svc && s.stage === stage ? null : { svc, stage }));
             setTimeout(() => document.getElementById('setup-queue')?.scrollIntoView({ block: 'start', behavior: 'smooth' }), 30);
           }} />)}
-        <QueueSection feed={feed} stageSel={stageSel} clearStage={() => setStageSel(null)} goLive={goLiveSvc} onOpen={openDrawer} />
+        {mounted && <QueueSection feed={feed} stageSel={stageSel} clearStage={() => setStageSel(null)} goLive={goLiveSvc} onOpen={openDrawer} />}
       </section>
       <OwnersCard feed={feed} />
       <OverallCard feed={feed} onOpen={openDrawer} />
