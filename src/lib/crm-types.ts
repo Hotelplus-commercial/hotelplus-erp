@@ -234,6 +234,8 @@ export type InvoiceLine = {
   unit_price: number;
   amount: number;
   production_report_id?: string;
+  /** PR-O1: service month (YYYY-MM) a commission line charges; absent on old invoices (= billing month). */
+  service_month?: string;
 };
 
 export type Invoice = {

@@ -5,7 +5,7 @@ import { resolveContractHotel, stampInvoiceHotel } from './ac-attribution';
 export type Grade = 'A' | 'B' | 'C' | 'D';
 export type GradeRecord = { customer_id: string; billing_period: string; grade: Grade; basis: string[]; computed_at: string };
 export type CollectionEvent = { id: string; customer_id: string; hotel_name: string; event_type: string; occurred_at: string; by_member: string; amount_outstanding: number; note: string };
-export type AccountingData = { contracts: Contract[]; invoices: Invoice[]; reports: ProductionReport[]; products: Product[]; customers: Customer[]; taxReceipts: TaxReceipt[]; liveLinks: LiveLink[]; invRequests: InvRequest[]; gradeRecords?: GradeRecord[]; collectionEvents?: CollectionEvent[]; billingWaiting?: { contract_id: string; service_line: string; billing_period: string }[] };
+export type AccountingData = { contracts: Contract[]; invoices: Invoice[]; reports: ProductionReport[]; products: Product[]; customers: Customer[]; taxReceipts: TaxReceipt[]; liveLinks: LiveLink[]; invRequests: InvRequest[]; gradeRecords?: GradeRecord[]; collectionEvents?: CollectionEvent[]; billingWaiting?: { contract_id: string; service_line: string; billing_period: string }[]; /** PR-O1: ready drop items as reports (drop wins). */ prDropReports?: ProductionReport[] };
 import { guaranteeCharge, isGuaranteeContract, LATE_REPORT_NOTE, reportDeadline } from './ac-guarantee';
 export const bangkokDate = (now = new Date()) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok', year:'numeric', month:'2-digit', day:'2-digit' }).format(now);
 const monthShift = (period: string, shift: number, day = 1) => {
