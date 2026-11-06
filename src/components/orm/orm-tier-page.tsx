@@ -1,7 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+/* ORM App › Revenue › ORM Tier (R2 B: moved from The Office APP; one copy). Table, months, history and Tier stamping unchanged. */
 import { Calendar, Eye, RefreshCw } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+
+import { useMenuRole } from "@/lib/menu-role";
 
 import { Chip, Panel } from "@/components/crm/crm-ui";
 import { PageHeader } from "@/components/erp-ui";
@@ -41,24 +43,13 @@ import {
   thb,
 } from "@/lib/ps-v4";
 
-const description =
+export const ORM_TIER_DESCRIPTION =
   "จัด Tier ตาม % Revenue Achievement ของเดือนที่ปิดยอดแล้ว — รันอัตโนมัติทุกวันที่ 3 หรือรันเองแบบ Preview/Commit";
 
-export const Route = createFileRoute("/the-office-app/orm-bonus")({
-  head: () => ({
-    meta: [
-      { title: "ORM Bonus — Tier Classification | The Office APP" },
-      { name: "description", content: description },
-      { property: "og:title", content: "ORM Bonus — Tier Classification" },
-      { property: "og:description", content: description },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-  }),
-  component: OrmBonusPage,
-});
-
-function OrmBonusPage() {
+export function OrmTierPage() {
+  const role = useMenuRole();
+  // R2 B.3: no automatic monthly job exists yet → buttons stay, only for GRM · HOC · MD.
+  const canRun = role === "GRM" || role === "HOC" || role === "MD";
   const [month, setMonth] = useState(bonusMonths[0]!);
   const [runOpen, setRunOpen] = useState(false);
   const [mode, setMode] = useState("preview");
@@ -70,9 +61,9 @@ function OrmBonusPage() {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
-        eyebrow="THE OFFICE APP · ORM BONUS"
-        title="ORM Bonus — Tier Classification"
-        description={description}
+        eyebrow="ORM APP · Revenue"
+        title="ORM Tier"
+        description={ORM_TIER_DESCRIPTION}
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <Select value={month} onValueChange={setMonth}>
@@ -87,18 +78,24 @@ function OrmBonusPage() {
                 ))}
               </SelectContent>
             </Select>
-            <Button size="sm" onClick={() => setRunOpen(true)}>
-              <RefreshCw className="size-4" /> Run Classification
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => setPreviewOpen(true)}>
-              <Eye className="size-4" /> Preview Only
-            </Button>
+            {canRun && (
+              <>
+                <Button size="sm" onClick={() => setRunOpen(true)}>
+                  <RefreshCw className="size-4" /> Run Classification
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setPreviewOpen(true)}>
+                  <Eye className="size-4" /> Preview Only
+                </Button>
+              </>
+            )}
             <Button size="sm" variant="outline" onClick={() => setHistoryOpen(true)}>
               <Calendar className="size-4" /> View History
             </Button>
           </div>
         }
       />
+
+      <p className="-mt-2 text-xs text-muted-foreground">ระบบจะจัด Tier อัตโนมัติทุกเดือน (อยู่ระหว่างพัฒนา)</p>
 
       <div className="rounded-xl border bg-muted/40 p-3 text-sm">
         Last run: {bonusLastRun.at} ({bonusLastRun.mode}) · {bonusLastRun.count} hotels classified

@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+/* AC App › วางบิล & รับเงิน › Production Report (R2 A: moved from PS App; one copy, content unchanged). */
 import { AlertTriangle, Upload } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -18,19 +18,7 @@ import { commissionSkusOf, missingReports, monthName, pctLabel, reportAlertLevel
 import { lastPeriod, useCrm } from "@/lib/crm-store";
 import type { ProductionReport } from "@/lib/crm-types";
 
-export const Route = createFileRoute("/ps/production")({
-  head: () => ({
-    meta: [
-      { title: "Production Report — PS App | Meridia Hotel ERP" },
-      { name: "description", content: "อัปโหลดยอดผลิตรายเดือนสำหรับสัญญาแบบคอมมิชชั่นก่อนวันที่ 5" },
-      { property: "og:title", content: "Production Report — PS App" },
-      { property: "og:description", content: "ยอดผลิตรายเดือนสำหรับคำนวณคอมมิชชั่นในใบแจ้งหนี้" },
-    ],
-  }),
-  component: ProductionPage,
-});
-
-function ProductionPage() {
+export function ProductionPage() {
   const { contracts, reports, addReports } = useCrm();
   const [year, setYear] = useState(String(lastPeriod.year));
   const [month, setMonth] = useState(String(lastPeriod.month));

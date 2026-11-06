@@ -56,7 +56,6 @@ import { Route as PsContractDashboardRouteImport } from './routes/ps.contract-da
 import { Route as PsContractWizardRouteImport } from './routes/ps.contract-wizard'
 import { Route as PsContractsRouteImport } from './routes/ps.contracts'
 import { Route as PsOnboardingProcessRouteImport } from './routes/ps.onboarding-process'
-import { Route as PsProductionRouteImport } from './routes/ps.production'
 import { Route as PsServicingTimelineRouteImport } from './routes/ps.servicing-timeline'
 import { Route as PsSettingsRouteImport } from './routes/ps.settings'
 import { Route as PsSystemCostRouteImport } from './routes/ps.system-cost'
@@ -64,7 +63,6 @@ import { Route as PsWorkspaceRouteImport } from './routes/ps.workspace'
 import { Route as PsSplatRouteImport } from './routes/ps_.$'
 import { Route as TheOfficeAppIndexRouteImport } from './routes/the-office-app.index'
 import { Route as TheOfficeAppBdAcRouteImport } from './routes/the-office-app.bd-ac'
-import { Route as TheOfficeAppOrmBonusRouteImport } from './routes/the-office-app.orm-bonus'
 import { Route as TheOfficeAppSplatRouteImport } from './routes/the-office-app_.$'
 import { Route as WorkspaceDeptRouteImport } from './routes/workspace.$dept'
 import { Route as WorkspaceAeRouteImport } from './routes/workspace.ae'
@@ -341,11 +339,6 @@ const PsOnboardingProcessRoute = PsOnboardingProcessRouteImport.update({
   path: '/onboarding-process',
   getParentRoute: () => PsRoute,
 } as any)
-const PsProductionRoute = PsProductionRouteImport.update({
-  id: '/production',
-  path: '/production',
-  getParentRoute: () => PsRoute,
-} as any)
 const PsServicingTimelineRoute = PsServicingTimelineRouteImport.update({
   id: '/servicing-timeline',
   path: '/servicing-timeline',
@@ -379,11 +372,6 @@ const TheOfficeAppIndexRoute = TheOfficeAppIndexRouteImport.update({
 const TheOfficeAppBdAcRoute = TheOfficeAppBdAcRouteImport.update({
   id: '/bd-ac',
   path: '/bd-ac',
-  getParentRoute: () => TheOfficeAppRoute,
-} as any)
-const TheOfficeAppOrmBonusRoute = TheOfficeAppOrmBonusRouteImport.update({
-  id: '/orm-bonus',
-  path: '/orm-bonus',
   getParentRoute: () => TheOfficeAppRoute,
 } as any)
 const TheOfficeAppSplatRoute = TheOfficeAppSplatRouteImport.update({
@@ -636,14 +624,12 @@ export interface FileRoutesByFullPath {
   '/ps/contract-wizard': typeof PsContractWizardRouteWithChildren
   '/ps/contracts': typeof PsContractsRoute
   '/ps/onboarding-process': typeof PsOnboardingProcessRoute
-  '/ps/production': typeof PsProductionRoute
   '/ps/servicing-timeline': typeof PsServicingTimelineRoute
   '/ps/settings': typeof PsSettingsRoute
   '/ps/system-cost': typeof PsSystemCostRoute
   '/ps/workspace': typeof PsWorkspaceRoute
   '/ps/$': typeof PsSplatRoute
   '/the-office-app/bd-ac': typeof TheOfficeAppBdAcRoute
-  '/the-office-app/orm-bonus': typeof TheOfficeAppOrmBonusRoute
   '/the-office-app/$': typeof TheOfficeAppSplatRoute
   '/workspace/$dept': typeof WorkspaceDeptRoute
   '/workspace/ae': typeof WorkspaceAeRoute
@@ -724,14 +710,12 @@ export interface FileRoutesByTo {
   '/ps/contract-dashboard': typeof PsContractDashboardRoute
   '/ps/contracts': typeof PsContractsRoute
   '/ps/onboarding-process': typeof PsOnboardingProcessRoute
-  '/ps/production': typeof PsProductionRoute
   '/ps/servicing-timeline': typeof PsServicingTimelineRoute
   '/ps/settings': typeof PsSettingsRoute
   '/ps/system-cost': typeof PsSystemCostRoute
   '/ps/workspace': typeof PsWorkspaceRoute
   '/ps/$': typeof PsSplatRoute
   '/the-office-app/bd-ac': typeof TheOfficeAppBdAcRoute
-  '/the-office-app/orm-bonus': typeof TheOfficeAppOrmBonusRoute
   '/the-office-app/$': typeof TheOfficeAppSplatRoute
   '/workspace/$dept': typeof WorkspaceDeptRoute
   '/workspace/ae': typeof WorkspaceAeRoute
@@ -823,14 +807,12 @@ export interface FileRoutesById {
   '/ps/contract-wizard': typeof PsContractWizardRouteWithChildren
   '/ps/contracts': typeof PsContractsRoute
   '/ps/onboarding-process': typeof PsOnboardingProcessRoute
-  '/ps/production': typeof PsProductionRoute
   '/ps/servicing-timeline': typeof PsServicingTimelineRoute
   '/ps/settings': typeof PsSettingsRoute
   '/ps/system-cost': typeof PsSystemCostRoute
   '/ps/workspace': typeof PsWorkspaceRoute
   '/ps_/$': typeof PsSplatRoute
   '/the-office-app/bd-ac': typeof TheOfficeAppBdAcRoute
-  '/the-office-app/orm-bonus': typeof TheOfficeAppOrmBonusRoute
   '/the-office-app_/$': typeof TheOfficeAppSplatRoute
   '/workspace/$dept': typeof WorkspaceDeptRoute
   '/workspace/ae': typeof WorkspaceAeRoute
@@ -923,14 +905,12 @@ export interface FileRouteTypes {
     | '/ps/contract-wizard'
     | '/ps/contracts'
     | '/ps/onboarding-process'
-    | '/ps/production'
     | '/ps/servicing-timeline'
     | '/ps/settings'
     | '/ps/system-cost'
     | '/ps/workspace'
     | '/ps/$'
     | '/the-office-app/bd-ac'
-    | '/the-office-app/orm-bonus'
     | '/the-office-app/$'
     | '/workspace/$dept'
     | '/workspace/ae'
@@ -1011,14 +991,12 @@ export interface FileRouteTypes {
     | '/ps/contract-dashboard'
     | '/ps/contracts'
     | '/ps/onboarding-process'
-    | '/ps/production'
     | '/ps/servicing-timeline'
     | '/ps/settings'
     | '/ps/system-cost'
     | '/ps/workspace'
     | '/ps/$'
     | '/the-office-app/bd-ac'
-    | '/the-office-app/orm-bonus'
     | '/the-office-app/$'
     | '/workspace/$dept'
     | '/workspace/ae'
@@ -1109,14 +1087,12 @@ export interface FileRouteTypes {
     | '/ps/contract-wizard'
     | '/ps/contracts'
     | '/ps/onboarding-process'
-    | '/ps/production'
     | '/ps/servicing-timeline'
     | '/ps/settings'
     | '/ps/system-cost'
     | '/ps/workspace'
     | '/ps_/$'
     | '/the-office-app/bd-ac'
-    | '/the-office-app/orm-bonus'
     | '/the-office-app_/$'
     | '/workspace/$dept'
     | '/workspace/ae'
@@ -1527,13 +1503,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PsOnboardingProcessRouteImport
       parentRoute: typeof PsRoute
     }
-    '/ps/production': {
-      id: '/ps/production'
-      path: '/production'
-      fullPath: '/ps/production'
-      preLoaderRoute: typeof PsProductionRouteImport
-      parentRoute: typeof PsRoute
-    }
     '/ps/servicing-timeline': {
       id: '/ps/servicing-timeline'
       path: '/servicing-timeline'
@@ -1581,13 +1550,6 @@ declare module '@tanstack/react-router' {
       path: '/bd-ac'
       fullPath: '/the-office-app/bd-ac'
       preLoaderRoute: typeof TheOfficeAppBdAcRouteImport
-      parentRoute: typeof TheOfficeAppRoute
-    }
-    '/the-office-app/orm-bonus': {
-      id: '/the-office-app/orm-bonus'
-      path: '/orm-bonus'
-      fullPath: '/the-office-app/orm-bonus'
-      preLoaderRoute: typeof TheOfficeAppOrmBonusRouteImport
       parentRoute: typeof TheOfficeAppRoute
     }
     '/the-office-app_/$': {
@@ -2069,7 +2031,6 @@ interface PsRouteChildren {
   PsContractWizardRoute: typeof PsContractWizardRouteWithChildren
   PsContractsRoute: typeof PsContractsRoute
   PsOnboardingProcessRoute: typeof PsOnboardingProcessRoute
-  PsProductionRoute: typeof PsProductionRoute
   PsServicingTimelineRoute: typeof PsServicingTimelineRoute
   PsSettingsRoute: typeof PsSettingsRoute
   PsSystemCostRoute: typeof PsSystemCostRoute
@@ -2091,7 +2052,6 @@ const PsRouteChildren: PsRouteChildren = {
   PsContractWizardRoute: PsContractWizardRouteWithChildren,
   PsContractsRoute: PsContractsRoute,
   PsOnboardingProcessRoute: PsOnboardingProcessRoute,
-  PsProductionRoute: PsProductionRoute,
   PsServicingTimelineRoute: PsServicingTimelineRoute,
   PsSettingsRoute: PsSettingsRoute,
   PsSystemCostRoute: PsSystemCostRoute,
@@ -2111,13 +2071,11 @@ const PsRouteWithChildren = PsRoute._addFileChildren(PsRouteChildren)
 
 interface TheOfficeAppRouteChildren {
   TheOfficeAppBdAcRoute: typeof TheOfficeAppBdAcRoute
-  TheOfficeAppOrmBonusRoute: typeof TheOfficeAppOrmBonusRoute
   TheOfficeAppIndexRoute: typeof TheOfficeAppIndexRoute
 }
 
 const TheOfficeAppRouteChildren: TheOfficeAppRouteChildren = {
   TheOfficeAppBdAcRoute: TheOfficeAppBdAcRoute,
-  TheOfficeAppOrmBonusRoute: TheOfficeAppOrmBonusRoute,
   TheOfficeAppIndexRoute: TheOfficeAppIndexRoute,
 }
 
