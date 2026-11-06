@@ -17,7 +17,7 @@ import { slaDemoTickets, ensureSlaDemoFollowups } from "@/lib/service-tickets-de
 import { stabDemoTickets } from "@/lib/service-ticket-tab-demo";
 import {
   acceptTicket, addCategory, categoryRequests, changeTicketCategory, changeTicketStatus, checkCategoryOverlap, decideCategoryRequest, getCategories, hideCategory,
-  requestCategory, svcToday, ticketCategories, ticketFollowups, ticketSla, vServiceTickets, SVC_DEPTS, SVC_STATUS_TH, TEST_ROLE_LABEL,
+  requestCategory, svcToday, addProgressNote, canAddProgressNote, ticketCategories, ticketFollowups, ticketSla, vServiceTickets, SVC_DEPTS, SVC_STATUS_TH, TEST_ROLE_LABEL,
   type ServiceTicketRow, type SvcActor, type SvcDept, type WaitingOn,
 } from "@/lib/service-tickets";
 import {
@@ -231,12 +231,16 @@ function ReceiverPanel({ r, actor, head, demo, today, l0, cats, onClose, onAccep
   const sp = t?.payload.shutoff; const shut = shutTypeTh(r);
   const twin = sp?.twin_ticket_id ? l0.find((x) => x.ticket_id === sp.twin_ticket_id) : undefined;
   const canAct = !!actor && (head || (!!actor.member_id && r.assignee_id === actor.member_id));
-  const fus = ticketFollowups.all(demo).filter((f) => f.ticket_store === r.ticket_store && f.ticket_id === r.ticket_id).sort((a, b) => a.sent_at.localeCompare(b.sent_at));
+  const [pnote, setPnote] = useState("");
+  const canNote = !!actor && canAddProgressNote(r, actor);
+  const saveNote = () => { if (!actor) return; const res = addProgressNote(r, pnote, actor, { demo }); if (!res.ok) { setErr(res.error); return; } setPnote(""); setErr(null); };
+  const fus = ticketFollowups.all(demo).filter((f) => f.kind !== "PROGRESS" && f.ticket_store === r.ticket_store && f.ticket_id === r.ticket_id).sort((a, b) => a.sent_at.localeCompare(b.sent_at));
   const last = fus[fus.length - 1];
   const timeline = [
     ...(t?.audit ?? []).map((a) => ({ at: a.at, text: `${a.actor ?? a.by} · ${a.note ?? (a.to_status in SVC_STATUS_TH ? SVC_STATUS_TH[a.to_status as keyof typeof SVC_STATUS_TH] : STATUS_TH[a.to_status as keyof typeof STATUS_TH] ?? a.to_status)}` })),
     ...(r.ticket_store === "PS_CASE" ? [{ at: r.created_at, text: `${r.opened_by_label} · สร้าง case` }] : []),
     ...fus.map((f) => ({ at: f.sent_at, text: `📣 Follow up · ${f.sent_by}${f.note ? ` · “${f.note}”` : ""}` })),
+    ...r.progress_notes.map((n) => ({ at: n.at, text: `📝 อัปเดตงาน · ${n.by} · “${n.text}”` })),
   ].sort((a, b) => a.at.localeCompare(b.at));
   const go = (to: "IN_PROGRESS" | "WAITING_CUSTOMER" | "WAITING_THIRD_PARTY" | "SOLVED", extra: { waiting_on?: WaitingOn; note?: string } = {}) => {
     if (!actor) return;
@@ -298,6 +302,14 @@ function ReceiverPanel({ r, actor, head, demo, today, l0, cats, onClose, onAccep
                 </div>
               )}
               <p className="text-xs text-muted-foreground">เวลาไม่หยุดนับระหว่างรอ · วันกำหนดเสร็จเลื่อนไม่ได้</p>
+            </div>
+          )}
+          {canNote && r.display_status !== "NEW" && (
+            <div className="space-y-1" data-testid="recv-progress-note">
+              <label className="text-xs font-medium text-muted-foreground" htmlFor={`pn-${r.ticket_id}`}>บันทึกความคืบหน้า</label>
+              <textarea id={`pn-${r.ticket_id}`} aria-label="บันทึกความคืบหน้า" maxLength={500} rows={2} className="w-full rounded border bg-background px-2 py-1 text-xs" value={pnote} onChange={(e) => setPnote(e.target.value)} placeholder="ทำอะไรไปแล้ว / ขั้นต่อไป" />
+              <Button size="sm" variant="outline" disabled={!pnote.trim()} onClick={saveNote} data-testid="recv-progress-save">บันทึกความคืบหน้า</Button>
+              <p className="text-xs text-muted-foreground">แก้ไข / ลบไม่ได้ · ไม่นับเป็น Follow up</p>
             </div>
           )}
           {err && <p className="text-xs text-destructive">{err}</p>}
