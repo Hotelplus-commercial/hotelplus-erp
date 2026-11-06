@@ -20,6 +20,8 @@ export type SetupInput = {
   meeting_created_at: string | null; meeting_date: string | null; go_live_at: string | null;
   ae: string | null; specialist: string | null; orm_team: string | null; marcom_owner: string | null;
   survey1?: number | null; survey2?: number | null;
+  /** On-board R1: current Servicing stage name (optional, read only). */
+  stage?: string | null;
 };
 export type LaneTiming = { key: LaneKey; state: LaneState; start: string | null; end: string | null; days: number | null; from: number | null; to: number | null };
 export type SetupTiming = {
