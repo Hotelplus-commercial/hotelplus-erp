@@ -7,7 +7,11 @@ export type CoachRole = 'GRM' | 'MARCOM_LEAD' | 'PM';
 export type CoachingSeverity = 'RED' | 'YELLOW';
 export type CoachingStatus = 'OPEN' | 'IN_COACHING' | 'RESOLVED';
 /** Where the owner (ผู้ดูแล) came from: meeting.caretaker_* → hotel Assign role slot → none ("—"). Rejected meeting → the meeting's AE. */
-export type OwnerSource = 'MEETING' | 'ASSIGN_SLOT' | 'MEETING_AE' | 'SUB_ROLE' | 'NONE';
+export type OwnerSource = 'MEETING' | 'ASSIGN_SLOT' | 'MEETING_AE' | 'SUB_ROLE' | 'HOTEL_OVERRIDE' | 'ROSTER_SUB_ROLE' | 'NONE';
+/** WC-O1 (DF5): Marcom sub-roles. HR roster = default, hotel Assign = override. */
+export type MarcomSubRole = 'CONTENT' | 'ADS' | 'PRESENTER';
+export const MARCOM_SUB_ROLE_LABEL: Record<MarcomSubRole, string> = { CONTENT: 'Content', ADS: 'Ads', PRESENTER: 'ผู้นำเสนอ' };
+export type MarcomOverrides = Partial<Record<MarcomSubRole, string | null>>;
 
 export type CoachingNote = { at: string; by: string; text: string };
 
@@ -40,4 +44,4 @@ export type CoachingTask = {
 };
 
 /** Who can be picked in "สมาชิกที่ดู (DEMO)" and who owners / supervisors resolve to. */
-export type CoachMember = { id: string; name: string; kind: CoachRole | 'ORM' | 'MARCOM' | 'AE'; orm_team?: string | null; active: boolean; /** also an ORM sub-team member (GRM) or a Marcom person (Lead) */ also?: 'ORM' | 'MARCOM' };
+export type CoachMember = { id: string; name: string; kind: CoachRole | 'ORM' | 'MARCOM' | 'AE'; orm_team?: string | null; active: boolean; /** also an ORM sub-team member (GRM) or a Marcom person (Lead) */ also?: 'ORM' | 'MARCOM'; /** DF5: Marcom sub-roles from the HR roster. */ marcom_sub_roles?: MarcomSubRole[] };
