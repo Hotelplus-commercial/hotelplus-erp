@@ -49,7 +49,7 @@ export function sessionsOf(name: string): Session[] {
 export type MaPeriod = "all" | "30d" | "7d";
 export function inPeriod(date: string, period: MaPeriod): boolean {
   if (period === "all") return true;
-  const [d, m] = date.split("/").map(Number);
+  const [d = 1, m = 1] = date.split("/").map(Number);
   const t = Date.UTC(2026, m - 1, d);
   const today = Date.UTC(2026, 10, 6);
   const days = (today - t) / 86400000;

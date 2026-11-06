@@ -10,7 +10,7 @@ describe("SP9 BD Meeting Analyzer sample (IMG-7)", () => {
   it("ชาร่า has 15 sessions", () => expect(sessionsOf("ชาร่า")).toHaveLength(15));
   it("team filter narrows flags and latest scores", () => {
     expect(filterFlags("มุนิน")).toHaveLength(2);
-    expect(filterLatest("เหมียว")[0].score).toBe(86);
+    expect(filterLatest("เหมียว")[0]?.score).toBe(86);
     expect(filterFlags("all")).toHaveLength(6);
   });
   it("period filter: 7 days before 6 Nov 2026", () => {
