@@ -150,7 +150,7 @@ const marcom: AppDef = {
     { kind: 'group', label: 'ให้บริการ (Service Operations)', children: [
       { kind: 'link_out', key: 'property', label: 'Property Content', target: { app: 'PS', route: '/ps/property-content' }, access: MK_T },
       P('marcom', 'socialplus-meeting-analyzer', 'SocialPlus+ Meeting Analyzer', MK_OWN, MA),
-      P('marcom', 'content-plan', 'Content Plan', MK_T, undefined, { tabs: B2().reverse().reverse() }),
+      P('marcom', 'content-plan', 'Content Plan', MK_T, undefined, { tabs: B2() }),
       P('marcom', 'adscan', 'ADSCAN', MK_T, undefined, { tabs: B2() }),
       P('marcom', 'kol-tracker', 'KOL Tracker', MK_T, undefined, { tabs: B2() }),
       P('marcom', 'first-sync-up-meeting-analyzer', 'First Sync Up Meeting Analyzer', MK_OWN, MA),
