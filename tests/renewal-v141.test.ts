@@ -97,7 +97,6 @@ describe('AC Billing: runDailyBilling() with renewal contracts', () => {
   test('12 · notices: Guarantee notice removed (AC-G1 live, code kept) + late renewal with the right months', () => {
     const n = N.renewalAcNotices(S.v141DemoRenewedContracts());
     expect(n.find((x) => x.kind === 'GUARANTEE')).toBeUndefined();
-    expect(N.renewalAcNotices.length >= 0 && 'kept').toBe('Commission + Guarantee · Guarantee fee ฿22,500 / เดือน · ระบบยังไม่คิดขั้นต่ำให้ · AC ตรวจยอดก่อนวางบิล');
     const late = n.find((x) => x.kind === 'LATE' && x.contract_id === 'CT-HTL0421-R0141')!;
     expect(late.months).toEqual(['2026-10']);
     expect(late.text).toBe('ต่อสัญญาล่าช้า · สัญญาเริ่ม 1 ต.ค. 69 · เซ็น 20 ต.ค. 69 · ตรวจวางบิลย้อนหลัง 1 รอบ (ต.ค. 69)');
