@@ -1,4 +1,5 @@
 /* Servicing v2 cockpit: projections only; operational writes stay in the guided drawer/assignment master. */
+import { demoDateTh } from "./ps-dashboard-shell";
 import { useQuery } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -74,7 +75,7 @@ export function ServicingTabLegacy() {
  const stageGroups=Array.from(new Set(inProgress.map(r=>`${r.service_line}:${stageKey(r)}`))).map(key=>({key,n:inProgress.filter(r=>`${r.service_line}:${stageKey(r)}`===key).length})).sort((a,b)=>b.n-a.n),most=stageGroups[0];
  const phaseRows=(report?.phaseRows??[]).filter(p=>rows.some(r=>r.card_id===p.card_id)||(!filter.compare?false:servicingScope(report?.rows??[],filter).some(r=>r.card_id===p.card_id)));
  return <section className="sv-cockpit space-y-4" aria-label="Servicing">
- {demo&&<p className="sv-demo-mark">DEMO · 17 ต.ค. 2026</p>}
+ {demo&&<p className="sv-demo-mark">DEMO · {demoDateTh()}</p>}
  <div className="sv-stats">{[
   ['การ์ดบริการทั้งหมด',stats.cards,'หลัง filter'],['โรงแรม',stats.hotels,'นับโรงแรมละ 1'],['Go Live',stats.goLive,`ORM ${rows.filter(r=>r.go_live_at&&r.service_line==='ORM').length} · Marcom ${rows.filter(r=>r.go_live_at&&r.service_line==='MARCOM').length}`],['กำลังดำเนินการ',stats.inProgress,`เลยกำหนด ${red} · ใกล้ถึงกำหนด ${amber}`],['⚠ รอระบุผู้ดูแล',stats.awaiting,'ORM team / Marcom ยังว่าง']
  ].map(([label,value,sub],i)=><div className={`sv-stat ${i===4?'sv-stat-gap':''}`} key={label}><span>{label}</span><strong>{pending?'—':value}</strong><small>{pending?'รอ source':sub}</small>{i===4&&<Button variant="outline" size="sm" disabled={pending} onClick={()=>selectDrill('gap')}>+ ระบุผู้ดูแล</Button>}</div>)}</div>

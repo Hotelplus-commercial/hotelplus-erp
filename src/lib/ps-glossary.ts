@@ -850,3 +850,8 @@ export const SLA_ONB = {
   history: 'ประวัติเวอร์ชัน', inUse: 'ใช้อยู่', noStore: 'ยังไม่มีที่เก็บค่า SLA On-board (R4)',
   cols: ['เฟส', 'ทีม', 'ทันกำหนดถึง', 'เลยเมื่อเกิน', 'สีตามจำนวนวัน', 'การกระจาย', 'ส่วนใหญ่', '80% เสร็จภายใน', 'ทันกำหนด', 'vs ที่เทียบ'],
 };
+/** Header R3 HR30–HR32 — Marcom Active Portfolio by channel (Google = GMB; setup lines never counted). */
+export const PS_TERM = {
+  channelInfo: (ch: string) => `นับสัญญา Marcom ที่ใช้งานวันนี้และมีบริการรายเดือนช่องทาง ${ch} · ค่าบริการเฉลี่ย = ค่าบริการรายเดือนของช่องทางนี้รวม ÷ จำนวนสัญญา · ไม่นับค่า setup`,
+  channelUnspecified: (n: number) => `ไม่ระบุช่องทาง ${n} สัญญา`,
+} as const;

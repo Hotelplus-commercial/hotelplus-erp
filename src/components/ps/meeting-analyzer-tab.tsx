@@ -1,5 +1,6 @@
 // Meeting & Survey tab (was Meeting & Analyzer) v2.0 — read-only rework per spec. Card-month grain, Bangkok dates,
 // medians only, no writes, Q8 is never NPS. Deprecated views are not read here.
+import { demoDateTh } from "./ps-dashboard-shell";
 import { aeNameTh, FLAG_LABEL, MEETING_STATUS_LABEL } from "@/lib/ps-glossary";
 import { useMemo, useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
@@ -1145,7 +1146,7 @@ export function MeetingAnalyzerTabV2({
     <div data-testid="meeting-analyzer" className="min-w-0 space-y-5">
       <div>
         <h2 className="text-xl font-semibold">Meeting & Survey</h2>
-        <p className="text-xs text-muted-foreground">ตัวชี้วัดของ tab{demo ? " · DEMO · 30 ก.ย. 2026" : ""}</p>
+        <p className="text-xs text-muted-foreground">ตัวชี้วัดของ tab{demo ? ` · DEMO · ${demoDateTh()}` : ""}</p>
       </div>
 
       {empty ? (
@@ -1250,7 +1251,7 @@ export function MeetingAnalyzerTabV2({
       )}
 
       <RubricRow />
-      {demo && <p className="text-xs text-muted-foreground">DEMO · 30 ก.ย. 2026</p>}
+      {demo && <p className="text-xs text-muted-foreground">DEMO · {demoDateTh()}</p>}
     </div>
   );
 }

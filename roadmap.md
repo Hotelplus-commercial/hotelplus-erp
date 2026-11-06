@@ -362,4 +362,8 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 
 ## PS Dashboard UAT polish R1 (UP1–UP12)
 - [x] UP1, UP2, UP4–UP12 + tests + rules
-- [ ] Open: Marcom by channel (Meta / TikTok / Google) — header must read the contract's service lines (SKU + price) from the main contract store; do together with P-H1 (header rows need end_date / contract_id). Decided by Sai: Google = GMB (MARCOM-MTH-GMB); MARCOM-SETUP-* lines are one-time setup, not core service — never counted in channel cards; ADDON-KOL-TRAVEL belongs to TikTok.
+- [x] Done (Header R3, 2026-11-06): Marcom by channel (Meta / TikTok / Google) — header must read the contract's service lines (SKU + price) from the main contract store; do together with P-H1 (header rows need end_date / contract_id). Decided by Sai: Google = GMB (MARCOM-MTH-GMB); MARCOM-SETUP-* lines are one-time setup, not core service — never counted in channel cards; ADDON-KOL-TRAVEL belongs to TikTok.
+
+## Header R3 (2026-11-06)
+- [x] HR27–HR34 join helper, Marcom channel cards, DEMO overlay, shared DEMO date labels, dark Funnel check.
+- [ ] P-H1: prototype done (DEMO match 100%) · normal mode depends on real contracts in the main store — portal requirement.

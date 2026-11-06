@@ -174,6 +174,8 @@ export type PortfolioContract = HRow & {
   sku: { flat?: boolean; commission?: boolean; content?: boolean; ads?: boolean; kol?: boolean };
   /** Contract quotas per month (Content pieces / KOL people). */
   quota?: { content?: number | null; kol?: number | null } | undefined;
+  /** Header R3: monthly service lines (SKU + price) joined from the main contract store / DEMO overlay. */
+  lines?: import('./header-contract-join').ChannelLine[] | undefined;
 };
 export const activeOn = (c: Pick<PortfolioContract, 'start' | 'end'>, day: string) => c.start.slice(0, 10) <= day && (!c.end || c.end.slice(0, 10) > day);
 /** The price row in force on `day`: effective_from ≤ day < effective_to (open end = still in force). */
