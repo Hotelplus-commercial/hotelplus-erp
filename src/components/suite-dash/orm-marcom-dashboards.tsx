@@ -38,11 +38,11 @@ function OrmBody({ demo, assign }: { demo: boolean; assign: ReactNode }) {
         <DCard demo={demo} title="② รายได้เทียบเป้า (RevMax)" question="ทีมไหนถึงเป้ารายได้แล้ว?" info="รายได้ที่โรงแรมได้จาก OTA ต่อทีม ORM เทียบเป้าเดือนนี้" sample={ORM_SAMPLE_SOURCE.revmax}>
           <HBars rows={REVMAX_TEAMS.map((t) => ({ ...t, value: Math.round(t.value / 1000), target: Math.round(t.target / 1000) }))} unit="k" />
         </DCard>
-        <DCard demo={demo} title="③ ธงและงาน Coaching ของทีม ORM" question="ธงไหนยังเปิด และงาน Coaching ปิดหรือยัง?" info="ธงจาก Survey (เปิดอยู่) + งาน Coaching ที่ยังไม่ปิด ของ ORM" now href="/orm/workspace">
+        <DCard demo={demo} title="③ ธงและงาน Coaching ของทีม ORM" question="ธงไหนยังเปิด และงาน Coaching ปิดหรือยัง?" info="ธงจาก Survey (เปิดอยู่) + งาน Coaching ที่ยังไม่ปิด ของ ORM" now href="/workspace/orm">
           <p className="mb-2 text-xs">ธงเปิด {flags.length} · งาน Coaching ยังไม่ปิด {tasks.length}</p>
           <ul className="space-y-1 text-xs">{tasks.slice(0, 5).map((t) => <li key={t.id} className="flex justify-between gap-2"><span className="truncate">{t.hotel}</span><span className="text-muted-foreground">{t.status === "OPEN" ? "เปิด" : "กำลัง coaching"}</span></li>)}</ul>
         </DCard>
-        <DCard demo={demo} title="④ ticket ทีม ORM คงค้าง / เลยกำหนด" question="ticket ที่ส่งถึง ORM ค้างกี่ใบ เลยกำหนดกี่ใบ?" info="ticket ที่ยังไม่ Solve / ยกเลิก ของแผนก ORM (ไม่รวม FYI)" now href="/orm/workspace">
+        <DCard demo={demo} title="④ ticket ทีม ORM คงค้าง / เลยกำหนด" question="ticket ที่ส่งถึง ORM ค้างกี่ใบ เลยกำหนดกี่ใบ?" info="ticket ที่ยังไม่ Solve / ยกเลิก ของแผนก ORM (ไม่รวม FYI)" now href="/workspace/orm">
           <div className="grid grid-cols-2 gap-3"><Tile label="คงค้าง" value={tk.open} testId="orm-tk-open" /><Tile label="เลยกำหนด" value={tk.overdue} tone={tk.overdue ? "bad" : undefined} testId="orm-tk-over" /></div>
         </DCard>
         <div className="lg:col-span-2">{assign}</div>
@@ -78,7 +78,7 @@ function McBody({ demo, assign }: { demo: boolean; assign: ReactNode }) {
         <DCard demo={demo} title="④ Upsell ระหว่างทำ" question="มีดีล upsell ไหนกำลังเดิน?" info="รายการ upsell ที่ยังไม่ปิด" sample={MARCOM_SAMPLE_SOURCE.upsell}>
           <ul className="space-y-1 text-xs">{UPSELL.map((u) => <li key={u.hotel} className="flex justify-between gap-2"><span>{u.hotel} · {u.item}</span><span className="text-muted-foreground">{u.stage}</span></li>)}</ul>
         </DCard>
-        <DCard demo={demo} title="⑤ ticket ทีม Marcom คงค้าง" question="ticket ที่ส่งถึง Marcom ค้างกี่ใบ?" info="ticket ที่ยังไม่ Solve / ยกเลิก ของแผนก Marcom (ไม่รวม FYI)" now href="/marcom/workspace">
+        <DCard demo={demo} title="⑤ ticket ทีม Marcom คงค้าง" question="ticket ที่ส่งถึง Marcom ค้างกี่ใบ?" info="ticket ที่ยังไม่ Solve / ยกเลิก ของแผนก Marcom (ไม่รวม FYI)" now href="/workspace/marcom">
           <div className="grid grid-cols-2 gap-3"><Tile label="คงค้าง" value={tk.open} testId="mc-tk-open" /><Tile label="เลยกำหนด" value={tk.overdue} tone={tk.overdue ? "bad" : undefined} /></div>
         </DCard>
         <div className="lg:col-span-2">{assign}</div>

@@ -7,7 +7,6 @@ import { FUNCTION_LABEL } from "@/lib/hr-members";
 import { AC_SAMPLE_SOURCE, COMMISSION_DUE, MISC_DUE } from "@/lib/suite-dashboards/ac-dashboard-sample";
 import { COMMISSION_PENDING, COMMISSION_ROUNDS, HR_MOVES, HR_SAMPLE_SOURCE } from "@/lib/suite-dashboards/hr-dashboard-sample";
 import { AUTO_SAMPLE_SOURCE, AUTO_TILES, PIPELINE_STEPS, TOOL_CATALOG } from "@/lib/suite-dashboards/auto-dashboard-sample";
-import { useAcViews } from "@/components/ps/use-ac-views";
 import { CardGrid, DashHeader, DCard, DetailLink, HBars, SampleBadge, Tile, TileStrip, suiteToday, thb, useDashPeriod, useSuiteDemo } from "./kit";
 import { SuiteDashProvider, useCategoryRequestsPending, useDebtHeadline, usePartnerBillNumbers, useRoster } from "./sources";
 
@@ -23,7 +22,6 @@ function AcBody({ demo }: { demo: boolean }) {
   const { period, control } = useDashPeriod(suiteToday(demo));
   const debt = useDebtHeadline(demo);
   const pb = usePartnerBillNumbers(demo);
-  const waitingPr = useWaitingProductionReport();
   const contracts = partnerContracts(pb.data, demo);
   return (
     <div className="space-y-4" data-testid="ac-dashboard">
@@ -32,7 +30,7 @@ function AcBody({ demo }: { demo: boolean }) {
         <Tile label="ลูกหนี้คงค้าง ฿ (ไม่รวมตัดสูญ)" value={debt.empty ? "—" : thb(debt.debtTotal)} sub={debt.empty ? undefined : `${debt.debtN} สัญญา`} now testId="ac-tile-debt" />
         <Tile label="% ชำระตรงเกรด A+B (รอบล่าสุด)" value={debt.abPct == null ? "—" : `${debt.abPct}%`} sub={debt.gradeTotal ? `จาก ${debt.gradeTotal} สัญญา` : undefined} now testId="ac-tile-ab" />
         <Tile label="บิล Partner รอจ่าย ฿" value={thb(pb.pendingThb)} sub={pb.overdueN ? `เลยกำหนด ${pb.overdueN} ใบ` : undefined} now testId="ac-tile-pb" />
-        <Tile label="ใบแจ้งหนี้รอ Production Report" value={waitingPr ?? "—"} now testId="ac-tile-pr" />
+        <Tile label="ใบแจ้งหนี้รอ Production Report" value="—" sub="รอระบุแหล่งข้อมูล (AC Billing ยังไม่มีสถานะนี้)" now testId="ac-tile-pr" />
       </TileStrip>
       <CardGrid>
         <div data-testid="dash-mounted-grade"><PaidGradeCard demo={demo} /></div>
@@ -49,14 +47,6 @@ function AcBody({ demo }: { demo: boolean }) {
     </div>
   );
 }
-/** Billing rows waiting for a Production Report (existing AC view rows). null = view not available. */
-function useWaitingProductionReport(): number | null {
-  const ac = useAcViews() as unknown as { data?: { views?: Record<string, Record<string, unknown>[]> } };
-  const rows = ac?.data?.views ? Object.values(ac.data.views).flat() : null;
-  if (!rows) return null;
-  return rows.filter((r) => r["status"] === "WAITING_PRODUCTION_REPORT" || r["waiting_production_report"] === true).length;
-}
-
 /* ---------------- HR (top section; the old HR Overview stays below) ---------------- */
 export function HrDashboardTop() { return <Gate>{(demo) => <HrBody demo={demo} />}</Gate>; }
 function HrBody({ demo }: { demo: boolean }) {
@@ -100,7 +90,7 @@ function AutoBody({ demo }: { demo: boolean }) {
       </TileStrip>
       <CardGrid>
         <DCard demo={demo} wide title="① Project Pipeline ตามขั้น" question="โปรเจกต์ติดอยู่ขั้นไหน?" info="Requirement → TOR → Spec → อนุมัติ → Build → UAT → Launch" sample={s}><HBars rows={PIPELINE_STEPS} /></DCard>
-        <DCard demo={demo} title="② คำขอหมวด ticket" question="มีคำขอเพิ่มหมวดรอ OGM ตัดสินกี่รายการ?" info="คำขอที่หัวหน้าแผนกส่งเมื่อชื่อหมวดซ้ำกับหมวดเดิม · OGM ตัดสินที่ AUTO Workspace" now href="/automation/workspace">
+        <DCard demo={demo} title="② คำขอหมวด ticket" question="มีคำขอเพิ่มหมวดรอ OGM ตัดสินกี่รายการ?" info="คำขอที่หัวหน้าแผนกส่งเมื่อชื่อหมวดซ้ำกับหมวดเดิม · OGM ตัดสินที่ AUTO Workspace" now href="/workspace/auto">
           <ul className="space-y-1 text-xs" data-testid="auto-req-list">{reqs.map((r) => <li key={r.id} className="flex justify-between gap-2"><span>{r.proposed_name}</span><span className="text-muted-foreground">{r.dept}</span></li>)}{!reqs.length && <li className="text-muted-foreground">ไม่มีคำขอรอ OGM</li>}</ul>
         </DCard>
         <DCard demo={demo} title="③ เครื่องมือในระบบ (Tool Catalog)" question="แต่ละแอปมีเครื่องมือกี่ตัว?" info="จำนวนเครื่องมือ / automation ต่อแอป" sample={AUTO_SAMPLE_SOURCE.tools}><HBars rows={TOOL_CATALOG} /></DCard>
