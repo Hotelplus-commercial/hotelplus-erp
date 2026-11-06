@@ -11,3 +11,6 @@
 - Open items — do not implement on your own: O-11 trend compare for ระยะเวลา Setup (Superseded by Tab R4 (สัญญา & ราคา · Setup Duration)) · O-17 สัญญาณจากสัญญา content · ⏰ O-18 Value Added · O-19 AE label expiry · O-24 remember chart view · Q58 past-due effect on contract status / header ใช้งาน / In-Out / AC billing (display only until decided) · Q59 SLA thresholds are proposals in `RENEWAL_SLA` · O-25 BD-side view of Welcome Back: ทำแล้วแบบพื้นฐาน (R3.1) · ⏰ Upsell capture in the PM contract entry form (no Upsell line items stored yet).
 
 - UP4 (2026-11-06): both views show month labels + `สิ้นเดือน` net pills (same values), current month outlined.
+
+## UAT Polish R2 SP11 (2026-11-06) — Portfolio Waterfall like r15 'fall'
+- in-bar = dark service tone, LEFT half, opening → +เข้า; out-bar = light tone, RIGHT half, top → closing; dotted connector at the opening level from the previous slot; 2 px flat line when nothing moved; integer Y grid + labels; current month highlighted; สิ้นเดือน pills; tooltip = Monthly Flow. Dark theme swaps the CSS vars so "dark = in" holds in both themes (--wf-in / --wf-out). Numbers and Monthly Flow unchanged.
