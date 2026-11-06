@@ -417,19 +417,19 @@ function SurveyCard({ svc, rows, tab, mA, mB, control }: { svc: Svc; rows: TabMe
           <span className="r1-chip is-amber"><SignalMark dir="bad" />ธงเหลือง · ลูกค้าไม่ให้คะแนน {sig.no_score} โรงแรม</span>
           <span className="r1-chip is-bad"><SignalMark dir="bad" />ธงแดง · เงียบ ≥2 เดือน {sig.silent} โรงแรม</span>
         </div>
-        <details open className="ms-exp"><summary>Meeting Completed ที่ไม่มีคะแนน · {silent.length} ประชุม</summary>
+        <SessionDetails id={`ms.exp.${svc}.silent`}><summary>Meeting Completed ที่ไม่มีคะแนน · {silent.length} ประชุม</summary>
           <table className="ms-table"><thead><tr><th>โรงแรม</th><th>เหตุ</th><th>ไม่มีคะแนนติดกัน</th><th>ผู้ดูแล</th><th>AE</th></tr></thead>
             <tbody>{silent.map((r, i) => <tr key={i}><td>{r.hotel}</td><td><span className={cn("mt-chip", r.reason === "no_score" ? "mt-chip-red" : "mt-chip-grey")}>{r.reason === "no_score" ? "ลูกค้าไม่ให้คะแนน" : T.surveyPending}</span></td><td className={cn(r.streak >= 2 && "ms-mid-t font-bold")}>{r.streak} เดือน</td><td>{r.caretaker}</td><td>{r.ae}</td></tr>)}</tbody></table>
           <p className="ms-note">ลูกค้าไม่ให้คะแนน = ธงเหลือง · ไม่มีคะแนนติดกัน ≥ 2 เดือน = ธงแดง “เงียบ ≥2 เดือน” · {T.surveyPending} ยังไม่เป็นธง</p>
-        </details>
-        <details open className="ms-exp"><summary>{svc === "ORM" ? "ดูแยก ORM รายทีม" : "ดูแยก Marcom รายคน"}</summary>
+        </SessionDetails>
+        <SessionDetails id={`ms.exp.${svc}.owner`}><summary>{svc === "ORM" ? "ดูแยก ORM รายทีม" : "ดูแยก Marcom รายคน"}</summary>
           <table className="ms-table"><thead><tr><th>ชื่อ</th>{(version === 1 ? SET1_TOPICS[svc] : [SET1_TOPICS[svc][0]!]).map((t) => <th key={t.key}>{t.short}</th>)}<th>≤6</th><th>ไม่ให้คะแนน</th></tr></thead>
             <tbody>{byOwner.map((o) => <tr key={o.name}><td>{o.name}</td>{o.topics.map((t) => <td key={t.key} className={cn(t.median != null && t.median <= 6 && "ms-low-t font-bold", t.median === 7 && "ms-mid-t")}>{fmtMed(t.median)}{t.delta ? <small> {t.delta > 0 ? `▲${t.delta}` : `▼${-t.delta}`}</small> : null}</td>)}<td>{o.low}</td><td>{o.no_score}</td></tr>)}</tbody></table>
           <p className="ms-note">ตัวเลข = median · ▲▼ = เทียบเดือนก่อน · ฐานต่อแถวเล็ก (n &lt; 5) อ่านด้วยความระวัง · ไม่ใช่อันดับ</p>
-        </details>
-        <details open className="ms-exp"><summary>ความเห็นอิสระ · {comments.length} รายการ</summary>
+        </SessionDetails>
+        <SessionDetails id={`ms.exp.${svc}.comments`}><summary>ความเห็นอิสระ · {comments.length} รายการ</summary>
           {comments.length ? comments.map((c) => <div key={c.id} className="ms-comment"><b>{c.hotel}</b> “{c.comment}” <a href="/ps/ae-workspace/meetings">เปิดประชุม ›</a></div>) : <p className="ms-empty">ยังไม่มีข้อมูล</p>}
-        </details>
+        </SessionDetails>
       </div>
     </DashCard>
   );
@@ -446,5 +446,19 @@ function AnalyzerCard({ demo }: { demo: boolean }) {
       <table className="ms-table"><thead><tr><th>โรงแรม</th><th>บริการ</th><th>นาที</th><th>สัดส่วนการพูด ลูกค้า / H+</th><th>คำขอของลูกค้า</th><th>คำรับปากของทีม</th><th>Ticket</th></tr></thead>
         <tbody>{d ? d.rows.map((r) => <tr key={r.hotel}><td>{r.hotel}</td><td>{r.service}</td><td>{r.min}</td><td>{r.talk}</td><td>{r.req}</td><td>{r.promise}</td><td>{r.ticket}</td></tr>) : <tr><td colSpan={7} className="ms-empty">ยังไม่มีข้อมูล</td></tr>}</tbody></table>
     </DashCard>
+  );
+}
+
+/** UAT Polish R2 SP12: sub-sections start collapsed; open state remembered for the browser session. */
+function SessionDetails({ id, children }: { id: string; children: React.ReactNode }) {
+  const key = `psdash.${id}`;
+  const [open, setOpen] = useState(false);
+  useEffect(() => { try { setOpen(sessionStorage.getItem(key) === "1"); } catch { /* no storage */ } }, [key]);
+  return (
+    <details className="ms-exp" open={open} data-testid={id} onToggle={(e) => {
+      const o = (e.currentTarget as HTMLDetailsElement).open;
+      setOpen(o);
+      try { sessionStorage.setItem(key, o ? "1" : "0"); } catch { /* no storage */ }
+    }}>{children}</details>
   );
 }
