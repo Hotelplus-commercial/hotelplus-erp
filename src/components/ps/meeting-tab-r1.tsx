@@ -277,7 +277,7 @@ function OwnerQuotaCard({ rows, today }: { rows: TabMeeting[]; today: string }) 
             <div key={o.name} className="ms-row">
               <span className="ms-row-name">{o.name}</span>
               <div className="ms-qbar"><span className="ms-q-solid" style={{ width: `${aW}%` }} /><span className="ms-q-hatch" style={{ width: `${sW}%` }} /></div>
-              <span className={cn("ms-row-val", ok && "ms-sat-t")}>{d}/{o.quota}{ok ? " ✓" : ""}</span>
+              <span className={cn("ms-row-val", ok && "ms-sat-t")}>{d}/{o.quota} ประชุม{ok ? " ✓" : ""}</span>
             </div>
           );
         })}
