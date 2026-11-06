@@ -19,6 +19,7 @@ function ChannelBox({ ch, contracts, today }: { ch: Channel; contracts: Portfoli
 }
 
 const fmt = (n: number, d = 0) => n.toLocaleString("th-TH", { maximumFractionDigits: d, minimumFractionDigits: d });
+const SHOW_LEGACY_MARCOM: boolean = false;
 const MULTI_NOTE = "1 สัญญามีได้หลายรูปแบบ ยอดรวมของกลุ่มจึงเกินจำนวนสัญญาได้";
 
 type BoxProps = { name: string; info: string; source: string; n: number; nB: number; cmp: CardCompare; label: string; value: string; secondary: string; d: ReturnType<typeof delta>; dUnit?: string | undefined; dDigits?: number | undefined; dPrefix?: string | undefined };
@@ -94,7 +95,7 @@ export function ActivePortfolio({ today, total, active, contracts: all, prices, 
           </Panel>
           {unspec > 0 && inScope("Marcom", sel) && <p className="ap-note r2-dim" data-testid="ap-unspecified">{PS_TERM.channelUnspecified(unspec)}</p>}
           {/* Header R3 HR31: Content / Ads / KOL unmounted, code kept. */}
-          {false && <Panel svc="Marcom" out={!inScope("Marcom", sel)} {...head("Marcom")}>
+          {SHOW_LEGACY_MARCOM && <Panel svc="Marcom" out={!inScope("Marcom", sel)} {...head("Marcom")}>
             <Box name="Content" info="สัญญา Marcom ที่มี SKU Content · ส่งจริงเฉลี่ย = ชิ้นงานที่ส่งในช่วง ÷ จำนวนเดือน ÷ จำนวนสัญญา · เทียบยอดภายในแต่ละช่วง" source={marcomSrc}
               n={ct.a.n} nB={ct.b.n} cmp={content} label="ส่งจริงเฉลี่ยต่อสัญญา" value={nc(ct.a) ? "—" : `${fmt(ct.a.value!)} ชิ้น/เดือน`} secondary={nc(ct.a) ? (marcom.posts ? "ยังไม่มีชิ้นงานในช่วงนี้" : MARCOM_NOT_CONNECTED) : `ตามสัญญา ${ct.a.quota == null ? "—" : fmt(ct.a.quota)} ชิ้น · ส่งครบ ${pct(ct.a.completion)}`} d={nc(ct.a) ? null : delta(ct.a.value, ct.b.value, "up")} dUnit="" />
             <Box name="Ads" info="สัญญา Marcom ที่มี SKU Ads · เติมงบเฉลี่ย = ยอดเติมงบในช่วง ÷ จำนวนเดือน ÷ จำนวนสัญญา · เทียบยอดภายในแต่ละช่วง" source={marcomSrc}
