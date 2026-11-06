@@ -6,9 +6,9 @@ export const COACH_DEMO_ROSTER: CoachMember[] = [
   { id: 'grm', name: 'GRM', kind: 'GRM', active: true },
   { id: 'pm-alex', name: 'PM Alex', kind: 'PM', active: true },
   { id: 'mk-naen', name: 'แนน', kind: 'MARCOM_LEAD', active: true, also: 'MARCOM' },
-  { id: 'mk-biw', name: 'บิว', kind: 'MARCOM', active: true },
-  { id: 'mk-bow', name: 'โบว์', kind: 'MARCOM', active: true },
-  { id: 'mk-jane', name: 'เจน', kind: 'MARCOM', active: true },
+  { id: 'mk-biw', name: 'บิว', kind: 'MARCOM', active: true, marcom_sub_roles: ['CONTENT', 'PRESENTER'] },
+  { id: 'mk-bow', name: 'โบว์', kind: 'MARCOM', active: true, marcom_sub_roles: ['ADS'] },
+  { id: 'mk-jane', name: 'เจน', kind: 'MARCOM', active: true, marcom_sub_roles: ['CONTENT'] },
   { id: 'orm-toey', name: 'เตย', kind: 'ORM', orm_team: 'A', active: true },
   { id: 'orm-nid', name: 'นิด', kind: 'ORM', orm_team: 'A', active: true },
   { id: 'orm-ton', name: 'ต้น', kind: 'ORM', orm_team: 'B', active: true },
@@ -26,11 +26,12 @@ export const COACH_DEMO_ROSTER: CoachMember[] = [
   { id: 'ae-nont', name: 'AE Nont', kind: 'AE', active: true },
 ];
 
+/** DF5 DEMO (in memory): Marcom sub-roles on the roster above + one hotel override (HTL0503). */
 /** DEMO hotel Assign role slots (ORM team / Marcom person). Demo meetings carry no caretaker_* so these are the source used. */
-export const COACH_DEMO_SLOTS: Record<string, { orm_team?: string; marcom_person?: string }> = {
+export const COACH_DEMO_SLOTS: Record<string, { orm_team?: string; marcom_person?: string; marcom_overrides?: Partial<Record<'CONTENT' | 'ADS' | 'PRESENTER', string>> }> = {
   'ORM:HTL0214': { orm_team: 'B' }, 'ORM:HTL0401': { orm_team: 'A' }, 'ORM:HTL0403': { orm_team: 'C' },
   'ORM:HTL0405': { orm_team: 'D' }, 'ORM:HTL0406': { orm_team: 'RE_ACTIVE' },
-  'MARCOM:HTL0501': { marcom_person: 'บิว' }, 'MARCOM:HTL0503': { marcom_person: 'โบว์' }, 'MARCOM:HTL0504': { marcom_person: 'เจน' },
+  'MARCOM:HTL0501': { marcom_person: 'บิว' }, 'MARCOM:HTL0503': { marcom_person: 'โบว์', marcom_overrides: { ADS: 'เจน' } }, // DF5 DEMO: hotel override (Ads → เจน) 'MARCOM:HTL0504': { marcom_person: 'เจน' },
   'MARCOM:HTL0505': { marcom_person: 'บิว' }, 'MARCOM:HTL0506': { marcom_person: 'โบว์' }, 'MARCOM:HTL0508': { marcom_person: 'เจน' },
   'MARCOM:HTL0510': { marcom_person: 'บิว' }, 'MARCOM:HTL0511': { marcom_person: 'โบว์' },
   'MARCOM:HTL0331': { marcom_person: 'บิว' }, 'MARCOM:HTL0298': { marcom_person: 'โบว์' },
