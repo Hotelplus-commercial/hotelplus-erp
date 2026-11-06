@@ -13,6 +13,8 @@ import { debtorRows } from "@/lib/ac-revenue";
 import { aeNameTh } from "@/lib/ps-glossary";
 import type { PsReport, PsReportRow } from "@/lib/ps-dashboard-types";
 import type { GradeRow, HRow, JourneyInput, PortfolioContract, PriceRow, Svc } from "@/lib/ps-header-r2";
+import { headerContractJoin } from "@/lib/header-contract-join";
+import { HEADER_MARCOM_DEMO_OVERLAY } from "@/lib/header-marcom-overlay-demo";
 import { headerDemoInput, headerDemoMarcom, headerDemoPortfolio, HEADER_DEMO_NOW } from "@/lib/ps-header-r2-demo";
 import { tabR1DemoLapsed, tabR1HeaderActive, tabR1HeaderChurn, tabR1HeaderPortfolio } from "@/lib/contract-tab-r1-demo";
 import { contractStateOn, contractTermEnd } from "@/lib/contract-state";
@@ -48,7 +50,7 @@ export function useHeaderR2(demo: boolean, report: PsReport | undefined): Header
       // Tab R1 §11: demo additions also feed the header so header ใช้งาน / หลุด and cards ① / ⑦ agree (fixture itself unchanged).
       const j = headerDemoInput(), p = headerDemoPortfolio(), ap = tabR1HeaderPortfolio();
       const lapsed = tabR1DemoLapsed().map((l) => ({ service: l.service, hotel_id: l.hotel_id, hotel_name: l.hotel_name, ae: l.ae, orm: l.orm, marcom: l.marcom }));
-      return { today: HEADER_DEMO_NOW, journey: { ...j, active: [...j.active, ...tabR1HeaderActive()], lapsed, unmatched: [], churn: [...j.churn, ...tabR1HeaderChurn()] }, portfolio: { contracts: [...p.contracts, ...ap.contracts], prices: [...p.prices, ...ap.prices] }, marcom: headerDemoMarcom(), loading: false };
+      return { today: HEADER_DEMO_NOW, journey: { ...j, active: [...j.active, ...tabR1HeaderActive()], lapsed, unmatched: [], churn: [...j.churn, ...tabR1HeaderChurn()] }, portfolio: { contracts: [...p.contracts, ...ap.contracts].map((c) => (HEADER_MARCOM_DEMO_OVERLAY[c.contract_id] ? { ...c, lines: HEADER_MARCOM_DEMO_OVERLAY[c.contract_id] } : c)), prices: [...p.prices, ...ap.prices] }, marcom: headerDemoMarcom(), loading: false };
     }
     const today = new Date().toISOString().slice(0, 10);
     const views = report?.views;
@@ -65,7 +67,9 @@ export function useHeaderR2(demo: boolean, report: PsReport | undefined): Header
       if (!s || !id || r.status !== "ACTIVE" || seen.has(`${id}|${s}`)) return [];
       seen.add(`${id}|${s}`);
       const row = { service: s, hotel_id: id, hotel_name: String(r.hotel_name ?? id), ...owners(r) };
-      const mc = mainById.get(str(r["contract_id"]) ?? "");
+      // Header R3 HR28 / HR29: contract_id first, else hotel + service active today; never hotel alone.
+      const jn = headerContractJoin([{ contract_id: str(r["contract_id"]), hotel_id: id, service: s }], today, crm?.contracts ?? [])[0]!;
+      const mc = jn.contract_id ? mainById.get(jn.contract_id) : undefined;
       if (!mc) { unmatched.push(row); return [row]; }
       const st = contractStateOn({ contract_id: mc.contract_id, start: mc.start_date, term_end: contractTermEnd(mc) }, today, renewLinks);
       if (st === "LAPSED_PENDING") { lapsed.push(row); return []; }
@@ -99,7 +103,8 @@ export function useHeaderR2(demo: boolean, report: PsReport | undefined): Header
         const id = `${c.contract_id}|${s}`;
         contracts.push({ service: s, contract_id: id, hotel_id: c.hotel_id, hotel_name: c.customer_snapshot?.legal_name ?? c.hotel_id, ae: null, orm: c.orm_team_id ?? null, marcom: c.marcom_member_id ?? null, start: c.start_date, end: c.inactivated_at ?? null,
           sku: s === "ORM" ? { flat: !!flat, commission: !!comm } : { content: !!content, ads: !!ads, kol: !!kol },
-          quota: s === "Marcom" ? { content: content?.quantity ?? null, kol: kol?.quantity ?? null } : undefined });
+          quota: s === "Marcom" ? { content: content?.quantity ?? null, kol: kol?.quantity ?? null } : undefined,
+          lines: s === "Marcom" ? lines.map((l) => ({ sku: l.sku_snapshot, unit_price: l.unit_price == null ? null : l.unit_price * (l.quantity || 1), billing: l.billing, from: c.start_date.slice(0, 10), to: null })) : undefined });
         const hist = renewal.history.filter((h) => h.contract_id === c.contract_id);
         if (hist.length) for (const h of hist) prices.push({ contract_id: id, fee_amount: h.fee_amount, commission_pct: h.commission_pct, effective_from: h.effective_from, effective_to: h.effective_to || null });
         else if (s === "ORM") prices.push({ contract_id: id, fee_amount: flat?.unit_price ?? null, commission_pct: comm?.commission_rate ?? null, effective_from: c.start_date, effective_to: null });

@@ -8,6 +8,15 @@ import { DeltaPill, R2Info } from "./customer-journey-scorecard";
 import { delta, marcomBox, ormAsOf, activeOn, rowMatches, inScope, type HeaderSel, type PortfolioContract, type PriceRow, type Svc } from "@/lib/ps-header-r2";
 import { MARCOM_NOT_CONNECTED, type MarcomRecord } from "@/lib/marcom-app-source";
 import { cn } from "@/lib/utils";
+import { CHANNELS, marcomChannelsAsOf, type Channel } from "@/lib/header-contract-join";
+import { PS_TERM } from "@/lib/ps-glossary";
+
+function ChannelBox({ ch, contracts, today }: { ch: Channel; contracts: PortfolioContract[]; today: string }) {
+  const cmp = useCardCompare("header", `ap-ch-${ch.toLowerCase()}`, today);
+  const a = marcomChannelsAsOf(contracts, cmp.asOfA)[ch], b = marcomChannelsAsOf(contracts, cmp.asOfB)[ch];
+  return <Box name={ch} info={PS_TERM.channelInfo(ch)} source="คลังสัญญาหลัก (บริการรายเดือน SKU + ราคา)" n={a.n} nB={b.n} cmp={cmp} label="ค่าบริการเฉลี่ยต่อสัญญา"
+    value={a.value == null ? "—" : `฿${fmt(a.value)}/เดือน`} secondary={`จาก ${fmt(a.n)} สัญญา`} d={delta(a.value, b.value, "up")} dUnit="" dPrefix="฿" />;
+}
 
 const fmt = (n: number, d = 0) => n.toLocaleString("th-TH", { maximumFractionDigits: d, minimumFractionDigits: d });
 const MULTI_NOTE = "1 สัญญามีได้หลายรูปแบบ ยอดรวมของกลุ่มจึงเกินจำนวนสัญญาได้";
@@ -61,6 +70,7 @@ export function ActivePortfolio({ today, total, active, contracts: all, prices, 
   const ormSrc = "Contract & Service Manager (SKU) + ประวัติราคาสัญญา";
   const marcomSrc = "สัญญา (โควตา) + Marcom App (ยังไม่เชื่อมต่อ)";
   const sec = (from: number) => `จาก ${fmt(from)} สัญญา`;
+  const unspec = marcomChannelsAsOf(contracts, today).unspecified;
   const nc = (x: { value: number | null }) => x.value == null;
   return (
     <TooltipProvider>
@@ -80,13 +90,18 @@ export function ActivePortfolio({ today, total, active, contracts: all, prices, 
               n={cA.n} nB={cB.n} cmp={comm} label="ค่าคอมเฉลี่ยต่อสัญญา" value={cA.value == null ? "—" : `${fmt(cA.value, 1)}%`} secondary={sec(cA.from)} d={delta(cA.value, cB.value, "down")} dUnit=" จุด" dDigits={1} />
           </Panel>
           <Panel svc="Marcom" out={!inScope("Marcom", sel)} {...head("Marcom")}>
+            {CHANNELS.map((ch) => <ChannelBox key={ch} ch={ch} contracts={contracts} today={today} />)}
+          </Panel>
+          {unspec > 0 && inScope("Marcom", sel) && <p className="ap-note r2-dim" data-testid="ap-unspecified">{PS_TERM.channelUnspecified(unspec)}</p>}
+          {/* Header R3 HR31: Content / Ads / KOL unmounted, code kept. */}
+          {false && <Panel svc="Marcom" out={!inScope("Marcom", sel)} {...head("Marcom")}>
             <Box name="Content" info="สัญญา Marcom ที่มี SKU Content · ส่งจริงเฉลี่ย = ชิ้นงานที่ส่งในช่วง ÷ จำนวนเดือน ÷ จำนวนสัญญา · เทียบยอดภายในแต่ละช่วง" source={marcomSrc}
               n={ct.a.n} nB={ct.b.n} cmp={content} label="ส่งจริงเฉลี่ยต่อสัญญา" value={nc(ct.a) ? "—" : `${fmt(ct.a.value!)} ชิ้น/เดือน`} secondary={nc(ct.a) ? (marcom.posts ? "ยังไม่มีชิ้นงานในช่วงนี้" : MARCOM_NOT_CONNECTED) : `ตามสัญญา ${ct.a.quota == null ? "—" : fmt(ct.a.quota)} ชิ้น · ส่งครบ ${pct(ct.a.completion)}`} d={nc(ct.a) ? null : delta(ct.a.value, ct.b.value, "up")} dUnit="" />
             <Box name="Ads" info="สัญญา Marcom ที่มี SKU Ads · เติมงบเฉลี่ย = ยอดเติมงบในช่วง ÷ จำนวนเดือน ÷ จำนวนสัญญา · เทียบยอดภายในแต่ละช่วง" source={marcomSrc}
               n={ad.a.n} nB={ad.b.n} cmp={ads} label="เติมงบเฉลี่ยต่อสัญญา" value={nc(ad.a) ? "—" : `฿${fmt(ad.a.value!)}/เดือน`} secondary={nc(ad.a) ? (marcom.ads ? "ยังไม่มีการเติมงบในช่วงนี้" : MARCOM_NOT_CONNECTED) : sec(ad.a.n)} d={nc(ad.a) ? null : delta(ad.a.value, ad.b.value, "up")} dPrefix="฿" />
             <Box name="KOL" info="สัญญา Marcom ที่มี SKU KOL · KOL เข้าเฉลี่ย = จำนวน KOL ที่เข้าในช่วง ÷ จำนวนเดือน ÷ จำนวนสัญญา · Δ = ส่งครบเทียบช่วงก่อน (จุด)" source={marcomSrc}
               n={kl.a.n} nB={kl.b.n} cmp={kol} label="KOL เข้าเฉลี่ยต่อสัญญา" value={nc(kl.a) ? "—" : `${fmt(kl.a.value!, 1)} คน/เดือน`} secondary={nc(kl.a) ? (marcom.kol ? "ยังไม่มี KOL เข้าในช่วงนี้" : MARCOM_NOT_CONNECTED) : `ตามสัญญา ${kl.a.quota == null ? "—" : fmt(kl.a.quota)} คน · ส่งครบ ${pct(kl.a.completion)}`} d={nc(kl.a) ? null : delta(kl.a.completion, kl.b.completion, "up")} dUnit=" จุด" />
-          </Panel>
+          </Panel>}
         </div>
       </section>
     </TooltipProvider>
