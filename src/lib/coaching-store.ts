@@ -26,11 +26,11 @@ export function liveRoster(): CoachMember[] {
   const hr = readJson<{ members?: HrRaw[] }>('meridia.hr.members.v1')?.members ?? [];
   return hr.map((m): CoachMember => ({ id: m.id, name: m.nickname, kind: m.function === 'AE' ? 'AE' : m.function === 'MARCOM' ? 'MARCOM' : m.function.startsWith('ORM') ? 'ORM' : 'AE', orm_team: m.orm_team, active: m.active, ...(m.marcom_sub_roles?.length ? { marcom_sub_roles: m.marcom_sub_roles } : {}) }));
 }
-type Ws2Profile = { property_id: string; service: string; orm_team?: string | null; assigned_to?: string | null; marcom_overrides?: MarcomOverrides | null };
+type Ws2Profile = { property_id: string; service: string; orm_team?: string | null; assigned_to?: string | null; marcom_content_member_id?: string | null; marcom_ads_member_id?: string | null; marcom_presenter_member_id?: string | null };
 function liveSlot(hotelId: string | null, service: string) {
   if (!hotelId) return undefined;
   const p = (readJson<{ profiles?: Ws2Profile[] }>('ps-ws2-v1')?.profiles ?? []).find((x) => x.property_id === hotelId && (service === 'ORM' ? x.service === 'ORM' : x.service.startsWith('MARCOM')));
-  return p ? { orm_team: p.orm_team ?? null, marcom_person: p.assigned_to ?? null, marcom_overrides: p.marcom_overrides ?? null } : undefined;
+  return p ? { orm_team: p.orm_team ?? null, marcom_person: p.assigned_to ?? null, marcom_overrides: { CONTENT: p.marcom_content_member_id ?? null, ADS: p.marcom_ads_member_id ?? null, PRESENTER: p.marcom_presenter_member_id ?? null } as MarcomOverrides } : undefined;
 }
 /** Live testing role (HR testing role switcher, simulation only). */
 export function liveCoachRole(): CoachRole | null {

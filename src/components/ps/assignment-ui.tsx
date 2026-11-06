@@ -94,6 +94,8 @@ export function AssignDialog({ card, type, onClose }: { card: OnboardingCard; ty
   const [team, setTeam] = useState<string>(pf?.orm_team ?? "A");
   const [rev, setRev] = useState<string>(pf?.revenue_member_id ?? "");
   const [ecom, setEcom] = useState<string>(pf?.ecommerce_member_id ?? "");
+  // WC-O1 (DF5): optional per-hotel Marcom sub-role override (empty = HR roster default).
+  const [ovC, setOvC] = useState<string>(pf?.marcom_content_member_id ?? ""); const [ovA, setOvA] = useState<string>(pf?.marcom_ads_member_id ?? ""); const [ovP, setOvP] = useState<string>(pf?.marcom_presenter_member_id ?? "");
   const [one, setOne] = useState<string>((type === "AE" ? pr?.assigned_ae_id : type === "SPECIALIST" ? pr?.assigned_specialist_id : pf?.marcom_member_id) ?? "");
   // PM Workspace Partner v1.0 §1.1: AE role + hotel has ORM → system + allotment (not a role slot, same Save).
   const s = useServicing();
@@ -118,7 +120,7 @@ export function AssignDialog({ card, type, onClose }: { card: OnboardingCard; ty
       w.saveAssignment({ hotel_id: card.property_id, hotel_name: card.property_name, service: "ORM", patch: { orm_team: team, revenue_member_id: rev, ecommerce_member_id: ecom } }, user, "Assignment");
     } else {
       if (!one) { toast.info("เลือกผู้ดูแลก่อนบันทึก"); return; }
-      const patch = type === "AE" ? { assigned_ae_id: one } : type === "SPECIALIST" ? { assigned_specialist_id: one } : { marcom_member_id: one };
+      const patch = type === "AE" ? { assigned_ae_id: one } : type === "SPECIALIST" ? { assigned_specialist_id: one } : { marcom_member_id: one, marcom_content_member_id: ovC || null, marcom_ads_member_id: ovA || null, marcom_presenter_member_id: ovP || null };
       w.saveAssignment({ hotel_id: card.property_id, hotel_name: card.property_name, service: type === "MARCOM" ? svc : null, patch }, user, "Assignment");
       if (hasOrm) { const r = saveAssignSystem(getPartnerData(), card.property_id, sysKeyV, allot, user); if (r !== "saved" && r !== "unchanged" && r !== "empty") toast.error(r); }
     }
@@ -139,6 +141,8 @@ export function AssignDialog({ card, type, onClose }: { card: OnboardingCard; ty
             {pick("Revenue member", rev, setRev, opts("ORM_REVENUE", team))}
             {pick("Ecommerce member", ecom, setEcom, opts("ORM_ECOMMERCE", team))}
           </> : pick(type === "AE" ? "AE" : type === "SPECIALIST" ? "On-boarding Specialist" : "Marcom member", one, setOne, opts(type === "AE" ? "AE" : type === "SPECIALIST" ? "ONBOARDING_SPECIALIST" : "MARCOM"))}
+          {type === "MARCOM" && <fieldset className="grid gap-2 rounded-md border p-2" data-testid="marcom-overrides"><legend className="px-1 text-xs text-muted-foreground">ผู้รับผิดชอบเฉพาะโรงแรมนี้ (ไม่บังคับ · ว่าง = ตามรายชื่อ HR)</legend>
+            {pick("Content", ovC, setOvC, opts("MARCOM"))}{pick("Ads", ovA, setOvA, opts("MARCOM"))}{pick("ผู้นำเสนอ", ovP, setOvP, opts("MARCOM"))}</fieldset>}
           {hasOrm && <AssignSystemFields sys={sysKeyV} allot={allot} onSys={setSysKeyV} onAllot={setAllot} disabled={!allowed} />}
           {!allowed && <p className="text-xs text-muted-foreground">บทบาท {ASSIGN_ROLE_LABEL[hr.role]} ดูได้อย่างเดียว</p>}
           <div className="flex justify-end"><Button disabled={!allowed} onClick={save}>Save</Button></div>
