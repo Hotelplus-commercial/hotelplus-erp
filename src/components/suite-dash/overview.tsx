@@ -67,6 +67,7 @@ function Body({ demo }: { demo: boolean }) {
       { label: "ลูกหนี้คงค้าง (ไม่รวมตัดสูญ)", value: debt.empty ? "—" : thb(debt.debtTotal) },
       { label: "สัดส่วนเกรด A+B", value: debt.abPct == null ? "—" : `${debt.abPct}%` },
       { label: "บิล Partner รอจ่าย", value: thb(pb.pendingThb) },
+      { label: "ใบแจ้งหนี้รอ Production Report", value: prWait },
     ], today: `บิล Partner เลยกำหนด ${pb.overdueN}` },
     HR: { hi: [
       { label: "พนักงาน active", value: roster.length },

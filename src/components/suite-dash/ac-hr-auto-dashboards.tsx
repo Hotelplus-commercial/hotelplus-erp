@@ -24,6 +24,7 @@ function AcBody({ demo }: { demo: boolean }) {
   const debt = useDebtHeadline(demo);
   const pb = usePartnerBillNumbers(demo);
   const contracts = partnerContracts(pb.data, demo);
+  const prWait = usePrWaiting(demo);
   return (
     <div className="space-y-4" data-testid="ac-dashboard">
       <DashHeader app="AC App" title="AC Dashboard" period={period.label} control={control} demo={demo} extra={<DetailLink href="/ac/pnl" demo={demo} label="P&L →" />} />
@@ -31,7 +32,7 @@ function AcBody({ demo }: { demo: boolean }) {
         <Tile label="ลูกหนี้คงค้าง ฿ (ไม่รวมตัดสูญ)" value={debt.empty ? "—" : thb(debt.debtTotal)} sub={debt.empty ? undefined : `${debt.debtN} สัญญา`} now testId="ac-tile-debt" />
         <Tile label="% ชำระตรงเกรด A+B (รอบล่าสุด)" value={debt.abPct == null ? "—" : `${debt.abPct}%`} sub={debt.gradeTotal ? `จาก ${debt.gradeTotal} สัญญา` : undefined} now testId="ac-tile-ab" />
         <Tile label="บิล Partner รอจ่าย ฿" value={thb(pb.pendingThb)} sub={pb.overdueN ? `เลยกำหนด ${pb.overdueN} ใบ` : undefined} now testId="ac-tile-pb" />
-        <Tile label="ใบแจ้งหนี้รอ Production Report" value="—" sub={<span title="รอหน้าส่งไฟล์ Production Report" className="inline-flex items-center gap-1">รอหน้าส่งไฟล์ Production Report <InfoTip text="รอหน้าส่งไฟล์ Production Report" /></span>} now testId="ac-tile-pr" />
+        <Tile label="ใบแจ้งหนี้รอ Production Report" value={prWait} sub="เลยตัดรอบ ยังไม่พร้อมวางบิล" now testId="ac-tile-pr" />
       </TileStrip>
       <CardGrid>
         <div data-testid="dash-mounted-grade"><PaidGradeCard demo={demo} /></div>
