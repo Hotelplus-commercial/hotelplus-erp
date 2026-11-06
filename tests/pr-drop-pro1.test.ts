@@ -43,7 +43,7 @@ describe('PR-O1 items and cut-off', () => {
     expect(D.pdfError({ name: 'a.xlsx', size: 10 })).toBe('รับเฉพาะไฟล์ PDF');
     expect(D.pdfError({ name: 'a.pdf', size: 21 * 1024 * 1024 })).toBe('ไฟล์ใหญ่เกิน 20 MB');
     const f = [{ ref: 'r', name: 'a.pdf', size: 1, at: '', version: 1 }];
-    expect(D.sendAcError(by('PRD-O6'), f, null)).toBe('กรอกรายได้ที่ใช้คิดค่าคอม (฿)');
+    expect(D.sendAcError(by('G-DEMO-3'), f, null)).toBe('กรอกรายได้ที่ใช้คิดค่าคอม (฿)');
     expect(D.sendAcError(by('PRD-M3'), f, null)).toBe(null);
     expect(by('PRD-O6').needs_revenue).toBe(false); // flat ORM
   });
