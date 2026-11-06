@@ -2,6 +2,7 @@
  * The AC Billing engine is not touched: Billing prices a period from whichever contract is ACTIVE on the billing date. */
 import type { Contract, ContractLine } from './crm-types';
 import type { RenewalRequest, Terms } from './renewal-rules';
+import { ORM_LITE_CODE, contractLinesOf, ormTierOf } from './renewal-package';
 
 type Svc = 'ORM' | 'Marcom';
 /** Minimal source shape (same fields as renewal-store SourceContract). */
@@ -41,7 +42,7 @@ export function buildRenewedContract(base: Contract, req: RenewalRequest): Renew
   const oldSum = kept.reduce((s, l) => s + (l.unit_price ?? 0) * (l.quantity || 1), 0);
   // fee → unit_price: one line takes the fee; several lines keep their proportion (last line absorbs rounding)
   let left = t.fee_amount;
-  const lines = kept.map((l, i): ContractLine => {
+  const lines: ContractLine[] = kept.map((l, i): ContractLine => {
     const q = l.quantity || 1; const last = i === kept.length - 1;
     const share = last ? left : oldSum > 0 ? Math.round((t.fee_amount * ((l.unit_price ?? 0) * q)) / oldSum) : i === 0 ? t.fee_amount : 0;
     left -= share;
@@ -50,12 +51,22 @@ export function buildRenewedContract(base: Contract, req: RenewalRequest): Renew
     const commission_rate = hadComm || (i === 0 && t.commission_pct > 0) ? (t.commission_pct > 0 ? Math.round(t.commission_pct * 100) / 10000 : null) : null;
     return { ...l, line_id: `${id}-${l.line_id}`, unit_price: unit, commission_rate };
   });
+  // O-26 PK10: package changed → the new contract gets the new package lines (old contract never edited). The ORM main line takes the
+  // new terms (fee + commission); Marcom lines keep their own prices (their sum is the fee). Kept setup lines (PK6) are one-time.
+  const pkg = req.package_changed && req.new_lines?.length ? req.new_lines : null;
+  if (pkg) {
+    const main = contractLinesOf(id, pkg).map((l, i): ContractLine => svc === 'ORM' && i === 0
+      ? { ...l, unit_price: t.fee_amount > 0 ? t.fee_amount : null, commission_rate: t.commission_pct > 0 ? Math.round(t.commission_pct * 100) / 10000 : null } : l);
+    const setup = contractLinesOf(`${id}-S`, req.setup_lines ?? []).map((l) => ({ ...l, billing: 'one_time' as const }));
+    lines.splice(0, lines.length, ...main, ...setup);
+  }
   // service package unchanged (O-26): sku / name / package snapshots stay as on the source contract.
   // COMMISSION_GUARANTEE: fee_amount = 0 → unit_price null (commission-only line; the engine bills commission from the report).
-  if (t.package !== req.old_terms.package) unmapped.push('service package unchanged (O-26)');
+  if (!pkg && t.package !== req.old_terms.package) unmapped.push('service package unchanged (O-26)');
   if (base.lines.some((l) => l.billing !== 'monthly' && lineSvc(l) === svc)) unmapped.push('one_time lines (ค่าติดตั้งไม่ยกไปสัญญาใหม่)');
   const contract: Contract = {
-    ...base, contract_id: id, lines, monthly_value: lines.reduce((s, l) => s + (l.unit_price ?? 0) * (l.quantity || 1), 0),
+    ...base, contract_id: id, lines, monthly_value: lines.reduce((s, l) => s + (l.billing === 'monthly' ? (l.unit_price ?? 0) * (l.quantity || 1) : 0), 0),
+    ...(pkg && svc === 'ORM' ? { contract_code: ormTierOf(pkg) === 'LITE' ? ORM_LITE_CODE : 'ORM' } : {}),
     start_date: addDays(req.old_terms.end_date, 1), duration_months: t.term_months,
     status: 'contract_completed', billing_status: 'ACTIVE', inactivated_at: null,
     live_link_signed_at: req.signed_at, created_at: req.signed_at ?? req.updated_at, created_by: `renewal:${req.id}`,
