@@ -352,6 +352,10 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 
 ## Suite Sidebar R1 (Shell + Registry + Access + Menus)
 - [x] SIDEBAR_REGISTRY, menu role switcher (default HOC), visibility S1–S13, placeholders, link-outs, แจ้งปัญหา, renames, redirects keep DEMO, tests
-- [ ] R2: Production Report → AC App, ORM Bonus → ORM Tier, BD-AC → The Office Dashboard tab
+- [x] R2: Production Report → AC App (/ac/production-report), ORM Bonus → ORM App › Revenue › ORM Tier (/orm/orm-tier), BD-AC → The Office Dashboard tab 1; old addresses forward keeping DEMO
+- [ ] Open: Production Report drop view — needs a mini-spec (fields, upload, status)
+- [ ] Open: automatic monthly Tier job not built (buttons kept for GRM · HOC · MD) — waits on a prompt
+- [ ] Open: Snapshot Report (ORM) / Sync Up Report (Marcom) pointed at the moved page; now placeholders until they get their own page
+- [x] Rules files split: every AGENTS.md under 8,192 bytes; PS tab rules in src/components/ps/RULES_*.md
 - [ ] Open: two system-cost sources (/ac/system-cost vs Partner rate cards) — waits on decision
 - [ ] Open: Looker Studio URL not configured (opens placeholder)
