@@ -56,12 +56,14 @@ import { Route as HrSplatRouteImport } from './routes/hr_.$'
 import { Route as LTokenRouteImport } from './routes/l.$token'
 import { Route as MarcomDashboardRouteImport } from './routes/marcom.dashboard'
 import { Route as MarcomProductionReportRouteImport } from './routes/marcom.production-report'
+import { Route as MarcomSyncUpReportRouteImport } from './routes/marcom.sync-up-report'
 import { Route as MarcomSplatRouteImport } from './routes/marcom_.$'
 import { Route as OfficeBdAcRouteImport } from './routes/office.bd-ac'
 import { Route as OrmActionARouteImport } from './routes/orm.action-a'
 import { Route as OrmDashboardRouteImport } from './routes/orm.dashboard'
 import { Route as OrmOrmTierRouteImport } from './routes/orm.orm-tier'
 import { Route as OrmProductionReportRouteImport } from './routes/orm.production-report'
+import { Route as OrmSnapshotReportRouteImport } from './routes/orm.snapshot-report'
 import { Route as OrmSplatRouteImport } from './routes/orm_.$'
 import { Route as PsIndexRouteImport } from './routes/ps.index'
 import { Route as PsAeWorkspaceRouteImport } from './routes/ps.ae-workspace'
@@ -356,6 +358,11 @@ const MarcomProductionReportRoute = MarcomProductionReportRouteImport.update({
   path: '/production-report',
   getParentRoute: () => MarcomRoute,
 } as any)
+const MarcomSyncUpReportRoute = MarcomSyncUpReportRouteImport.update({
+  id: '/sync-up-report',
+  path: '/sync-up-report',
+  getParentRoute: () => MarcomRoute,
+} as any)
 const MarcomSplatRoute = MarcomSplatRouteImport.update({
   id: '/marcom_/$',
   path: '/marcom/$',
@@ -384,6 +391,11 @@ const OrmOrmTierRoute = OrmOrmTierRouteImport.update({
 const OrmProductionReportRoute = OrmProductionReportRouteImport.update({
   id: '/production-report',
   path: '/production-report',
+  getParentRoute: () => OrmRoute,
+} as any)
+const OrmSnapshotReportRoute = OrmSnapshotReportRouteImport.update({
+  id: '/snapshot-report',
+  path: '/snapshot-report',
   getParentRoute: () => OrmRoute,
 } as any)
 const OrmSplatRoute = OrmSplatRouteImport.update({
@@ -727,12 +739,14 @@ export interface FileRoutesByFullPath {
   '/l/$token': typeof LTokenRoute
   '/marcom/dashboard': typeof MarcomDashboardRoute
   '/marcom/production-report': typeof MarcomProductionReportRoute
+  '/marcom/sync-up-report': typeof MarcomSyncUpReportRoute
   '/marcom/$': typeof MarcomSplatRoute
   '/office/bd-ac': typeof OfficeBdAcRoute
   '/orm/action-a': typeof OrmActionARouteWithChildren
   '/orm/dashboard': typeof OrmDashboardRoute
   '/orm/orm-tier': typeof OrmOrmTierRoute
   '/orm/production-report': typeof OrmProductionReportRoute
+  '/orm/snapshot-report': typeof OrmSnapshotReportRoute
   '/orm/$': typeof OrmSplatRoute
   '/ps/ae-workspace': typeof PsAeWorkspaceRouteWithChildren
   '/ps/contract-dashboard': typeof PsContractDashboardRoute
@@ -832,11 +846,13 @@ export interface FileRoutesByTo {
   '/l/$token': typeof LTokenRoute
   '/marcom/dashboard': typeof MarcomDashboardRoute
   '/marcom/production-report': typeof MarcomProductionReportRoute
+  '/marcom/sync-up-report': typeof MarcomSyncUpReportRoute
   '/marcom/$': typeof MarcomSplatRoute
   '/office/bd-ac': typeof OfficeBdAcRoute
   '/orm/dashboard': typeof OrmDashboardRoute
   '/orm/orm-tier': typeof OrmOrmTierRoute
   '/orm/production-report': typeof OrmProductionReportRoute
+  '/orm/snapshot-report': typeof OrmSnapshotReportRoute
   '/orm/$': typeof OrmSplatRoute
   '/ps/contract-dashboard': typeof PsContractDashboardRoute
   '/ps/contracts': typeof PsContractsRoute
@@ -943,12 +959,14 @@ export interface FileRoutesById {
   '/l/$token': typeof LTokenRoute
   '/marcom/dashboard': typeof MarcomDashboardRoute
   '/marcom/production-report': typeof MarcomProductionReportRoute
+  '/marcom/sync-up-report': typeof MarcomSyncUpReportRoute
   '/marcom_/$': typeof MarcomSplatRoute
   '/office/bd-ac': typeof OfficeBdAcRoute
   '/orm/action-a': typeof OrmActionARouteWithChildren
   '/orm/dashboard': typeof OrmDashboardRoute
   '/orm/orm-tier': typeof OrmOrmTierRoute
   '/orm/production-report': typeof OrmProductionReportRoute
+  '/orm/snapshot-report': typeof OrmSnapshotReportRoute
   '/orm_/$': typeof OrmSplatRoute
   '/ps/ae-workspace': typeof PsAeWorkspaceRouteWithChildren
   '/ps/contract-dashboard': typeof PsContractDashboardRoute
@@ -1058,12 +1076,14 @@ export interface FileRouteTypes {
     | '/l/$token'
     | '/marcom/dashboard'
     | '/marcom/production-report'
+    | '/marcom/sync-up-report'
     | '/marcom/$'
     | '/office/bd-ac'
     | '/orm/action-a'
     | '/orm/dashboard'
     | '/orm/orm-tier'
     | '/orm/production-report'
+    | '/orm/snapshot-report'
     | '/orm/$'
     | '/ps/ae-workspace'
     | '/ps/contract-dashboard'
@@ -1163,11 +1183,13 @@ export interface FileRouteTypes {
     | '/l/$token'
     | '/marcom/dashboard'
     | '/marcom/production-report'
+    | '/marcom/sync-up-report'
     | '/marcom/$'
     | '/office/bd-ac'
     | '/orm/dashboard'
     | '/orm/orm-tier'
     | '/orm/production-report'
+    | '/orm/snapshot-report'
     | '/orm/$'
     | '/ps/contract-dashboard'
     | '/ps/contracts'
@@ -1273,12 +1295,14 @@ export interface FileRouteTypes {
     | '/l/$token'
     | '/marcom/dashboard'
     | '/marcom/production-report'
+    | '/marcom/sync-up-report'
     | '/marcom_/$'
     | '/office/bd-ac'
     | '/orm/action-a'
     | '/orm/dashboard'
     | '/orm/orm-tier'
     | '/orm/production-report'
+    | '/orm/snapshot-report'
     | '/orm_/$'
     | '/ps/ae-workspace'
     | '/ps/contract-dashboard'
@@ -1714,6 +1738,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MarcomProductionReportRouteImport
       parentRoute: typeof MarcomRoute
     }
+    '/marcom/sync-up-report': {
+      id: '/marcom/sync-up-report'
+      path: '/sync-up-report'
+      fullPath: '/marcom/sync-up-report'
+      preLoaderRoute: typeof MarcomSyncUpReportRouteImport
+      parentRoute: typeof MarcomRoute
+    }
     '/marcom_/$': {
       id: '/marcom_/$'
       path: '/marcom/$'
@@ -1754,6 +1785,13 @@ declare module '@tanstack/react-router' {
       path: '/production-report'
       fullPath: '/orm/production-report'
       preLoaderRoute: typeof OrmProductionReportRouteImport
+      parentRoute: typeof OrmRoute
+    }
+    '/orm/snapshot-report': {
+      id: '/orm/snapshot-report'
+      path: '/snapshot-report'
+      fullPath: '/orm/snapshot-report'
+      preLoaderRoute: typeof OrmSnapshotReportRouteImport
       parentRoute: typeof OrmRoute
     }
     '/orm_/$': {
@@ -2274,11 +2312,13 @@ const HrRouteWithChildren = HrRoute._addFileChildren(HrRouteChildren)
 interface MarcomRouteChildren {
   MarcomDashboardRoute: typeof MarcomDashboardRoute
   MarcomProductionReportRoute: typeof MarcomProductionReportRoute
+  MarcomSyncUpReportRoute: typeof MarcomSyncUpReportRoute
 }
 
 const MarcomRouteChildren: MarcomRouteChildren = {
   MarcomDashboardRoute: MarcomDashboardRoute,
   MarcomProductionReportRoute: MarcomProductionReportRoute,
+  MarcomSyncUpReportRoute: MarcomSyncUpReportRoute,
 }
 
 const MarcomRouteWithChildren =
@@ -2309,6 +2349,7 @@ interface OrmRouteChildren {
   OrmDashboardRoute: typeof OrmDashboardRoute
   OrmOrmTierRoute: typeof OrmOrmTierRoute
   OrmProductionReportRoute: typeof OrmProductionReportRoute
+  OrmSnapshotReportRoute: typeof OrmSnapshotReportRoute
 }
 
 const OrmRouteChildren: OrmRouteChildren = {
@@ -2316,6 +2357,7 @@ const OrmRouteChildren: OrmRouteChildren = {
   OrmDashboardRoute: OrmDashboardRoute,
   OrmOrmTierRoute: OrmOrmTierRoute,
   OrmProductionReportRoute: OrmProductionReportRoute,
+  OrmSnapshotReportRoute: OrmSnapshotReportRoute,
 }
 
 const OrmRouteWithChildren = OrmRoute._addFileChildren(OrmRouteChildren)
