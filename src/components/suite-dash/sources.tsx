@@ -3,6 +3,10 @@
 import { useMemo, type ReactNode } from "react";
 import { useHeaderR2 } from "@/components/ps/use-header-r2";
 import { useServiceTicketRows } from "@/components/ps/service-ticket-tab";
+import { useTaskData } from "@/components/ps/task-tab";
+import { useRenewalRateQuarter } from "@/components/ps/renewal-card-r2";
+import { useTabR1 } from "@/components/ps/ps-tab-r1";
+import { tabR1Demo } from "@/lib/contract-tab-r1-demo";
 import { useDebtHeadline } from "@/components/ps/debt-cards-r11";
 import { useMeetingFunnel } from "@/components/ps/meeting-tab-r1";
 import { useWelcomeBackSource } from "@/components/workspace/welcome-back-section";
@@ -43,16 +47,18 @@ export function usePsHeadline(demo: boolean) {
   }, [h]);
 }
 
-/** vServiceTickets rows (L0; PS cases are loaded only by the PS tab) → open / overdue per department. */
+/** B.1: same rows as PS › ติดตามงานผู้ให้บริการ — vServiceTickets(L0 + PS cases via the Task tab's ticketApi.list). */
+function useSvcRows() { const d = useTaskData(); return useServiceTicketRows(d.tickets as never).rows; }
+/** open / overdue per department (PS cases included). */
 export function useTicketCounts() {
-  const { rows } = useServiceTicketRows([]);
+  const rows = useSvcRows();
   return (dept: SvcDept) => {
     const open = rows.filter((r) => r.dept === dept && r.is_counted && r.display_status !== "SOLVED" && r.display_status !== "CANCELLED");
     return { open: open.length, overdue: open.filter((r) => r.due_state === "OVERDUE").length, rows: open };
   };
 }
 export function useAllOverdueTickets() {
-  const { rows } = useServiceTicketRows([]);
+  const rows = useSvcRows();
   return rows.filter((r) => r.is_counted && r.display_status !== "SOLVED" && r.display_status !== "CANCELLED" && r.due_state === "OVERDUE").length;
 }
 
@@ -120,3 +126,11 @@ export function useRoster() {
   return members.filter((m) => m.active);
 }
 export { useDebtHeadline };
+
+/** B.1: PS renewal card default KPI (quarter, as of today) through the card's own helper. */
+export function useRenewalRate(demo: boolean) {
+  const header = useHeaderR2(demo, undefined);
+  const live = useTabR1(demo, undefined, header);
+  const data = useMemo(() => (demo ? tabR1Demo() : live), [demo, live]);
+  return useRenewalRateQuarter(data);
+}
