@@ -381,3 +381,7 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [ ] Open: PS อัตราต่อสัญญา (ไตรมาส) on Overview — source to confirm
 - [ ] Open: AC ใบแจ้งหนี้รอ Production Report — AC Billing has no such status yet
 - [ ] Open: dashboard ticket counts exclude PS cases (loaded only in PS tab)
+
+## Decisions & Fix R1 — open
+- [ ] Old `servicing_sla_config` still in code (unused) — remove once SLA On-board is confirmed as the only source.
+- [ ] Marcom per-hotel override set via Assign is live-only; DEMO uses the seeded HTL0503 example.
