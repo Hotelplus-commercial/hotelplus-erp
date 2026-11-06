@@ -2120,5 +2120,5 @@ textarea.r1-input{height:auto;padding:6px 8px;resize:vertical;}
 .ms-f-connrow .ms-f-conn{height:22px;width:100%;background:var(--lv);opacity:.4;}
 .ms-f-pct{font-size:15px;font-weight:700;}
 .ms-f-sumitem{margin-right:14px;} .ms-f-sumitem b{color:var(--text-primary);}
-.ms-f-sumitem b.ms-low-t{color:var(--grade-action);}
+.ms-f-sumitem b.ms-low-t{color:var(--action-text);}
 .ms-funnel .ms-f-summary{margin-top:10px;}
