@@ -9,3 +9,5 @@
 - Early create button: owning AE only (test-mode สวมบท actor, no login) → AE Workspace `?createRenewal={contract_id}` via the hand-off in src/lib/renewal-scan.ts.
 - R2.1 UAT fix applied: on ยังไม่เริ่ม cards non-owners see the owner button disabled + `เฉพาะ AE เจ้าของสัญญา · {AE}` hint; testing mode adds `สลับเป็น {AE} เพื่อทดสอบ` (sets the card's สวมบท) and a `ทดสอบในบทบาท` banner; the acting AE member is carried to AE Workspace / Wizard via src/lib/renewal-test-actor.ts (sessionStorage, simulation only). Why: testers can find the own-only action without weakening it.
 - R2.1 §1.5: the renewal flow uses the main contract store (live CRM / one DEMO contract state); a signed renewal adds its new contract there (renewal_of) and never edits the source. Tab cards and counts do not read it. Why: Billing picks the ACTIVE contract by date.
+
+- UP5 (2026-11-06): reason group totals read `{pct}% · รวม {n} ป้าย · {m} สัญญา` (m = distinct contracts with ≥1 label in the group); % and bars unchanged.

@@ -9,3 +9,5 @@
 - Help: ⓘ texts and "? วิธีใช้" tours (card 7 steps, dialog 5 steps) via GuidedTour; text only in ps-glossary R1_* constants. Titles R1_TITLES; renewal card chip `ไม่ต่อ %` (Renewal card superseded by Tab R2). Service colours: --svc-orm blue / --svc-marcom pink shared by Header R2 and charts; no Marcom dashed lines.
 - งานค้างของสัญญา moved to the end of the Task tab (PendingWorkPanel, same content).
 - Open items — do not implement on your own: O-11 trend compare for ระยะเวลา Setup (Superseded by Tab R4 (สัญญา & ราคา · Setup Duration)) · O-17 สัญญาณจากสัญญา content · ⏰ O-18 Value Added · O-19 AE label expiry · O-24 remember chart view · Q58 past-due effect on contract status / header ใช้งาน / In-Out / AC billing (display only until decided) · Q59 SLA thresholds are proposals in `RENEWAL_SLA` · O-25 BD-side view of Welcome Back: ทำแล้วแบบพื้นฐาน (R3.1) · ⏰ Upsell capture in the PM contract entry form (no Upsell line items stored yet).
+
+- UP4 (2026-11-06): both views show month labels + `สิ้นเดือน` net pills (same values), current month outlined.

@@ -359,3 +359,7 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [x] Rules files split: every AGENTS.md under 8,192 bytes; PS tab rules in src/components/ps/RULES_*.md
 - [ ] Open: two system-cost sources (/ac/system-cost vs Partner rate cards) — waits on decision
 - [ ] Open: Looker Studio URL not configured (opens placeholder)
+
+## PS Dashboard UAT polish R1 (UP1–UP12)
+- [x] UP1, UP2, UP4–UP12 + tests + rules
+- [ ] Open: Marcom by channel (Meta / TikTok / Google) — header must read the contract's service lines (SKU + price) from the main contract store; do together with P-H1 (header rows need end_date / contract_id). Decided by Sai: Google = GMB (MARCOM-MTH-GMB); MARCOM-SETUP-* lines are one-time setup, not core service — never counted in channel cards; ADDON-KOL-TRAVEL belongs to TikTok.
