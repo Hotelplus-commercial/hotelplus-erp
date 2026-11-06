@@ -123,7 +123,7 @@ export function findOpenByDeal(type: TicketType, deal_id: string) {
 }
 
 /** Central generic engine. Returns the new id, or the existing open id (dedup). */
-export function createTask(i: { type: TicketType; target_dept: Dept; subject_ref: L0Ticket['subject_ref']; payload: L0Ticket['payload']; created_by: Creator; source_app?: L0Ticket['source_app']; ticket_id?: string; assignee?: TicketAssignee; /** SLA Core v1.0: optional category (none → default mapping in the view) */ category_id?: string | null }): { ticket_id: string; deduped: boolean } {
+export function createTask(i: { type: TicketType; target_dept: Dept; subject_ref: L0Ticket['subject_ref']; payload: L0Ticket['payload']; created_by: Creator; source_app?: L0Ticket['source_app']; ticket_id?: string; assignee?: TicketAssignee; /** SLA Core v1.0: optional category (none → default mapping in the view) */ category_id?: string | null; /** O-26: optional due date (SLA due_date field) */ due_date?: string | null }): { ticket_id: string; deduped: boolean } {
   if (i.type === 'CONTRACT_SIGNAL') return createReserved(i);
   if (i.type === 'WELCOME_BACK') { const o = createWelcomeBack(i); return o.ok ? { ticket_id: o.ticket_id, deduped: false } : { ticket_id: o.locked?.ticket_id ?? i.ticket_id ?? '', deduped: true }; }
   const existing = i.type === 'SERVICING_STALL' && i.payload.event_key ? findOpenByEvent(i.type,i.subject_ref.hotel_id,i.payload.event_key) : i.subject_ref.deal_id ? findOpenByDeal(i.type, i.subject_ref.deal_id) : findOpen(i.type, i.subject_ref.hotel_id, i.subject_ref.gap_service);
@@ -131,6 +131,7 @@ export function createTask(i: { type: TicketType; target_dept: Dept; subject_ref
   const s = cur(); const seq = s.seq + 1; const at = now(); // Level B: replace with revision-locked reservation.
   const t: L0Ticket = { ticket_id: `TKT-${String(seq).padStart(6, '0')}`, type: i.type, source_app: i.source_app ?? 'PS_DASHBOARD', created_by: i.created_by, target_dept: i.target_dept, subject_ref: i.subject_ref, payload: i.payload, status: 'NEW', created_at: at, revision: 0, audit: [{ at, by: i.created_by, from_status: null, to_status: 'NEW' }] };
   if (i.category_id) t.category_id = i.category_id;
+  if (i.due_date) t.due_date = i.due_date;
   commit({ seq, items: [...s.items, t] });
   return { ticket_id: t.ticket_id, deduped: false };
 }

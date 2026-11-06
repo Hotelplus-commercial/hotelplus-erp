@@ -479,7 +479,7 @@ function packageTicketFor(r: RenewalRequest): string | null {
   if (!isOrmFullToLite(r.old_lines ?? [], r.new_lines)) return null;
   const t = createTask({ type: 'PACKAGE_OTA_ADJUST', target_dept: 'ORM', created_by: 'PS', category_id: null,
     subject_ref: { hotel_id: r.hotel_id, hotel_name: r.hotel_name, gap_service: 'ORM', deal_id: `PKG-${r.new_contract_id}`, contract_id: r.new_contract_id, service: 'ORM' },
-    payload: { readiness_tier: '', chips: [], note: 'ปรับ OTA ให้เหลือตามแพ็กเกจ ORM Lite (ขั้นต่ำ 3 OTA)', renewal_request_id: r.id, due_date: firstMonthEnd(r.new_terms.start_date) } as never });
+    payload: { readiness_tier: '', chips: [], note: 'ปรับ OTA ให้เหลือตามแพ็กเกจ ORM Lite (ขั้นต่ำ 3 OTA)', renewal_request_id: r.id }, due_date: firstMonthEnd(r.new_terms.start_date) });
   return t.ticket_id;
 }
 
