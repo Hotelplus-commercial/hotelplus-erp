@@ -30,7 +30,7 @@ export function useSuiteDemo(): boolean | null {
   return demo;
 }
 export const suiteToday = (demo: boolean) => (demo ? DEMO_DAY : new Date().toISOString().slice(0, 10));
-export const demoSearch = (demo: boolean) => (demo ? { demo: "1" } : {});
+export const demoSearch = (demo: boolean) => (demo ? { demo: 1 } : {});
 
 /* ---------- period picker: เดือนนี้ / ไตรมาส / ปี / กำหนดเอง (default เดือนนี้) ---------- */
 export type DashPeriod = { choice: CmpChoice; from: string; to: string; label: string };
