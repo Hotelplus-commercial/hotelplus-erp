@@ -22,8 +22,8 @@ export function channelOfSku(sku: string): Channel | 'SETUP' | null {
 /** One service line as the header counts it (effective window allows a price change at renewal). */
 export type ChannelLine = { sku: string; unit_price: number | null; billing: string; from: string; to: string | null };
 
-type StoreLine = { sku_snapshot: string; unit_price: number | null; billing: string; quantity?: number };
-export type StoreContract = { contract_id: string; hotel_id: string | null; start_date: string; duration_months: number; inactivated_at?: string | null; lines: StoreLine[] };
+type StoreLine = { sku_snapshot: string; unit_price?: number | null | undefined; billing: string; quantity?: number | undefined };
+export type StoreContract = { contract_id: string; hotel_id?: string | null | undefined; start_date: string; duration_months: number; inactivated_at?: string | null | undefined; lines: StoreLine[] };
 export type JoinRow = { contract_id?: string | null | undefined; hotel_id: string; service: 'ORM' | 'Marcom' };
 export type Joined = { contract_id: string | null; start_date: string | null; end_date: string | null; lines: ChannelLine[]; match: 'ID' | 'HOTEL_SERVICE' | 'NONE' };
 
