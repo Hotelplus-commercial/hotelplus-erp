@@ -24,11 +24,15 @@ import { calendarDays, cardStatus, MARCOM_REPORT_STAGES, ORM_REPORT_STAGES, repo
 import { createServicingStall, stallRouting } from '@/lib/servicing-stall';
 import { OPEN_STATUSES, STATUS_TH, SYSTEM_CREATOR, useTickets, type L0Ticket } from '@/lib/tickets-l0';
 import { SetupQueueTable } from './setup-queue-table';
+import { OnboardTab } from './onboard-tab';
 const SLOT_LABEL:Record<CaretakerSlot,string>={AE:'AE',SPECIALIST:'Specialist',ORM:'ORM team',MARCOM:'Marcom'};
 const stageName=(s:string)=>plainSv(reportStageLabel(s));
 const stageKey=(r:ServicingRow)=>r.current_stage==='completed'?'completed_handover':r.current_stage==='go_live'?(r.service_line==='ORM'?'orm_go_live':'marcom_go_live'):r.current_stage;
 const ownerClass=(stage:string,line:string)=>['new_property','introduction_sent_form','collect_data','property_pending','final_check'].includes(stage)?'sv-owner-ae':['approved','completed_handover'].includes(stage)?'sv-owner-specialist':line==='ORM'?'sv-owner-orm':'sv-owner-marcom';
-export function ServicingTab() {
+/** On-board R1 (OB9/OB15/OB24): the tab now mounts OnboardTab. The previous cockpit (tiles incl. ⚠ รอระบุผู้ดูแล, watch-list drill,
+ * ② dot chart, ③ A/B compare, R4 SetupQueueTable) is unmounted from this tab only — code kept below as ServicingTabLegacy. */
+export function ServicingTab() { return <OnboardTab/>; }
+export function ServicingTabLegacy() {
  const {filter,demo}=useDashboardGlobal(),s=useServicing(),read=useServerFn(readServicingDashboard),tickets=useTickets();
  const real=useQuery({queryKey:['servicing-dashboard-views-v2'],queryFn:()=>read(),enabled:!demo,staleTime:60_000});
  const fixture=useMemo(()=>({rows:demoServicingRows(),phaseRows:demoServicingPhases(),pending:false,demo:true}),[]);
