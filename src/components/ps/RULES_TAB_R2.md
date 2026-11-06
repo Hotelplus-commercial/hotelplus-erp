@@ -11,3 +11,12 @@
 - R2.1 §1.5: the renewal flow uses the main contract store (live CRM / one DEMO contract state); a signed renewal adds its new contract there (renewal_of) and never edits the source. Tab cards and counts do not read it. Why: Billing picks the ACTIVE contract by date.
 
 - UP5 (2026-11-06): reason group totals read `{pct}% · รวม {n} ป้าย · {m} สัญญา` (m = distinct contracts with ≥1 label in the group); % and bars unchanged.
+
+## O-26 package change at renewal (PK1–PK14, 6 Nov 2026)
+- PK1–PK5: Wizard step 2 card "แพ็กเกจบริการ" (RenewalPackageCard) above the billing model; default คงแพ็กเกจเดิม = behaviour unchanged. Same service only. Options only from the Product Catalog (mainCatalogProducts; active SKUs; inactive kept lines show คงเดิม, D2). ORM: Lite / Smart / Fixed / Performance; Lite sets Monthly fee + Commission at the catalog Lite package price; Lite → full uses the recommendation values, else the catalog tier price (D3). Marcom: Meta / TikTok / Google via the Header R3 channel map, ≥1 channel.
+- PK6–PK8: setup only for a newly added Marcom channel (suggested, AE may waive); before / after table; any package change → evaluate() package row = PM approval + reason always; package reason (PACKAGE_REASONS) required and also answers the terms reason.
+- PK9: computeRenewalOffer never picks a package; matchOffer(packageChanged) uses the switch tolerance.
+- PK10–PK11: request fields package_changed · old_lines · new_lines · package_change_reason · setup_lines · package_ticket_id (optional). On sign buildRenewedContract() writes the new lines (+ kept setup as one-time), contract_code ORM-LITE for Lite; old contract untouched; the signing price-history row has source PACKAGE_CHANGE (counted as a renewal everywhere RENEWAL is).
+- PK-Q5: ORM full → Lite sign → one PACKAGE_OTA_ADJUST ticket to ORM (category On-board by default mapping, due = end of the new contract's first month), deduped by request field + open ticket per new contract. No On-board card.
+- PK13: PackageChangeChip on the AE renewal card (RenewalRequestChips) and card ③ offer block / result. DEMO cases (renewal-package-demo.ts) are NOT on the card ③ board: adding them would change the approved quarter renewal rate.
+- Open: Partner-system notice when a new package drops the Partner system (no SKU → Partner mapping yet); Header channel cards do not include the O-26 DEMO contracts (header DEMO uses its own overlay rows).
