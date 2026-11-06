@@ -133,7 +133,7 @@ export function AppSidebar() {
                 const I = SUITE_ICON[s.key];
                 return (
                   <SidebarMenuItem key={s.key}>
-                    <SidebarMenuButton asChild isActive={pathname === s.route && s.key !== "support"} tooltip={s.label}>
+                    <SidebarMenuButton asChild isActive={pathname === s.route} tooltip={s.label}>
                       <Link to={s.route} search={demoSearch(demo)} className="flex items-center gap-2"><I className="size-4 shrink-0" /><span className="truncate">{s.label}</span></Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

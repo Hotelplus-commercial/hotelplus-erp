@@ -151,3 +151,17 @@ function WaterfallCol({ m, yPct, first }: { m: FlowMonth; yPct: (v: number) => n
     </div>
   );
 }
+function MonthTip({ m }: { m: FlowMonth }) {
+  return (
+    <div className="r1-io-tip" role="tooltip">
+      <strong>{mFull(m.month)} · {R1_INOUT.net(m.net)}</strong>
+      {m.ins.length + m.outs.length + m.lapsed.length === 0 ? <div>{R1_INOUT.none}</div> : (
+        <>
+          {m.ins.map((c) => <div key={`i-${c.contract_id}`}>{R1_INOUT.inLine(c.hotel_name)}</div>)}
+          {m.outs.map((c) => <div key={`o-${c.contract_id}`}>{R1_INOUT.outLine(c.hotel_name, R1_REASON_TH[c.end_reason as "NOT_RENEWED" | "EARLY_TERMINATION"])}</div>)}
+          {m.lapsed.map((c) => <div key={`l-${c.contract_id}`}>{R1_INOUT.lapsedLine(c.hotel_name)}</div>)}
+        </>
+      )}
+    </div>
+  );
+}
