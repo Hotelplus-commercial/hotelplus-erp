@@ -1,6 +1,6 @@
 /**
  * Meeting & Analyzer v2.0 demo fixture — deterministic (no randomness), preview-safe.
- * Clock fixed at 2026-10-30 (Bangkok); demo card month = 2026-09, previous = 2026-08.
+ * DF6 (Decisions Fix R1): clock = shared DEMO_DAY; card month = 2026-10, previous = 2026-09 (old Sep/Aug entries shifted +1 month, this file only).
  * Anchor values per spec §6; invariants §5 win over example numbers where they conflict
  * (④a ORM teams: D is 3→2 because the REJECTED card HTL0083 belongs to team D).
  */
