@@ -19,6 +19,8 @@ import { DEMO_DAY } from "@/lib/demo-session";
 import { setTicketDemo, useTickets } from "@/lib/tickets-l0";
 import type { Partner, PartnerData, PartnerDeal } from "@/lib/debt-partner-types";
 import { cn } from "@/lib/utils";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { PropertySystemBlock } from "@/components/ps/partner-system-ui";
 import { setRenewalDemo, signedPackageSwitches, useRenewalStore } from "@/lib/renewal-store";
 
 export const Route = createFileRoute("/workspace/ps/partners")({
