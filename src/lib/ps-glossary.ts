@@ -787,3 +787,66 @@ export const STAB = {
   info5: ['ประชุม ORM-Snapshot / Marcom-Sync up ที่ยืนยันแล้วใน 7 วันข้างหน้า ที่โรงแรมยังมี ticket ค้าง', 'เร่งด่วน = ประชุมภายใน 3 วัน หรือมี ticket เลยกำหนด หรือสุขภาพสัญญาแดง', 'เป้า = ticket ค้าง 0 ก่อนประชุม'],
   info6: ['ค้นหาหลายคำคั่นด้วยเว้นวรรค ต้องตรงทุกคำ', 'ผู้รับ:ชื่อ · เปิดโดย:ชื่อ · อายุ>7 · อายุ<=3', 'กดเลข ticket เพื่อดูรายละเอียดและ Follow up'],
 } as const;
+
+/* ================= On-board / Off-board R1 (OB1–OB24) · Settings › SLA On-board ================= */
+export type OnbStageText = { name: string; q?: string; who: string; meaning: string; end: string };
+const ORM_STAGE_TEXT: Record<string, OnbStageText> = {
+  new_property: { name: 'New Property', who: 'AE', meaning: 'การ์ดเพิ่งสร้างจากสัญญาที่ BD ปิดได้ ยังไม่เริ่มติดต่อลูกค้า', end: 'AE เริ่มแนะนำตัวกับลูกค้า' },
+  introduction: { name: 'Introduction', who: 'AE', meaning: 'AE แนะนำตัว อธิบายขั้นตอน On-board และนัดเก็บข้อมูล', end: 'ส่ง Property Information Form ให้ลูกค้า' },
+  collect_data: { name: 'Collect Data', who: 'AE', meaning: 'ลูกค้ากรอก Property Information Form และส่งเอกสารที่ต้องใช้', end: 'ลูกค้าส่งข้อมูลครบ' },
+  property_pending: { name: '(Property Pending)', who: 'AE · ลูกค้า', meaning: 'ข้อมูลยังขาด รอลูกค้าส่งเพิ่ม · ยังนับเวลาในช่วง AE', end: 'ลูกค้าส่งข้อมูลที่ขาดครบ' },
+  final_check: { name: 'Final Check', who: 'AE', meaning: 'AE ตรวจข้อมูลทั้งหมดก่อนส่งต่อทีมเตรียมระบบ', end: 'AE กด Approved' },
+  approved: { name: 'Approved', who: 'Specialist · ORM', meaning: 'ข้อมูลผ่านแล้ว เริ่มช่วงเตรียมระบบ · Specialist และ ORM ทำพร้อมกัน', end: 'ทั้งสองฝั่งเริ่มงานเตรียมระบบ' },
+  prepare_data: { name: 'Prepare Data', who: 'Specialist · ORM', meaning: 'Specialist ทำงานส่งมอบชุดแรก · ORM เตรียมข้อมูลระบบของโรงแรม', end: 'Specialist ส่งงานส่งมอบชุดแรกครบ · ORM สร้างนัดประชุม' },
+  rate_structure: { name: 'Rate Structure', q: '(วันประชุม)', who: 'ORM · ลูกค้า', meaning: 'ORM สร้างนัดประชุม Rate Structure กับลูกค้าแล้ว · ช่วงรอถึงวันประชุมไม่นับกำหนด แต่นับในเป้ารวม', end: 'ถึงวันประชุม' },
+  final_setup: { name: 'Final Setup', q: '(รอ handover ก่อน Training)', who: 'ORM', meaning: 'หลังวันประชุม ORM ตั้งค่าระบบชุดสุดท้าย · รอ handover ครบก่อนสอนใช้ระบบ', end: 'ORM ตรวจรับ handover' },
+  completed: { name: 'Completed', q: '(Handover)', who: 'ORM', meaning: 'ORM ตรวจรับงานส่งมอบจาก Specialist ครบแล้ว', end: 'นัดสอนใช้ระบบ' },
+  system_training: { name: 'System Training', who: 'ORM', meaning: 'ORM สอนลูกค้าใช้ระบบและเปิดใช้งาน', end: 'กด Go Live' },
+  go_live: { name: 'Go Live', who: '—', meaning: 'เริ่มให้บริการจริง · ตัวเลขในช่องนับสัญญาที่ Go Live ใน 6 เดือนล่าสุด', end: '—' },
+};
+const MC_STAGE_TEXT: Record<string, OnbStageText> = {
+  ...ORM_STAGE_TEXT,
+  collect_data: { name: 'Collect Data', who: 'AE', meaning: 'ลูกค้ากรอก Property Information Form และส่งข้อมูลเพจ / ภาพ', end: 'ลูกค้าส่งข้อมูลครบ' },
+  final_check: { name: 'Final Check', who: 'AE', meaning: 'AE ตรวจข้อมูลทั้งหมดก่อนส่งต่อ Marcom', end: 'AE กด Approved' },
+  approved: { name: 'Approved', who: 'Marcom', meaning: 'ข้อมูลผ่านแล้ว ส่งต่อ Marcom · Specialist ฝั่ง Marcom ยังสงวนไว้', end: 'Marcom รับงาน' },
+  completed: { name: 'Completed', q: '(Handover)', who: 'Marcom', meaning: 'Marcom รับมอบข้อมูลจาก AE ครบแล้ว', end: 'เริ่มเตรียมงาน' },
+  prepare_data: { name: 'Prepare Data', who: 'Marcom', meaning: 'Marcom เตรียมเพจ / content / GMB · GMB นับในช่วงนี้จนถึง Go Live (ไม่มีช่วงก่อน Go Live)', end: 'MT: สร้างนัด First Sync · GMB: Go Live' },
+  first_sync: { name: 'First Sync', q: '(วันประชุม · MT)', who: 'Marcom · ลูกค้า', meaning: 'นัด First Sync กับลูกค้า (เฉพาะ MT) · รอถึงวันประชุมไม่นับกำหนด · หลังประชุมเข้าช่วงก่อน Go Live', end: 'กด Go Live' },
+};
+export const onboardStages = { ORM: ORM_STAGE_TEXT, Marcom: MC_STAGE_TEXT };
+/** Phase words (dashboard: no stand-alone phase codes outside card ⑤ and the queue table). */
+export const ONB_PHASE: Record<string, string> = { p1: 'ช่วง AE', p2: 'ช่วงเตรียมระบบ', w: 'รอวันประชุม', p3: 'ช่วงก่อน Go Live', golive: 'Go Live' };
+export const dayLeftTexts = {
+  green: 'อีก {n} วันเหลือง', greenTomorrow: 'พรุ่งนี้เหลือง', amber: 'อีก {n} วันแดง', amberTomorrow: 'พรุ่งนี้แดง', dueToday: 'ครบกำหนดวันนี้ · พรุ่งนี้แดง',
+  red: 'เลย {n} วัน', wait: 'ประชุม {d MMM}', waitNoDate: 'รอวันประชุม', done: ['ทัน', 'ทัน · ใกล้กำหนด', 'เลย {n} วัน'],
+  total: ['เป้ารวมเหลือ {n} วัน', 'ครบเป้ารวมวันนี้', 'เลยเป้ารวม {n} วัน', 'ทันเป้ารวม'],
+};
+export const onboardTips = {
+  cards: 'การ์ด On-board ที่กำลังทำ + Go Live ใน 6 เดือนล่าสุด · 1 สัญญาบริการ = 1 การ์ด (โรงแรมที่ซื้อ ORM และ Marcom = 2 การ์ด)',
+  hotels: 'จำนวนโรงแรมไม่ซ้ำในการ์ดชุดเดียวกัน · บรรทัดรองบอกจำนวนโรงแรมที่มีมากกว่า 1 บริการ',
+  golive: 'การ์ดที่ Go Live ใน 6 เดือนล่าสุด · บรรทัดรองบอกจำนวนที่ทันเป้ารวม',
+  inProg: 'การ์ดที่ยังไม่ Go Live (เท่ากับ “Onboarding · ในคิว” ของ Headline) · ชิปบอกจำนวนที่เลยกำหนด และที่จะเปลี่ยนสีพรุ่งนี้',
+  pipeline: 'การ์ด On-board ที่ยังไม่ Go Live แยกตาม stage · แถบสีในช่อง = สถานะของแต่ละการ์ด (สีแย่ที่สุดของงานที่กำลังทำ) · ตัวหนังสือใต้แถบบอกการ์ดที่ใกล้เปลี่ยนสีที่สุด · คลิกช่องเพื่อกรองตารางด้านล่าง',
+  queue: '1 แถว = 1 สัญญา · ช่องตัวเลข = วันที่ใช้ในเฟสนั้น · กรอบ = เฟสที่กำลังทำพร้อม Day left · P2 ของ Specialist และทีมบริการทำพร้อมกัน · “—” ยังไม่ถึง · “ไม่มี” = เฟสที่สัญญานี้ไม่มี · คลิกแถวเพื่อเปิดการ์ด',
+  owners: 'ถืออยู่ = การ์ดที่คนนั้นกำลังทำในเฟสของตัวเองตอนนี้ พร้อม Day left · ส่งแล้ว = การ์ดที่ Go Live ในช่วงที่เลือก นับว่าเฟสของคนนั้นเขียว / เหลือง / เลย กี่การ์ด · กำหนดมาจาก ตั้งค่า › SLA On-board',
+  overall: '1 จุด = 1 สัญญาที่ Go Live ในช่วงที่เลือก · แกนนอน = วันที่ Go Live · แกนตั้ง = จำนวนวันตั้งแต่สร้างการ์ดถึง Go Live · พื้นหลังเขียว / เหลือง / แดง = เป้ารวมจากหน้าตั้งค่า · เส้นประ = ค่ากลาง · เลือก AE หรือ Specialist จาก dropdown แล้วจุดของคนอื่นหมดสี · คลิกจุดเพื่อเปิดการ์ด',
+  settings: 'ค่ากลางของทั้งระบบ · แก้ได้เฉพาะ PM · มีผลกับการ์ดที่สร้างตั้งแต่วันที่บันทึก',
+};
+export const SLA_ONB = {
+  crumb: 'PS App › ตั้งค่า', title: 'SLA On-board',
+  sub: 'กำหนดเวลาแต่ละเฟสตั้งแต่สร้างการ์ด On-board จนถึง Go Live · ใช้ใน PS Dashboard (แท็บ On-board / Off-board · การ์ดระยะเวลา Setup)',
+  current: (d: string, by: string) => `เวอร์ชันที่ใช้อยู่ · มีผลตั้งแต่ ${d} · ${by}`,
+  readOnly: 'ดูได้อย่างเดียว · เฉพาะ PM แก้ SLA On-board ได้',
+  box1Title: 'แต่ละรายการตั้ง 2 ค่า',
+  box1: 'ทันกำหนดถึง = วันสุดท้ายที่ยังเป็นสีเขียว · เลยเมื่อเกิน = กำหนดเสร็จ เกินจากนี้เป็นสีแดง · ช่วงระหว่างสองค่าเป็นสีเหลือง',
+  box2Title: 'บันทึกแล้วมีผลอย่างไร',
+  box2: 'ค่าใหม่มีผลกับการ์ดที่สร้างตั้งแต่วันที่บันทึก · การ์ดที่สร้างก่อนหน้าและสัญญาที่ Go Live แล้วใช้ค่าเดิม เพื่อไม่ให้สถานะย้อนหลังเปลี่ยน · เก็บประวัติทุกเวอร์ชัน (วันที่มีผล · ผู้แก้ · ค่าที่เปลี่ยน) · บันทึกซ้ำในวันเดียวกันแทนเวอร์ชันของวันนั้น',
+  box2b: 'ค่าเหล่านี้เป็น KPI ของทีม (HR App อาจดึงไปใช้ประเมิน) จึงตั้งจากค่าที่ PM กำหนด ไม่ใช่จากข้อมูลย้อนหลัง · ส่วนวิเคราะห์ด้านล่างมีไว้ประกอบการตัดสินใจเท่านั้น',
+  invalid: '“ทันกำหนดถึง” ต้องน้อยกว่า “เลยเมื่อเกิน” และไม่เกิน 60 วัน',
+  noChange: 'ยังไม่มีการแก้ · ค่าที่แสดงคือเวอร์ชันที่ใช้อยู่',
+  changed: (n: number, d: string, same: boolean) => `แก้ ${n} ค่า · บันทึกแล้ว มีผลกับการ์ดที่สร้างตั้งแต่ ${d}${same ? ' · แทนเวอร์ชันของวันนี้' : ''}`,
+  fix: (n: number) => `แก้ค่าที่ไม่ถูกต้อง ${n} รายการก่อนบันทึก`,
+  cancel: 'ยกเลิกการแก้', save: 'บันทึกเป็นเวอร์ชันใหม่', toast: (d: string) => `บันทึก SLA On-board แล้ว · มีผลกับการ์ดที่สร้างตั้งแต่ ${d}`,
+  history: 'ประวัติเวอร์ชัน', inUse: 'ใช้อยู่', noStore: 'ยังไม่มีที่เก็บค่า SLA On-board (R4)',
+  cols: ['เฟส', 'ทีม', 'ทันกำหนดถึง', 'เลยเมื่อเกิน', 'สีตามจำนวนวัน', 'การกระจาย', 'ส่วนใหญ่', '80% เสร็จภายใน', 'ทันกำหนด', 'vs ที่เทียบ'],
+};
