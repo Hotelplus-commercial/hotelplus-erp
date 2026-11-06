@@ -3,7 +3,6 @@
  * Numbers come from the v1.4 engine via renewal-offer-source (fresh, daily) or the request's reco_snapshot / new_terms /
  * offer_expected_avg / offer_match once a request exists — never a local formula. */
 import { InfoButton } from "./dash-card";
-import { PK_DEMO_CASES } from "@/lib/renewal-package-demo";
 import { PackageChangeChip } from "./renewal-package-card";
 import { SignalMark } from "./signal-mark";
 import { viewOfSnapshot } from "./renewal-offer-section";
@@ -75,7 +74,7 @@ export function offerInfoFor(i: RenewalItem, req: RenewalRequest | null, demo: b
 
 /** DEMO: the v1.4 demo contracts as board cards (stage from their demo request, days left from the DEMO clock on the card). */
 export function v14BoardItems(requests: RenewalRequest[]): RenewalItem[] {
-  return [...V14_DEMO, ...PK_DEMO_CASES].map((d) => { // O-26 §5: package-change DEMO cards join the board
+  return V14_DEMO.map((d) => {
     const req = [...requests].reverse().find((r) => r.renewal_card_id === d.card_id && r.status !== "CANCELLED") ?? null;
     const s = stageOf({ card: "ON_PROCESS", request: req?.status ?? null });
     return {
