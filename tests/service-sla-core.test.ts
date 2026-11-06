@@ -1,8 +1,10 @@
 /* Ticket Service SLA Core v1.0 — §11 tests 1–9. */
-import { beforeAll, beforeEach, describe, expect, mock, test } from 'bun:test';
+import { afterAll, beforeAll, beforeEach, describe, expect, mock, test } from 'bun:test';
 import { GlobalRegistrator } from '@happy-dom/global-registrator';
 mock.module('../src/lib/cloud-sync', () => ({ stageCloudDoc: () => {} }));
 beforeAll(() => { if (!GlobalRegistrator.isRegistered) GlobalRegistrator.register({ url: 'http://localhost:8080/workspace/orm' }); });
+// test hygiene: release the page simulator for later files
+afterAll(async () => { if (GlobalRegistrator.isRegistered) await GlobalRegistrator.unregister(); });
 import * as L0 from '../src/lib/tickets-l0';
 import * as S from '../src/lib/service-tickets';
 import { runServiceAlerts } from '../src/lib/service-ticket-alerts';
