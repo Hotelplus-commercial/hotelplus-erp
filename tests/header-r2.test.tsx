@@ -198,17 +198,13 @@ describe('§7 Marcom App adapter', () => {
   test('stub reports not connected for all three pulls', async () => {
     for (const f of [marcomAppSource.getPostsByContract, marcomAppSource.getAdsTopUpsByContract, marcomAppSource.getKolVisitsByContract]) expect(await f(['C1'], month.a)).toEqual({ connected: false, reason: 'not_connected' });
   });
-  test('not connected → "รอข้อมูลจาก Marcom App", no Δ, counts and quotas still shown', () => {
+  test('Header R3 HR31: Content / Ads / KOL boxes unmounted (superseded by Meta · TikTok · Google channel boxes)', () => {
     const p = headerDemoPortfolio();
     const html = renderToStaticMarkup(h(ActivePortfolio, { today: HEADER_DEMO_NOW, total: 10, active: headerDemoInput().active, contracts: p.contracts, prices: p.prices, marcom: { posts: null, ads: null, kol: null }, sel: SEL_ALL }));
-    for (const box of ['Content', 'Ads', 'KOL']) {
-      const part = html.split(`data-testid="ap-box-${box}"`)[1]!.split('data-testid="ap-box-')[0]!;
-      expect(part).toContain(MARCOM_NOT_CONNECTED);
-      expect(part.split('class="ap-rows"')[1]).not.toContain('delta-pill');
-    }
-    const content = html.split('data-testid="ap-box-Content"')[1]!.split('data-testid="ap-box-')[0]!;
-    expect(text(content)).toContain('3 สัญญา');
+    for (const box of ['Content', 'Ads', 'KOL']) expect(html).not.toContain(`data-testid="ap-box-${box}"`);
+    for (const box of ['Meta', 'TikTok', 'Google']) expect(html).toContain(`data-testid="ap-box-${box}"`);
   });
+});
 });
 
 describe('§9.11 forbidden strings (scorecard + Active Portfolio)', () => {
