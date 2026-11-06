@@ -157,7 +157,7 @@ export function ServiceTicketTab({ cases, onCreate }: { cases: PsCase[]; onCreat
     <Card4 rows={allRows} cats={cats} dept={dept} a={cmp.a} b={cmp.b} label={cmp.full} onCat={(c) => toList({ cat: c })} />
 
     <h2 className="stab-section">ก่อนประชุมประจำเดือน</h2>
-    {SHOW_PENDING_BEFORE_MEETING && <Card5 meetings={meetings} open={openRowsD} today={today} onTicket={setOpen} />}
+    <Card5 meetings={meetings} open={openRowsD} today={today} onTicket={setOpen} />
 
     <h2 className="stab-section">รายการ ticket</h2>
     <div ref={listRef}><Card6 rows={rows} cats={cats} dept={dept} f={list} setF={setList} today={today} onTicket={setOpen} /></div>
@@ -380,5 +380,3 @@ export function sortDepts<T extends Record<DeptSortKey, number>>(rows: T[], sort
   const m = sort.dir === 'desc' ? -1 : 1;
   return [...rows].sort((a, b) => (a[sort.key] - b[sort.key]) * m);
 }
-/* UAT Polish R2 SP16b: งานค้างของสัญญา (card ⑤) unmounted from this tab; code kept. */
-const SHOW_PENDING_BEFORE_MEETING = false;
