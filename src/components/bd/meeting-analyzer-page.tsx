@@ -31,11 +31,11 @@ function Bars({ rows, avg, testId }: { rows: { label: string; sub?: string; valu
       <div className="absolute left-8 right-0 border-t border-dashed border-warning" style={{ bottom: `calc(${avg}% * 0.8 + 20%)` }}>
         <span className="absolute -top-4 left-1 text-[10px] font-semibold text-warning">เฉลี่ย {avg}</span>
       </div>
-      <div className="absolute inset-x-8 bottom-0 top-0 flex items-end gap-2">
+      <div className="absolute inset-x-8 bottom-0 top-0 flex items-end gap-1">
         {rows.map((r, i) => (
-          <div key={i} className="flex h-full flex-1 flex-col justify-end text-center">
+          <div key={i} className="flex h-full min-w-0 flex-1 flex-col justify-end text-center">
             <div className="mx-auto w-full max-w-12 rounded-t bg-foreground" style={{ height: `calc(${r.value}% * 0.8)` }} title={`${r.label}: ${r.value}`} />
-            <div className="h-[20%] pt-1 text-[11px] leading-tight">{r.label}{r.sub && <div className="text-[10px] text-muted-foreground">{r.sub}</div>}</div>
+            <div className="h-[20%] truncate pt-1 text-[10px] leading-tight">{r.label}{r.sub && <div className="text-[10px] text-muted-foreground">{r.sub}</div>}</div>
           </div>
         ))}
         {rows.length === 0 && <div className="m-auto text-sm text-muted-foreground">ไม่มี session ในช่วงนี้</div>}
