@@ -1,4 +1,22 @@
 /** Browser-safe reporting model; never mutates the operational stage engine. */
+import { getKpiVersions, versionFor, type KpiKey, type SetupKpiVersion } from './setup-kpi-settings';
+import { psDemoOn } from './demo-session';
+/* OB-O1 (Decisions Fix R1, DF1): the SLA On-board versions (setup_kpi_settings) are the ONLY SLA source.
+ * servicing_sla_config below is kept in code but no longer used for colours / BOT (unmounted, not deleted). */
+export const currentSlaVersions = (): readonly SetupKpiVersion[] => getKpiVersions(typeof window !== 'undefined' && psDemoOn());
+const bkk = (s: string) => (s.length === 10 ? s : new Date(Date.parse(s) + 7 * 3_600_000).toISOString().slice(0, 10));
+/** Lane → SLA On-board KPI key (same mapping as setup-timing laneKpiKey). */
+export const laneSlaKey = (phase: 'P1' | 'P2' | 'P3', lane: 'AE' | 'Specialist' | 'ORM' | 'Marcom', variant: string | null): KpiKey => {
+  const orm = variant === 'ORM';
+  return phase === 'P1' ? 'p1' : phase === 'P3' ? (orm ? 'p3_orm' : 'p3_mc') : lane === 'Specialist' ? 'p2s' : orm ? 'p2o_orm' : 'p2o_mc';
+};
+/** Threshold for a lane under the version effective at the card's On-board created date (latest version when unknown). */
+export const laneSla = (phase: 'P1' | 'P2' | 'P3', lane: 'AE' | 'Specialist' | 'ORM' | 'Marcom', variant: string | null, createdAt: string | null | undefined, versions: readonly SetupKpiVersion[] = currentSlaVersions()) =>
+  versionFor(versions, createdAt ? bkk(createdAt) : '9999-12-31').values[laneSlaKey(phase, lane, variant)];
+export const slaTone = (d: number, thr: { ok: number; due: number }): 'ok' | 'amber' | 'red' => (d <= thr.ok ? 'ok' : d <= thr.due ? 'amber' : 'red');
+/** Same words as statusText, thresholds from SLA On-board. */
+export function slaStatusText(d: number, thr: { ok: number; due: number }) { const tone = slaTone(d, thr), left = thr.due - d; return tone === 'ok' ? 'เร็วกว่า SLA' : tone === 'red' ? `เกิน SLA แล้ว ${-left} วัน` : left === 0 ? 'ครบ SLA วันนี้' : `เหลือ ${left} วันก่อนเกิน SLA`; }
+
 export const servicing_sla_config = { p1: { ok_max: 5, sla: 7 }, p2: { ok_max: 5, sla: 7 }, p3: { ok_max: 3, target: 3, sla: 7 }, unit: 'calendar_day', tz: 'Asia/Bangkok' } as const;
 export type Phase = 'P1' | 'P2' | 'P3';
 export type LaneName = 'AE' | 'Specialist' | 'ORM' | 'Marcom';
@@ -12,11 +30,11 @@ export const phaseConfig = (p: Phase) => servicing_sla_config[p === 'P1' ? 'p1' 
 export const laneTone = (p: Phase, d: number): LaneTone => d <= phaseConfig(p).ok_max ? 'ok' : d <= phaseConfig(p).sla ? 'amber' : 'red';
 export function statusText(p: Phase, d: number) { const tone = laneTone(p, d), left = phaseConfig(p).sla - d; return tone === 'ok' ? 'เร็วกว่า SLA' : tone === 'red' ? `เกิน SLA แล้ว ${-left} วัน` : left === 0 ? 'ครบ SLA วันนี้' : `เหลือเวลาอีก ${left} วันของ SLA`; }
 export function latestEntry(c: TimingCard, stage: string) { return (c.stage_events ?? []).filter(e => e.stage_key === stage).map(e => e.entered_at).sort().at(-1) ?? null; }
-export function servicingLanes(c: TimingCard, now: string): ServicingLane[] {
+export function servicingLanes(c: TimingCard, now: string, versions: readonly SetupKpiVersion[] = currentSlaVersions()): ServicingLane[] {
   const approved = latestEntry(c, 'approved'), live = latestEntry(c, c.service_variant === 'ORM' ? 'orm_go_live' : 'marcom_go_live') ?? c.go_live_at;
   const lane = (phase: Phase, name: LaneName, start: string | null | undefined, end: string | null | undefined): ServicingLane => {
     const d = start ? calendarDays(start, end ?? now) : null;
-    return { phase, lane: name, state: !start ? 'none' : end ? 'done' : 'running', d, tone: start && !end && d != null && !live ? laneTone(phase, d) : null, start_at: start ?? null, end_at: end ?? null, wait_until: null };
+    return { phase, lane: name, state: !start ? 'none' : end ? 'done' : 'running', d, tone: start && !end && d != null && !live ? slaTone(d, laneSla(phase, name, c.service_variant, c.created_at, versions)) : null, start_at: start ?? null, end_at: end ?? null, wait_until: null };
   };
   const out = [lane('P1', 'AE', c.created_at, approved)];
   if (c.service_variant === 'ORM') out.push(lane('P2', 'Specialist', approved, c.specialist_handover_done_at));
