@@ -105,7 +105,7 @@ export function usePartnerBillNumbers(demo: boolean) {
   const today = suiteToday(demo);
   const t = billTiles(d, today);
   const overdue = d.partner_bills.filter((b) => billView(b, today) === "OVERDUE");
-  return { pendingThb: (t.pending["THB"] ?? 0) + (t.overdue["THB"] ?? 0), overdueN: overdue.length, overdueThb: t.overdue["THB"] ?? 0, data: d, today,
+  return { pendingThb: t.pending["THB"] ?? 0, overdueN: overdue.length, overdueThb: t.overdue["THB"] ?? 0, data: d, today,
     due: d.partner_bills.filter((b) => { const v = billView(b, today); return v === "PENDING" || v === "OVERDUE"; }) };
 }
 
