@@ -121,3 +121,11 @@ describe('PR-O1 bells, links, dashboards', () => {
     expect(St.prWaitingCount(true, TODAY)).toBe(5); // O3 dispute · O5 returned · O6 late · G-DEMO-3 late · M3 late
   });
 });
+
+describe('PR-O1 forbidden strings', () => {
+  test('9 · status texts, lead rows and bell texts show no raw keys', async () => {
+    const { hits } = await import('./forbidden-words');
+    const txt = [...demoItems().map((i) => D.statusText(i)), JSON.stringify(demoItems().map(D.leadRow).map((r) => r.text)), ...D.prBellsDue(demoItems(), TODAY).map((b) => b.text), ...Object.values(D.STATUS_TH)].join(' | ');
+    expect(hits(txt)).toEqual([]);
+  });
+});
