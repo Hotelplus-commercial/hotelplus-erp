@@ -69,6 +69,7 @@ export function marcomOptions(products: Product[]): Record<Channel, Product[]> {
 }
 export const lineFromProduct = (p: Product, price?: number | null): PkgLine => ({ sku: p.sku, name: p.name_en || p.name_th, unit_price: price ?? p.base_price, commission_rate: null, billing: 'monthly' });
 export const channelsOf = (lines: PkgLine[]): Channel[] => CHANNELS.filter((ch) => lines.some((l) => CHANNEL_SKUS[ch].includes(up(l.sku))));
+export const CHANNELS_OF = (l: PkgLine): Channel[] => channelsOf([l]);
 
 /** PK7: added (green) · removed (red) · kept (grey), by SKU. */
 export function diffLines(oldL: PkgLine[], newL: PkgLine[]) {

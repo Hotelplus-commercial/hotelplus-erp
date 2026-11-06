@@ -40,7 +40,8 @@ export function RenewalPackageCard({ req, editable }: { req: RenewalRequest; edi
 
   const save = (lines: PkgLine[] | null, extra: Parameters<typeof updatePackage>[2] = {}) => {
     if (lines) { const e = validatePackage(svc, products, oldL, lines); setErr(e); if (e) return; }
-    const setup = lines ? (extra.setup ?? setupSuggestions(products, oldL, lines).filter((s) => !req.setup_lines || req.setup_lines.some((x) => x.sku === s.sku) || !req.package_changed)) : [];
+    const waived = req.package_changed ? setupSuggestions(products, oldL, newL).filter((s) => !(req.setup_lines ?? []).some((x) => x.sku === s.sku)).map((s) => s.sku) : [];
+    const setup = lines ? (extra.setup ?? setupSuggestions(products, oldL, lines).filter((s) => !waived.includes(s.sku))) : [];
     const o = updatePackage(req.id, lines, { ...extra, setup }); if (!o.ok) { setErr(o.error); toast.error(o.error); }
   };
 
