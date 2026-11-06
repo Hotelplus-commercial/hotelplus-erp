@@ -21,7 +21,12 @@ import {
   type ChartLane, type GoLivePeriod, type LaneKey, type SetupDot, type SetupStatus, type SetupStatusResult, type SetupTab, type SetupTiming,
 } from '@/lib/setup-timing';
 import { cn } from '@/lib/utils';
+import { Link } from '@tanstack/react-router';
+import { dayLeft, doneStatus, totalLeft } from '@/lib/onboard-tab';
+import { dayMonth } from '@/lib/setup-timing';
 
+/** On-board R1 §14: the R4 inline PM panel is replaced by Settings › SLA On-board (kept, unmounted). */
+const LEGACY_PM_PANEL = false;
 const SVC_COLOR = { ORM: 'var(--svc-orm)', Marcom: 'var(--svc-marcom)' } as const;
 const ST_COLOR: Record<SetupStatus, string> = { ok: 'var(--grade-good)', near: 'var(--grade-watch)', late: 'var(--grade-action)' };
 const R = 5.5;
@@ -70,13 +75,14 @@ export function SetupDurationCard() {
                 <option value="PM">{SD.actPm}</option><option value="OTHER">{SD.actOther}</option>
               </select>
             </label>
-            {isPm && <button type="button" className="r1-help" aria-expanded={panel} onClick={() => setPanel((v) => !v)} data-testid="sd-pm-btn">{SD.pmBtn}</button>}
+            {/* On-board R1 §14: one link for PM and others alike; the inline PM panel is unmounted (code kept). */}
+            <Link to="/ps/settings/sla-onboard" className="r1-help" data-testid="sd-pm-btn">⚙ SLA On-board</Link>
             <button type="button" className="r1-help" aria-expanded={help} onClick={() => setHelp((v) => !v)}>{SD.help}</button>
           </div>
         </div>
       </header>
       {help && <ol className="sd-help" data-testid="sd-help">{SD.helpSteps.map((s, i) => <li key={i}>{s}</li>)}</ol>}
-      {panel && isPm && <PmPanel feed={feed} versions={versions} latest={latest} onClose={() => setPanel(false)} />}
+      {LEGACY_PM_PANEL && panel && isPm && <PmPanel feed={feed} versions={versions} latest={latest} onClose={() => setPanel(false)} />}
       <div className="sd-tabs" role="tablist">
         {(['all', 'orm', 'mc'] as const).map((k) => <button key={k} type="button" role="tab" aria-selected={tab === k} className={cn('sd-pill', tab === k && 'is-on')} onClick={() => { setTab(k); setQuick(null); }}>{SD.tabs[k]}</button>)}
       </div>
@@ -326,7 +332,15 @@ function TipRow({ a, b, cls }: { a: ReactNode; b?: ReactNode; cls?: string }) {
 }
 function DotTip({ t, st, versions }: { t: SetupTiming; st: SetupStatusResult | undefined; versions: SetupKpiVersion[] }) {
   const tot = thrFor(t, versions, 'total')!;
-  const left = tot.due - t.elapsed;
+  const tl = totalLeft(t.elapsed, tot, t.done);
+  /* On-board R1 §14: Day-left wording (§0.2) for the status lines. */
+  const laneLine = (k: LaneKey) => {
+    const l = t.lanes[k]; const thr = thrFor(t, versions, k);
+    if (l.state === 'not_started' || l.days == null) return 'ยังไม่ถึง';
+    if (k === 'w') return `${l.days} วัน · ${t.input.meeting_date ? `ประชุม ${dayMonth(t.input.meeting_date)}` : 'รอวันประชุม'}`;
+    if (!thr) return `${l.days} วัน`;
+    return `${l.days} วัน / ${thr.due} · ${l.state === 'running' && !t.done ? dayLeft(l.days, thr).text : doneStatus(l.days, thr).text}`;
+  };
   return (
     <div>
       <div className="sd-tip-head">{t.hotel_name} · {svcText(t)}</div>
@@ -334,11 +348,11 @@ function DotTip({ t, st, versions }: { t: SetupTiming; st: SetupStatusResult | u
       {t.done
         ? <TipRow a={SD.tip.goLive(thDate(t.go_live))} b={SD.tip.total(t.elapsed)} cls={toneClass(st?.total)} />
         : <TipRow a={SD.tip.at(t.current.map((k) => STAGE_NAME[k]).join(' + ') || '—')} b={SD.tip.used(t.elapsed)} />}
-      <TipRow a={SD.tip.start(thDate(t.day0))} b={t.done ? undefined : `${SD.status[st?.contract ?? 'ok']} · ${left >= 0 ? SD.tip.left(left) : SD.tip.over(-left)}`} cls={toneClass(st?.contract)} />
+      <TipRow a={SD.tip.start(thDate(t.day0))} b={`เป้ารวม ${tot.due} วัน · ${tl.text}`} cls={tl.tone === 'red' ? 'sd-t-late' : tl.tone === 'amber' ? 'sd-t-near' : tl.tone === 'green' ? 'sd-t-ok' : ''} />
       <div className="sd-tip-lanes">
         {LANE_KEYS.filter((k) => t.lanes[k].state !== 'na').map((k) => {
           const l = t.lanes[k];
-          return <TipRow key={k} a={<>{SD.laneTip[k]}{l.from != null && <span className="sd-tip-dim"> {SD.tip.range(l.from, l.state === 'running' ? null : l.to)}</span>}</>} b={laneTip(l, thrFor(t, versions, k))} cls={toneClass(st?.lanes[k])} />;
+          return <TipRow key={k} a={<>{SD.laneTip[k]}{l.from != null && <span className="sd-tip-dim"> {SD.tip.range(l.from, l.state === 'running' ? null : l.to)}</span>}</>} b={laneLine(k)} cls={toneClass(st?.lanes[k])} />;
         })}
       </div>
       <div className="sd-tip-foot">{SD.tip.footer}</div>

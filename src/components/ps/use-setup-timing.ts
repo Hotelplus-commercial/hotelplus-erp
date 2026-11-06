@@ -25,6 +25,7 @@ export function inputFromRow(r: ServicingRow): SetupInput | null {
     approved_at: latestEntry({ ...r, stage_events: r.stage_events ?? [] }, 'approved'), specialist_handover_done_at: r.specialist_handover_done_at ?? null,
     meeting_created_at: r.meeting_created_at ?? null, meeting_date: r.meeting_date ?? null, go_live_at: r.go_live_at,
     ae: r.ae_owner_id, specialist: r.specialist_id, orm_team: r.orm_team, marcom_owner: r.marcom_owner_id,
+    stage: r.current_stage ?? null,
   };
 }
 

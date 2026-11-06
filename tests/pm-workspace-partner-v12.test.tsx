@@ -7,7 +7,7 @@ const staged: { key: string; body: unknown }[] = [];
 const realSync = await import('../src/lib/cloud-sync');
 mock.module('../src/lib/cloud-sync', () => ({ ...realSync, stageCloudDoc: (key: string, body: unknown) => { staged.push({ key, body }); } }));
 
-beforeAll(() => { GlobalRegistrator.register({ url: 'http://localhost:8080/workspace/ps/partners?demo=1' }); (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true; });
+beforeAll(async () => { if (GlobalRegistrator.isRegistered) await GlobalRegistrator.unregister(); /* an earlier file keeps its DOM on purpose */ GlobalRegistrator.register({ url: 'http://localhost:8080/workspace/ps/partners?demo=1' }); (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true; });
 afterAll(async () => { await GlobalRegistrator.unregister(); });
 
 const src = (p: string) => readFileSync(p, 'utf8');

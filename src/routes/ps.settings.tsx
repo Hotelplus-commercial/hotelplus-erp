@@ -1,5 +1,5 @@
 /* R1 §9 entry 8 — PS App settings. First (and only) section: Template = the existing Templates page, same permissions. */
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { TemplatesDashboard } from "./ps.templates.index";
 
 const description = "ตั้งค่า PS App: จัดการ Template ใบเสนอราคาและสัญญา (PM + System Admin แก้ไขได้ · คนอื่นอ่านอย่างเดียว)";
@@ -26,6 +26,8 @@ function SettingsPage() {
         {SECTIONS.map((s) => (
           <span key={s.key} aria-current="page" className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground">{s.label}</span>
         ))}
+        {/* On-board R1 §13: new entry after the existing ones */}
+        <Link to="/ps/settings/sla-onboard" className="rounded-lg px-3 py-1.5 text-sm font-medium">SLA On-board</Link>
       </nav>
       <TemplatesDashboard />
     </div>

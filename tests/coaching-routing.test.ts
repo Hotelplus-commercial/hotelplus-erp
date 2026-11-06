@@ -1,8 +1,10 @@
 /* Workspace Coaching patch v1.0 — WC14 acceptance tests 1–8. */
-import { beforeAll, describe, expect, test, mock } from 'bun:test';
+import { afterAll, beforeAll, describe, expect, test, mock } from 'bun:test';
 import { GlobalRegistrator } from '@happy-dom/global-registrator';
 mock.module('../src/lib/cloud-sync', () => ({ stageCloudDoc: () => {} }));
 beforeAll(() => { if (!GlobalRegistrator.isRegistered) GlobalRegistrator.register({ url: 'http://localhost:8080/workspace/orm' }); });
+// test hygiene: release the page simulator so later files that register it unconditionally can start
+afterAll(async () => { if (GlobalRegistrator.isRegistered) await GlobalRegistrator.unregister(); });
 import { routeFlag, isAssignee, isOwner, ackCount } from '../src/lib/coaching-routing';
 import { COACH_DEMO_ROSTER } from '../src/lib/coaching-demo';
 import type { SurveyFlag } from '../src/lib/meeting-survey-types';
