@@ -94,6 +94,7 @@ export function RecoBoxV14({ view, service, packageName, alternatives = true, fe
         <div className="flex flex-wrap items-center gap-2"><span className="font-semibold">{RO.section.reco}</span><InfoButton info={{ source: RO.section.reco, count: RO.none, read: RO.ruleInfo }} /></div>
         <p className="mt-1" data-testid="ro-none">{RO.none}</p>
         {view.missing.length > 0 && <p className="text-xs">{RO.missingLine(view.missing.map((m) => RO.missing[m] ?? m).join(" · "))}</p>}
+        {view.hint && <p className="text-xs" data-testid="ro-hint">{view.hint}</p>} {/* O-26 PK4b: RP134 hint also when the offer is NONE */}
       </div>
     );
   }
