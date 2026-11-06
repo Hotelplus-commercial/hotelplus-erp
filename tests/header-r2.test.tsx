@@ -205,7 +205,6 @@ describe('§7 Marcom App adapter', () => {
     for (const box of ['Meta', 'TikTok', 'Google']) expect(html).toContain(`data-testid="ap-box-${box}"`);
   });
 });
-});
 
 describe('§9.11 forbidden strings (scorecard + Active Portfolio)', () => {
   const FORBIDDEN = ['RENEWAL_TERMS_APPROVAL', 'CUSTOMER_ENTITY_CHANGE', 'SOFT_FORCE', 'ADVISORY', 'SERVICING_STALL', 'CONTRACT_FOLLOWUP', 'UPSELL_PITCH', 'RENEWAL_DUE', 'GRADE_RISK', 'SURVEY_LOW', 'ASSIGNMENT_PENDING', 'RENEWED', 'NOT_RENEWED', 'IN_PROGRESS', 'LOST', 'NPS', 'row-1', '★', 'เพดาน', 'HTL-', 'customer_segment', 'EXISTING', 'INACTIVE', 'distinct', 'cohort', 'Cohort', 'median', 'average', 'Average'];
