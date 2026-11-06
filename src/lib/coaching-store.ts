@@ -9,7 +9,7 @@ import { DEMO_DAY, onDemoSessionChange, psDemoOn } from './demo-session';
 import { getMeetings, getSurveyFlags, getSurveys } from './meeting-survey-store';
 import type { MeetingRecord } from './meeting-survey-types';
 import { routeFlag } from './coaching-routing';
-import type { CoachMember, CoachRole, CoachingStatus, CoachingTask } from './coaching-types';
+import type { CoachMember, CoachRole, CoachingStatus, CoachingTask, MarcomOverrides, MarcomSubRole } from './coaching-types';
 import { COACH_DEMO_ACKS, COACH_DEMO_AGE, COACH_DEMO_OWNER_AE, COACH_DEMO_ROSTER, COACH_DEMO_SLOTS } from './coaching-demo';
 
 export const COACHING_KEY = 'meridia.coaching_tasks.v1';
@@ -20,7 +20,7 @@ let version = 0;
 const bump = () => { version++; cache = null; listeners.forEach((l) => l()); };
 
 /* ---------- live roster + Assign slots (read only) ---------- */
-type HrRaw = { id: string; nickname: string; function: string; orm_team: string | null; active: boolean };
+type HrRaw = { id: string; nickname: string; function: string; orm_team: string | null; active: boolean; marcom_sub_roles?: MarcomSubRole[] };
 function readJson<T>(k: string): T | null { try { return typeof localStorage === 'undefined' ? null : (JSON.parse(localStorage.getItem(k) ?? 'null') as T); } catch { return null; } }
 export function liveRoster(): CoachMember[] {
   const hr = readJson<{ members?: HrRaw[] }>('meridia.hr.members.v1')?.members ?? [];
