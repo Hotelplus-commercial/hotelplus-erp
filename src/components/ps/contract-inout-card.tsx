@@ -39,7 +39,7 @@ export function ContractInOutCard({ data }: { data: TabR1Data | undefined }) {
               <InOutPanel key={svc} svc={svc} active={data.activeToday[svc]} s={series[svc]} today={data.today} view={view} />
             ))}
           </div>
-          <div className="r1-io-legend" data-testid="r1-io-legend"><span><i style={{ background: "var(--svc-orm)" }} />{R1_INOUT.legend[0]}</span><span><i style={{ background: "var(--svc-orm-light)" }} />{R1_INOUT.legend[1]}</span><span><i style={{ background: "var(--neutral-bar)" }} />{R1_INOUT.legend[2]}</span></div>
+          <div className="r1-io-legend" data-testid="r1-io-legend"><span><i style={{ background: view === "waterfall" ? "var(--wf-orm-in)" : "var(--svc-orm)" }} />{R1_INOUT.legend[0]}</span><span><i style={{ background: view === "waterfall" ? "var(--wf-orm-out)" : "var(--svc-orm-light)" }} />{R1_INOUT.legend[1]}</span><span><i style={{ background: "var(--neutral-bar)" }} />{R1_INOUT.legend[2]}</span></div>
           <p className="r1-io-foot">{worst ? R1_INOUT.worst(mFull(worst.month), worst.n, worst.a, worst.b) : R1_INOUT.noWorst}</p>
         </>
       )}
@@ -56,6 +56,9 @@ function InOutPanel({ svc, active, s, today, view }: { svc: Svc; active: number;
   const hi = Math.max(...ms.map((m) => Math.max(m.start, m.end, m.start + m.ins.length)));
   const span = Math.max(1, hi - lo);
   const yPct = (v: number) => ((v - lo) / span) * 82 + 6;
+  const step = span > 12 ? Math.ceil(span / 6) : 1;
+  const ticks: number[] = [];
+  for (let t = Math.floor(lo); t <= Math.ceil(hi); t += step) ticks.push(t);
   const cur = ms[ms.length - 1]!;
   const listMonths = all ? [...ms].reverse() : [cur];
   return (
@@ -66,7 +69,15 @@ function InOutPanel({ svc, active, s, today, view }: { svc: Svc; active: number;
       </div>
       <div className="r1-io-chart">
         {view === "flow" && <div className="r1-io-axis"><span>{R1_INOUT.axisIn}</span><span>{R1_INOUT.axisOut}</span></div>}
-        {view === "waterfall" && <div className="r1-io-axis" />}
+        {view === "waterfall" && (
+          <>
+            {/* Patch A SP11: integer Y axis (contract count) + grid lines, same scale as the bars. */}
+            <div className="r1-io-axis r1-wf-axis" data-testid={`r1-wf-axis-${svc}`}>
+              {ticks.map((t) => <span key={t} style={{ bottom: `${yPct(t)}%` }}>{t}</span>)}
+            </div>
+            <div className="r1-wf-grid" aria-hidden>{ticks.map((t) => <i key={t} style={{ bottom: `${yPct(t)}%` }} />)}</div>
+          </>
+        )}
         <div className="r1-io-cols">
           {ms.map((m, i) => (
             <div key={m.month} className={cn("r1-io-col", m.current && "is-current", hover === i && "is-hover")} onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)} onFocus={() => setHover(i)} onBlur={() => setHover(null)} tabIndex={0} aria-label={`${mFull(m.month)} เข้า ${m.ins.length} หลุด ${m.outs.length} ขาดอายุ รอผล ${m.lapsed.length}`}>
@@ -86,7 +97,7 @@ function InOutPanel({ svc, active, s, today, view }: { svc: Svc; active: number;
                     </div>
                   </>
                 ) : (
-                  <WaterfallCol m={m} yPct={yPct} last={i === ms.length - 1} next={ms[i + 1]} />
+                  <WaterfallCol m={m} yPct={yPct} first={i === 0} />
                 )}
               </div>
               <div className="r1-io-month">{mLabel(m.month)}{m.current && <small>{R1_INOUT.upTo(Number(today.slice(8, 10)))}</small>}</div>
@@ -120,25 +131,26 @@ function InOutPanel({ svc, active, s, today, view }: { svc: Svc; active: number;
   );
 }
 
-function WaterfallCol({ m, yPct, last, next }: { m: FlowMonth; yPct: (v: number) => number; last: boolean; next?: FlowMonth | undefined }) {
+function WaterfallCol({ m, yPct, first }: { m: FlowMonth; yPct: (v: number) => number; first: boolean }) {
+  /* Patch A SP11 (r15 'fall'): in-bar = dark tone, LEFT half, opening → opening + เข้า; out-bar = light tone, RIGHT half,
+   * that top → down by หลุด; dotted connector at the opening level from the previous slot; 2 px flat line when nothing moved. */
   const top = m.start + m.ins.length;
   const afterOut = top - m.outs.length;
   return (
     <div className="r1-wf">
+      {!first && <div className="r1-wf-link" data-testid="r1-wf-link" style={{ bottom: `${yPct(m.start)}%` }} />}
       {m.ins.length === 0 && m.outs.length === 0 && m.lapsed.length === 0 ? (
-        <div className="r1-wf-flat" style={{ bottom: `${yPct(m.end)}%` }} />
+        <div className="r1-wf-flat" data-testid="r1-wf-flat" style={{ bottom: `${yPct(m.end)}%` }} />
       ) : (
         <>
-          {m.ins.length > 0 && <div className="r1-wf-in" style={{ bottom: `${yPct(m.start)}%`, height: `${Math.max(1.5, yPct(top) - yPct(m.start))}%` }} />}
-          {m.outs.length > 0 && <div className="r1-wf-out" style={{ bottom: `${yPct(afterOut)}%`, height: `${Math.max(1.5, yPct(top) - yPct(afterOut))}%` }} />}
+          {m.ins.length > 0 && <div className="r1-wf-in" data-testid="r1-wf-in" style={{ bottom: `${yPct(m.start)}%`, height: `${Math.max(1.5, yPct(top) - yPct(m.start))}%` }} />}
+          {m.outs.length > 0 && <div className="r1-wf-out" data-testid="r1-wf-out" style={{ bottom: `${yPct(afterOut)}%`, height: `${Math.max(1.5, yPct(top) - yPct(afterOut))}%` }} />}
           {m.lapsed.length > 0 && <div className="r1-wf-lapsed" style={{ bottom: `${yPct(m.end)}%`, height: `${Math.max(1.5, yPct(afterOut) - yPct(m.end))}%` }} />}
         </>
       )}
-      {!last && next && <div className="r1-wf-link" style={{ bottom: `${yPct(m.end)}%` }} />}
     </div>
   );
 }
-
 function MonthTip({ m }: { m: FlowMonth }) {
   return (
     <div className="r1-io-tip" role="tooltip">

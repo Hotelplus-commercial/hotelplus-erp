@@ -40,6 +40,10 @@ import { Route as BdQuotesRouteImport } from './routes/bd.quotes'
 import { Route as BdRegisterDealRouteImport } from './routes/bd.register-deal'
 import { Route as BdTicketsRouteImport } from './routes/bd.tickets'
 import { Route as BdSplatRouteImport } from './routes/bd_.$'
+import { Route as BdAdrCalculatorRouteImport } from './routes/bd_.adr-calculator'
+import { Route as BdDemandCalendarRouteImport } from './routes/bd_.demand-calendar'
+import { Route as BdPackageCalculatorRouteImport } from './routes/bd_.package-calculator'
+import { Route as BdQuotationRouteImport } from './routes/bd_.quotation'
 import { Route as FTokenRouteImport } from './routes/f.$token'
 import { Route as HrIndexRouteImport } from './routes/hr.index'
 import { Route as HrMembersRouteImport } from './routes/hr.members'
@@ -74,6 +78,7 @@ import { Route as TheOfficeAppSplatRouteImport } from './routes/the-office-app_.
 import { Route as WorkspaceDeptRouteImport } from './routes/workspace.$dept'
 import { Route as WorkspaceAeRouteImport } from './routes/workspace.ae'
 import { Route as ApiPublicAcBillingDailyRouteImport } from './routes/api/public/ac-billing-daily'
+import { Route as BdCalculatorIndexRouteImport } from './routes/bd.calculator.index'
 import { Route as BdCalculatorMarcomRouteImport } from './routes/bd.calculator.marcom'
 import { Route as BdCalculatorOrmRouteImport } from './routes/bd.calculator.orm'
 import { Route as BdQuotationsIndexRouteImport } from './routes/bd.quotations.index'
@@ -266,6 +271,26 @@ const BdSplatRoute = BdSplatRouteImport.update({
   path: '/bd/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BdAdrCalculatorRoute = BdAdrCalculatorRouteImport.update({
+  id: '/bd_/adr-calculator',
+  path: '/bd/adr-calculator',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BdDemandCalendarRoute = BdDemandCalendarRouteImport.update({
+  id: '/bd_/demand-calendar',
+  path: '/bd/demand-calendar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BdPackageCalculatorRoute = BdPackageCalculatorRouteImport.update({
+  id: '/bd_/package-calculator',
+  path: '/bd/package-calculator',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BdQuotationRoute = BdQuotationRouteImport.update({
+  id: '/bd_/quotation',
+  path: '/bd/quotation',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FTokenRoute = FTokenRouteImport.update({
   id: '/f/$token',
   path: '/f/$token',
@@ -435,6 +460,11 @@ const ApiPublicAcBillingDailyRoute = ApiPublicAcBillingDailyRouteImport.update({
   id: '/api/public/ac-billing-daily',
   path: '/api/public/ac-billing-daily',
   getParentRoute: () => rootRouteImport,
+} as any)
+const BdCalculatorIndexRoute = BdCalculatorIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => BdCalculatorRoute,
 } as any)
 const BdCalculatorMarcomRoute = BdCalculatorMarcomRouteImport.update({
   id: '/marcom',
@@ -652,6 +682,10 @@ export interface FileRoutesByFullPath {
   '/bd/register-deal': typeof BdRegisterDealRoute
   '/bd/tickets': typeof BdTicketsRoute
   '/bd/$': typeof BdSplatRoute
+  '/bd/adr-calculator': typeof BdAdrCalculatorRoute
+  '/bd/demand-calendar': typeof BdDemandCalendarRoute
+  '/bd/package-calculator': typeof BdPackageCalculatorRoute
+  '/bd/quotation': typeof BdQuotationRoute
   '/f/$token': typeof FTokenRoute
   '/hr/members': typeof HrMembersRoute
   '/hr/$': typeof HrSplatRoute
@@ -714,6 +748,7 @@ export interface FileRoutesByFullPath {
   '/ps/templates/$templateId': typeof PsTemplatesTemplateIdRoute
   '/ps/templates/auto-fields': typeof PsTemplatesAutoFieldsRoute
   '/workspace/ps/partners': typeof WorkspacePsPartnersRoute
+  '/bd/calculator/': typeof BdCalculatorIndexRoute
   '/bd/quotations/': typeof BdQuotationsIndexRoute
   '/bd/quotes/': typeof BdQuotesIndexRoute
   '/orm/action-a/': typeof OrmActionAIndexRoute
@@ -743,11 +778,14 @@ export interface FileRoutesByTo {
   '/ac/system-cost': typeof AcSystemCostRoute
   '/ac/$': typeof AcSplatRoute
   '/automation/$': typeof AutomationSplatRoute
-  '/bd/calculator': typeof BdCalculatorRouteWithChildren
   '/bd/deals': typeof BdDealsRoute
   '/bd/register-deal': typeof BdRegisterDealRoute
   '/bd/tickets': typeof BdTicketsRoute
   '/bd/$': typeof BdSplatRoute
+  '/bd/adr-calculator': typeof BdAdrCalculatorRoute
+  '/bd/demand-calendar': typeof BdDemandCalendarRoute
+  '/bd/package-calculator': typeof BdPackageCalculatorRoute
+  '/bd/quotation': typeof BdQuotationRoute
   '/f/$token': typeof FTokenRoute
   '/hr/members': typeof HrMembersRoute
   '/hr/$': typeof HrSplatRoute
@@ -807,6 +845,7 @@ export interface FileRoutesByTo {
   '/ps/templates/$templateId': typeof PsTemplatesTemplateIdRoute
   '/ps/templates/auto-fields': typeof PsTemplatesAutoFieldsRoute
   '/workspace/ps/partners': typeof WorkspacePsPartnersRoute
+  '/bd/calculator': typeof BdCalculatorIndexRoute
   '/bd/quotations': typeof BdQuotationsIndexRoute
   '/bd/quotes': typeof BdQuotesIndexRoute
   '/orm/action-a': typeof OrmActionAIndexRoute
@@ -849,6 +888,10 @@ export interface FileRoutesById {
   '/bd/register-deal': typeof BdRegisterDealRoute
   '/bd/tickets': typeof BdTicketsRoute
   '/bd_/$': typeof BdSplatRoute
+  '/bd_/adr-calculator': typeof BdAdrCalculatorRoute
+  '/bd_/demand-calendar': typeof BdDemandCalendarRoute
+  '/bd_/package-calculator': typeof BdPackageCalculatorRoute
+  '/bd_/quotation': typeof BdQuotationRoute
   '/f/$token': typeof FTokenRoute
   '/hr/members': typeof HrMembersRoute
   '/hr_/$': typeof HrSplatRoute
@@ -911,6 +954,7 @@ export interface FileRoutesById {
   '/ps/templates/$templateId': typeof PsTemplatesTemplateIdRoute
   '/ps/templates/auto-fields': typeof PsTemplatesAutoFieldsRoute
   '/workspace/ps/partners': typeof WorkspacePsPartnersRoute
+  '/bd/calculator/': typeof BdCalculatorIndexRoute
   '/bd/quotations/': typeof BdQuotationsIndexRoute
   '/bd/quotes/': typeof BdQuotesIndexRoute
   '/orm/action-a/': typeof OrmActionAIndexRoute
@@ -954,6 +998,10 @@ export interface FileRouteTypes {
     | '/bd/register-deal'
     | '/bd/tickets'
     | '/bd/$'
+    | '/bd/adr-calculator'
+    | '/bd/demand-calendar'
+    | '/bd/package-calculator'
+    | '/bd/quotation'
     | '/f/$token'
     | '/hr/members'
     | '/hr/$'
@@ -1016,6 +1064,7 @@ export interface FileRouteTypes {
     | '/ps/templates/$templateId'
     | '/ps/templates/auto-fields'
     | '/workspace/ps/partners'
+    | '/bd/calculator/'
     | '/bd/quotations/'
     | '/bd/quotes/'
     | '/orm/action-a/'
@@ -1045,11 +1094,14 @@ export interface FileRouteTypes {
     | '/ac/system-cost'
     | '/ac/$'
     | '/automation/$'
-    | '/bd/calculator'
     | '/bd/deals'
     | '/bd/register-deal'
     | '/bd/tickets'
     | '/bd/$'
+    | '/bd/adr-calculator'
+    | '/bd/demand-calendar'
+    | '/bd/package-calculator'
+    | '/bd/quotation'
     | '/f/$token'
     | '/hr/members'
     | '/hr/$'
@@ -1109,6 +1161,7 @@ export interface FileRouteTypes {
     | '/ps/templates/$templateId'
     | '/ps/templates/auto-fields'
     | '/workspace/ps/partners'
+    | '/bd/calculator'
     | '/bd/quotations'
     | '/bd/quotes'
     | '/orm/action-a'
@@ -1150,6 +1203,10 @@ export interface FileRouteTypes {
     | '/bd/register-deal'
     | '/bd/tickets'
     | '/bd_/$'
+    | '/bd_/adr-calculator'
+    | '/bd_/demand-calendar'
+    | '/bd_/package-calculator'
+    | '/bd_/quotation'
     | '/f/$token'
     | '/hr/members'
     | '/hr_/$'
@@ -1212,6 +1269,7 @@ export interface FileRouteTypes {
     | '/ps/templates/$templateId'
     | '/ps/templates/auto-fields'
     | '/workspace/ps/partners'
+    | '/bd/calculator/'
     | '/bd/quotations/'
     | '/bd/quotes/'
     | '/orm/action-a/'
@@ -1240,6 +1298,10 @@ export interface RootRouteChildren {
   AcSplatRoute: typeof AcSplatRoute
   AutomationSplatRoute: typeof AutomationSplatRoute
   BdSplatRoute: typeof BdSplatRoute
+  BdAdrCalculatorRoute: typeof BdAdrCalculatorRoute
+  BdDemandCalendarRoute: typeof BdDemandCalendarRoute
+  BdPackageCalculatorRoute: typeof BdPackageCalculatorRoute
+  BdQuotationRoute: typeof BdQuotationRoute
   FTokenRoute: typeof FTokenRoute
   HrSplatRoute: typeof HrSplatRoute
   LTokenRoute: typeof LTokenRoute
@@ -1473,6 +1535,34 @@ declare module '@tanstack/react-router' {
       path: '/bd/$'
       fullPath: '/bd/$'
       preLoaderRoute: typeof BdSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bd_/adr-calculator': {
+      id: '/bd_/adr-calculator'
+      path: '/bd/adr-calculator'
+      fullPath: '/bd/adr-calculator'
+      preLoaderRoute: typeof BdAdrCalculatorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bd_/demand-calendar': {
+      id: '/bd_/demand-calendar'
+      path: '/bd/demand-calendar'
+      fullPath: '/bd/demand-calendar'
+      preLoaderRoute: typeof BdDemandCalendarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bd_/package-calculator': {
+      id: '/bd_/package-calculator'
+      path: '/bd/package-calculator'
+      fullPath: '/bd/package-calculator'
+      preLoaderRoute: typeof BdPackageCalculatorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bd_/quotation': {
+      id: '/bd_/quotation'
+      path: '/bd/quotation'
+      fullPath: '/bd/quotation'
+      preLoaderRoute: typeof BdQuotationRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/f/$token': {
@@ -1712,6 +1802,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/public/ac-billing-daily'
       preLoaderRoute: typeof ApiPublicAcBillingDailyRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/bd/calculator/': {
+      id: '/bd/calculator/'
+      path: '/'
+      fullPath: '/bd/calculator/'
+      preLoaderRoute: typeof BdCalculatorIndexRouteImport
+      parentRoute: typeof BdCalculatorRoute
     }
     '/bd/calculator/marcom': {
       id: '/bd/calculator/marcom'
@@ -1997,11 +2094,13 @@ const AcRouteWithChildren = AcRoute._addFileChildren(AcRouteChildren)
 interface BdCalculatorRouteChildren {
   BdCalculatorMarcomRoute: typeof BdCalculatorMarcomRoute
   BdCalculatorOrmRoute: typeof BdCalculatorOrmRoute
+  BdCalculatorIndexRoute: typeof BdCalculatorIndexRoute
 }
 
 const BdCalculatorRouteChildren: BdCalculatorRouteChildren = {
   BdCalculatorMarcomRoute: BdCalculatorMarcomRoute,
   BdCalculatorOrmRoute: BdCalculatorOrmRoute,
+  BdCalculatorIndexRoute: BdCalculatorIndexRoute,
 }
 
 const BdCalculatorRouteWithChildren = BdCalculatorRoute._addFileChildren(
@@ -2246,6 +2345,10 @@ const rootRouteChildren: RootRouteChildren = {
   AcSplatRoute: AcSplatRoute,
   AutomationSplatRoute: AutomationSplatRoute,
   BdSplatRoute: BdSplatRoute,
+  BdAdrCalculatorRoute: BdAdrCalculatorRoute,
+  BdDemandCalendarRoute: BdDemandCalendarRoute,
+  BdPackageCalculatorRoute: BdPackageCalculatorRoute,
+  BdQuotationRoute: BdQuotationRoute,
   FTokenRoute: FTokenRoute,
   HrSplatRoute: HrSplatRoute,
   LTokenRoute: LTokenRoute,

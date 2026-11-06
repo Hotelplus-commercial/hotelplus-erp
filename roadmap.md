@@ -367,3 +367,13 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 ## Header R3 (2026-11-06)
 - [x] HR27–HR34 join helper, Marcom channel cards, DEMO overlay, shared DEMO date labels, dark Funnel check.
 - [ ] P-H1: prototype done (DEMO match 100%) · normal mode depends on real contracts in the main store — portal requirement.
+
+## UAT Polish R2 · Patch A (2026-11-06)
+- [x] SP1 ต้นทุนค่าระบบ one page (/system-cost → /ac/system-cost) · SP2 Payroll placeholder · SP3 Support removed
+- [x] SP4 BD Workspace / no locks · SP5 Demand Calendar · SP6 ADR · SP7 Package Calculator · SP8 ใบเสนอราคา list
+- [x] SP10 Office ⑨⑩⑪ = PS ①②③ · SP11 Waterfall · SP12 collapse · SP13 median box · SP14 attachments · SP15 duplicate check · SP16 sort · SP16b unmount
+- [ ] SP9 BD Meeting Analyzer — waits on IMG-7 from Sai
+- [ ] Open: ORM package formula needed from the real portal (Package Calculator shows IMG-3 sample results only)
+- [ ] Open: Marcom survey recommendation logic needed from the real portal (Q3 channels first for now)
+- [ ] Open: ADR formula confirmed from portal guide text only (71.51% / 28.49%); confirm the portal uses the same weighted overall ADR
+- [ ] Open: ใบเสนอราคา — only the list view (14 of 35 rows) from IMG-6; detail / export / Special Deal need their own screenshots

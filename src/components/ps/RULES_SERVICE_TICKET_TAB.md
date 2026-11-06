@@ -9,3 +9,10 @@
 - Drawer is view only + Follow up (sendFollowUp()), only AE / PM (testing "ทำรายการในนาม"); PS case status lives in the database and is never changed here; Follow-ups on PS cases go to ticket_followups and show in the drawer timeline.
 - "+ สร้าง ticket": required หมวด for service departments = active categories of the chosen department (getCategories, never hidden) + "อื่น ๆ"; PS case category_id is stored in ticket_sla (no DB column); no due-date field.
 - Chart ceiling label uses "เกณฑ์ 10 วัน" (the word เพดาน is on the forbidden list).
+
+## UAT Polish R2 Patch A (2026-11-06)
+- SP13: median วัน Solve shows as a grey summary box (value bold, larger); numbers unchanged.
+- SP16: department table count columns sort มาก → น้อย / น้อย → มาก (one active sort; sortDepts()).
+- SP16b: งานค้างของสัญญา (PendingWorkPanel) unmounted from this tab (SHOW_TASK_PENDING_WORK = false, code kept); card ⑤ ก่อนประชุมประจำเดือน stays.
+- SP14: create ticket แนบไฟล์ = Partner upload rule (on-device store, 20 MB, Partner type list, Thai error per file, link fallback); PS cases keep refs on ticket_sla.attachments; opened from the case drawer. Existing L0 limit (5 files × 5 MB) unchanged on other paths.
+- SP15: before บันทึก ticket, open tickets of same hotel + department (same category first) → dialog: Follow up ticket นี้แทน (sendFollowUp, no new ticket) · ยืนยันสร้าง ticket ใหม่ (audit ticket_sla.duplicate_ack) · ยกเลิก. Never blocks. Helpers: src/lib/ticket-create-extras.ts.

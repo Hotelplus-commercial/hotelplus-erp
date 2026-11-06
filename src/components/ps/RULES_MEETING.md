@@ -12,3 +12,5 @@
 - Coaching open items: (1) Marcom sub-role (Content / Ads / presenter, DM12) has no stored field yet — decide HR roster vs Assign modal; until then Coaching routes to the Marcom caretaker. (2) GRM has no stored person: normal mode shows GRM tasks to the GRM testing role, assignee labelled "GRM". (3) Rejected meeting has no live write path — DEMO only.
 
 - UP10/UP11 (2026-11-06): card ① Funnel drawing = 104px label · centred 40px bars (Tier A solid, B/C hatched) · trapezoid connectors (~40% bar colour) · dashed quota frame on row 1 · 150px result (row 1 quota text, rows 2–3 `{pct}%` + ของนัดได้) · summary row; numbers unchanged. Card ③ rows read `x/y ประชุม ✓`.
+
+- UAT Polish R2 SP12 (2026-11-06): in คะแนน Survey รายหัวข้อ, Meeting Completed ที่ไม่มีคะแนน · ดูแยก ORM รายทีม / Marcom รายคน · ความเห็นอิสระ start collapsed; open state per browser session (sessionStorage psdash.ms.exp.*).

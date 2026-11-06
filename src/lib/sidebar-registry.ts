@@ -55,10 +55,10 @@ const bd: AppDef = {
       P('bd', 'call-script', 'Call Script', A('TM', 'BDM', 'HOC', 'MD'), 'บทพูดของ TM ตามชุดและประเภท lead'),
     ] },
     { kind: 'group', label: 'ประชุม & เสนอราคา (Pitch)', children: [
-      P('bd', 'demand-calendar', 'Demand Calendar', A('BD', 'BDM', 'HOC', 'MD')),
-      P('bd', 'adr-calculator', 'ADR Calculator', A('BD', 'BDM', 'HOC', 'MD'), 'คำนวณ ADR ก่อนเข้าประชุม'),
-      { kind: 'page', key: 'package-calculator', label: 'Package Calculator', route: '/bd/calculator', access: A('BD', 'BDM', 'HOC', 'MD') },
-      P('bd', 'quotation', 'ใบเสนอราคา', A('BD', 'BDM', 'HOC', 'MD'), 'สร้างและส่งใบเสนอราคา · ขอ Special Deal'),
+      { kind: 'page', key: 'demand-calendar', label: 'Demand Calendar', route: '/bd/demand-calendar', access: A('BD', 'BDM', 'HOC', 'MD') },
+      { kind: 'page', key: 'adr-calculator', label: 'ADR Calculator', route: '/bd/adr-calculator', access: A('BD', 'BDM', 'HOC', 'MD') },
+      { kind: 'page', key: 'package-calculator', label: 'Package Calculator', route: '/bd/package-calculator', also: ['/bd/calculator'], access: A('BD', 'BDM', 'HOC', 'MD') },
+      { kind: 'page', key: 'quotation', label: 'ใบเสนอราคา', route: '/bd/quotation', access: A('BD', 'BDM', 'HOC', 'MD') },
       { kind: 'link_out', key: 'contract-dashboard', label: 'Contract Dashboard', target: { app: 'PS', route: '/ps/contract-dashboard' }, access: A('BD', 'BDM', 'HOC', 'MD') },
     ] },
     { kind: 'group', label: 'ผลงานของฉัน', children: [
@@ -217,6 +217,8 @@ const ac: AppDef = {
         P('ac', 'orm-bonus', 'ORM Bonus', AC_T, PAY, { titleSuffix: 'ทำจ่าย' }),
         P('ac', 'marcom-standard-line', 'Marcom Standard Line', AC_T, PAY, { titleSuffix: 'ทำจ่าย' }),
       ] },
+      // Patch A SP2: last Payables item, before รายงาน.
+      P('ac', 'payroll', 'Payroll', AC_T, 'ทำจ่ายเงินเดือนพนักงาน · ข้อมูลจาก HR App'),
     ] },
     { kind: 'group', label: 'รายงาน', children: [P('ac', 'pnl', 'P&L', A('AC_LEAD', 'HOC', 'MD'), 'รายงาน P&L สำหรับประชุมผู้บริหาร')] },
     settings('ac', A('AC_LEAD', 'HOC')),
@@ -301,9 +303,7 @@ export const SIDEBAR_REGISTRY: AppDef[] = [bd, ps, orm, marcom, ac, hr, auto, of
 /** User answer (d): Suite area above the apps, visible to every role. */
 export const SUITE_ITEMS = [
   { key: 'overview', label: 'Overview Dashboard', route: '/' },
-  { key: 'system-cost', label: 'ต้นทุนค่าระบบ (ภาพรวม)', route: '/system-cost' },
   { key: 'configuration', label: 'Configuration', route: '/settings' },
-  { key: 'support', label: 'Support', route: '/settings' },
 ] as const;
 
 /* ---------- selectors (pure) ---------- */
