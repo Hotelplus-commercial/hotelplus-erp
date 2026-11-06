@@ -96,8 +96,8 @@ describe('O-26 signing', () => {
   test('9 · no raw product codes on the package card / chip', () => {
     const r = S.latestRequestFor('RN-PK-MC2')!;
     const html = renderToString(React.createElement('div', null, React.createElement(RenewalPackageCard, { req: r, editable: false }), React.createElement(PackageChangeChip, { req: r })));
-    const text = html.replace(/<[^>]*>/g, ' ');
+    const text = html.replace(/<!-- -->/g, '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ');
     expect(text).not.toMatch(/(ORM|MARCOM)-(MTH|SETUP|ADDON)/);
-    expect(text).toContain('เปลี่ยนแพ็กเกจ: Meta + TikTok + Google → Meta + Google');
+    expect(text).toMatch(/เปลี่ยนแพ็กเกจ: ?Meta \+ TikTok \+ Google ?→ ?Meta \+ Google/);
   });
 });

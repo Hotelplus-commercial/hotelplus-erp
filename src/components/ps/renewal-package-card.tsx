@@ -18,7 +18,7 @@ import type { Channel } from "@/lib/header-contract-join";
 import type { OfferTerms } from "@/lib/renewalOffer";
 import { cn } from "@/lib/utils";
 
-const thb = (n: number) => `฿${Math.round(n).toLocaleString("th-TH")}`;
+const thb = (n: number) => `${n < 0 ? "−" : ""}฿${Math.abs(Math.round(n)).toLocaleString("th-TH")}`;
 const TIERS: OrmTier[] = ["LITE", "SMART", "FIXED", "PERFORMANCE"];
 
 /** D3: Lite → full price = the Renewal Offer recommendation when there is one, else the catalog price of the tier. */
