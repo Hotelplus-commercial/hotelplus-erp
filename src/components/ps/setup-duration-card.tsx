@@ -348,7 +348,7 @@ function DotTip({ t, st, versions }: { t: SetupTiming; st: SetupStatusResult | u
       {t.done
         ? <TipRow a={SD.tip.goLive(thDate(t.go_live))} b={SD.tip.total(t.elapsed)} cls={toneClass(st?.total)} />
         : <TipRow a={SD.tip.at(t.current.map((k) => STAGE_NAME[k]).join(' + ') || '—')} b={SD.tip.used(t.elapsed)} />}
-      <TipRow a={SD.tip.start(thDate(t.day0))} b={`เป้ารวม ${tot.due} วัน · ${tl.text}`} cls={tl.tone === 'red' ? 'sd-t-late' : tl.tone === 'amber' ? 'sd-t-near' : tl.tone === 'green' ? 'sd-t-ok' : undefined} />
+      <TipRow a={SD.tip.start(thDate(t.day0))} b={`เป้ารวม ${tot.due} วัน · ${tl.text}`} cls={tl.tone === 'red' ? 'sd-t-late' : tl.tone === 'amber' ? 'sd-t-near' : tl.tone === 'green' ? 'sd-t-ok' : ''} />
       <div className="sd-tip-lanes">
         {LANE_KEYS.filter((k) => t.lanes[k].state !== 'na').map((k) => {
           const l = t.lanes[k];

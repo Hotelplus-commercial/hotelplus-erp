@@ -67,6 +67,6 @@ export function psAppMenu() {
       { key: 'property', title: 'ข้อมูลโรงแรม', url: '/ps/property-content', also: [] as string[] },
       { key: 'production', title: 'Production Report', url: '/ps/production', also: [] as string[] },
     ] },
-    { group: 'ตั้งค่า', items: [{ key: 'settings', title: 'ตั้งค่า', url: '/ps/settings', also: ['/ps/templates'] }, { key: 'sla-onboard', title: 'SLA On-board', url: '/ps/settings/sla-onboard' }] },
+    { group: 'ตั้งค่า', items: [{ key: 'settings', title: 'ตั้งค่า', url: '/ps/settings', also: ['/ps/templates'] }, { key: 'sla-onboard', title: 'SLA On-board', url: '/ps/settings/sla-onboard', also: [] }] },
   ];
 }
