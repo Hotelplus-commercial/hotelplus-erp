@@ -1,5 +1,5 @@
 import { createTask, findAnyByEvent, findOpenByEvent, refreshBotTicket, stampConditionCleared, SYSTEM_CREATOR, ticketSnapshot, type Dept } from './tickets-l0';
-import { currentSlaVersions, laneSla, phaseConfig, slaTone, stallEventKey, type ServicingLane } from './servicing-time';
+import { currentSlaVersions, laneSla, slaTone, stallEventKey, type ServicingLane } from './servicing-time';
 import type { SetupKpiVersion } from './setup-kpi-settings';
 import type { ServicingRow } from './servicing-dashboard-types';
 export type StallCandidate = { row:ServicingRow; lane:ServicingLane; ended?:boolean };
@@ -12,7 +12,7 @@ export function stallRouting(lane:ServicingLane, roster:RosterMember[]=[]) {
  return {target_dept:dept,recipient:name,recipient_member_id:member?.id??null,watchers:dept==='PS'?[]:[{dept:'PS' as const,member_id:pm?.id??null,nickname:pm?.nickname??'PM'}]};
 }
 export function createServicingStall(row:ServicingRow,lane:ServicingLane,bot=false,roster:RosterMember[]=[],round?:string) {
- const routing=stallRouting(lane,roster), cfg=phaseConfig(lane.phase);
+ const routing=stallRouting(lane,roster), thr=laneSla(lane.phase,lane.lane,row.service_variant,row.created_at||null), cfg={sla:thr.due,...(lane.phase==='P3'?{target:thr.ok}:{})} as {sla:number;target?:number}; // DF1: SLA On-board
  return createTask({type:'SERVICING_STALL',target_dept:routing.target_dept,created_by:bot?SYSTEM_CREATOR:'PM',source_app:bot?'PS_DASHBOARD_BOT':'PS_DASHBOARD',subject_ref:{card_id:row.card_id,hotel_id:row.hotel_id,hotel_name:row.hotel_name,service_line:row.service_line??'',service_variant:row.service_variant??'',gap_service:''},payload:{readiness_tier:'',chips:[],note:'',phase:lane.phase,lane:lane.lane,days_in_phase:lane.d??0,sla_days:cfg.sla,...('target'in cfg?{target_days:cfg.target}:{}),...(lane.tone?{tone:lane.tone}:{}),current_stage:row.current_stage,owner_id:lane.lane==='AE'?row.ae_owner_id:lane.lane==='Specialist'?row.specialist_id:row.orm_team??row.marcom_owner_id,event_key:stallEventKey(row.card_id,lane),recipient:routing.recipient,recipient_member_id:routing.recipient_member_id,watchers:routing.watchers,...(round?{generated_round:round}:{})}});
 }
 /** Consumes explicit projection signals only; empty input never means cleared. */
