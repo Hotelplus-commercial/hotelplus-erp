@@ -12,9 +12,9 @@ const description =
 export const Route = createFileRoute("/ps/contracts")({
   head: () => ({
     meta: [
-      { title: "สัญญา & รูปแบบการให้บริการ — PS App | Meridia Hotel ERP" },
+      { title: "Contract & Service Manager — PS App | Meridia Hotel ERP" },
       { name: "description", content: description },
-      { property: "og:title", content: "สัญญา & รูปแบบการให้บริการ — PS App" },
+      { property: "og:title", content: "Contract & Service Manager — PS App" },
       { property: "og:description", content: description },
       { property: 'og:type', content: 'website' },
       { name: 'twitter:card', content: 'summary_large_image' },
@@ -28,7 +28,7 @@ function PsContracts() {
     <div className="flex flex-col gap-4">
       <PageHeader
         eyebrow="PS App · Contracts"
-        title="สัญญา & รูปแบบการให้บริการ"
+        title="Contract & Service Manager"
         description={description}
       />
       <ContractHotelList />
