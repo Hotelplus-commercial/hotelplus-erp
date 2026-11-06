@@ -24,6 +24,11 @@ function readLive(): { raw: Record<string, unknown> | null; contracts: Contract[
     return { raw: p, contracts: Array.isArray(p?.['contracts']) ? (p!['contracts'] as Contract[]) : seedContracts };
   } catch { return { raw: null, contracts: seedContracts }; }
 }
+/** O-26 PK3: the Product Catalog the renewal Wizard offers from (live = CRM store products, DEMO / no store = catalog seed). Read only. */
+export function mainCatalogProducts(): import('./crm-types').Product[] {
+  if (demoOn) return seedProducts;
+  const raw = readLive().raw; return Array.isArray(raw?.['products']) ? (raw!['products'] as import('./crm-types').Product[]) : seedProducts;
+}
 export const mainContracts = (): Contract[] => (demoOn ? demoContracts : readLive().contracts);
 export const mainContractById = (id: string) => mainContracts().find((c) => c.contract_id === id) ?? null;
 

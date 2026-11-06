@@ -13,7 +13,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { useMeetingMgmt } from "@/lib/orm-meeting";
 import { RENEWAL_LABEL_TH as L, renewalReqStatusTh } from "@/lib/ps-glossary";
 import { usePsRenewal } from "@/lib/ps-renewal";
-import { REASON_CODES, evaluate, reasonValid, rollDates, type ReasonCode, type Terms } from "@/lib/renewal-rules";
+import { RenewalPackageCard, PackageChangeChip } from "@/components/ps/renewal-package-card";
+import { packageReasonValid } from "@/lib/renewal-package";
+import { REASON_CODES, evaluate, requestReasonOk, rollDates, type ReasonCode, type Terms } from "@/lib/renewal-rules";
 import {
   DEMO_EXTRA_CARDS, cancelRequest, entityClosed, openRequestFor, raiseEntityChange, renewalConfig, setRenewalDemo, sourceContractById,
   createAndSendLink, renewalPreviewPath, startRenewal, submitRequest, updateReason, updateTerms, useRenewalStore, wizardCardFor,
@@ -63,10 +65,10 @@ export function RenewalWizard({ contractId }: { contractId: string }) {
   if (!req) return <Msg text={`ไม่มีคำขอต่อสัญญาที่เปิดอยู่ · ${card.hotel}`} />;
 
   const editable = req.status === "DRAFT" || req.status === "RETURNED";
-  const ev = evaluate(req.reco_snapshot, req.old_terms, req.new_terms, renewalConfig.renewal_reco_mode, renewalConfig.renewal_min_raise_thb);
+  const ev = evaluate(req.reco_snapshot, req.old_terms, req.new_terms, renewalConfig.renewal_reco_mode, renewalConfig.renewal_min_raise_thb, !!req.package_changed);
   const delta = req.new_terms.fee_amount - req.old_terms.fee_amount;
   const pct = req.old_terms.fee_amount ? (delta / req.old_terms.fee_amount) * 100 : 0;
-  const reasonOk = !ev.reason_required || reasonValid(req.reason_code, req.reason_text);
+  const reasonOk = (!ev.reason_required || requestReasonOk(req)) && (!req.package_changed || packageReasonValid(req.package_change_reason)); // O-26 PK8
   const setTerm = (k: keyof Terms, v: string) => {
     const n = { ...req.new_terms, [k]: k === "package" ? v : Number(v) || 0 } as Terms;
     const next = k === "term_months" ? { ...n, ...rollDates(req.old_terms.end_date, n.term_months) } : n;
@@ -132,6 +134,7 @@ export function RenewalWizard({ contractId }: { contractId: string }) {
 
       {step === 1 && viewOfSnapshot(req.reco_snapshot) && req.new_terms.billing_model && (
         <Panel title="เงื่อนไขใหม่">
+          <RenewalPackageCard req={req} editable={editable} />
           <V14Terms req={req} editable={editable} service={src.service === "Marcom" ? "Marcom" : "ORM"} />
           <div className="mt-3 flex flex-wrap items-center gap-2">
             {ev.approval_required && <Chip tone="warn">{L.needApproval}</Chip>}
@@ -151,6 +154,7 @@ export function RenewalWizard({ contractId }: { contractId: string }) {
       )}
       {step === 1 && !(viewOfSnapshot(req.reco_snapshot) && req.new_terms.billing_model) && (
         <Panel title="เงื่อนไขใหม่">
+          <RenewalPackageCard req={req} editable={editable} />
           <RecoBox reco={req.reco_snapshot} oldFee={req.old_terms.fee_amount} />
           <div className="mt-3 grid gap-4 md:grid-cols-2">
             <div className="space-y-1 rounded-lg border p-3 text-sm">
@@ -190,6 +194,7 @@ export function RenewalWizard({ contractId }: { contractId: string }) {
         <Panel title="ตรวจและส่ง">
           <dl className="grid grid-cols-[10rem_minmax(0,1fr)] gap-1 text-sm">
             <dt className="text-muted-foreground">ค่าบริการ/เดือน</dt><dd>{thb(req.old_terms.fee_amount)} → {thb(req.new_terms.fee_amount)} ({delta >= 0 ? "+" : ""}{thb(delta)} · {pct.toFixed(1)}%)</dd>
+            {req.package_changed && req.new_lines && <><dt className="text-muted-foreground">แพ็กเกจ</dt><dd><PackageChangeChip req={req} /> · เหตุผล: {req.package_change_reason?.code ?? "—"}{req.package_change_reason?.text ? ` — ${req.package_change_reason.text}` : ""}</dd></>}
             <dt className="text-muted-foreground">เปลี่ยน</dt><dd>{ev.changed_fields.map((f) => L.fields[f]).join(", ") || "—"}</dd>
             <dt className="text-muted-foreground">ช่วงสัญญาใหม่</dt><dd>{req.new_terms.start_date} – {req.new_terms.end_date}</dd>
             <dt className="text-muted-foreground">คำแนะนำระบบ</dt><dd>{recoLabel(req.reco_snapshot)}</dd>

@@ -1,6 +1,7 @@
 /* Contract Renewal v1.0 — pure rules (recommendation, approval matrix, gates, state machine).
  * Reads a v_ps_repricing-shaped row; never sets a price outside the Repricing band, never recommends commission. */
 import type { PsReportRow } from './ps-dashboard-types';
+import { packageReasonValid, type PkgLine } from './renewal-package';
 import type { Alternative, BillingModel, Factor, OfferValue } from './renewalOffer';
 
 /** v1.4: the shared engine (renewalOffer.ts) produces RAISE · KEEP · LOWER · NONE; HOLD stays only for requests stored before v1.4. */
@@ -28,9 +29,14 @@ export type RenewalRequest = {
   created_at: string; updated_at: string;
   /** v1.4 §7 (nullable, new): expected monthly average of the AE offer · match vs the recommendation · billing model changed. */
   offer_expected_avg?: number | null; offer_match?: 'MATCH' | 'ABOVE' | 'BELOW' | null; model_changed?: boolean | null;
+  /** O-26 PK11 (optional, new): package change at renewal. Missing / false = keep package (behaviour unchanged). */
+  package_changed?: boolean | null; old_lines?: PkgLine[] | null; new_lines?: PkgLine[] | null;
+  package_change_reason?: { code: string | null; text: string } | null;
+  /** PK6: setup lines the AE keeps for newly added channels (one-time; omitted = waived). */ setup_lines?: PkgLine[] | null;
+  /** PK-Q5: ORM full → Lite ticket written on sign (prevents a second ticket). */ package_ticket_id?: string | null;
 };
 /** fee_amount / commission_pct are null when the contract does not hold that term (v1.3 §4: empty, never 0). */
-export type PriceHistoryRow = { contract_id: string; cycle_no: number; fee_amount: number | null; commission_pct: number | null; term_months: number; package: string; effective_from: string; effective_to: string; source: 'INITIAL' | 'RENEWAL'; renewal_request_id: string | null;
+export type PriceHistoryRow = { contract_id: string; cycle_no: number; fee_amount: number | null; commission_pct: number | null; term_months: number; package: string; effective_from: string; effective_to: string; source: 'INITIAL' | 'RENEWAL' | 'PACKAGE_CHANGE'; renewal_request_id: string | null;
   /** v1.4.1 RN42 (RENEWAL rows; optional, missing = unknown) */ billing_model?: Terms['billing_model']; guarantee_fee?: number | null };
 export type RenewalConfig = { renewal_reco_mode: RecoMode; renewal_approval_overdue_days: number; renewal_min_raise_thb: number;
   /* v1.4 §8 — Renewal Offer keys (read at runtime by renewalOffer.ts) */
@@ -90,8 +96,10 @@ const TERM_KEYS: (keyof Terms)[] = ['fee_amount', 'commission_pct', 'term_months
 export const changedFields = (o: Terms, n: Terms) => TERM_KEYS.filter((k) => o[k] !== n[k]);
 export type Evaluation = { changed_fields: (keyof Terms)[]; approval_required: boolean; reason_required: boolean; deviates_from_reco: boolean };
 /** The system default fee always counts as following the recommendation (raise within band). */
-export function evaluate(reco: RecoSnapshot, old: Terms, next: Terms, mode: RecoMode, minRaise: number = DEFAULT_RENEWAL_CONFIG.renewal_min_raise_thb): Evaluation {
+export function evaluate(reco: RecoSnapshot, old: Terms, next: Terms, mode: RecoMode, minRaise: number = DEFAULT_RENEWAL_CONFIG.renewal_min_raise_thb, packageChanged = false): Evaluation {
   const changed = changedFields(old, next);
+  // O-26 PK8 (added row): package changed → PM approval + reason always, even when the fee goes up.
+  if (packageChanged) return { changed_fields: changed.includes('package') ? changed : [...changed, 'package'], approval_required: true, reason_required: true, deviates_from_reco: true };
   // v1.4 §6.3 (added row): billing model changed → approval + reason, whatever the recommendation.
   if (old.billing_model && next.billing_model && old.billing_model !== next.billing_model) return { changed_fields: changed, approval_required: true, reason_required: true, deviates_from_reco: true };
   // v1.4: a changed guarantee fee is an "other field change" (existing row).
@@ -111,6 +119,9 @@ export function evaluate(reco: RecoSnapshot, old: Terms, next: Terms, mode: Reco
   return { changed_fields: changed, approval_required: true, reason_required: true, deviates_from_reco: true };
 }
 export const reasonValid = (code: ReasonCode | null, text: string) => !!code && (code !== 'อื่นๆ' || text.trim().length > 0);
+/** O-26: a package change carries its own required reason (PK8), which also answers the terms reason. */
+export const requestReasonOk = (r: Pick<RenewalRequest, 'reason_code' | 'reason_text' | 'package_changed' | 'package_change_reason'>) =>
+  reasonValid(r.reason_code, r.reason_text) || (!!r.package_changed && packageReasonValid(r.package_change_reason));
 
 /* ---------- §5 gates + state machine ---------- */
 export function gatesPass(r: Pick<RenewalRequest, 'approval_required' | 'status' | 'entity_change'>, entityTicketClosed: boolean) {
@@ -123,15 +134,16 @@ const set = (r: RenewalRequest, p: Partial<RenewalRequest>, at: string): Res => 
 /** Edit terms: re-runs §3; any edit after approval returns to DRAFT. */
 export function editTerms(r: RenewalRequest, next: Terms, mode: RecoMode, at: string, minRaise?: number): Res {
   if (!['DRAFT', 'RETURNED', 'APPROVED', 'READY_TO_SEND'].includes(r.status)) return { ok: false, error: 'แก้ไขไม่ได้ในสถานะนี้' };
-  const e = evaluate(r.reco_snapshot, r.old_terms, next, mode, minRaise);
+  const e = evaluate(r.reco_snapshot, r.old_terms, next, mode, minRaise, !!r.package_changed);
   const terms = changedFields(r.new_terms, next).length > 0;
   return set(r, { new_terms: next, changed_fields: e.changed_fields, approval_required: e.approval_required, deviates_from_reco: e.deviates_from_reco, ...(terms || r.status === 'RETURNED' ? { status: 'DRAFT', approved_by: null, approver_role: null, approved_at: null } : {}) }, at);
 }
 /** Step 3 primary action. */
 export function submit(r: RenewalRequest, mode: RecoMode, entityTicketClosed: boolean, at: string, minRaise?: number): Res {
   if (r.status !== 'DRAFT') return { ok: false, error: 'ส่งได้เฉพาะร่าง' };
-  const e = evaluate(r.reco_snapshot, r.old_terms, r.new_terms, mode, minRaise);
-  if (e.reason_required && !reasonValid(r.reason_code, r.reason_text)) return { ok: false, error: 'ต้องระบุเหตุผล' };
+  const e = evaluate(r.reco_snapshot, r.old_terms, r.new_terms, mode, minRaise, !!r.package_changed);
+  if (r.package_changed && !packageReasonValid(r.package_change_reason)) return { ok: false, error: 'ต้องระบุเหตุผลการเปลี่ยนแพ็กเกจ' };
+  if (e.reason_required && !requestReasonOk(r)) return { ok: false, error: 'ต้องระบุเหตุผล' };
   if (e.approval_required) return set(r, { ...e, status: 'PENDING_APPROVAL', submitted_at: at }, at);
   return set(r, { ...e, status: gatesPass({ ...r, ...e }, entityTicketClosed) ? 'READY_TO_SEND' : 'DRAFT' }, at);
 }
@@ -191,7 +203,7 @@ export function mainStoreInitialRows(list: MainContract[], existing: PriceHistor
     for (const g of groups.length ? groups : [{ svc: null, lines: [] as MainLine[] }]) {
       const pkgName = g.lines[0] ? (g.lines[0].name_snapshot || g.lines[0].sku_snapshot) : '';
       const pkg = g.svc && !pkgName.startsWith(g.svc) ? `${g.svc} ${pkgName}` : pkgName;
-      const has = existing.concat(out).some((h) => h.contract_id === c.contract_id && (h.source === 'RENEWAL' || !g.svc || svcOfPkg(h.package) === g.svc));
+      const has = existing.concat(out).some((h) => h.contract_id === c.contract_id && ((h.source === 'RENEWAL' || h.source === 'PACKAGE_CHANGE') || !g.svc || svcOfPkg(h.package) === g.svc));
       if (has) continue;
       const priced = g.lines.filter((l) => l.unit_price != null && l.unit_price > 0);
       const comm = g.lines.find((l) => l.commission_rate != null)?.commission_rate;

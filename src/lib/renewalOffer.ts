@@ -175,9 +175,10 @@ export function computeRenewalOffer(i: OfferInput): RenewalOffer {
 /* ---------- §2.6 match ---------- */
 const EPS = 1e-6;
 /** `MATCH` · `ABOVE` · `BELOW` of an AE offer against the recommendation; null when the recommendation is NONE (or the offer can't be valued). */
-export function matchOffer(reco: Pick<RenewalOffer, 'type' | 'model' | 'values' | 'expected_avg'>, offered: OfferTerms, fee?: FeeAverage | null, cfg?: Pick<OfferConfig, 'switch_match_tolerance_baht' | 'switch_match_tolerance_pct'>): OfferMatch | null {
+export function matchOffer(reco: Pick<RenewalOffer, 'type' | 'model' | 'values' | 'expected_avg'>, offered: OfferTerms, fee?: FeeAverage | null, cfg?: Pick<OfferConfig, 'switch_match_tolerance_baht' | 'switch_match_tolerance_pct'>, packageChanged = false): OfferMatch | null {
   if (reco.type === 'NONE' || !reco.model) return null;
-  if (offered.billing_model !== reco.model) {
+  // O-26 PK9: a package change compares the expected average with the switch tolerance (same as a model switch).
+  if (offered.billing_model !== reco.model || packageChanged) {
     if (!fee || !cfg || reco.expected_avg == null) return null;
     const e = offerExpectedAvg(fee, offered); if (e == null) return null;
     const tol = Math.max(cfg.switch_match_tolerance_baht, (reco.expected_avg * cfg.switch_match_tolerance_pct) / 100);

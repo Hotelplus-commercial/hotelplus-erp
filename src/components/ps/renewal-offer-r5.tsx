@@ -3,6 +3,7 @@
  * Numbers come from the v1.4 engine via renewal-offer-source (fresh, daily) or the request's reco_snapshot / new_terms /
  * offer_expected_avg / offer_match once a request exists — never a local formula. */
 import { InfoButton } from "./dash-card";
+import { PackageChangeChip } from "./renewal-package-card";
 import { SignalMark } from "./signal-mark";
 import { viewOfSnapshot } from "./renewal-offer-section";
 import { RO, R1_TIER_TH, RN5 } from "@/lib/ps-glossary";
@@ -107,6 +108,7 @@ export function OfferBlock({ info, open, onToggle }: { info: OfferInfo; open: bo
   return (
     <div className="rn5-block" data-testid="rn5-block">
       <button type="button" className="rn5-toggle" aria-expanded={open} onClick={onToggle} data-testid="rn5-toggle">{open ? "▴" : "▾"} {B.title}</button>
+      {info.req?.package_changed && <div className="mt-1"><PackageChangeChip req={info.req} /></div>}
       {open && (
         <dl className="rn5-grid" data-testid="rn5-body">
           <Row label={B.health}>
@@ -170,6 +172,7 @@ export function OfferResult({ i, info, rec }: { i: RenewalItem; info: OfferInfo;
   return (
     <dl className="rn5-grid rn5-result" data-testid="rn5-result" data-tag={tag}>
       {tag !== "NO_SNAPSHOT" && <Row label={R.result}>{tone === "grey" ? <span className="rn5-grey">{DECIDED_TAG_TH[tag]}</span> : <span className={cn("rn5-match", `is-${tone}`)}>{DECIDED_TAG_TH[tag]}</span>}</Row>}
+      {info.req?.package_changed && <Row label="แพ็กเกจ"><PackageChangeChip req={info.req} /></Row>}
       <Row label={R.sent}><span className="tabular-nums">{sent}</span></Row>
       <Row label={R.reco}>{reco ? <span className="rn5-grey tabular-nums">{reco.type === "NONE" || !reco.model ? R.keepTerms : `${RO.type[reco.type]} · ${shortReco(reco.type, reco.model, reco.values)}`}</span> : <span className="rn5-grey">{DECIDED_TAG_TH.NO_SNAPSHOT}</span>}</Row>
       {reco && <Row label={R.avg}><span className="tabular-nums">{thb(reco.avg_before)} → {thb(info.offerAvg)} {stage === "RENEWED" && <DeltaText before={reco.avg_before} after={info.offerAvg} />}</span></Row>}

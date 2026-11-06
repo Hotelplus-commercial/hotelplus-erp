@@ -3,6 +3,9 @@ import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { PackageChangeChip } from "@/components/ps/renewal-package-card";
+import { svcOfPackage } from "@/lib/renewal-contract";
+import { diffLines, packageLabel } from "@/lib/renewal-package";
 import { Chip } from "@/components/crm/crm-ui";
 import { InfoButton } from "@/components/ps/dash-card";
 import { Button } from "@/components/ui/button";
@@ -21,6 +24,20 @@ import { addAttachment, attachmentError, ticketById, useTickets, STATUS_TH, type
 const thb = (n: number) => `฿${n.toLocaleString("th-TH")}`;
 export const recoLabel = (r: RecoSnapshot) => r.type === "RAISE" ? RENEWAL_RECO_TH.RAISE(r.band_min_pct ?? 0, r.band_max_pct ?? 0) : r.type === "LOWER" ? RO.type["LOWER"] : RENEWAL_RECO_TH[r.type];
 const toneOf = (s: RenewalRequest["status"]) => s === "SIGNED" || s === "READY_TO_SEND" || s === "APPROVED" ? "success" : s === "RETURNED" || s === "PENDING_APPROVAL" ? "warn" : s === "DECLINED" ? "danger" : "muted";
+
+/** O-26 PK8: PM approval rows — package old → new, SKU diff, fee diff, expected average, reason. */
+function PackageApprovalRows({ r }: { r: RenewalRequest }) {
+  const svc = svcOfPackage(r.old_terms.package); const d = diffLines(r.old_lines ?? [], r.new_lines ?? []);
+  const fee = r.new_terms.fee_amount - r.old_terms.fee_amount;
+  return (
+    <>
+      <dt className="text-muted-foreground">แพ็กเกจ</dt><dd>{packageLabel(svc, r.old_lines ?? [])} → <b>{packageLabel(svc, r.new_lines ?? [])}</b></dd>
+      <dt className="text-muted-foreground">รายการบริการ</dt><dd>{d.added.map((l) => <span key={l.sku} className="mr-2 text-success">+ {l.name}</span>)}{d.removed.map((l) => <span key={l.sku} className="mr-2 text-destructive line-through">{l.name}</span>)}{d.kept.map((l) => <span key={l.sku} className="mr-2 text-muted-foreground">{l.name}</span>)}</dd>
+      <dt className="text-muted-foreground">ส่วนต่างค่าบริการ</dt><dd>{fee >= 0 ? "+" : ""}{thb(fee)}/เดือน{r.offer_expected_avg != null ? ` · ค่าเฉลี่ยที่คาดหวัง ${thb(r.offer_expected_avg)}` : ""}</dd>
+      <dt className="text-muted-foreground">เหตุผลเปลี่ยนแพ็กเกจ</dt><dd>{r.package_change_reason?.code ?? "—"}{r.package_change_reason?.text ? ` · ${r.package_change_reason.text}` : ""}</dd>
+    </>
+  );
+}
 
 export function RecoBox({ reco, oldFee }: { reco: RecoSnapshot; oldFee?: number }) {
   const minRaise = renewalConfig.renewal_min_raise_thb;
@@ -42,6 +59,7 @@ export function RenewalRequestChips({ cardId }: { cardId: string }) {
     <>
       <Chip tone={toneOf(r.status)}>{renewalReqStatusTh(r.status)}</Chip>
       {isOverdue(r, renewalNow(), renewalConfig) && <Chip tone="danger">{L.overdue(renewalConfig.renewal_approval_overdue_days)}</Chip>}
+      <PackageChangeChip req={r} />
     </>
   );
 }
@@ -174,6 +192,7 @@ export function RenewalApprovalList({ scope }: { scope: "PM" | "OVERDUE" }) {
                   <dt className="text-muted-foreground">เงื่อนไข</dt><dd>{thb(r.old_terms.fee_amount)} → {thb(r.new_terms.fee_amount)} ({d >= 0 ? "+" : ""}{thb(d)} · {pct.toFixed(1)}%) · {r.changed_fields.map((f) => L.fields[f]).join(", ") || "—"}</dd>
                   <dt className="text-muted-foreground">คำแนะนำระบบ</dt><dd>{recoLabel(r.reco_snapshot)}</dd>
                   {r.new_terms.billing_model && <V14ApprovalRows r={r} />}
+                  {r.package_changed && r.new_lines && <PackageApprovalRows r={r} />}
                   <dt className="text-muted-foreground">เหตุผล AE</dt><dd>{r.reason_code ? `${r.reason_code}${r.reason_text ? ` · ${r.reason_text}` : ""}` : "—"}</dd>
                   <dt className="text-muted-foreground">ราคาล่าสุด</dt><dd>{last ? `รอบ ${last.cycle_no} · ${last.fee_amount == null ? "—" : thb(last.fee_amount)} · ${last.effective_from} – ${last.effective_to}` : "—"}</dd>
                   <dt className="text-muted-foreground">เปลี่ยนนิติบุคคล</dt><dd>{t ? `#${t.ticket_id} · ${STATUS_TH[t.status]}` : "ไม่มี"}</dd>

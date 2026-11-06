@@ -17,6 +17,10 @@ import type { Contract, ContractLine } from './crm-types';
 import { RENEWAL_NEW_CONTRACT_FAILED, RENEWAL_SOURCE_NOT_FOUND } from './ps-glossary';
 import { addMainContract, mainContractById, mainContracts, setMainContractDemo } from './main-contract-store';
 import { buildRenewedContract, contractFromSource, svcOfPackage } from './renewal-contract';
+import { firstMonthEnd, isOrmFullToLite, isPackageChanged, linesOfContract, monthlySum, ormLiteDefaults, ormTierOf, packageLabel, validatePackage, type PkgLine } from './renewal-package';
+import { mainCatalogProducts } from './main-contract-store';
+import { PK_DEMO_CASES, PK_DEMO_CONTRACTS } from './renewal-package-demo';
+import { RO } from './ps-glossary';
 import { readEarlyHandoff, toIsoDate } from './renewal-scan';
 import { renewalR2DemoItems, renewalR2Sim, RENEWAL_R2_DEMO_NOW } from './renewal-r2-demo';
 import { tabR1DemoRenewalBase, tabR1DemoFlow, tabR1HeaderPortfolio } from './contract-tab-r1-demo';
@@ -66,6 +70,8 @@ export const DEMO_EXTRA_CARDS: RenewalCard[] = [
   /* AE Workspace System Cost UAT (DEMO only, in memory): same contract / property ids as the Partner demo. */
   { id: 'RN-AW-CHABA', hotelId: 'HP-CT-ORM-Q-ORM-0410', hotel: 'Chaba Grand', contractEnd: '30 Nov 2026', daysLeft: 33, status: 'ON_PROCESS', owner: 'AE001-Nont', contact: contact('คุณชบา'), contractFile: 'Contract_v1_2025.pdf', contractGeneratedAt: '1 Dec 2025', activities: [], contract_id: 'CT-ORM-Q-ORM-0410', service: 'ORM' },
   { id: 'RN-AW-MARCOM', hotelId: 'HP-AW-LANTA', hotel: 'Lanta Bay Resort', contractEnd: '20 Dec 2026', daysLeft: 53, status: 'ON_PROCESS', owner: 'AE001-Nont', contact: contact('คุณลันตา'), contractFile: 'Contract_v1_2025.pdf', contractGeneratedAt: '21 Dec 2025', activities: [], contract_id: 'CT-AW-LANTA-MC', service: 'Marcom' },
+  /* O-26 §5 package-change DEMO (memory only) */
+  ...PK_DEMO_CASES.map((d): RenewalCard => ({ id: d.card_id, hotelId: d.hotel_id, hotel: d.hotel, contractEnd: d.contractEnd, daysLeft: d.daysLeft, status: 'ON_PROCESS', owner: 'AE001-Nont', contact: contact(d.contact), contractFile: 'Contract_v1_2025.pdf', contractGeneratedAt: '1 Dec 2025', activities: [], contract_id: d.contract_id, service: d.service })),
   { id: 'RN-AW-DOIMIST', hotelId: 'HP-DOIMIST', hotel: 'Doi Mist Resort', contractEnd: '15 Dec 2026', daysLeft: 48, status: 'ON_PROCESS', owner: 'AE001-Nont', contact: contact('คุณดอย'), contractFile: 'Contract_v1_2025.pdf', contractGeneratedAt: '16 Dec 2025', activities: [], contract_id: 'CT-AW-DOIMIST', service: 'ORM' },
 ];
 
@@ -120,7 +126,7 @@ export function setRenewalDemo(on: boolean) {
   if (on === demoOn) return;
   demoOn = on; demoExtra = []; demoMisses = []; setTicketDemo(on);
   /* v1.3 §2: one demo contract state — the renewal sample contracts are seed data written into it (memory only). */
-  setMainContractDemo(on, on ? [...SAMPLE_CONTRACTS, ...DEMO_CONTRACTS, ...V14_CONTRACTS, ...V141_CONTRACTS].map((c) => contractFromSource(c, DEMO_NOW)) : []);
+  setMainContractDemo(on, on ? [...[...SAMPLE_CONTRACTS, ...DEMO_CONTRACTS, ...V14_CONTRACTS, ...V141_CONTRACTS].map((c) => contractFromSource(c, DEMO_NOW)), ...PK_DEMO_CONTRACTS] : []); // O-26 §5: package-change demo contracts (explicit lines)
   /* Tab R3 addendum: all R1-/R2- demo contracts join the demo state now (not on first open), so the v1.3 §4 backfill in seedDemo() covers every demo contract. */
   if (on) for (const id of demoBackfillIds()) materialiseDemo(id, false);
   demo = on ? seedDemo() : null;
@@ -285,7 +291,7 @@ export function withOfferFields(r: RenewalRequest): RenewalRequest {
   const fee = snapshotFee(r); const t = offerTermsOf(r.new_terms);
   if (!fee || !t || !r.reco_snapshot.model) return { ...r, offer_expected_avg: null, offer_match: null, model_changed: r.old_terms.billing_model && r.new_terms.billing_model ? r.old_terms.billing_model !== r.new_terms.billing_model : null };
   const reco = { type: r.reco_snapshot.type === 'HOLD' ? 'NONE' as const : r.reco_snapshot.type, model: r.reco_snapshot.model, values: r.reco_snapshot.values ?? [], expected_avg: r.reco_snapshot.expected_avg ?? null };
-  return { ...r, offer_expected_avg: offerExpectedAvg(fee, t), offer_match: matchOffer(reco, t, fee, renewalConfig), model_changed: !!r.old_terms.billing_model && r.old_terms.billing_model !== t.billing_model };
+  return { ...r, offer_expected_avg: offerExpectedAvg(fee, t), offer_match: matchOffer(reco, t, fee, renewalConfig, !!r.package_changed), model_changed: !!r.old_terms.billing_model && r.old_terms.billing_model !== t.billing_model };
 }
 /** v1.4 reco_snapshot: the existing keys (type · band · reasons · inputs · computed_at) + the engine keys. */
 function snapshotOf(o: RenewalOffer, fee: FeeAverage, row: PsReportRow | null): RecoSnapshot {
@@ -325,6 +331,7 @@ function seedDemo(): State {
   s.requests.push(signed7); s.history.push(renewalHistoryRow(signed7, 1));
   seedV14Requests(s);
   seedV141Requests(s);
+  seedPackageRequests(s);
   return s;
 }
 /** v1.4 §9 — added demo requests: Chiang Mai (link sent, offer = match) · Baan Suan (switch package, pending PM 1 day) · Hua Hin (draft 14% = match). */
@@ -358,6 +365,25 @@ function seedV141Requests(s: State) {
     const signed: RenewalRequest = { ...r, new_terms: v141Terms(src, d.o), status: 'SIGNED', submitted_at: `${d.at.sub}T03:00:00.000Z`, approved_by: 'PM001-Alex', approver_role: 'PM', approved_at: `${d.at.app}T03:00:00.000Z`,
       link_sent_at: `${d.at.link}T03:00:00.000Z`, signed_at: `${d.at.signed}T03:00:00.000Z`, new_contract_id: d.newId, updated_at: `${d.at.signed}T03:00:00.000Z` };
     s.requests.push(signed); s.history.push(renewalHistoryRow(signed, 1));
+  }
+}
+/** O-26 §5: three package-change requests built through updatePackage's rules (evaluate with packageChanged = true). */
+function seedPackageRequests(s: State) {
+  const products = mainCatalogProducts();
+  for (const d of PK_DEMO_CASES) {
+    const src = sourcesFromMain(PK_DEMO_CONTRACTS).find((c) => c.contract_id === d.contract_id && svcOf(c) === d.service); if (!src) continue;
+    s.seq++; let r = newRequest({ id: d.card_id, hotelId: d.hotel_id, hotel: d.hotel, owner: 'AE001-Nont' }, src, s.seq, `${d.at.sub}T02:00:00.000Z`, s.history);
+    if (d.overdueDays != null) r = { ...r, reco_snapshot: { ...r.reco_snapshot, overdue: { own: true, days: d.overdueDays }, reasons: [`${RO.overdue} · ${RO.overdueDays(d.overdueDays)}`, ...r.reco_snapshot.reasons.filter((x) => x !== RO.hint), RO.hint] } };
+    const oldL = oldPackageLines(r); const svc = d.service;
+    let next: Terms = { ...r.new_terms, package: `${svc} · ${packageLabel(svc, d.new_lines)}` };
+    if (svc === 'ORM' && ormTierOf(d.new_lines) === 'LITE') { const x = ormLiteDefaults(products); next = applyOfferTerms(next, { billing_model: x.billing_model, fixed_fee: x.fixed_fee, commission_pct: x.commission_pct, guarantee_fee: null }); }
+    else next = { ...next, fee_amount: monthlySum(d.new_lines), ...(next.billing_model === 'FLAT' || !next.billing_model ? { fixed_fee: monthlySum(d.new_lines) } : {}) };
+    const e = evaluate(r.reco_snapshot, r.old_terms, next, renewalConfig.renewal_reco_mode, renewalConfig.renewal_min_raise_thb, true);
+    const base: RenewalRequest = withOfferFields({ ...r, ...e, new_terms: next, package_changed: true, old_lines: oldL, new_lines: d.new_lines, setup_lines: d.setup ?? [], package_change_reason: d.reason, submitted_at: `${d.at.sub}T03:00:00.000Z`, status: 'PENDING_APPROVAL', updated_at: `${d.at.sub}T03:00:00.000Z` });
+    if (d.status === 'SIGNED') {
+      const signed: RenewalRequest = { ...base, status: 'SIGNED', approved_by: 'PM001-Alex', approver_role: 'PM', approved_at: `${d.at.app}T03:00:00.000Z`, link_sent_at: `${d.at.link}T03:00:00.000Z`, signed_at: `${d.at.signed}T03:00:00.000Z`, new_contract_id: `${d.contract_id}-R${base.id.slice(-4)}`, updated_at: `${d.at.signed}T03:00:00.000Z` };
+      s.requests.push(signed); s.history.push({ ...renewalHistoryRow(signed, 1), source: 'PACKAGE_CHANGE' });
+    } else s.requests.push(base);
   }
 }
 /** v1.4.1 RN51 / RN41: the two DEMO renewed contracts, built by the same buildRenewedContract() (pure; no store is touched) — AC Billing DEMO notices. */
@@ -444,6 +470,44 @@ function writeRenewedContract(req: RenewalRequest, snapshot?: SourceContract): {
   return { ok: true, contract_id: b.contract.contract_id };
 }
 
+/* ---------- O-26 package change (PK2–PK11) ---------- */
+/** Old package lines of the request's source contract (monthly lines of its service). Main store first, else one line from the terms. */
+export function oldPackageLines(r: Pick<RenewalRequest, 'source_contract_id' | 'old_terms'>): PkgLine[] {
+  const svc = svcOfPackage(r.old_terms.package);
+  const main = mainContractById(r.source_contract_id); const fromMain = main ? linesOfContract(main, svc) : [];
+  if (fromMain.length) return fromMain;
+  const base = contractFromSource({ contract_id: r.source_contract_id, hotel_id: '', customer_id: '', legal_entity: '', signatory: '', kyc_docs: [], terms: r.old_terms }, nowIso());
+  return linesOfContract(base, svc);
+}
+/** Keep package (null) or a new package. Re-runs the approval rule; ORM Lite sets Monthly fee + Commission at the catalog standard (PK4). */
+export function updatePackage(id: string, newLines: PkgLine[] | null, opts: { setup?: PkgLine[]; terms?: Partial<Terms> } = {}): Out {
+  return apply(id, (r) => {
+    const svc = svcOfPackage(r.old_terms.package); const oldL = r.old_lines ?? oldPackageLines(r);
+    if (newLines) { const err = validatePackage(svc, mainCatalogProducts(), oldL, newLines); if (err) return { ok: false, error: err }; }
+    const changed = !!newLines && isPackageChanged(oldL, newLines);
+    const keep = { ...r, package_changed: changed, old_lines: changed ? oldL : r.old_lines ?? null, new_lines: changed ? newLines : null, setup_lines: changed ? opts.setup ?? [] : null,
+      package_change_reason: changed ? r.package_change_reason ?? null : null };
+    let next: Terms = { ...r.new_terms, package: changed ? `${svc} · ${packageLabel(svc, newLines!)}` : r.old_terms.package };
+    if (changed && svc === 'ORM' && ormTierOf(newLines!) === 'LITE' && ormTierOf(oldL) !== 'LITE' && !opts.terms) {
+      const d = ormLiteDefaults(mainCatalogProducts()); next = applyOfferTerms(next, { billing_model: d.billing_model, fixed_fee: d.fixed_fee, commission_pct: d.commission_pct, guarantee_fee: null });
+    }
+    if (changed && svc === 'Marcom' && !opts.terms) next = { ...next, fee_amount: monthlySum(newLines!), ...(next.billing_model === 'FLAT' || !next.billing_model ? { fixed_fee: monthlySum(newLines!) } : {}) };
+    if (opts.terms) next = { ...next, ...opts.terms };
+    const o = editTerms(keep, next, renewalConfig.renewal_reco_mode, nowIso(), renewalConfig.renewal_min_raise_thb);
+    return o.ok ? { ok: true, req: withOfferFields(o.req) } : o;
+  });
+}
+export const updatePackageReason = (id: string, code: string | null, text: string) => apply(id, (r) => ({ ok: true, req: { ...r, package_change_reason: { code, text }, updated_at: nowIso() } }));
+/** PK-Q5: ORM full → Lite → one ORM ticket (dedup by request field + open ticket on the same new contract). */
+function packageTicketFor(r: RenewalRequest): string | null {
+  if (!r.package_changed || !r.new_lines || !r.new_contract_id || r.package_ticket_id) return r.package_ticket_id ?? null;
+  if (!isOrmFullToLite(r.old_lines ?? [], r.new_lines)) return null;
+  const t = createTask({ type: 'PACKAGE_OTA_ADJUST', target_dept: 'ORM', created_by: 'PS', category_id: null,
+    subject_ref: { hotel_id: r.hotel_id, hotel_name: r.hotel_name, gap_service: 'ORM', deal_id: `PKG-${r.new_contract_id}`, contract_id: r.new_contract_id, service: 'ORM' },
+    payload: { readiness_tier: '', chips: [], note: 'ปรับ OTA ให้เหลือตามแพ็กเกจ ORM Lite (ขั้นต่ำ 3 OTA)', renewal_request_id: r.id }, due_date: firstMonthEnd(r.new_terms.start_date) });
+  return t.ticket_id;
+}
+
 /** Signing: new contract in the main store (all-or-nothing) + RENEWAL price-history row. v1.1: the card closes only via Mark as Done. */
 export function signRequest(id: string): Out {
   const r = cur().requests.find((x) => x.id === id); if (!r) return { ok: false, error: 'ไม่พบคำขอ' };
@@ -451,7 +515,9 @@ export function signRequest(id: string): Out {
   const w = writeRenewedContract(o.req); if (!w.ok) return { ok: false, error: w.error };
   setLinkStatus(r.id, 'SIGNED', o.req.signed_at, o.req);
   const s = cur(); const prev = Math.max(0, ...s.history.filter((h) => h.contract_id === r.source_contract_id || h.renewal_request_id != null && s.requests.find((q) => q.id === h.renewal_request_id)?.source_contract_id === r.source_contract_id).map((h) => h.cycle_no));
-  return put(o.req, { history: [...s.history, renewalHistoryRow(o.req, prev)] });
+  const row = renewalHistoryRow(o.req, prev); const ticket = packageTicketFor(o.req);
+  // O-26 PK11: a package change records its row as PACKAGE_CHANGE (one row per signing, same fields).
+  return put({ ...o.req, ...(ticket ? { package_ticket_id: ticket } : {}) }, { history: [...s.history, o.req.package_changed ? { ...row, source: 'PACKAGE_CHANGE' } : row] });
 }
 export const requestById = (id: string) => cur().requests.find((r) => r.id === id) ?? null;
 /** Customer signing page path (renewal: no payment step). */

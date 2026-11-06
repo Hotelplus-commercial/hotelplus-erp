@@ -6,7 +6,7 @@ import { stageCloudDoc } from './cloud-sync';
 import { DEMO_NOW } from './ps-demo-fixture';
 import { readDemoL0, saveDemoL0 } from './demo-session';
 
-export type TicketType = 'UPSELL_PITCH' | 'RENEWAL_DUE' | 'GRADE_RISK' | 'SURVEY_LOW' | 'CONTRACT_FOLLOWUP' | 'SERVICING_STALL' | 'CUSTOMER_ENTITY_CHANGE' | 'CONTRACT_SIGNAL' | 'WELCOME_BACK' | 'HANDOVER_FIX' | 'SYSTEM_SHUTOFF' | 'PARTNER_DEAL_NOTICE' | 'SYSTEM_CREDIT_NOTICE' | 'SYSTEM_REACTIVATE';
+export type TicketType = 'UPSELL_PITCH' | 'RENEWAL_DUE' | 'GRADE_RISK' | 'SURVEY_LOW' | 'CONTRACT_FOLLOWUP' | 'SERVICING_STALL' | 'CUSTOMER_ENTITY_CHANGE' | 'CONTRACT_SIGNAL' | 'WELCOME_BACK' | 'HANDOVER_FIX' | 'SYSTEM_SHUTOFF' | 'PARTNER_DEAL_NOTICE' | 'SYSTEM_CREDIT_NOTICE' | 'SYSTEM_REACTIVATE' | /** O-26 PK-Q5: ORM full → Lite OTA trim */ 'PACKAGE_OTA_ADJUST';
 /** Tab R3 §6.1 WELCOME_BACK snapshot (read-only for BD). */
 export type WelcomeBackSnapshot = {
   contract_info: Record<string, string>; package_rate: Record<string, string>; exit_status: Record<string, string>;
@@ -80,7 +80,7 @@ export const DEPTS_WITH_WORKSPACE: Dept[] = [...DEPTS];
 export const OPEN_STATUSES: L0Status[] = ['NEW', 'ACK', 'IN_PROGRESS', 'WAITING_CUSTOMER', 'WAITING_THIRD_PARTY'];
 /** Tab R1 §6.6: NEW = New · legacy ACK shown as กำลังทำ (stored value unchanged). */
 export const STATUS_TH: Record<L0Status, string> = { NEW: 'New', ACK: 'กำลังทำ', IN_PROGRESS: 'กำลังทำ', DONE: 'เสร็จ', CANCELLED: 'ยกเลิก', WAITING_CUSTOMER: 'รอลูกค้า', WAITING_THIRD_PARTY: 'รอ 3rd Party' };
-export const TYPE_TH: Record<TicketType, string> = { UPSELL_PITCH: 'เสนอขายบริการเพิ่ม', RENEWAL_DUE: 'ใกล้ครบสัญญา', GRADE_RISK: 'เสี่ยงเกรดการชำระ (D)', SURVEY_LOW: 'คะแนนบริการต่ำ', CONTRACT_FOLLOWUP: 'ติดตามดีลค้างข้ามเดือน', SERVICING_STALL: 'ติดตามการ์ดเกิน SLA', CUSTOMER_ENTITY_CHANGE: 'เปลี่ยนนิติบุคคล / ผู้ลงนาม', CONTRACT_SIGNAL: 'แจ้งเรื่องของสัญญา', WELCOME_BACK: 'Welcome Back', HANDOVER_FIX: 'ขอแก้งานส่งมอบ', SYSTEM_SHUTOFF: 'ปิดระบบ', PARTNER_DEAL_NOTICE: 'แจ้งข้อตกลง Partner', SYSTEM_CREDIT_NOTICE: 'แจ้งผลเครดิตค่าระบบ', SYSTEM_REACTIVATE: 'เปิดระบบคืน' };
+export const TYPE_TH: Record<TicketType, string> = { PACKAGE_OTA_ADJUST: 'ปรับ OTA ตามแพ็กเกจ', UPSELL_PITCH: 'เสนอขายบริการเพิ่ม', RENEWAL_DUE: 'ใกล้ครบสัญญา', GRADE_RISK: 'เสี่ยงเกรดการชำระ (D)', SURVEY_LOW: 'คะแนนบริการต่ำ', CONTRACT_FOLLOWUP: 'ติดตามดีลค้างข้ามเดือน', SERVICING_STALL: 'ติดตามการ์ดเกิน SLA', CUSTOMER_ENTITY_CHANGE: 'เปลี่ยนนิติบุคคล / ผู้ลงนาม', CONTRACT_SIGNAL: 'แจ้งเรื่องของสัญญา', WELCOME_BACK: 'Welcome Back', HANDOVER_FIX: 'ขอแก้งานส่งมอบ', SYSTEM_SHUTOFF: 'ปิดระบบ', PARTNER_DEAL_NOTICE: 'แจ้งข้อตกลง Partner', SYSTEM_CREDIT_NOTICE: 'แจ้งผลเครดิตค่าระบบ', SYSTEM_REACTIVATE: 'เปิดระบบคืน' };
 const OPEN: L0Status[] = ['NEW', 'ACK', 'IN_PROGRESS', 'WAITING_CUSTOMER', 'WAITING_THIRD_PARTY'];
 /** Tab R1 §6.6 — every type: NEW → IN_PROGRESS → DONE (+ CANCELLED by creator). ACK is never offered; legacy ACK continues like IN_PROGRESS. */
 const NEXT: Partial<Record<L0Status, L0Status>> = { NEW: 'IN_PROGRESS', ACK: 'DONE', IN_PROGRESS: 'DONE' };
@@ -123,7 +123,7 @@ export function findOpenByDeal(type: TicketType, deal_id: string) {
 }
 
 /** Central generic engine. Returns the new id, or the existing open id (dedup). */
-export function createTask(i: { type: TicketType; target_dept: Dept; subject_ref: L0Ticket['subject_ref']; payload: L0Ticket['payload']; created_by: Creator; source_app?: L0Ticket['source_app']; ticket_id?: string; assignee?: TicketAssignee; /** SLA Core v1.0: optional category (none → default mapping in the view) */ category_id?: string | null }): { ticket_id: string; deduped: boolean } {
+export function createTask(i: { type: TicketType; target_dept: Dept; subject_ref: L0Ticket['subject_ref']; payload: L0Ticket['payload']; created_by: Creator; source_app?: L0Ticket['source_app']; ticket_id?: string; assignee?: TicketAssignee; /** SLA Core v1.0: optional category (none → default mapping in the view) */ category_id?: string | null; /** O-26: optional due date (SLA due_date field) */ due_date?: string | null }): { ticket_id: string; deduped: boolean } {
   if (i.type === 'CONTRACT_SIGNAL') return createReserved(i);
   if (i.type === 'WELCOME_BACK') { const o = createWelcomeBack(i); return o.ok ? { ticket_id: o.ticket_id, deduped: false } : { ticket_id: o.locked?.ticket_id ?? i.ticket_id ?? '', deduped: true }; }
   const existing = i.type === 'SERVICING_STALL' && i.payload.event_key ? findOpenByEvent(i.type,i.subject_ref.hotel_id,i.payload.event_key) : i.subject_ref.deal_id ? findOpenByDeal(i.type, i.subject_ref.deal_id) : findOpen(i.type, i.subject_ref.hotel_id, i.subject_ref.gap_service);
@@ -131,6 +131,7 @@ export function createTask(i: { type: TicketType; target_dept: Dept; subject_ref
   const s = cur(); const seq = s.seq + 1; const at = now(); // Level B: replace with revision-locked reservation.
   const t: L0Ticket = { ticket_id: `TKT-${String(seq).padStart(6, '0')}`, type: i.type, source_app: i.source_app ?? 'PS_DASHBOARD', created_by: i.created_by, target_dept: i.target_dept, subject_ref: i.subject_ref, payload: i.payload, status: 'NEW', created_at: at, revision: 0, audit: [{ at, by: i.created_by, from_status: null, to_status: 'NEW' }] };
   if (i.category_id) t.category_id = i.category_id;
+  if (i.due_date) t.due_date = i.due_date;
   commit({ seq, items: [...s.items, t] });
   return { ticket_id: t.ticket_id, deduped: false };
 }
