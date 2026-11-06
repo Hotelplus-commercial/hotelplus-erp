@@ -2123,3 +2123,21 @@ textarea.r1-input{height:auto;padding:6px 8px;resize:vertical;}
 .ms-f-sumitem b.ms-low-t{color:var(--action-text);}
 .ms-funnel .ms-f-summary{margin-top:10px;}
 .ms-funnel .ms-f-bar{min-width:168px;} .ms-f-sumitem{white-space:nowrap;}
+
+/* Patch A SP11 — Portfolio Waterfall like r15 'fall': in = dark tone (left half), out = light tone (right half), both themes. */
+.r1-io-panel{--wf-in:var(--svc-orm);--wf-out:var(--svc-orm-light);}
+.r1-io-panel.svc-marcom{--wf-in:var(--svc-marcom);--wf-out:var(--svc-marcom-light);}
+.dark .r1-io-panel{--wf-in:var(--svc-orm-light);--wf-out:var(--svc-orm);}
+.dark .r1-io-panel.svc-marcom{--wf-in:var(--svc-marcom-light);--wf-out:var(--svc-marcom);}
+.r1-io-chart{position:relative;}
+.r1-wf-axis{position:relative;display:block;}
+.r1-wf-axis span{position:absolute;right:6px;transform:translateY(50%);line-height:1;}
+.r1-wf-grid{position:absolute;top:0;left:38px;right:0;height:176px;pointer-events:none;z-index:0;}
+.r1-wf-grid i{position:absolute;left:0;right:0;border-top:1px solid color-mix(in srgb,var(--neutral-bar) 35%,transparent);}
+.r1-io-cols{position:relative;z-index:1;}
+.r1-wf .r1-wf-in{left:8%;width:42%;max-width:none;background:var(--wf-in);border-radius:2px 0 0 2px;}
+.r1-wf .r1-wf-out{left:50%;width:42%;max-width:none;background:var(--wf-out);border-radius:0 2px 2px 0;}
+.r1-wf .r1-wf-flat{left:8%;width:84%;max-width:none;height:2px;}
+.r1-wf .r1-wf-lapsed{left:50%;width:42%;max-width:none;}
+.r1-wf .r1-wf-link{left:-8%;right:auto;width:16%;border-top:1.5px dotted var(--neutral-bar);}
+@media (max-width:640px){.r1-wf-grid{left:30px;}}
