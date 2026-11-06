@@ -139,8 +139,12 @@ export function ServiceTicketTab({ cases, onCreate }: { cases: PsCase[]; onCreat
           {sum.noDueBell > 0 && <p className="stab-pill">🔔 แจ้งกระดิ่ง Workspace ผู้รับแล้ว · {sum.noDueBell} ticket ยังไม่ใส่วันกำหนดเสร็จ</p>}
         </div>
       </div>
-      <table className="stab-table" data-testid="stab-dept-table"><thead><tr><th>แผนก</th><th>คงค้าง</th><th>ยังไม่ใส่วันที่ (New)</th><th>กำลังดำเนินการ</th><th>รอลูกค้า</th><th>รอ 3rd Party</th><th>เลยกำหนด</th></tr></thead>
-        <tbody>{sum.depts.map((d) => <tr key={d.dept} tabIndex={0} data-dept={d.dept} className={cn(dept !== 'ALL' && (dept === d.dept ? 'is-on' : 'is-dim'))} onClick={() => setDept(dept === d.dept ? 'ALL' : d.dept)} onKeyDown={(e) => e.key === 'Enter' && setDept(dept === d.dept ? 'ALL' : d.dept)}>
+      <table className="stab-table" data-testid="stab-dept-table"><thead><tr><th>แผนก</th>{DEPT_SORT_COLS.map(([k, label]) => (
+          <th key={k}><button type="button" className="stab-sort" data-testid={`stab-sort-${k}`} aria-sort={deptSort?.key === k ? (deptSort.dir === 'desc' ? 'descending' : 'ascending') : 'none'}
+            onClick={() => setDeptSort((cur) => (cur?.key === k ? { key: k, dir: cur.dir === 'desc' ? 'asc' : 'desc' } : { key: k, dir: 'desc' }))}>
+            {label}<span aria-hidden>{deptSort?.key === k ? (deptSort.dir === 'desc' ? ' ↓' : ' ↑') : ' ↕'}</span></button></th>
+        ))}</tr></thead>
+        <tbody>{sortDepts(sum.depts, deptSort).map((d) => <tr key={d.dept} tabIndex={0} data-dept={d.dept} className={cn(dept !== 'ALL' && (dept === d.dept ? 'is-on' : 'is-dim'))} onClick={() => setDept(dept === d.dept ? 'ALL' : d.dept)} onKeyDown={(e) => e.key === 'Enter' && setDept(dept === d.dept ? 'ALL' : d.dept)}>
           <td><span className={cn('stab-chip', deptTone[d.dept])}>{DEPT_TH[d.dept]}</span></td><td><b>{d.total}</b></td><td>{d.NEW}</td><td>{d.IN_PROGRESS}</td><td>{d.WAITING_CUSTOMER}</td><td>{d.WAITING_THIRD_PARTY}</td>
           <td className={d.overdue ? 'text-destructive' : ''}><b>{d.overdue}</b>{d.overdue > 0 && <small className="text-muted-foreground">มีช่วงรอ {d.hadWait} · ยังไม่รับงาน {d.notAccepted}</small>}</td></tr>)}</tbody></table>
       <p className="stab-foot">กดแถวเพื่อกรองทั้งแท็บเป็นแผนกนั้น · เวลาไม่หยุดนับระหว่างรอ · “มีช่วงรอ” เป็นหมายเหตุให้เห็นเหตุผลเท่านั้น</p>
@@ -152,7 +156,7 @@ export function ServiceTicketTab({ cases, onCreate }: { cases: PsCase[]; onCreat
     <Card4 rows={allRows} cats={cats} dept={dept} a={cmp.a} b={cmp.b} label={cmp.full} onCat={(c) => toList({ cat: c })} />
 
     <h2 className="stab-section">ก่อนประชุมประจำเดือน</h2>
-    <Card5 meetings={meetings} open={openRowsD} today={today} onTicket={setOpen} />
+    {SHOW_PENDING_BEFORE_MEETING && <Card5 meetings={meetings} open={openRowsD} today={today} onTicket={setOpen} />}
 
     <h2 className="stab-section">รายการ ticket</h2>
     <div ref={listRef}><Card6 rows={rows} cats={cats} dept={dept} f={list} setF={setList} today={today} onTicket={setOpen} /></div>
@@ -218,7 +222,7 @@ function Card3({ rows, today }: { rows: ServiceTicketRow[]; today: string }) {
           {pts.map((pt, i) => i % step === 0 || i === n - 1 ? <text key={i} x={x(i)} y={H - 4} className="stab-x">{pt.label}</text> : null)}
           {last && <><text x={W - 4} y={y(last.cumCreated) - 4} className="stab-end">สร้าง {last.cumCreated}</text><text x={W - 4} y={y(last.cumSolved) + 12} className="stab-end">Solve {last.cumSolved}</text><text x={W - 4} y={y(last.cumOverdue) - 4} className="stab-end text-destructive">เลยกำหนด {last.cumOverdue}</text></>}
         </svg>
-        <p className="stab-sub">median วัน Solve (วันสร้าง → Solve)</p>
+        <div className="stab-median-box" data-testid="stab-median-box"><span>median วัน Solve (วันสร้าง → Solve)</span><b>{med ?? '—'} วัน</b></div>
         <svg viewBox={`0 0 ${W} ${S}`} aria-label="median วัน Solve" data-testid="stab-median">
           <line x1={20} x2={W - 10} y1={ys(10)} y2={ys(10)} className="stab-ceil" /><text x={W - 10} y={ys(10) - 3} className="stab-end text-destructive">เกณฑ์ 10 วัน</text>
           {idx != null && <line x1={x(idx)} x2={x(idx)} y1={0} y2={S} className="stab-cross" />}
@@ -365,3 +369,15 @@ function TicketDrawer({ row, today, demo, onClose }: { row: ServiceTicketRow | n
     </SheetContent>
   </Sheet>;
 }
+
+/* UAT Polish R2 SP16: sortable count columns (one active sort; มาก → น้อย first). */
+export type DeptSortKey = 'total' | 'NEW' | 'IN_PROGRESS' | 'WAITING_CUSTOMER' | 'WAITING_THIRD_PARTY' | 'overdue';
+export type DeptSort = { key: DeptSortKey; dir: 'desc' | 'asc' } | null;
+const DEPT_SORT_COLS: [DeptSortKey, string][] = [['total', 'คงค้าง'], ['NEW', 'ยังไม่ใส่วันที่ (New)'], ['IN_PROGRESS', 'กำลังดำเนินการ'], ['WAITING_CUSTOMER', 'รอลูกค้า'], ['WAITING_THIRD_PARTY', 'รอ 3rd Party'], ['overdue', 'เลยกำหนด']];
+export function sortDepts<T extends Record<DeptSortKey, number>>(rows: T[], sort: DeptSort): T[] {
+  if (!sort) return rows;
+  const m = sort.dir === 'desc' ? -1 : 1;
+  return [...rows].sort((a, b) => (a[sort.key] - b[sort.key]) * m);
+}
+/* UAT Polish R2 SP16b: งานค้างของสัญญา (card ⑤) unmounted from this tab; code kept. */
+const SHOW_PENDING_BEFORE_MEETING = false;
