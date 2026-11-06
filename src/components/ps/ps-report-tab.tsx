@@ -1013,6 +1013,8 @@ export function PsReportTab({
           )}
         </DashCard>
       </div>)}
+      {/* UAT polish UP6: card การยกเลิกสัญญา (Off-board) unmounted — card ⑥ ระยะเวลา Reset replaces it; code kept. */}
+      {false && (
       <DashCard
         title={R1_TITLES.offboard}
         question="บริการที่สิ้นสุดเป็นอย่างไร?"
@@ -1022,6 +1024,7 @@ export function PsReportTab({
       >
         <ChartSkeleton source />
       </DashCard>
+      )}
       {/* Tab R4 §1: card สัญญาณจากสัญญา unmounted from this tab (content lives in สุขภาพสัญญา); code kept. */}
       {R4_LEGACY_SIGNALS && (<div className={compareSide ? "" : "lg:col-span-2"}>
         <DashCard
