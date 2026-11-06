@@ -450,7 +450,7 @@ function AnalyzerCard({ demo }: { demo: boolean }) {
 }
 
 /** UAT Polish R2 SP12: sub-sections start collapsed; open state remembered for the browser session. */
-function SessionDetails({ id, children }: { id: string; children: React.ReactNode }) {
+function SessionDetails({ id, children }: { id: string; children: ReactNode }) {
   const key = `psdash.${id}`;
   const [open, setOpen] = useState(false);
   useEffect(() => { try { setOpen(sessionStorage.getItem(key) === "1"); } catch { /* no storage */ } }, [key]);
