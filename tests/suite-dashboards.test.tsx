@@ -21,14 +21,16 @@ async function mount(make: () => Promise<unknown>) {
   const { createRoot } = await import('react-dom/client');
   const { createMemoryHistory, createRootRoute, createRouter, RouterProvider } = await import('@tanstack/react-router');
   const { QueryClient, QueryClientProvider } = await import('@tanstack/react-query');
-  const { HrMembersProvider } = await import('../src/lib/hr-members');
-  const { ContractLifecycleProvider } = await import('../src/lib/contract-lifecycle');
-  const { ServicingProvider } = await import('../src/lib/ps-servicing');
-  const { Ws2Provider } = await import('../src/lib/ws2-store');
+  const P = [
+    (await import('../src/lib/hotel-store')).HotelStoreProvider, (await import('../src/lib/crm-store')).CrmStoreProvider, (await import('../src/lib/bd-store')).BdStoreProvider,
+    (await import('../src/lib/ps-servicing')).ServicingProvider, (await import('../src/lib/ws2-store')).Ws2Provider, (await import('../src/lib/hr-members')).HrMembersProvider,
+    (await import('../src/lib/email-templates')).TemplateMgmtProvider, (await import('../src/lib/contract-lifecycle')).ContractLifecycleProvider, (await import('../src/lib/ps-templates')).PsTemplateProvider,
+    (await import('../src/lib/ps-block-groups')).PsBlockGroupProvider, (await import('../src/lib/orm-meeting')).MeetingMgmtProvider, (await import('../src/lib/ps-renewal')).PsRenewalProvider,
+  ] as unknown as ((p: { children: unknown }) => unknown)[];
   const { setPsDemoSession } = await import('../src/lib/demo-session');
   setPsDemoSession(true);
   const page = (await make()) as never;
-  const el = h(ServicingProvider, { children: h(Ws2Provider, { children: h(HrMembersProvider, { children: h(ContractLifecycleProvider, { children: page }) }) }) });
+  const el = P.reduceRight((acc: unknown, Prov) => h(Prov as never, { children: acc } as never), page) as never;
   const router = createRouter({ routeTree: createRootRoute({ component: () => el }), history: createMemoryHistory({ initialEntries: ['/'] }) });
   if (!(document as { fonts?: unknown }).fonts) Object.defineProperty(document, 'fonts', { configurable: true, value: { ready: Promise.resolve(), addEventListener() {}, removeEventListener() {} } });
   const div = document.createElement('div'); document.body.appendChild(div);
