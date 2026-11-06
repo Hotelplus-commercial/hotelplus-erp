@@ -62,6 +62,7 @@ describe('v1.3 §3 · on SIGNED → new contract in the main store', () => {
     const bill = (t: string, cid: string) => runDailyBilling(data, t).invoices.find((i) => i.contract_ids.includes(cid) && i.billing_period_start.startsWith(t.slice(0, 7)));
     expect(bill('2026-10-05', 'CT-HTL0118')?.lines[0]?.unit_price).toBe(25000);
     expect(bill('2026-10-05', newId)).toBeUndefined();
+    console.log('DBG', JSON.stringify(runDailyBilling(data, '2026-11-05').invoices.map((i:any)=>[i.contract_ids,i.billing_period_start,i.lines.map((l:any)=>[l.line_type,l.amount])])), JSON.stringify(runDailyBilling(data, '2026-11-05').billingWaiting), JSON.stringify(M.mainContractById(newId)?.lines));
     expect(bill('2026-11-05', newId)?.lines[0]?.unit_price).toBe(newFee);
     expect(bill('2026-11-05', 'CT-HTL0118')).toBeUndefined();
     S.setRenewalDemo(false);
