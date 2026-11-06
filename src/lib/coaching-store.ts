@@ -37,7 +37,12 @@ export function liveCoachRole(): CoachRole | null {
   const r = readJson<{ role?: string }>('meridia.hr.members.v1')?.role;
   return r === 'GRM' || r === 'PM' || r === 'MARCOM_LEAD' ? r : 'PM';
 }
-export const rosterFor = (demo: boolean) => (demo ? COACH_DEMO_ROSTER : liveRoster());
+/** DF5: in DEMO the HR roster's Marcom sub-roles (same nickname, read only) replace the DEMO defaults once HR has set them. */
+function demoRoster(): CoachMember[] {
+  const hr = readJson<{ members?: HrRaw[] }>('meridia.hr.members.v1')?.members ?? [];
+  return COACH_DEMO_ROSTER.map((m) => { const h = hr.find((x) => x.nickname === m.name && x.function === 'MARCOM' && Array.isArray(x.marcom_sub_roles)); return h ? { ...m, marcom_sub_roles: h.marcom_sub_roles } : m; });
+}
+export const rosterFor = (demo: boolean) => (demo ? demoRoster() : liveRoster());
 
 /* ---------- live store ---------- */
 function loadLive(): CoachingTask[] { const v = readJson<CoachingTask[]>(COACHING_KEY); return Array.isArray(v) ? v : []; }

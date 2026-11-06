@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/erp-ui";
 import { AssignRolePicker } from "@/components/ps/assignment-ui";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MARCOM_SUB_ROLE_LABEL, type MarcomSubRole } from "@/lib/coaching-types";
 import { FUNCTION_LABEL, ORM_TEAMS, teamLabel, useHrMembers, type HrMember, type MemberFunction, type OrmTeam } from "@/lib/hr-members";
 
 const description = "HR App · Members: รายชื่อทีมงานกลาง (ชื่อเล่น · หน้าที่ · ทีม ORM) ที่ทุกแอปใช้ในการระบุผู้ดูแลโรงแรม";
@@ -38,6 +39,10 @@ function MembersPage() {
     if (!r.ok) { toast.info(r.error); return; }
     setNick(""); toast.success("เพิ่มสมาชิกแล้ว");
   };
+  const toggleSub = (m: HrMember, r: MarcomSubRole) => {
+    const cur = m.marcom_sub_roles ?? []; const next = cur.includes(r) ? cur.filter((x) => x !== r) : [...cur, r];
+    const res = hr.upsert({ ...m, marcom_sub_roles: next }); if (!res.ok) toast.info(res.error);
+  };
   const toggle = (m: HrMember) => { const r = hr.upsert({ ...m, active: !m.active }); if (!r.ok) toast.info(r.error); };
   return (
     <div className="flex flex-col gap-4">
@@ -61,6 +66,13 @@ function MembersPage() {
               <span className={`min-w-[8rem] flex-1 font-medium ${m.active ? "" : "text-muted-foreground line-through"}`}>{m.nickname}</span>
               <Chip tone="muted">{FUNCTION_LABEL[m.function]}</Chip>
               {m.orm_team && <span className="text-xs text-muted-foreground">{teamLabel(m.orm_team)}</span>}
+              {m.function === "MARCOM" && (
+                <span className="flex flex-wrap items-center gap-1 text-xs" data-testid={`sub-roles-${m.id}`}>
+                  {(Object.keys(MARCOM_SUB_ROLE_LABEL) as MarcomSubRole[]).map((r) => canEdit
+                    ? <label key={r} className="flex items-center gap-1 rounded border px-1.5 py-0.5"><input type="checkbox" aria-label={`${m.nickname} ${MARCOM_SUB_ROLE_LABEL[r]}`} checked={!!m.marcom_sub_roles?.includes(r)} onChange={() => toggleSub(m, r)} />{MARCOM_SUB_ROLE_LABEL[r]}</label>
+                    : m.marcom_sub_roles?.includes(r) ? <Chip key={r} tone="muted">{MARCOM_SUB_ROLE_LABEL[r]}</Chip> : null)}
+                </span>
+              )}
               {!m.active && <span className="text-xs text-muted-foreground">(inactive)</span>}
               {canEdit && <Button size="sm" variant="ghost" onClick={() => toggle(m)}>{m.active ? "ปิดใช้งาน" : "เปิดใช้งาน"}</Button>}
             </li>

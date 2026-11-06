@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 export type MemberFunction = "AE" | "ONBOARDING_SPECIALIST" | "ORM_REVENUE" | "ORM_ECOMMERCE" | "MARCOM";
 export const ORM_TEAMS = ["A", "B", "C", "D", "E", "RE_ACTIVE"] as const;
 export type OrmTeam = (typeof ORM_TEAMS)[number];
-export type HrMember = { id: string; nickname: string; function: MemberFunction; orm_team: OrmTeam | null; active: boolean };
+export type HrMember = { id: string; nickname: string; function: MemberFunction; orm_team: OrmTeam | null; active: boolean; /** WC-O1 (DF5): Marcom sub-roles (roster default; hotel Assign may override). */ marcom_sub_roles?: ('CONTENT' | 'ADS' | 'PRESENTER')[] };
 export const FUNCTION_LABEL: Record<MemberFunction, string> = { AE: "AE", ONBOARDING_SPECIALIST: "On-boarding Specialist", ORM_REVENUE: "ORM · Revenue", ORM_ECOMMERCE: "ORM · Ecommerce", MARCOM: "Marcom" };
 export const teamLabel = (t: string | null | undefined) => (t === "RE_ACTIVE" ? "Re-active" : t ? `Team ${t}` : "");
 
