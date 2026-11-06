@@ -115,7 +115,7 @@ export const seedProducts: Product[] = [
         "package_id": "pk_004",
         "package_sku": "ORM-MTH-LITE-STD",
         "name": "Lite",
-        "base_price": 8000,
+        "base_price": 3900,
         "commission_rate": 0.05
       }
     ],
