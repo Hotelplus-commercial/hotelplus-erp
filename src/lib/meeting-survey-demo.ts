@@ -50,6 +50,14 @@ export function meetingSurveyDemoData(): MeetingSurveyData {
   /* Template 2 · Marcom 30 answered (5 by customer link) + 4 no-score (0331 · 0298 · 0177 declined, 0420 expired link). */
   for (let i = 0; i < 30; i++) add(`0${501 + i}`, 'MARCOM', '—', 1 + (i % 27), { answered: true, ...(i < 5 ? { respondent: 'CUSTOMER_LINK', link_token: `demo-link-mc-${i}`, link_expires_at: at(15 + i), link_closed_at: at(1 + i, 12) } : {}) });
   ['0331', '0298', '0177'].forEach((c, i) => add(c, 'MARCOM', '—', 5 + i, { no_score_reason: 'CUSTOMER_DECLINED' }));
+  /* Header R3 follow-up (a): DEMO sample free comments (2 per service, one positive · one constructive) — text only, no count changes. */
+  const SAMPLE_COMMENTS: Record<string, string> = {
+    'DS-403': '(ตัวอย่าง DEMO) ทีมตอบรีวิวเร็วและสุภาพมาก คะแนนรีวิวดีขึ้นชัดเจน',
+    'DS-406': '(ตัวอย่าง DEMO) อยากให้ส่งสรุปรายงานก่อนประชุมอย่างน้อย 1 วัน จะได้เตรียมคำถามได้',
+    'DS-0507': '(ตัวอย่าง DEMO) คอนเทนต์เดือนนี้สวย ตรงกลุ่มลูกค้า ยอดเข้าถึงเพิ่มขึ้น',
+    'DS-0510': '(ตัวอย่าง DEMO) อยากให้แจ้งแผนโพสต์ล่วงหน้า 1 สัปดาห์ เพื่อให้ทีมโรงแรมตรวจรูปทัน',
+  };
+  for (const s of surveys) if (SAMPLE_COMMENTS[s.id]) s.free_comment = SAMPLE_COMMENTS[s.id]!;
   add('0420', 'MARCOM', '—', 3, { respondent: 'CUSTOMER_LINK', link_token: 'demo-link-0420', link_expires_at: at(17), link_closed_at: at(18), submitted_at: null, no_score_reason: 'LINK_EXPIRED' });
 
   /* Open link: ORM 205, sent 25 ต.ค., expires in 10 days (7 พ.ย.). */
