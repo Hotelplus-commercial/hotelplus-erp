@@ -84,7 +84,8 @@ function PageBody({ demo }: { demo: boolean }) {
 }
 
 /* ---------- §2.3 card ---------- */
-function CostCard({ d, contracts, today }: { d: PartnerData; contracts: PartnerContract[]; today: string }) {
+/** Patch B DB6: also mounted on AC Dashboard / Overview as `PartnerBillCostCard` (same component). */
+export function CostCard({ d, contracts, today }: { d: PartnerData; contracts: PartnerContract[]; today: string }) {
   const t = billTiles(d, today);
   const missing = missingBillPartners(d, contracts, today);
   const thb = (m: Record<string, number>) => m["THB"] ?? 0;
@@ -394,3 +395,5 @@ function SuspendedList({ demo, d, contracts, today, canWrite }: { demo: boolean;
     </section>
   );
 }
+
+export { CostCard as PartnerBillCostCard };
