@@ -164,6 +164,7 @@ const Empty = ({ text = "รอ Cloud Sync seed — ยังไม่มีข�
   </p>
 );
 
+const SHOW_TASK_PENDING_WORK = false;
 export function DashboardShell({
   servicing,
   overview,
@@ -358,7 +359,8 @@ export function DashboardShell({
                   <>
                     <TaskTab />
                     {/* Tab R1 §9.3: งานค้างของสัญญา (moved from ต่อสัญญา & ราคา, content unchanged) */}
-                    <div className="mt-6"><PendingWorkPanel report={data} filter={periodFilter} loading={report.isLoading} /></div>
+                    {/* UAT Polish R2 SP16b: unmounted (code kept). */}
+                    {SHOW_TASK_PENDING_WORK && <div className="mt-6"><PendingWorkPanel report={data} filter={periodFilter} loading={report.isLoading} /></div>}
                   </>
                 )}
                 {tab === "servicing" && servicing}

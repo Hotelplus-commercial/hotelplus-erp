@@ -100,6 +100,7 @@ export function ServiceTicketTab({ cases, onCreate }: { cases: PsCase[]; onCreat
   const { demo, today, rows, history, cats } = useServiceTicketRows(cases);
   const meetings = useStabMeetings(demo);
   const [dept, setDept] = useState<DeptFilter>('ALL');
+  const [deptSort, setDeptSort] = useState<DeptSort>(null);
   const [list, setList] = useState<ListFilter>(EMPTY_LIST_FILTER);
   const [open, setOpen] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);

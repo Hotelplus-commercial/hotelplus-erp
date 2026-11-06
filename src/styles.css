@@ -2141,3 +2141,9 @@ textarea.r1-input{height:auto;padding:6px 8px;resize:vertical;}
 .r1-wf .r1-wf-lapsed{left:50%;width:42%;max-width:none;}
 .r1-wf .r1-wf-link{left:-8%;right:auto;width:16%;border-top:1.5px dotted var(--neutral-bar);}
 @media (max-width:640px){.r1-wf-grid{left:30px;}}
+
+/* UAT Polish R2 SP13 / SP16 */
+.stab-median-box{display:flex;align-items:baseline;justify-content:space-between;gap:12px;background:var(--muted);border-radius:10px;padding:10px 14px;margin:10px 0 6px;font-size:13px;color:var(--text-secondary);}
+.stab-median-box b{font-size:21px;font-weight:700;color:var(--foreground);}
+.stab-sort{display:inline-flex;align-items:center;gap:2px;font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;white-space:nowrap;}
+.stab-sort span{color:var(--text-caption);}
