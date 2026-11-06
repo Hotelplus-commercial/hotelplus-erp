@@ -9,6 +9,8 @@ import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ChartHint, ChartSkeleton, DashCard } from "@/components/ps/dash-card";
+import { DebtorCardR11, PaidGradeCard } from "./debt-cards-r11";
+import { PartnerRateCardReadOnly } from "./partner-section";
 import { DebtorCard, GradeCard, SystemFeeMock, useAcCardModel } from "@/components/ps/ac-tab";
 import { useAcTabInput } from "@/components/ps/use-ac-views";
 import {
@@ -42,6 +44,7 @@ import { useRenewalStore } from "@/lib/renewal-store";
 import { summaryRules } from "@/lib/summaryRules";
 import { cn } from "@/lib/utils";
 
+const SHOW_LEGACY_DEBT_CARDS = false;
 const pct = (n: number, d: number) => (d ? Math.round((n / d) * 100) : 0);
 const TimeChip = ({ label }: { label: string }) => <span className="ac-time-chip">{label}</span>;
 
@@ -106,11 +109,19 @@ export function BdacFinanceSection() {
           <RevenueBandCard rows={rows} brows={brows} stats={stats} chip={chip} bChip={bChip} compare={filter.compare} />
           <RankingTableCard rows={rows} chip={chip} lens={lens} hover={hover} setHover={setHover} openHotel={openHotel} />
           <SectionHead title="ลูกหนี้ & การเก็บเงิน" desc="ค้างเท่าไร · อยู่ขั้นไหน · ใครจ่ายช้า · ต้องตามใคร" />
-          <div className="ac-row2">
-            <GradeCard context="bdac" gradeDist={model.gradeDist.filter(model.svc)} chip={model.chip} prevChip={model.prevChip} compare={input.compare} customers={model.customers} />
-            <SystemFeeMock context="bdac" />
-          </div>
-          <DebtorCard context="bdac" views={input.views} svc={model.svc} debtors={model.debtors.filter(model.svc)} breakdown={model.breakdown.filter(model.svc)} compare={input.compare} openHotel={model.openHotel} />
+          {/* Patch A SP10: ⑨ ⑩ ⑪ = the same PS cards ① ② ③ (ลูกหนี้ & ส่วนลด Partner), same data (AC App source). Old cards unmounted, code kept. */}
+          <PaidGradeCard demo={!!demo} />
+          <PartnerRateCardReadOnly demo={!!demo} />
+          <DebtorCardR11 demo={!!demo} />
+          {SHOW_LEGACY_DEBT_CARDS && (
+            <>
+              <div className="ac-row2">
+                <GradeCard context="bdac" gradeDist={model.gradeDist.filter(model.svc)} chip={model.chip} prevChip={model.prevChip} compare={input.compare} customers={model.customers} />
+                <SystemFeeMock context="bdac" />
+              </div>
+              <DebtorCard context="bdac" views={input.views} svc={model.svc} debtors={model.debtors.filter(model.svc)} breakdown={model.breakdown.filter(model.svc)} compare={input.compare} openHotel={model.openHotel} />
+            </>
+          )}
         </>
       )}
     </section>

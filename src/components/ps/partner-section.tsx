@@ -75,6 +75,16 @@ export function PartnerSection({ demo }: { demo: boolean }) {
   );
 }
 
+/** Patch A SP10: the PS card ③ Rate Card, read-only, mounted as-is on The Office Dashboard (same component, same data). */
+export function PartnerRateCardReadOnly({ demo }: { demo: boolean }) {
+  useEffect(() => { setPartnerDemo(demo); }, [demo]);
+  useTickets();
+  const d = usePartnerData();
+  const today = demo ? DEMO_DAY : new Date().toISOString().slice(0, 10);
+  const contracts = useMemo(() => partnerContracts(d, demo), [d, demo]);
+  return <RateCardCard d={d} contracts={contracts} today={today} isPm={false} onForm={() => undefined} manage={<ManageLink isPm={false} demo={demo} hash="ratecard" />} />;
+}
+
 function RateCardCard({ d, contracts, today, isPm, onForm, manage }: { d: PartnerData; contracts: PartnerContract[]; today: string; isPm: boolean; onForm: (m: PartnerFormMode) => void; manage?: ReactNode }) {
   const rows = rateCardRows(d, contracts, today);
   const anyEst = rows.some((r) => r.card.currency !== "THB");
