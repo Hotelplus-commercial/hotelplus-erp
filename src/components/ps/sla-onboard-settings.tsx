@@ -52,7 +52,10 @@ export function SlaOnboardSettings() {
   const save = () => {
     const res = saveKpiVersion(versions, draft, today, isPm ? 'PM' : 'OTHER', new Date().toISOString());
     if (!res.ok) { toast.error(res.error); return; }
-    setKpiVersions(demo, res.versions); toast.success(SLA_ONB.toast(thDate(today)));
+    // §13.5 note: `{ORM|Marcom} {label} {old ok/due} → {new ok/due}` (R4 kpiNote stays untouched for the old panel)
+    const label = (k: KpiKey) => { for (const s of ['ORM', 'Marcom'] as const) { const r = ROWS[s].find((x) => x.key === k); if (r) return `${k === 'p1' ? 'ORM / Marcom' : s} ${r.label}`; } return k; };
+    const note = ['แก้ไขโดย PM', ...changed.map((k) => `${label(k)} ${current.values[k].ok}/${current.values[k].due} → ${draft[k].ok}/${draft[k].due}`)].join(' · ');
+    setKpiVersions(demo, res.versions.map((v) => (v.effective_from === today ? { ...v, note } : v))); toast.success(SLA_ONB.toast(thDate(today)));
   };
   const p1 = draft.p1; const ex = Array.from({ length: 10 }, (_, i) => i);
   return <div className="onb-set" data-testid="sla-onboard">
