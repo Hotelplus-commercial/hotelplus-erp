@@ -202,6 +202,7 @@ export function DebtorCardR11({ demo }: { demo: boolean }) {
         source: "AC App · ใบแจ้งหนี้ + สถานะ collection · ticket จากระบบ Ticket (อ่านอย่างเดียว)",
         count: "สถานะปัจจุบันจาก AC App · ไม่มีปุ่มเทียบ (HR6) · ยอดรวมไม่นับตัดสูญ · พักบริการที่ไม่ได้ค้างชำระไม่ใช่ลูกหนี้ แสดงไว้ให้เห็นเท่านั้น",
         read: "สัญญาขาดอายุ รอผล ที่ยังค้างเงิน ยังเป็นลูกหนี้ (ติดป้าย ขาดอายุ รอผล) · ticket จับคู่ด้วยเลขสัญญา ถ้า ticket ไม่มีเลขสัญญาใช้โรงแรม + บริการ",
+        extra: [{ label: "Collection", body: <CollectionDefs /> }, { label: "หน่วยนับ", body: DEF_UNIT_GRADE }],
       }}
       question="ตอนนี้มีเงินค้างเท่าไร และอยู่ขั้นไหน?"
       answer={empty ? "—" : thb(s.total)}
