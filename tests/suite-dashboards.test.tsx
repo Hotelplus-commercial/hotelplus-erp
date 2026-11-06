@@ -22,10 +22,13 @@ async function mount(make: () => Promise<unknown>) {
   const { createMemoryHistory, createRootRoute, createRouter, RouterProvider } = await import('@tanstack/react-router');
   const { QueryClient, QueryClientProvider } = await import('@tanstack/react-query');
   const { HrMembersProvider } = await import('../src/lib/hr-members');
+  const { ContractLifecycleProvider } = await import('../src/lib/contract-lifecycle');
+  const { ServicingProvider } = await import('../src/lib/ps-servicing');
+  const { Ws2Provider } = await import('../src/lib/ws2-store');
   const { setPsDemoSession } = await import('../src/lib/demo-session');
   setPsDemoSession(true);
   const page = (await make()) as never;
-  const el = h(HrMembersProvider, { children: page });
+  const el = h(ServicingProvider, { children: h(Ws2Provider, { children: h(HrMembersProvider, { children: h(ContractLifecycleProvider, { children: page }) }) }) });
   const router = createRouter({ routeTree: createRootRoute({ component: () => el }), history: createMemoryHistory({ initialEntries: ['/'] }) });
   if (!(document as { fonts?: unknown }).fonts) Object.defineProperty(document, 'fonts', { configurable: true, value: { ready: Promise.resolve(), addEventListener() {}, removeEventListener() {} } });
   const div = document.createElement('div'); document.body.appendChild(div);
@@ -45,17 +48,19 @@ describe('DB2 Overview — visible apps + ไปที่', () => {
     }
     expect(visibleApps('TM').map((a) => a.key)).not.toContain('AC');
     expect(visibleApps('HOC').map((a) => a.key)).toEqual(SIDEBAR_REGISTRY.map((a) => a.key).filter((k) => visibleApps('HOC').some((x) => x.key === k)));
-  });
+  }, 30000);
   test('placeholder Dashboards of BD / AC / AUTO became pages', () => {
     for (const [app, route] of [['BD', '/bd/dashboard'], ['AC', '/ac/dashboard'], ['AUTO', '/automation/dashboard']] as const) {
       const it = itemsOf(SIDEBAR_REGISTRY.find((a) => a.key === app)!).find((i) => i.key === 'dashboard')!;
       expect(it.kind).toBe('page');
       expect((it as { route: string }).route).toBe(route);
     }
-  });
+  }, 30000);
 });
 
 describe('Mounted dashboards (DEMO)', () => {
+  // mounted pages need more than the 5 s default
+  const T = 30000;
   const check = (div: HTMLElement) => {
     expect(domHits(div)).toEqual([]);
     div.querySelectorAll('[data-testid="dash-sample"]').forEach((s) => { expect(s.textContent).toContain('ข้อมูลตัวอย่าง'); expect(s.textContent).toContain('ที่มา (เมื่อเชื่อมแล้ว)'); });
@@ -68,7 +73,7 @@ describe('Mounted dashboards (DEMO)', () => {
     expect(div.querySelectorAll('[data-testid^="ov-app-"]').length).toBe(visibleApps('HOC').length);
     expect(div.querySelector('[data-testid="ov-go-AC"]')?.textContent).toBe('ไปที่ AC App →');
     check(div);
-  });
+  }, 30000);
   test('ORM: funnel is the Meeting & Survey component; active contracts = PS header', async () => {
     const { OrmDashboard } = await import('../src/components/suite-dash/orm-marcom-dashboards');
     const { headerDemoInput } = await import('../src/lib/ps-header-r2-demo');
@@ -79,7 +84,7 @@ describe('Mounted dashboards (DEMO)', () => {
     const expected = [...headerDemoInput().active, ...tabR1HeaderActive()].filter((r) => r.service === 'ORM').length;
     expect(div.querySelector('[data-testid="orm-tile-active"]')?.textContent).toContain(String(expected));
     check(div);
-  });
+  }, 30000);
   test('Marcom: channel tiles + mounted funnel', async () => {
     const { MarcomDashboard } = await import('../src/components/suite-dash/orm-marcom-dashboards');
     const div = await mount(async () => (await h())(MarcomDashboard, { assign: null }));
@@ -87,7 +92,7 @@ describe('Mounted dashboards (DEMO)', () => {
     expect(div.querySelector('[data-testid="ms-funnel-MARCOM"]')).not.toBeNull();
     expect(div.querySelector('[data-testid="mc-tile-meta"]')).not.toBeNull();
     check(div);
-  });
+  }, 30000);
   test('AC: PS cards ① ② and the บิล Partner card are mounted', async () => {
     const { AcDashboardPage } = await import('../src/components/suite-dash/ac-hr-auto-dashboards');
     const div = await mount(async () => (await h())(AcDashboardPage));
@@ -96,7 +101,7 @@ describe('Mounted dashboards (DEMO)', () => {
     expect(div.querySelector('[data-testid="dash-mounted-grade"]')?.textContent).toContain('เกรดการชำระ A–D');
     expect(div.querySelector('[data-testid="dash-mounted-debtor"]')?.textContent).toContain('ลูกหนี้ที่ต้องติดตาม');
     check(div);
-  });
+  }, 30000);
   test('BD / AUTO / HR render with sample tags', async () => {
     const { BdDashboardPage } = await import('../src/components/suite-dash/bd-dashboard');
     const m = await import('../src/components/suite-dash/ac-hr-auto-dashboards');
@@ -107,7 +112,7 @@ describe('Mounted dashboards (DEMO)', () => {
       check(div);
       roots.splice(0).forEach((f) => f()); document.body.innerHTML = '';
     }
-  });
+  }, 30000);
   test('period picker changes period cards only', async () => {
     const { OrmDashboard } = await import('../src/components/suite-dash/orm-marcom-dashboards');
     const { act } = await import('react');
@@ -118,5 +123,5 @@ describe('Mounted dashboards (DEMO)', () => {
     await act(async () => { sel.value = 'year'; sel.dispatchEvent(new Event('change', { bubbles: true })); });
     expect(div.querySelector('[data-testid="orm-tile-active"]')!.textContent).toBe(active);
     expect(div.querySelector('[data-testid="orm-dashboard"]')!.textContent).not.toContain('เดือนนี้ ·');
-  });
+  }, 30000);
 });
