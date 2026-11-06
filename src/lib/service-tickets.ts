@@ -46,7 +46,12 @@ export type TicketCategory = { id: string; key: string; name_th: string; dept: S
 export type TicketFollowup = { id: string; ticket_store: TicketStore; ticket_id: string; sent_by: string; sent_by_role: 'AE' | 'PM'; recipient_kind: 'ASSIGNEE' | 'DEPT_QUEUE_AND_HEAD'; recipient_ids: string[]; note: string | null; sent_at: string; sent_date_bkk: string };
 export type CategoryRequest = { id: string; dept: SvcDept; proposed_name: string; proposed_note: string | null; conflict_category_ids: string[]; requested_by: string; requested_at: string; status: 'PENDING' | 'APPROVED' | 'REJECTED'; ogm_note: string | null; decided_by: string | null; decided_at: string | null; created_category_id: string | null };
 /** PS case SLA side record (one per case id). accepted_by_label = "name (team)". */
-export type TicketSla = { case_id: string; category_id?: string | null; accepted_at?: string | null; accepted_by?: string | null; accepted_by_label?: string | null; due_date?: string | null; due_set_at?: string | null; due_set_by?: string | null; waiting_on?: WaitingOn | null; waiting_on_note?: string | null };
+export type TicketSla = { case_id: string; category_id?: string | null; accepted_at?: string | null; accepted_by?: string | null; accepted_by_label?: string | null; due_date?: string | null; due_set_at?: string | null; due_set_by?: string | null; waiting_on?: WaitingOn | null; waiting_on_note?: string | null;
+  /** UAT Polish R2 SP14: create-ticket attachments (on-device file ref or link). */
+  attachments?: TicketAttachmentRef[];
+  /** UAT Polish R2 SP15: audit — the creator saw these open tickets and confirmed a new one. */
+  duplicate_ack?: { seen: string[]; at: string; by: string } };
+export type TicketAttachmentRef = { name: string; ref?: string; url?: string; added_at: string };
 
 const SEED: [string, string, SvcDept[], string[]][] = [
   ['rate', 'ราคาห้อง & Rate', ['ORM'], ['ราคา', 'rate', 'เรท', 'parity', 'disparity']],
