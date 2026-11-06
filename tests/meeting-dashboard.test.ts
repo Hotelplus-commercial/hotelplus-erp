@@ -1,3 +1,4 @@
+// DF6 (Decisions Fix R1): the old September fixture moved +1 month to the shared DEMO day 28 Oct 2026; month literals moved with it (same anchors).
 import { describe, expect, test } from "bun:test";
 import { demoMeetingReport, MEETING_DEMO_NOW } from "../src/lib/meeting-dashboard-demo";
 import { defaultGlobalFilter, monthPeriod } from "../src/lib/ps-dashboard-global";
@@ -14,7 +15,7 @@ import {
 
 const report = demoMeetingReport();
 const now = new Date(MEETING_DEMO_NOW);
-const sep = monthPeriod(new Date("2026-09-30"));
+const sep = monthPeriod(new Date("2026-10-28"));
 const f = { ...defaultGlobalFilter, range: "mtd" as const };
 const cards = meetingScope(report.views.v_meeting_funnel, f, sep);
 const orm = aggregateFunnel(cards, "ORM", now);
@@ -22,7 +23,7 @@ const mc = aggregateFunnel(cards, "Marcom", now);
 const surveys = meetingScope(report.views.v_meeting_survey_scores, f, sep);
 const flags = report.views.v_meeting_flags;
 const openFlags = flags.filter((r) => !r["resolved_at"]);
-const sepNewFlags = flags.filter((r) => String(r["created_at"]).startsWith("2026-09"));
+const sepNewFlags = flags.filter((r) => String(r["created_at"]).startsWith("2026-10"));
 
 describe("Meeting v2.0 demo anchors (§6)", () => {
   test("funnel anchors: ORM 17/15 · Marcom 42/36 · tiles 88/98/83", () => {
@@ -59,7 +60,7 @@ describe("Meeting v2.0 demo anchors (§6)", () => {
   });
   test("④a/④b owner lens totals reconcile with the funnel", () => {
     const sepOwner = report.views.v_meeting_by_owner.filter(
-      (r) => r["card_month"] === "2026-09" && r["lens"] === "ORM_TEAM",
+      (r) => r["card_month"] === "2026-10" && r["lens"] === "ORM_TEAM",
     );
     const sum = (key: string) => sepOwner.reduce((s, r) => s + Number(r[key] ?? 0), 0);
     expect(sum("a_base")).toBe(17);
@@ -71,7 +72,7 @@ describe("Meeting v2.0 demo anchors (§6)", () => {
     expect([team("D")!["a_base"], team("D")!["a_completed"]]).toEqual([3, 2]);
     expect(team("A")!["hotel_count"]).toBe(14);
     const ae = report.views.v_meeting_by_owner.filter(
-      (r) => r["card_month"] === "2026-09" && r["lens"] === "AE",
+      (r) => r["card_month"] === "2026-10" && r["lens"] === "AE",
     );
     const aeRow = (o: string) => ae.find((r) => r["owner"] === o)!;
     expect(aeRow("Nont")!["scheduled_completed"]).toBe(20);
@@ -138,10 +139,10 @@ describe("Meeting v2.0 invariants (§5)", () => {
 
 describe("Meeting v2.0 helpers", () => {
   test("isTierALate: Bangkok cutoff rule (demo clock 30 Sep > cutoff 25 → late)", () => {
-    expect(isTierALate("2026-09", now)).toBe(true);
+    expect(isTierALate("2026-10", now)).toBe(true);
     expect(isTierALate("2026-09", new Date("2026-09-25T16:59:59Z"))).toBe(false); // 25 Sep 23:59 BKK
     expect(isTierALate("2026-09", new Date("2026-09-25T17:00:01Z"))).toBe(true); // 26 Sep 00:00 BKK
-    expect(isTierALate("2026-10", now)).toBe(false);
+    expect(isTierALate("2026-11", now)).toBe(false);
   });
   test("median: even count = midpoint with .5", () => {
     expect(median([7, 8, 9, 9])).toBe(8.5);
@@ -149,7 +150,7 @@ describe("Meeting v2.0 helpers", () => {
     expect(median([])).toBeNull();
   });
   test("⑤ survey medians: Q2/Q5 drop 1 · Q3 flat with rising ≤6 · Q6 rises", () => {
-    const aug = report.views.v_meeting_survey_scores.filter((r) => r["card_month"] === "2026-08");
+    const aug = report.views.v_meeting_survey_scores.filter((r) => r["card_month"] === "2026-09");
     const med = (rows: MeetingRow[], q: string) =>
       median(rows.filter((r) => r["question"] === q).map((r) => Number(r["score"])));
     expect(med(surveys, "Q2")).toBe(8);
@@ -172,6 +173,6 @@ describe("Meeting v2.0 helpers", () => {
     expect(MEETING_CONFIG.cutoff_day).toBe(25);
     expect(MEETING_CONFIG.funnel_scale).toBe(1.6);
     expect(MEETING_CONFIG.small_n).toBe(5);
-    expect(bkkDay(now)).toBe("2026-09-30");
+    expect(bkkDay(now)).toBe("2026-10-28");
   });
 });
