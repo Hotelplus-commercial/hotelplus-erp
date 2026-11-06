@@ -28,8 +28,8 @@ describe('BD-AC move to The Office APP (v1.0)', () => {
     // Suite Sidebar R1 §4.8: the Office menu comes from SIDEBAR_REGISTRY; BD-AC then ORM Bonus stay at the end until R2.
     const reg = readFileSync('src/lib/sidebar-registry.ts', 'utf8');
     const office = reg.slice(reg.indexOf("key: 'OFFICE'"));
-    expect(office.indexOf("label: 'BD-AC'")).toBeGreaterThan(office.indexOf("'HOD Meeting Minutes'"));
-    expect(office.indexOf("label: 'BD-AC'")).toBeLessThan(office.indexOf("label: 'ORM Bonus'"));
+    expect(office.indexOf("label: 'BD-AC', route")).toBeGreaterThan(office.indexOf("'HOD Meeting Minutes'"));
+    expect(office.indexOf("label: 'BD-AC', route")).toBeLessThan(office.indexOf("label: 'ORM Bonus', route: '/the-office-app"));
   });
   test('exactly one copy of each BD-AC component (no fork)', () => {
     const files: string[] = [];
