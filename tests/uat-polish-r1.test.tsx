@@ -5,7 +5,8 @@ import { createElement as h } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { DEMO_DAY } from '@/lib/demo-session';
 import { Q58, R2_RENEWAL } from '@/lib/ps-glossary';
-import { groupBars } from '@/lib/renewal-r2';
+import { groupBars, REASON_LABELS } from '@/lib/renewal-r2';
+import { SEL_ALL } from '../src/lib/ps-header-r2';
 import { AcTab } from '@/components/ps/ac-tab';
 import { debtSegFull } from '@/components/ps/debt-cards-r11';
 import { demoDateTh } from '@/components/ps/ps-dashboard-shell';
@@ -22,7 +23,7 @@ describe('UAT polish R1', () => {
   });
 
   it('UP2 journey order ④ คะแนนบริการ · ⑤ เกรดชำระเงิน · ⑥ หลุด (Churn)', () => {
-    const html = renderToStaticMarkup(h(CustomerJourneyScorecard, { input: headerDemoInput(), sel: { kind: 'ALL' } as never }));
+    const html = renderToStaticMarkup(h(CustomerJourneyScorecard, { input: headerDemoInput(), sel: SEL_ALL }));
     const i4 = html.indexOf('คะแนนบริการ'), i5 = html.indexOf('เกรดชำระเงิน'), i6 = html.indexOf('หลุด (Churn)');
     expect(i4).toBeGreaterThan(-1);
     expect(i5).toBeGreaterThan(i4);
@@ -36,14 +37,13 @@ describe('UAT polish R1', () => {
   });
 
   it('UP5 group totals show labels and distinct contracts; % unchanged', () => {
-    const recs = [
-      { primary: ['PRICE_HIGH', 'PRICE_BUDGET'], secondary: 'PRICE_HIGH' },
-      { primary: ['PRICE_HIGH'], secondary: 'OTHER' },
-    ] as never;
-    const g = groupBars(recs);
-    const top = g.rows[0]!;
-    expect(top.contracts).toBeLessThanOrEqual(2);
-    expect(top.total).toBeGreaterThanOrEqual(top.contracts);
+    const sameGroup = REASON_LABELS.filter((e) => e.group === REASON_LABELS[0]!.group).map((e) => e.key);
+    const k = sameGroup[0]!, k2 = sameGroup[1] ?? sameGroup[0]!;
+    // one contract with two labels of the same group + one contract with one → 3 labels, 2 contracts
+    const g = groupBars([{ primary: [k, k2], secondary: 'x' }, { primary: [k], secondary: 'x' }] as never);
+    const top = g.rows.find((r) => r.group === REASON_LABELS[0]!.group)!;
+    expect(top.total).toBe(3);
+    expect(top.contracts).toBe(2);
     expect(R2_RENEWAL.reasons.share('50%', 4, 2)).toBe('50% · รวม 4 ป้าย · 2 สัญญา');
   });
 
