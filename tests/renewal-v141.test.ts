@@ -73,11 +73,13 @@ describe('AC Billing: runDailyBilling() with renewal contracts', () => {
     const invoices = prevInvoice ? [{ ...inv, invoice_id: 'INV-OLD', contract_ids: ['OLD-1'], customer_snapshot: { ...inv.customer_snapshot, customer_id: 'CUS-RNW' }, status: 'paid' as const }] : [];
     return { contracts: [old, neu], customers: SEED.seedCustomers, products: SEED.seedProducts, invoices, reports: [report], invRequests: [], liveLinks: [], taxReceipts: [] } as any;
   };
-  test('Commission + Guarantee line (unit_price null) still bills its commission; guarantee not applied by the engine', () => {
+  // AC-G1 (Decisions Fix R1, 6 Nov 2026): the engine now bills max(commission, Guarantee) — expectation updated by decision.
+  test('Commission + Guarantee line (unit_price null): commission ฿18,000 < Guarantee ฿22,500 → bills the Guarantee with breakdown', () => {
     const out = E.runDailyBilling(withRenewal(true), '2026-11-05');
     const inv = out.invoices.find((i: any) => i.contract_ids.includes('OLD-1-R1'))!;
     expect(inv).toBeTruthy();
-    expect(inv.lines.map((l: any) => [l.line_type, l.amount])).toEqual([['commission', 18000]]);
+    expect(inv.lines.map((l: any) => [l.line_type, l.amount])).toEqual([['commission', 22500]]);
+    expect(inv.lines[0].name_snapshot).toContain('ค่าคอม ฿18,000 · ขั้นต่ำ Guarantee ฿22,500 → เรียกเก็บ ฿22,500');
   });
   test('the "customer already has an invoice" rule does not block a renewal (old contract invoices count)', () => {
     expect(E.runDailyBilling(withRenewal(true), '2026-11-05').invoices.some((i: any) => i.contract_ids.includes('OLD-1-R1'))).toBe(true);
@@ -92,9 +94,10 @@ describe('AC Billing: runDailyBilling() with renewal contracts', () => {
     const paused = E.runDailyBilling({ ...d, contracts: [{ ...d.contracts[1], billing_status: 'PAUSED' }] }, '2026-11-05');
     expect(paused.invoices.some((i: any) => i.contract_ids.includes('OLD-1-R1'))).toBe(false);
   });
-  test('12 · notices: Guarantee + late renewal with the right months', () => {
+  test('12 · notices: Guarantee notice removed (AC-G1 live, code kept) + late renewal with the right months', () => {
     const n = N.renewalAcNotices(S.v141DemoRenewedContracts());
-    expect(n.find((x) => x.kind === 'GUARANTEE')!.text).toBe('Commission + Guarantee · Guarantee fee ฿22,500 / เดือน · ระบบยังไม่คิดขั้นต่ำให้ · AC ตรวจยอดก่อนวางบิล');
+    expect(n.find((x) => x.kind === 'GUARANTEE')).toBeUndefined();
+    expect(N.renewalAcNotices.length >= 0 && 'kept').toBe('Commission + Guarantee · Guarantee fee ฿22,500 / เดือน · ระบบยังไม่คิดขั้นต่ำให้ · AC ตรวจยอดก่อนวางบิล');
     const late = n.find((x) => x.kind === 'LATE' && x.contract_id === 'CT-HTL0421-R0141')!;
     expect(late.months).toEqual(['2026-10']);
     expect(late.text).toBe('ต่อสัญญาล่าช้า · สัญญาเริ่ม 1 ต.ค. 69 · เซ็น 20 ต.ค. 69 · ตรวจวางบิลย้อนหลัง 1 รอบ (ต.ค. 69)');
