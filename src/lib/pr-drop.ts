@@ -134,7 +134,7 @@ export function readyDropReports(items: PrItem[]) {
   return items.filter((i) => i.status === 'READY' && i.commission_sku && i.commission_rate != null && i.row?.revenue_thb != null).map((i) => ({
     report_id: `PRD-${i.id}`, contract_id: i.contract_id, sku: i.commission_sku!, period_year: +i.month.slice(0, 4), period_month: +i.month.slice(5, 7),
     revenue_thb: i.row!.revenue_thb!, commission_thb: Math.round(i.row!.revenue_thb! * i.commission_rate! * 100) / 100,
-    uploaded_by: i.service === 'ORM' ? 'ORM' : 'MARCOM', uploaded_at: i.row!.sent_ac_at!, approved_by_hotel: true,
+    uploaded_by: (i.service === 'ORM' ? 'ORM' : 'MARCOM') as 'ORM' | 'MARCOM', uploaded_at: i.row!.sent_ac_at!, approved_by_hotel: true,
   }));
 }
 /** Amber warning: AC's manual revenue for the same contract-month differs from the drop. */

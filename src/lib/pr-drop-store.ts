@@ -8,8 +8,8 @@ import { contractTermEnd } from './contract-state';
 import { chargedServiceMonths } from './ac-v2-engine';
 import type { Contract, Invoice, ProductionReport } from './crm-types';
 import { putPartnerFile } from './partner-files';
-import { emptyRow, nextMonth, pdfError, prBellsDue, prItems, prevMonth, prKey, readyDropReports, sendAcError, type PrContract, type PrDropRow, type PrFile, type PrItem } from './pr-drop';
-import { PR_DEMO_BILLED, PR_DEMO_CONTRACTS, prDemoRows } from './pr-drop-demo';
+import { waitingAfterCutoff, emptyRow, nextMonth, pdfError, prBellsDue, prItems, prevMonth, prKey, readyDropReports, sendAcError, type PrContract, type PrDropRow, type PrFile, type PrItem } from './pr-drop';
+import { PR_DEMO_BILLED, PR_DEMO_CONTRACTS, PR_DEMO_MONTH, prDemoRows } from './pr-drop-demo';
 
 export const prDrops = browserCollection<PrDropRow>('production_report_drops', prDemoRows);
 
@@ -44,10 +44,14 @@ export function liveDropReports(contracts: Contract[], invoices: Invoice[], toda
 }
 
 export function itemsFor(demo: boolean, month: string, today: string, live?: { contracts: Contract[]; invoices: Invoice[] }): PrItem[] {
-  if (demo) return prItems(PR_DEMO_CONTRACTS, prDrops.all(true), month, today, PR_DEMO_BILLED);
+  if (demo) return month === PR_DEMO_MONTH ? prItems(PR_DEMO_CONTRACTS, prDrops.all(true), month, today, PR_DEMO_BILLED) : []; // DEMO covers ก.ย. 69 only
   const pcs = prContractsOf(live?.contracts ?? []);
   return prItems(pcs, prDrops.all(false), month, today, billedKeys(live?.invoices ?? [], pcs));
 }
+
+/** PR18 dashboards: items not พร้อมวางบิล after their cut-off (open months) — same items as the page. */
+export const prWaitingCount = (demo: boolean, today: string, live?: { contracts: Contract[]; invoices: Invoice[] }) =>
+  openMonths(today).reduce((n, m) => n + waitingAfterCutoff(itemsFor(demo, m, today, live), today), 0);
 
 let ver = 0; prDrops.subscribe(() => { ver++; });
 export const usePrDrops = () => useSyncExternalStore(prDrops.subscribe, () => ver, () => 0);

@@ -13,7 +13,7 @@ import { leadCounters, leadRow, revenueConflict, STATUS_TONE, statusText, type P
 import { ackConflict, addFiles, itemsFor, openMonths, recordCustomer, recordSentCustomer, remindCaretaker, returnToSender, runPrBells, sendToAc, usePrDrops } from "@/lib/pr-drop-store";
 import { cn } from "@/lib/utils";
 
-const TONE: Record<ReturnType<() => (typeof STATUS_TONE)[PrStatus]>, string> = {
+const TONE: Record<(typeof STATUS_TONE)[PrStatus], string> = {
   grey: "bg-muted text-muted-foreground", yellow: "bg-warning/20 text-warning-foreground", red: "bg-destructive/15 text-destructive",
   orange: "bg-warning/40 text-warning-foreground", green: "bg-success/15 text-success", blue: "bg-info/15 text-info",
 };
@@ -161,7 +161,7 @@ export function PrLeadView({ service }: { service: PrService }) {
           {shown.map((r) => { const it = items.find((x) => x.id === r.id)!; return (
             <tr key={r.id} className="border-t">
               <td className="py-1.5">{r.hotel}</td><td>{r.team}</td><td>{r.caretaker}</td><td><StatusChip i={it} /></td><td className="tabular-nums">{r.files}</td>
-              <td>{!["READY", "BILLED"].includes(r.status) && <Button size="sm" variant="outline" onClick={() => toast[remindCaretaker(demo, it, today) ? "success" : "info"](remindCaretaker.length ? "เตือนผู้ดูแลแล้ว" : "")} data-testid="pr-remind">เตือนผู้ดูแล</Button>}</td>
+              <td>{!["READY", "BILLED"].includes(r.status) && <Button size="sm" variant="outline" onClick={() => (remindCaretaker(demo, it, today) ? toast.success("เตือนผู้ดูแลแล้ว") : toast.info("เตือนไปแล้ววันนี้"))} data-testid="pr-remind">เตือนผู้ดูแล</Button>}</td>
             </tr>
           ); })}
         </tbody>

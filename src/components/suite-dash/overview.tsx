@@ -8,6 +8,7 @@ import { thShort } from "@/lib/card-compare";
 import { TM_TARGET, TM_PEOPLE, TM_TODAY } from "@/lib/suite-dashboards/bd-dashboard-sample";
 import { AUTO_TILES, AUTO_SAMPLE_SOURCE } from "@/lib/suite-dashboards/auto-dashboard-sample";
 import { COMMISSION_PENDING, HR_KPI_ROUND, HR_SAMPLE_SOURCE } from "@/lib/suite-dashboards/hr-dashboard-sample";
+import { usePrWaiting } from "@/components/ac/use-pr-waiting";
 import { SAMPLE_TAG, demoSearch, suiteToday, thb, useSuiteDemo } from "./kit";
 import {
   SuiteDashProvider, useAllOverdueTickets, useRenewalRate, useAutoTicketsOpen, useBdacNumbers, useCategoryRequestsPending, useDebtHeadline,
@@ -28,6 +29,7 @@ function Body({ demo }: { demo: boolean }) {
   const role = useMenuRole();
   const apps = visibleApps(role);
   const ps = usePsHeadline(demo);
+  const prWait = usePrWaiting(demo);
   const bdac = useBdacNumbers(demo);
   const wb = useWelcomeBackPending(demo);
   const overdue = useAllOverdueTickets();
@@ -67,6 +69,7 @@ function Body({ demo }: { demo: boolean }) {
       { label: "ลูกหนี้คงค้าง (ไม่รวมตัดสูญ)", value: debt.empty ? "—" : thb(debt.debtTotal) },
       { label: "สัดส่วนเกรด A+B", value: debt.abPct == null ? "—" : `${debt.abPct}%` },
       { label: "บิล Partner รอจ่าย", value: thb(pb.pendingThb) },
+      { label: "ใบแจ้งหนี้รอ Production Report", value: prWait },
     ], today: `บิล Partner เลยกำหนด ${pb.overdueN}` },
     HR: { hi: [
       { label: "พนักงาน active", value: roster.length },

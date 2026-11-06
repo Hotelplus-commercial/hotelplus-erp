@@ -393,6 +393,7 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [ ] Marcom per-hotel override set via Assign is live-only; DEMO uses the seeded HTL0503 example.
 
 # PR-O1 · Production Report drop view
-- [ ] Month-rule report: next commission service month old vs new, flag double/skip (wait only if flagged).
-- [ ] Build PR1–PR18 + Report Automation placeholder + Overview AC count; tests; UAT ORM/ORM_LEAD/MKT_LEAD/AC; rules; close PR-O1.
-- [ ] Report Automation page — needs a spec (open).
+- [x] Month-rule report (2 flagged, OK'd: guard + DF2 move).
+- [x] Build PR1–PR18 + Report Automation placeholder + Overview AC count; tests; UAT; rules; PR-O1 closed.
+- [ ] C-69-0286: commission Aug–Sep 69 never billed — check (AC).
+- [ ] Report Automation page — needs a spec.

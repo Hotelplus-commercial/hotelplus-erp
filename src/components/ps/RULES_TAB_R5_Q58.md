@@ -16,6 +16,6 @@
 - Card ①: grey down bar `ขาดอายุ รอผล` per month of term end; start + in − out − lapsed = end; recording ไม่ต่อ moves it to หลุด, a renewal removes it. Tab R2 past-due banner per RN49; past-due stays out of the rate base.
 - Normal mode applies the lapsed rule only to header rows whose contract_id matches the main contract store (that contract's end date); unmatched rows keep the old behaviour and, in testing mode, show grey `ตรวจวันสิ้นสุดไม่ได้ {n} สัญญา (ไม่มีในคลังสัญญาหลัก)`. Never guess an end date.
 - Open item: Header active rows must carry contract end_date (or contract_id) so Q58 applies to every contract — portal requirement.
-- Open item: runDailyBilling() bills Commission + Guarantee contracts on commission only (no max(commission, guarantee)) — AC notice shown; engine change waits for an AC patch.
+- Closed (DF2, 6 Nov 2026): runDailyBilling() bills max(commission, Guarantee) — see src/components/ac/AGENTS.md DF2 / PR-O1.
 
 - O-26 closed (6 Nov 2026): package change at renewal → RULES_TAB_R2.md PK1–PK14. RP134 hint text = `ทางเลือก: ORM Lite ฿3,900 + 5% (ขั้นต่ำ 3 OTA)` (RO.hint), shown also in the NONE recommendation box.
