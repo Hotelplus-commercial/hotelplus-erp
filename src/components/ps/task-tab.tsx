@@ -302,7 +302,7 @@ function CaseDrawer({ ticket, onClose, care, categories, actor, actors, onActor,
           <label className="text-xs font-medium">หมวดย่อย (เปลี่ยนแล้วตั้งแผนกใหม่ตามหมวด)</label>
           <CategoryPicker categories={categories} value={cat} onChange={pickCat} />
           <label className="text-xs font-medium">แผนกรับผิดชอบ (เปลี่ยนได้ · ผู้รับผิดชอบตามแผนก)</label>
-          <DeptPicker value={team} onChange={setDept} />
+          <DeptPicker value={team} onChange={v => { if (v !== 'BD') setDept(v); }} />
           <label>เพิ่มคอมเมนต์</label><Textarea aria-label="เพิ่มคอมเมนต์" placeholder="พิมพ์ข้อความถึงทีม" value={comment} onChange={e => setComment(e.target.value)} rows={2} />
           <div className="flex items-center justify-between"><div><label>ในนามของ</label><Select value={actor} onValueChange={onActor}><SelectTrigger aria-label="ในนามของ"><SelectValue/></SelectTrigger><SelectContent>{actors.map(a=><SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent></Select></div><Button size="sm" onClick={save} disabled={!dirty || busy}>{comment.trim()?'ส่งคอมเมนต์':'บันทึก'}</Button></div>
         </div>
