@@ -5,6 +5,7 @@ import type { PartnerData } from './debt-partner-types';
 import type { L0Status, L0Ticket, Role } from './tickets-l0';
 import type { DateRange, TodoItem } from './workspace-registry';
 
+import { packageSwitchTodos, type PkgSwitch } from './partner-package-switch';
 export const PARTNER_PAGE = '/workspace/ps/partners';
 export const PARTNER_TABS = ['partner', 'rate', 'deals', 'credit'] as const;
 export type PartnerTab = (typeof PARTNER_TABS)[number];
@@ -48,9 +49,9 @@ export function creditSections(data: PartnerData, contracts: PartnerContract[], 
   return { pending, waiting, closed };
 }
 
-export type PartnerTodo = TodoItem & { kind: 'A' | 'B' | 'C' | 'D'; trigger: string; sub: string };
+export type PartnerTodo = TodoItem & { kind: 'A' | 'B' | 'C' | 'D' | 'E'; trigger: string; sub: string; partner_id?: string | null; property_id?: string; effective_from?: string };
 /** §3 items A–D. Show when trigger ≤ end of range; stay until the condition clears. PM only. */
-export function partnerTodoItems(data: PartnerData, contracts: PartnerContract[], today: string, range: DateRange, person: string): PartnerTodo[] {
+export function partnerTodoItems(data: PartnerData, contracts: PartnerContract[], today: string, range: DateRange, person: string, switches: PkgSwitch[] = [], demo = false): PartnerTodo[] {
   if (person !== 'PM') return [];
   const end = addDays(today, RANGE_DAYS[range]);
   const pName = (id: string) => data.partners.find((p) => p.id === id)?.name ?? id;
@@ -74,6 +75,7 @@ export function partnerTodoItems(data: PartnerData, contracts: PartnerContract[]
       out.push({ kind: 'D', id: `D-${d.id}`, trigger: addDays(d.updated_at, REMIND.NEGOTIATING_STALE_DAYS), title: `ข้อเสนอไม่มีความคืบหน้า · ${pName(d.partner_id)}`, sub: `ไม่อัปเดต ${Math.max(0, daysBetween(d.updated_at, today))} วัน`, due_relative: '', route_target: `${PARTNER_PAGE}#deals/${d.partner_id}` });
     }
   }
+  out.push(...packageSwitchTodos(data, switches, today, demo)); // O-26: ORM full ↔ Lite → switch Partner system
   return out.filter((x) => x.trigger <= end).map((x) => ({ ...x, due_relative: dueRelative(x.trigger, today) })).sort((a, b) => a.trigger.localeCompare(b.trigger));
 }
 /** NEGOTIATING with no update > 14 days → amber "อัปเดตล่าสุด". */

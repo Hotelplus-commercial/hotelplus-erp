@@ -93,6 +93,34 @@ describe('O-26 signing', () => {
     expect(S.signRequest(r.id).ok).toBe(false); // already signed
     expect(list().length).toBe(1);
   });
+  test('7b · signed ORM full → Lite → one PM Partner to-do + one bell item (stable key)', async () => {
+    const W = await import('../src/lib/partner-workspace');
+    const Bell = await import('../src/lib/bell-items');
+    const sw = S.signedPackageSwitches().filter((s) => s.hotel_id === 'HTL0451');
+    expect(sw.length).toBe(1); expect(sw[0]!.to).toBe('LITE'); expect(sw[0]!.start).toBe('2026-12-01');
+    const empty = { partners: [], rate_cards: [], partner_deals: [], system_credit_requests: [], system_credit_usage: [], contract_partner_system: [], property_partner_system: [] } as any;
+    const todos = W.partnerTodoItems(empty, [], '2026-11-25', 'today', 'PM', sw, true).filter((t) => t.kind === 'E');
+    expect(todos.length).toBe(1);
+    expect(todos[0]!.title).toBe('เปลี่ยนระบบ Partner ให้ตรงแพ็กเกจ ORM Lite · Chiang Rai Hill Lodge');
+    expect(todos[0]!.sub).toContain('ระบบปัจจุบัน: ยังไม่ระบุระบบ · มีผล 2026-12-01');
+    expect(W.partnerTodoItems(empty, [], '2026-11-25', 'today', 'AE', sw, true).length).toBe(0);
+    const bells = () => Bell.bellItems.all(true).filter((b) => b.key === `PKGSYS:${sw[0]!.contract_id}:2026-12-01`);
+    expect(bells().length).toBe(1); expect(bells()[0]!.target_id).toBe('PM');
+    // PM records a system after signing → to-do clears
+    const done = { ...empty, property_partner_system: [{ id: 'x', property_id: 'HTL0451', partner_id: 'P1', system_name: 'Lite', effective_from: '2026-12-01', allotment: null, set_by: 'PM', set_at: '2099-01-01T00:00:00Z', note: null }] };
+    expect(W.partnerTodoItems(done, [], '2026-11-25', 'today', 'PM', sw, true).filter((t) => t.kind === 'E').length).toBe(0);
+  });
+  test('7c · Lite → full = FULL; Marcom and full ↔ full never switch', async () => {
+    const X = await import('../src/lib/partner-package-switch');
+    const lite = [{ sku: 'ORM-MTH-LITE', name: 'Lite', unit_price: 3900, commission_rate: 0.05, billing: 'monthly' as const }];
+    const full = [{ sku: 'ORM-MTH-FULL', name: 'Full', unit_price: 16000, commission_rate: 0.03, billing: 'monthly' as const, package_snapshot: 'ORM-MTH-FULL-SMART' }];
+    const fixed = [{ ...full[0]!, package_snapshot: 'ORM-MTH-FULL-FIXED' }];
+    expect(X.ormSystemSwitch(lite, full)).toBe('FULL');
+    expect(X.ormSystemSwitch(full, fixed)).toBe(null);
+    const meta = [{ sku: 'MARCOM-MTH-META', name: 'Meta', unit_price: 4000, commission_rate: null, billing: 'monthly' as const }];
+    expect(X.ormSystemSwitch(meta, [...meta, { ...meta[0]!, sku: 'MARCOM-MTH-GMB' }])).toBe(null);
+    expect(S.signedPackageSwitches().some((s) => s.hotel_id === 'HTL0452')).toBe(false); // Marcom DEMO signed case
+  });
   test('9 · no raw product codes on the package card / chip', () => {
     const r = S.latestRequestFor('RN-PK-MC2')!;
     const html = renderToString(React.createElement('div', null, React.createElement(RenewalPackageCard, { req: r, editable: false }), React.createElement(PackageChangeChip, { req: r })));

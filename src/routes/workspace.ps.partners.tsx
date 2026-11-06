@@ -19,6 +19,9 @@ import { DEMO_DAY } from "@/lib/demo-session";
 import { setTicketDemo, useTickets } from "@/lib/tickets-l0";
 import type { Partner, PartnerData, PartnerDeal } from "@/lib/debt-partner-types";
 import { cn } from "@/lib/utils";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { PropertySystemBlock } from "@/components/ps/partner-system-ui";
+import { setRenewalDemo, signedPackageSwitches, useRenewalStore } from "@/lib/renewal-store";
 
 export const Route = createFileRoute("/workspace/ps/partners")({
   validateSearch: (s: Record<string, unknown>) => ({ demo: s["demo"] === "1" || s["demo"] === 1 ? 1 : undefined }),
@@ -49,7 +52,7 @@ function HotelLink({ pid, name, demo, children, testid }: { pid: string; name?: 
 function PartnerPage() {
   const { demo } = Route.useSearch();
   const [ready, setReady] = useState(false);
-  useEffect(() => { setPartnerDemo(!!demo); setTicketDemo(!!demo); setReady(true); }, [demo]);
+  useEffect(() => { setPartnerDemo(!!demo); setTicketDemo(!!demo); setRenewalDemo(!!demo); setReady(true); }, [demo]);
   const [view, setView] = useState<PartnerView>({ v: "overview" });
   const [focus, setFocus] = useState<Focus>({});
   useEffect(() => {
@@ -128,6 +131,7 @@ type Common = { d: PartnerData; contracts: Contracts; today: string; isPm: boole
 /** Partner of a to-do item (A by name, B by request, C / D by deal). */
 function todoPartner(d: PartnerData, contracts: Contracts, today: string, t: PartnerTodo): string | null {
   const ref = t.id.slice(2);
+  if (t.kind === "E") return t.partner_id ?? null;
   if (t.kind === "C" || t.kind === "D") return d.partner_deals.find((x) => x.id === ref)?.partner_id ?? null;
   if (t.kind === "B") return d.system_credit_requests.find((x) => x.id === ref)?.partner_id ?? null;
   const r = creditSections(d, contracts, today).pending.find((x) => x.contract.contract_id === ref);
@@ -138,6 +142,7 @@ const TODO_TAG: Record<PartnerTodo["kind"], [string, string, string]> = {
   B: ["ตาม Partner", "bg-warning/15 text-warning-foreground", "บันทึกผล"],
   C: ["ใกล้หมดอายุ", "bg-primary/10 text-primary", "ต่อ / ปิดข้อเสนอ"],
   D: ["ไม่มีความคืบหน้า", "bg-primary/10 text-primary", "อัปเดตสถานะ"],
+  E: ["เปลี่ยนแพ็กเกจ", "bg-warning/15 text-warning-foreground", "เปลี่ยนระบบ"],
 };
 function runTodo(c: Common, t: PartnerTodo) {
   const ref = t.id.slice(2);
@@ -148,6 +153,17 @@ function runTodo(c: Common, t: PartnerTodo) {
     if (t.kind === "C") c.onForm({ kind: "deal", deal });
     else c.go({ v: "partner", id: deal.partner_id, section: "deals" }, { quick: deal.id });
   }
+}
+
+/** O-26: to-do E opens the existing "เปลี่ยนระบบ" flow (Hotel Profile › ORM block) in place, effective from the new contract start. */
+function PkgSwitchAction({ t, act }: { t: PartnerTodo; act: string }) {
+  const [open, setOpen] = useState(false);
+  return <>
+    <button type="button" className="self-start text-xs font-medium text-primary underline" onClick={() => setOpen(true)} data-testid="pm-todo-act-E">{act} →</button>
+    <Dialog open={open} onOpenChange={setOpen}><DialogContent className="max-w-2xl"><DialogHeader><DialogTitle>{t.title}</DialogTitle></DialogHeader>
+      {t.property_id && <PropertySystemBlock propertyId={t.property_id} isPm defaultFrom={t.effective_from} startOpen />}
+    </DialogContent></Dialog>
+  </>;
 }
 
 function useHotelCoverage(d: PartnerData, contracts: Contracts, today: string, demo: boolean) {
@@ -173,7 +189,8 @@ function Overview(c: Common) {
   const activeP = d.partners.filter((p) => rows.some((r) => r.card.partner_id === p.id && r.contracts > 0));
   const cov = useHotelCoverage(d, contracts, today, demo);
   const credit = creditTiles(d);
-  const todos = partnerTodoItems(d, contracts, today, "today", "PM");
+  useRenewalStore(); // O-26: re-read signed package switches
+  const todos = partnerTodoItems(d, contracts, today, "today", "PM", signedPackageSwitches(), !!demo);
   const [q, setQ] = useState("");
   const nameOf = (pid: string) => hotelNameOf(contracts, pid);
   const shown = d.partners.filter((p) => {
@@ -197,7 +214,7 @@ function Overview(c: Common) {
                 <span className={cn(pill, "self-start", cls)}>{tag}</span>
                 <span className="font-medium leading-snug">{t.title}</span>
                 <span className="text-xs text-muted-foreground">{t.sub} · {t.due_relative}</span>
-                {c.isPm && <button type="button" className="self-start text-xs font-medium text-primary underline" onClick={() => runTodo(c, t)} data-testid={`pm-todo-act-${t.kind}`}>{act} →</button>}
+                {c.isPm && (t.kind === "E" ? <PkgSwitchAction t={t} act={act} /> : <button type="button" className="self-start text-xs font-medium text-primary underline" onClick={() => runTodo(c, t)} data-testid={`pm-todo-act-${t.kind}`}>{act} →</button>)}
               </div>); })}
           </div>
         ) : <p className="text-sm text-muted-foreground">ไม่มีงานค้าง</p>}

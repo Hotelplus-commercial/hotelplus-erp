@@ -1,8 +1,8 @@
 # O-26 · เปลี่ยนแพ็กเกจตอนต่อสัญญา (PK1–PK14)
 - [x] Package card in Wizard step 2, approval row, sign → new lines, PACKAGE_CHANGE history, ORM Lite ticket, chips, DEMO ×3, 10 tests, rules (D1 · D2 · D3).
 - [x] Catalog-price readers reported (D1).
-- [ ] Partner-system notice on package change — needs a SKU → Partner system mapping (decision).
-- [ ] O-26 DEMO cases on Header channel cards / card ③ board — would change approved header / renewal-rate numbers (decision).
+- [x] Partner-system to-do + bell on ORM full ↔ Lite (PW35).
+- [x] O-26 DEMO cases stay off Header / card ③ (decided).
 
 # Tab R4 · สัญญา & ราคา · ระยะเวลา Setup (O-11)
 - [x] Tab labels + unmount สัญญาณจากสัญญา; card ⑤ (timing model, versioned KPI settings + PM panel, journey chart, interactions, quick filters, stage + compare tables, quality); card ⑥ Coming soon strip.
