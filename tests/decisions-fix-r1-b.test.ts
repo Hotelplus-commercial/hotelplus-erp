@@ -96,7 +96,7 @@ describe('DF5 · Marcom sub-roles', () => {
 
 describe('DF2 · other billing models unchanged', () => {
   test('a commission contract without Guarantee still waits for its report', () => {
-    const c = { contract_id: 'K1', status: 'contract_completed', start_date: '2026-01-01', duration_months: 24, billing_status: 'ACTIVE', billing_model: 'FIXED_PLUS_COMMISSION', customer_snapshot: { customer_id: 'X', type: 'juristic' },
+    const c = { contract_id: 'K1', status: 'contract_completed', start_date: '2026-01-01', duration_months: 24, billing_status: 'ACTIVE', billing_model: 'FIXED_PLUS_COMMISSION', customer_snapshot: { customer_id: 'X', type: 'juristic', hotel_name: 'K Hotel' },
       lines: [{ line_id: 'l', sku_snapshot: 'ORM-MTH-FULL', name_snapshot: 'ORM', package_snapshot: null, billing: 'monthly', unit_price: 5000, commission_rate: 0.1, quantity: 1 }] };
     const out = runDailyBilling({ contracts: [c], customers: [], products: [], invoices: [], reports: [], invRequests: [], liveLinks: [], taxReceipts: [], billingWaiting: [{ contract_id: 'K1', service_line: 'ORM', billing_period: '2026-09-01' }] } as never, '2026-10-05');
     expect(out.invoices).toHaveLength(0);
