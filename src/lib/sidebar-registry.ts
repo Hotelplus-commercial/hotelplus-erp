@@ -217,6 +217,8 @@ const ac: AppDef = {
         P('ac', 'orm-bonus', 'ORM Bonus', AC_T, PAY, { titleSuffix: 'ทำจ่าย' }),
         P('ac', 'marcom-standard-line', 'Marcom Standard Line', AC_T, PAY, { titleSuffix: 'ทำจ่าย' }),
       ] },
+      // Patch A SP2: last Payables item, before รายงาน.
+      P('ac', 'payroll', 'Payroll', AC_T, 'ทำจ่ายเงินเดือนพนักงาน · ข้อมูลจาก HR App'),
     ] },
     { kind: 'group', label: 'รายงาน', children: [P('ac', 'pnl', 'P&L', A('AC_LEAD', 'HOC', 'MD'), 'รายงาน P&L สำหรับประชุมผู้บริหาร')] },
     settings('ac', A('AC_LEAD', 'HOC')),
@@ -301,9 +303,7 @@ export const SIDEBAR_REGISTRY: AppDef[] = [bd, ps, orm, marcom, ac, hr, auto, of
 /** User answer (d): Suite area above the apps, visible to every role. */
 export const SUITE_ITEMS = [
   { key: 'overview', label: 'Overview Dashboard', route: '/' },
-  { key: 'system-cost', label: 'ต้นทุนค่าระบบ (ภาพรวม)', route: '/system-cost' },
   { key: 'configuration', label: 'Configuration', route: '/settings' },
-  { key: 'support', label: 'Support', route: '/settings' },
 ] as const;
 
 /* ---------- selectors (pure) ---------- */
