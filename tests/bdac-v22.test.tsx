@@ -1,4 +1,5 @@
 /* BD-AC v2.2 — contract revenue (F1–F4, F8, chain, fixture), K1/K2, English dates (F9), mounted cards (F5). */
+import { DebtorCardR11, PaidGradeCard } from '../src/components/ps/debt-cards-r11';
 import { describe, expect, test } from 'bun:test';
 import { createElement as h, type ReactElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -124,9 +125,11 @@ describe('§6 English dates + K2', () => {
           h(BdacTab, { source: demoBdacLifecycles(), globalFilter: defaultGlobalFilter, clock: new Date(BDAC_DEMO_NOW).getTime() }),
           h(BdacFinanceSection))))))),
     );
-    const text = visible(html);
-    expect(text).toContain('⑥ รายได้รายสัญญา');
-    expect(text).toContain('⑪ ลูกหนี้ที่ต้องติดตาม');
+    const full = visible(html);
+    expect(full).toContain('⑥ รายได้รายสัญญา');
+    expect(full).toContain('ลูกหนี้ที่ต้องติดตาม');
+    // UAT Polish R2 SP10: ⑨–⑪ are now the PS cards (same look, Thai dates) — English-date rule applies to the rest of BD-AC.
+    const text = full.slice(0, full.indexOf('ลูกหนี้ & การเก็บเงิน'));
     expect(text).toContain('May 26'); // ③ cohort labels rendered in English
     expect(THAI_MONTH_ABBR.filter((m) => text.includes(m))).toEqual([]);
     expect(/(^|\D)25[5-7]\d(\D|$)/.test(text)).toBe(false);
@@ -134,15 +137,14 @@ describe('§6 English dates + K2', () => {
   });
 });
 
-describe('F5 mounted cards show the AC tab numbers', () => {
-  test('⑨ grade and ⑪ debtor answers equal the AC tab', async () => {
+describe('F5 mounted cards show the PS ลูกหนี้ & ส่วนลด Partner numbers (UAT Polish R2 SP10)', () => {
+  test('⑨ grade, ⑩ rate card and ⑪ debtor = PS cards ① ③ ② (same components, same data)', async () => {
     const value = { filter: defaultGlobalFilter, demo: true, now: DEMO_NOW };
-    const period = selectedPeriod(defaultGlobalFilter, new Date(DEMO_NOW));
-    const answers = (html: string) => [...html.matchAll(/class="dash-answer(?: [^"]*)?">([^<]+)</g)].map((m) => m[1]);
-    const ac = answers(await render(h(DashboardGlobal.Provider, { value }, h(AcTab, { views: demoAcViews(), loading: false, error: false, service: 'ALL', compare: false, demo: true, periodA: period, periodB: null }))));
-    const fin = answers(await render(h(DashboardGlobal.Provider, { value }, h(BdacFinanceSection))));
-    // Debt Partner R1: AC tab order = grade, debtor (ORM fee mock + cost unmounted) · BD-AC order: ⑥ ⑦ ⑧, ⑨ grade, ⑩ mock, ⑪ debtor
-    expect(fin[3]).toBe(ac[0]);
-    expect(fin[5]).toBe(ac[1]);
+    const fin = visible(await render(h(DashboardGlobal.Provider, { value }, h(BdacFinanceSection))));
+    const grade = visible(await render(h(DashboardGlobal.Provider, { value }, h(PaidGradeCard, { demo: true }))));
+    const debt = visible(await render(h(DashboardGlobal.Provider, { value }, h(DebtorCardR11, { demo: true }))));
+    expect(grade.length).toBeGreaterThan(20);
+    expect(fin).toContain(grade);
+    expect(fin).toContain(debt);
   });
 });
