@@ -25,7 +25,8 @@ import {
 import { readPsDashboard } from "@/lib/ps-dashboard.functions";
 import { BDAC_DEMO_NOW, DEMO_NOW, buildDemoReport, demoBdacLifecycles, demoLifecycles } from "@/lib/ps-demo-fixture";
 
-export function OfficeBdacPage() {
+/** `embedded` = tab 1 of The Office Dashboard (R2 C): the BD-AC subtitle becomes the tab body header. */
+export function OfficeBdacPage({ embedded = false }: { embedded?: boolean } = {}) {
   const [filterState, setFilter] = useState<GlobalFilter>(defaultGlobalFilter);
   const { members } = useHrMembers();
   const filter = useMemo(
@@ -81,7 +82,7 @@ export function OfficeBdacPage() {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
-        eyebrow="THE OFFICE APP · BD-AC"
+        eyebrow={embedded ? "แท็บ 1 · BD-AC" : "THE OFFICE APP · BD-AC"}
         title="BD-AC"
         description="ดีลจาก BD ถึง AC · Approved QT → WON · การเงินจาก AC"
         actions={<DemoToggle demo={demo} onDemo={toggleDemo} />}

@@ -12,7 +12,6 @@ export const psTabs = [
   { label: "On-board", to: "/ps/onboarding-process" },
   { label: "Contract & Service Manager", to: "/ps/contracts" },
   { label: "Property Content", to: "/ps/property-content" },
-  { label: "Production Report", to: "/ps/production" },
   { label: "ตั้งค่า", to: "/ps/settings" },
 ];
 
