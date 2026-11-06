@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { createElement as h } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { DEMO_DAY } from '@/lib/demo-session';
-import { Q58, R2_RENEWAL } from '@/lib/ps-glossary';
+import { Q58, RN2 } from '@/lib/ps-glossary';
 import { groupBars, REASON_LABELS } from '@/lib/renewal-r2';
 import { SEL_ALL } from '../src/lib/ps-header-r2';
 import { AcTab } from '@/components/ps/ac-tab';
@@ -44,7 +44,7 @@ describe('UAT polish R1', () => {
     const top = g.rows.find((r) => r.group === REASON_LABELS[0]!.group)!;
     expect(top.total).toBe(3);
     expect(top.contracts).toBe(2);
-    expect(R2_RENEWAL.reasons.share('50%', 4, 2)).toBe('50% · รวม 4 ป้าย · 2 สัญญา');
+    expect(RN2.reasons.share('50%', 4, 2)).toBe('50% · รวม 4 ป้าย · 2 สัญญา');
   });
 
   it('UP6 Off-board card unmounted; ⑥ ระยะเวลา Reset kept', () => {
