@@ -16,7 +16,7 @@ export function ormSystemSwitch(oldL: PkgLine[], newL: PkgLine[]): PkgSwitchTo |
   return b === 'LITE' ? 'LITE' : 'FULL';
 }
 
-type Req = { status: string; package_changed?: boolean; old_lines?: PkgLine[]; new_lines?: PkgLine[]; new_contract_id: string | null; signed_at: string | null; hotel_id: string; hotel_name: string; new_terms: { start_date: string } };
+type Req = { status: string; package_changed?: boolean | null | undefined; old_lines?: PkgLine[] | null | undefined; new_lines?: PkgLine[] | null | undefined; new_contract_id: string | null; signed_at: string | null; hotel_id: string; hotel_name: string; new_terms: { start_date: string } };
 export function packageSwitchesOf(requests: Req[]): PkgSwitch[] {
   const out: PkgSwitch[] = [];
   for (const r of requests) {
