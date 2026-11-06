@@ -142,7 +142,9 @@ export function runDailyBilling<T extends AccountingData>(original: T, t = bangk
   // Capture only today's eligible period on the 5th; waiting items persist for late reports.
   if (t.endsWith('-05')) for (const c of data.contracts) {
     const end = monthShift(c.start_date,c.duration_months,Number(c.start_date.slice(8,10)));
-    if ((c.billing_status ?? 'ACTIVE')!=='ACTIVE' || c.status!=='contract_completed' || c.start_date>t || end<=t) continue;
+    // PR-O1: after the end, one last item bills the final service month's commission only.
+    const finalComm = end<=t && c.lines.some(l=>l.billing==='monthly' && l.commission_rate!=null) && commissionServiceMonth(period) < end && commissionServiceMonth(period).slice(0,7) >= c.start_date.slice(0,7);
+    if ((c.billing_status ?? 'ACTIVE')!=='ACTIVE' || c.status!=='contract_completed' || c.start_date>t || (end<=t && !finalComm)) continue;
     if (!invoices.some(i => i.customer_snapshot.customer_id===c.customer_snapshot.customer_id && !['draft','void'].includes(i.status))) continue;
     for (const service of ['ORM','Marcom']) {
       if (!c.lines.some(l => l.billing==='monthly' && serviceOf(l.sku_snapshot,data.products)===service)) continue;
@@ -152,14 +154,20 @@ export function runDailyBilling<T extends AccountingData>(original: T, t = bangk
   const pending: NonNullable<AccountingData['billingWaiting']> = [];
   for (const item of waiting) {
     const c = data.contracts.find(c => c.contract_id===item.contract_id);
-    if (!c || (c.billing_status ?? 'ACTIVE')!=='ACTIVE' || monthShift(c.start_date,c.duration_months,Number(c.start_date.slice(8,10)))<=t) continue;
+    if (!c || (c.billing_status ?? 'ACTIVE')!=='ACTIVE') continue;
+    const cEnd = monthShift(c.start_date,c.duration_months,Number(c.start_date.slice(8,10)));
+    const sm0 = commissionServiceMonth(item.billing_period);
+    // Service month inside the contract term (a renewal's first invoice charges no commission: that month belongs to the old contract).
+    const inTerm = sm0.slice(0,7) >= c.start_date.slice(0,7) && sm0 < cEnd;
+    const final = cEnd<=t || item.billing_period >= cEnd;
+    if (final && !inTerm) continue;
     if (invoices.some(i => i.contract_ids.includes(c.contract_id) && i.billing_period_start.slice(0,7)===item.billing_period.slice(0,7) && (i.service_line===item.service_line || i.lines.some(l=>serviceOf(l.sku_snapshot,data.products)===item.service_line)) && i.status!=='void')) continue;
     const relevant = c.lines.filter(l => l.billing==='monthly' && serviceOf(l.sku_snapshot,data.products)===item.service_line);
     // PR-O1 one month rule: the invoice of billing month M+1 charges the commission of service month M (every source).
     const sm = commissionServiceMonth(item.billing_period);
     const hasComm = relevant.some(l=>l.commission_rate!=null);
     // Switch-over guard: never charge a service month a non-void invoice already charged.
-    const charged = hasComm && chargedServiceMonths(invoices, c.contract_id).has(sm.slice(0,7));
+    const charged = hasComm && (!inTerm || chargedServiceMonths(invoices, c.contract_id).has(sm.slice(0,7)));
     const reports = mergeDropReports(data.reports, data.prDropReports ?? []).filter(r=>r.contract_id===c.contract_id && `${r.period_year}-${String(r.period_month).padStart(2,'0')}`===sm.slice(0,7) && serviceOf(r.sku,data.products)===item.service_line);
     const missingReport = !charged && (!reports.length || relevant.some(l=>l.commission_rate!=null && !reports.some(r=>r.sku===l.sku_snapshot)));
     // AC-G1 (DF2): commission + Guarantee — no report by the drop deadline (3rd after the service month) → bill the Guarantee.
@@ -167,7 +175,7 @@ export function runDailyBilling<T extends AccountingData>(original: T, t = bangk
     if (missingReport && !(guarantee && t >= reportDeadline(sm))) { pending.push(item); continue; }
     const lines: InvoiceLine[] = [];
     for (const l of relevant) {
-      if (l.unit_price && l.unit_price>0) lines.push({line_id:crypto.randomUUID(),contract_id:c.contract_id,sku_snapshot:l.sku_snapshot,name_snapshot:l.name_snapshot,line_type:'fixed',quantity:l.quantity,unit_price:l.unit_price,amount:l.unit_price*l.quantity});
+      if (!final && l.unit_price && l.unit_price>0) lines.push({line_id:crypto.randomUUID(),contract_id:c.contract_id,sku_snapshot:l.sku_snapshot,name_snapshot:l.name_snapshot,line_type:'fixed',quantity:l.quantity,unit_price:l.unit_price,amount:l.unit_price*l.quantity});
       const r = charged ? undefined : reports.find(r=>r.sku===l.sku_snapshot);
       if (l.commission_rate!=null && r) lines.push({line_id:crypto.randomUUID(),contract_id:c.contract_id,sku_snapshot:l.sku_snapshot,name_snapshot:l.name_snapshot+' — Commission',line_type:'commission',quantity:1,unit_price:r.commission_thb,amount:r.commission_thb,production_report_id:r.report_id,service_month:sm.slice(0,7)});
     }
