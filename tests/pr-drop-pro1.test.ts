@@ -72,7 +72,7 @@ describe('PR-O1 billing (one month rule)', () => {
   });
   test('5b · switch-over guard: a month already charged is never charged again', () => {
     const c = contract('C2');
-    const old = { invoice_id: 'OLD', contract_ids: ['C2'], status: 'paid', billing_period_start: '2026-09-01', lines: [{ line_type: 'commission', contract_id: 'C2', amount: 1 }], customer_snapshot: c.customer_snapshot } as any;
+    const old = { ...SEED.seedInvoices[0]!, invoice_id: 'OLD', contract_ids: ['C2'], status: 'paid', billing_period_start: '2026-09-01', lines: [{ line_type: 'commission', contract_id: 'C2', amount: 1 }], customer_snapshot: c.customer_snapshot } as any;
     const out = E.runDailyBilling({ ...base(c, [old]), reports: [rep('C2', 9, 500)] }, '2026-10-05');
     const inv = out.invoices.find((i: any) => i.invoice_id !== 'OLD')!;
     expect(inv.lines.map((l: any) => l.line_type)).toEqual(['fixed']);
