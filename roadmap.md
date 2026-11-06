@@ -345,3 +345,7 @@ Scope boundary: workflow remains browser-local with role flags as specified; no 
 - [x] Receiver 🎫 lane ORM / Marcom / AC / BD, accept modal, panel, head categories, OGM group (AUTO), shut-off rows, bell icons/links, DEMO, tests
 - [ ] Open: Can PS cases be routed to BD? (file 1 routing currently ORM / MARCOM / AC) — waits on decision
 - [ ] Open: receiver progress notes need a write path (file 1 has none) — waits on decision
+
+## PS Dashboard Tab On-board / Off-board R1 + Settings › SLA On-board
+- [x] Legend, 4 tiles, Pipeline, queue + drawer, owner table, Overall days, Off-board strip, settings page, card ⑤ link + tooltip, DEMO, tests
+- [ ] Open OB-O1: Two SLA sources until OB-O1 is decided — waits on decision
