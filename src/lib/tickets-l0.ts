@@ -6,7 +6,7 @@ import { stageCloudDoc } from './cloud-sync';
 import { DEMO_NOW } from './ps-demo-fixture';
 import { readDemoL0, saveDemoL0 } from './demo-session';
 
-export type TicketType = 'UPSELL_PITCH' | 'RENEWAL_DUE' | 'GRADE_RISK' | 'SURVEY_LOW' | 'CONTRACT_FOLLOWUP' | 'SERVICING_STALL' | 'CUSTOMER_ENTITY_CHANGE' | 'CONTRACT_SIGNAL' | 'WELCOME_BACK' | 'HANDOVER_FIX' | 'SYSTEM_SHUTOFF' | 'PARTNER_DEAL_NOTICE' | 'SYSTEM_CREDIT_NOTICE' | 'SYSTEM_REACTIVATE';
+export type TicketType = 'UPSELL_PITCH' | 'RENEWAL_DUE' | 'GRADE_RISK' | 'SURVEY_LOW' | 'CONTRACT_FOLLOWUP' | 'SERVICING_STALL' | 'CUSTOMER_ENTITY_CHANGE' | 'CONTRACT_SIGNAL' | 'WELCOME_BACK' | 'HANDOVER_FIX' | 'SYSTEM_SHUTOFF' | 'PARTNER_DEAL_NOTICE' | 'SYSTEM_CREDIT_NOTICE' | 'SYSTEM_REACTIVATE' | /** O-26 PK-Q5: ORM full → Lite OTA trim */ 'PACKAGE_OTA_ADJUST';
 /** Tab R3 §6.1 WELCOME_BACK snapshot (read-only for BD). */
 export type WelcomeBackSnapshot = {
   contract_info: Record<string, string>; package_rate: Record<string, string>; exit_status: Record<string, string>;
@@ -80,7 +80,7 @@ export const DEPTS_WITH_WORKSPACE: Dept[] = [...DEPTS];
 export const OPEN_STATUSES: L0Status[] = ['NEW', 'ACK', 'IN_PROGRESS', 'WAITING_CUSTOMER', 'WAITING_THIRD_PARTY'];
 /** Tab R1 §6.6: NEW = New · legacy ACK shown as กำลังทำ (stored value unchanged). */
 export const STATUS_TH: Record<L0Status, string> = { NEW: 'New', ACK: 'กำลังทำ', IN_PROGRESS: 'กำลังทำ', DONE: 'เสร็จ', CANCELLED: 'ยกเลิก', WAITING_CUSTOMER: 'รอลูกค้า', WAITING_THIRD_PARTY: 'รอ 3rd Party' };
-export const TYPE_TH: Record<TicketType, string> = { UPSELL_PITCH: 'เสนอขายบริการเพิ่ม', RENEWAL_DUE: 'ใกล้ครบสัญญา', GRADE_RISK: 'เสี่ยงเกรดการชำระ (D)', SURVEY_LOW: 'คะแนนบริการต่ำ', CONTRACT_FOLLOWUP: 'ติดตามดีลค้างข้ามเดือน', SERVICING_STALL: 'ติดตามการ์ดเกิน SLA', CUSTOMER_ENTITY_CHANGE: 'เปลี่ยนนิติบุคคล / ผู้ลงนาม', CONTRACT_SIGNAL: 'แจ้งเรื่องของสัญญา', WELCOME_BACK: 'Welcome Back', HANDOVER_FIX: 'ขอแก้งานส่งมอบ', SYSTEM_SHUTOFF: 'ปิดระบบ', PARTNER_DEAL_NOTICE: 'แจ้งข้อตกลง Partner', SYSTEM_CREDIT_NOTICE: 'แจ้งผลเครดิตค่าระบบ', SYSTEM_REACTIVATE: 'เปิดระบบคืน' };
+export const TYPE_TH: Record<TicketType, string> = { PACKAGE_OTA_ADJUST: 'ปรับ OTA ตามแพ็กเกจ', UPSELL_PITCH: 'เสนอขายบริการเพิ่ม', RENEWAL_DUE: 'ใกล้ครบสัญญา', GRADE_RISK: 'เสี่ยงเกรดการชำระ (D)', SURVEY_LOW: 'คะแนนบริการต่ำ', CONTRACT_FOLLOWUP: 'ติดตามดีลค้างข้ามเดือน', SERVICING_STALL: 'ติดตามการ์ดเกิน SLA', CUSTOMER_ENTITY_CHANGE: 'เปลี่ยนนิติบุคคล / ผู้ลงนาม', CONTRACT_SIGNAL: 'แจ้งเรื่องของสัญญา', WELCOME_BACK: 'Welcome Back', HANDOVER_FIX: 'ขอแก้งานส่งมอบ', SYSTEM_SHUTOFF: 'ปิดระบบ', PARTNER_DEAL_NOTICE: 'แจ้งข้อตกลง Partner', SYSTEM_CREDIT_NOTICE: 'แจ้งผลเครดิตค่าระบบ', SYSTEM_REACTIVATE: 'เปิดระบบคืน' };
 const OPEN: L0Status[] = ['NEW', 'ACK', 'IN_PROGRESS', 'WAITING_CUSTOMER', 'WAITING_THIRD_PARTY'];
 /** Tab R1 §6.6 — every type: NEW → IN_PROGRESS → DONE (+ CANCELLED by creator). ACK is never offered; legacy ACK continues like IN_PROGRESS. */
 const NEXT: Partial<Record<L0Status, L0Status>> = { NEW: 'IN_PROGRESS', ACK: 'DONE', IN_PROGRESS: 'DONE' };

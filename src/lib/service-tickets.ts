@@ -92,7 +92,7 @@ export const PS_CASE_CATEGORY_MAP: Record<string, string> = { 'ORM-RATE': 'rate'
 export function defaultCategoryKey(type: TicketType | null, dept: SvcDept, psCaseCode?: string): string {
   if (type === 'SYSTEM_SHUTOFF' || type === 'SYSTEM_REACTIVATE') return dept === 'ORM' || dept === 'MARCOM' ? 'shutoff' : 'other';
   if (type === 'UPSELL_PITCH') return dept === 'BD' ? 'offer' : 'other';
-  if (type === 'SERVICING_STALL' && (dept === 'ORM' || dept === 'MARCOM')) return 'onboard';
+  if ((type === 'SERVICING_STALL' || type === 'PACKAGE_OTA_ADJUST') && (dept === 'ORM' || dept === 'MARCOM')) return 'onboard';
   if (psCaseCode) return PS_CASE_CATEGORY_MAP[psCaseCode] ?? 'other';
   return 'other';
 }
