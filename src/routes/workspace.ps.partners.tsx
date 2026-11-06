@@ -128,6 +128,7 @@ type Common = { d: PartnerData; contracts: Contracts; today: string; isPm: boole
 /** Partner of a to-do item (A by name, B by request, C / D by deal). */
 function todoPartner(d: PartnerData, contracts: Contracts, today: string, t: PartnerTodo): string | null {
   const ref = t.id.slice(2);
+  if (t.kind === "E") return t.partner_id ?? null;
   if (t.kind === "C" || t.kind === "D") return d.partner_deals.find((x) => x.id === ref)?.partner_id ?? null;
   if (t.kind === "B") return d.system_credit_requests.find((x) => x.id === ref)?.partner_id ?? null;
   const r = creditSections(d, contracts, today).pending.find((x) => x.contract.contract_id === ref);
@@ -138,9 +139,11 @@ const TODO_TAG: Record<PartnerTodo["kind"], [string, string, string]> = {
   B: ["ตาม Partner", "bg-warning/15 text-warning-foreground", "บันทึกผล"],
   C: ["ใกล้หมดอายุ", "bg-primary/10 text-primary", "ต่อ / ปิดข้อเสนอ"],
   D: ["ไม่มีความคืบหน้า", "bg-primary/10 text-primary", "อัปเดตสถานะ"],
+  E: ["เปลี่ยนแพ็กเกจ", "bg-warning/15 text-warning-foreground", "เปลี่ยนระบบ"],
 };
 function runTodo(c: Common, t: PartnerTodo) {
   const ref = t.id.slice(2);
+  if (t.kind === "E") { if (t.route_target) window.location.assign(t.route_target); return; }
   if (t.kind === "A") c.go({ v: "credit", anchor: "credit-pending" }, { req: ref });
   else if (t.kind === "B") c.go({ v: "credit", anchor: "credit-waiting" }, { ans: ref });
   else {
@@ -173,7 +176,7 @@ function Overview(c: Common) {
   const activeP = d.partners.filter((p) => rows.some((r) => r.card.partner_id === p.id && r.contracts > 0));
   const cov = useHotelCoverage(d, contracts, today, demo);
   const credit = creditTiles(d);
-  const todos = partnerTodoItems(d, contracts, today, "today", "PM");
+  const todos = partnerTodoItems(d, contracts, today, "today", "PM", signedPackageSwitches(), !!demo);
   const [q, setQ] = useState("");
   const nameOf = (pid: string) => hotelNameOf(contracts, pid);
   const shown = d.partners.filter((p) => {

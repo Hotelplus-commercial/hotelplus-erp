@@ -17,6 +17,8 @@ import type { Contract, ContractLine } from './crm-types';
 import { RENEWAL_NEW_CONTRACT_FAILED, RENEWAL_SOURCE_NOT_FOUND } from './ps-glossary';
 import { addMainContract, mainContractById, mainContracts, setMainContractDemo } from './main-contract-store';
 import { buildRenewedContract, contractFromSource, svcOfPackage } from './renewal-contract';
+import { addBellItem } from './bell-items';
+import { packageSwitchesOf, pkgSwitchKey, pkgSwitchTitle, type PkgSwitch } from './partner-package-switch';
 import { firstMonthEnd, isOrmFullToLite, isPackageChanged, linesOfContract, monthlySum, ormLiteDefaults, ormTierOf, packageLabel, validatePackage, type PkgLine } from './renewal-package';
 import { mainCatalogProducts } from './main-contract-store';
 import { PK_DEMO_CASES, PK_DEMO_CONTRACTS } from './renewal-package-demo';
@@ -517,7 +519,14 @@ export function signRequest(id: string): Out {
   const s = cur(); const prev = Math.max(0, ...s.history.filter((h) => h.contract_id === r.source_contract_id || h.renewal_request_id != null && s.requests.find((q) => q.id === h.renewal_request_id)?.source_contract_id === r.source_contract_id).map((h) => h.cycle_no));
   const row = renewalHistoryRow(o.req, prev); const ticket = packageTicketFor(o.req);
   // O-26 PK11: a package change records its row as PACKAGE_CHANGE (one row per signing, same fields).
+  packageSwitchBell(o.req);
   return put({ ...o.req, ...(ticket ? { package_ticket_id: ticket } : {}) }, { history: [...s.history, o.req.package_changed ? { ...row, source: 'PACKAGE_CHANGE' } : row] });
+}
+/** O-26 Partner follow-up: signed ORM full ↔ Lite renewals (PM to-do + bell). */
+export const signedPackageSwitches = (): PkgSwitch[] => packageSwitchesOf(cur().requests);
+function packageSwitchBell(r: RenewalRequest) {
+  const s = packageSwitchesOf([r])[0]; if (!s) return;
+  addBellItem(isRenewalDemo(), { key: pkgSwitchKey(s), target_type: 'ROLE', target_id: 'PM', alert_type: 'PACKAGE_SYSTEM_SWITCH', text: `${pkgSwitchTitle(s)} · ${s.hotel} · มีผล ${s.start}`, link: '/workspace/ps/partners', created_at: r.signed_at ?? nowIso(), tone: 'info' });
 }
 export const requestById = (id: string) => cur().requests.find((r) => r.id === id) ?? null;
 /** Customer signing page path (renewal: no payment step). */

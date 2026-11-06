@@ -3,13 +3,14 @@ import { getPartnerData, isPartnerDemo } from './debt-partner-store';
 import { partnerContracts } from './partner-contracts';
 import { partnerTodoItems } from './partner-workspace';
 import { DEMO_DAY } from './demo-session';
+import { signedPackageSwitches } from './renewal-store';
 import { createTask, transition } from './tickets-l0';
 import type { DateRange, TodoItem } from './workspace-registry';
 
 export const partnerToday = () => (isPartnerDemo() ? DEMO_DAY : new Date().toISOString().slice(0, 10));
 export function partnerTodoAdapter(q: { person: string; range: DateRange }): (TodoItem & { sub?: string })[] {
   const d = getPartnerData();
-  return partnerTodoItems(d, partnerContracts(d, isPartnerDemo()), partnerToday(), q.range, q.person);
+  return partnerTodoItems(d, partnerContracts(d, isPartnerDemo()), partnerToday(), q.range, q.person, signedPackageSwitches(), isPartnerDemo());
 }
 
 /** §7 DEMO: Sala Talay Resort (no AE) + Chaba Grand (AE Nont, IN_PROGRESS; ORM twin IN_PROGRESS). Call only with the ticket store in DEMO. */
