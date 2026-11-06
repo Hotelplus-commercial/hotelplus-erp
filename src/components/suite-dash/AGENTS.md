@@ -6,4 +6,5 @@
 - Period picker (เดือนนี้ / ไตรมาส / ปี / กำหนดเอง) changes period cards only; point-in-time numbers show `ณ วันนี้` (Header R2).
 - DEMO = the shared DEMO switch (useSuiteDemo, same as AC App › บิล Partner). Overview shows only visibleApps(menu role); `ไปที่ {App} →` = landingOf(app, role).
 - Old ERP summary is unmounted from "/" and kept at /overview-legacy (not in the menu).
-- Open items: PS `อัตราต่อสัญญา (ไตรมาส)` source not confirmed (shows —) · AC `ใบแจ้งหนี้รอ Production Report` has no billing status yet (shows —) · dashboard tickets read L0 + SLA side records only (PS cases are loaded only inside the PS tab) · live PS header numbers on dashboards read without the PS report (DEMO equals the PS header).
+- B.1: Overview `อัตราต่อสัญญา (ไตรมาส)` = useRenewalRateQuarter (renewal card's own items + quarterRenewalStats); dashboard ticket counts = vServiceTickets with PS cases (useTaskData), same rows as PS › ติดตามงานผู้ให้บริการ. /overview-legacy metrics are hotel-template samples, never moved.
+- Open items: AC `ใบแจ้งหนี้รอ Production Report` stays — until the drop view exists (PR-O1) · live PS header numbers on dashboards read without the PS report (DEMO equals the PS header).
